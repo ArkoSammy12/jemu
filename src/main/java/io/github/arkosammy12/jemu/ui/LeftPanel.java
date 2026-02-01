@@ -7,6 +7,7 @@ import io.github.arkosammy12.jemu.config.initializers.EmulatorInitializerConsume
 import io.github.arkosammy12.jemu.main.MainWindow;
 import io.github.arkosammy12.jemu.ui.disassembly.DisassemblyPanel;
 import io.github.arkosammy12.jemu.ui.util.ToggleableSplitPane;
+import io.github.arkosammy12.jemu.ui.video.EmulatorViewport;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;

@@ -1,7 +1,6 @@
-package io.github.arkosammy12.jemu.ui;
+package io.github.arkosammy12.jemu.ui.video;
 
 import io.github.arkosammy12.jemu.main.Jemu;
-import io.github.arkosammy12.jemu.video.DisplayRenderer;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 

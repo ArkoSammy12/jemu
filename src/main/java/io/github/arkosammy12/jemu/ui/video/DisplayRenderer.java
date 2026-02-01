@@ -1,5 +1,6 @@
-package io.github.arkosammy12.jemu.video;
+package io.github.arkosammy12.jemu.ui.video;
 
+import io.github.arkosammy12.jemu.systems.Display;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 
 import javax.swing.*;
@@ -104,7 +105,7 @@ public class DisplayRenderer extends JPanel implements Closeable {
         this.lastHeight = h;
     }
 
-    protected void updateRenderBuffer() {
+    public void updateRenderBuffer() {
         synchronized (this.renderBufferLock) {
             this.display.populateRenderBuffer(this.renderBuffer);
         }

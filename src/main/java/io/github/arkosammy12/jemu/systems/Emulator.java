@@ -4,7 +4,6 @@ import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.ui.debugger.DebuggerSchema;
 import io.github.arkosammy12.jemu.util.System;
-import io.github.arkosammy12.jemu.video.Display;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.KeyAdapter;

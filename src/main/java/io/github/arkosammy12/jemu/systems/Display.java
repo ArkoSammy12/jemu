@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.video;
+package io.github.arkosammy12.jemu.systems;
 
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.ui.video.DisplayRenderer;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 
 import java.io.Closeable;
@@ -34,11 +34,11 @@ public abstract class Display<E extends Emulator> implements Closeable {
 
     public abstract int getHeight();
 
-    protected abstract int getImageWidth();
+    public abstract int getImageWidth();
 
-    protected abstract int getImageHeight();
+    public abstract int getImageHeight();
 
-    protected abstract void populateRenderBuffer(int[][] renderBuffer);
+    public abstract void populateRenderBuffer(int[][] renderBuffer);
 
     public void flush() {
         this.displayRenderer.updateRenderBuffer();

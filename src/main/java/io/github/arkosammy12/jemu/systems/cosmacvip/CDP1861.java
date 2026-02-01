@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.systems.cosmacvip;
 
-import io.github.arkosammy12.jemu.video.Display;
+import io.github.arkosammy12.jemu.systems.Display;
 
 public class CDP1861<E extends CosmacVipEmulator> extends Display<E> implements IODevice {
 
@@ -47,12 +47,12 @@ public class CDP1861<E extends CosmacVipEmulator> extends Display<E> implements 
     }
 
     @Override
-    protected int getImageWidth() {
+    public int getImageWidth() {
         return 256;
     }
 
     @Override
-    protected int getImageHeight() {
+    public int getImageHeight() {
         return 128;
     }
 
@@ -136,7 +136,7 @@ public class CDP1861<E extends CosmacVipEmulator> extends Display<E> implements 
     }
 
     @Override
-    protected void populateRenderBuffer(int[][] renderBuffer) {
+    public void populateRenderBuffer(int[][] renderBuffer) {
         for (int y = 0; y < imageHeight; y++) {
             for (int x = 0; x < imageWidth; x++) {
                 renderBuffer[x][y] = this.displayBuffer[x / 4][y];
