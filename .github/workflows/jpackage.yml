@@ -1,0 +1,43 @@
+name: jpackage
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        java: [25]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6.0.1
+
+      - name: Set up JDK
+        uses: actions/setup-java@v5.1.0
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java }}
+
+      - name: Verify Java version
+        run: java -version
+
+      - name: Set up Maven cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      - name: Build and package with Maven
+        run: mvn -B clean package org.panteleyev:jpackage-maven-plugin:1.7.1:jpackage
+
+      - name: Upload APP_IMAGE artifact
+        uses: actions/upload-artifact@v5.0.0
+        with:
+          name: jemu-app-image-${{ matrix.os }}
+          path: target/dist/
+
