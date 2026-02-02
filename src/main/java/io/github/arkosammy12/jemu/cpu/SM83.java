@@ -11,6 +11,9 @@ public class SM83 implements Processor {
     private static final int H_MASK = 1 << 5;
     private static final int C_MASK = 1 << 4;
 
+    private static final int PREFIX = 0xCB;
+    private static final int TERMINATE_INSTRUCTION = -1;
+
     private final SystemBus systemBus;
 
     private int programCounter = 0x0100; // PC, 16 bits
@@ -24,6 +27,9 @@ public class SM83 implements Processor {
     private int HL = 0x014D; // 16 bits
 
     private int WZ; // 16 bits
+
+    private int machineCycleIndex = TERMINATE_INSTRUCTION;
+    private boolean opcodeIsPrefixed = false;
 
     public SM83(SystemBus systemBus) {
         this.systemBus = systemBus;
@@ -206,12 +212,6 @@ public class SM83 implements Processor {
     public int getZ() {
         return this.WZ & 0xFF;
     }
-
-    private static final int PREFIX = 0xCB;
-    private static final int TERMINATE_INSTRUCTION = -1;
-
-    private int machineCycleIndex = -1;
-    private boolean opcodeIsPrefixed = false;
 
     @Override
     public int cycle() {
