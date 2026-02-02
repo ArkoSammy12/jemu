@@ -1,20 +1,18 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.cpu;
 
-import io.github.arkosammy12.jemu.systems.Processor;
-import io.github.arkosammy12.jemu.exceptions.InvalidInstructionException;
+import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
+import io.github.arkosammy12.jemu.systems.cosmacvip.IODevice;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Arrays;
 
-import static io.github.arkosammy12.jemu.systems.cosmacvip.CDP1802.State.*;
+import static io.github.arkosammy12.jemu.cpu.CDP1802.State.*;
 import static io.github.arkosammy12.jemu.systems.cosmacvip.CosmacVipEmulator.REGISTERS_ENTRY_KEY;
 
-public class CDP1802 implements Processor, Closeable {
+public class CDP1802 implements Processor {
 
     private static final int HANDLED = 1;
 
-    private final CosmacVipEmulator emulator;
+    private final SystemBus systemBus;
     private int currentInstructionAddress;
     private State currentState = State.S1_RESET;
     private boolean longInstruction = false;
@@ -34,9 +32,16 @@ public class CDP1802 implements Processor, Closeable {
 
     private final boolean[] externalFlagInputs = new boolean[4];
 
-    public CDP1802(CosmacVipEmulator emulator) {
-        this.emulator = emulator;
-        System.arraycopy(emulator.getEmulatorSettings().getJchip().getDataManager().getTransientOrCompute(REGISTERS_ENTRY_KEY, int[].class, () -> new int[16]), 0, this.registers, 0, this.registers.length);
+    public CDP1802(SystemBus systemBus) {
+        this.systemBus = systemBus;
+    }
+
+    public void restoreRegisters(EmulatorSettings emulatorSettings) {
+        System.arraycopy(emulatorSettings.getJemu().getDataManager().getTransientOrCompute(REGISTERS_ENTRY_KEY, int[].class, () -> new int[16]), 0, this.registers, 0, this.registers.length);
+    }
+
+    public void saveRegisters(EmulatorSettings emulatorSettings) {
+        emulatorSettings.getJemu().getDataManager().putTransient(REGISTERS_ENTRY_KEY, Arrays.copyOf(this.registers, this.registers.length));
     }
 
     public State getCurrentState() {
@@ -157,7 +162,7 @@ public class CDP1802 implements Processor, Closeable {
 
     @Override
     public int cycle() {
-        int flags = switch (currentState) {
+        return switch (currentState) {
             case S1_RESET -> onReset();
             case S1_INIT -> onInit();
             case S0_FETCH -> onFetch();
@@ -166,10 +171,6 @@ public class CDP1802 implements Processor, Closeable {
             case S2_DMA_OUT -> onDmaOut();
             case S3_INTERRUPT -> onInterrupt();
         };
-        if (!isHandled(flags)) {
-            throw new InvalidInstructionException((getI() << 4) | getN(), this.emulator.getSystem());
-        }
-        return flags;
     }
 
     public int getCurrentInstructionAddress() {
@@ -179,8 +180,8 @@ public class CDP1802 implements Processor, Closeable {
     public void nextState() {
         this.currentState = switch (currentState) {
             case S1_RESET -> S1_INIT;
-            case S1_INIT, S3_INTERRUPT -> switch (this.emulator.getDmaStatus()) {
-                case NONE ->  S0_FETCH;
+            case S1_INIT, S3_INTERRUPT -> switch (this.systemBus.getDmaStatus()) {
+                case IODevice.DmaStatus.NONE ->  S0_FETCH;
                 case IN -> S2_DMA_IN;
                 case OUT -> S2_DMA_OUT;
             };
@@ -189,9 +190,9 @@ public class CDP1802 implements Processor, Closeable {
                 if (this.longInstruction) {
                     yield S1_EXECUTE;
                 } else {
-                    yield switch (this.emulator.getDmaStatus()) {
+                    yield switch (this.systemBus.getDmaStatus()) {
                         case NONE -> {
-                            if (this.emulator.anyInterrupting() && getIE()) {
+                            if (this.systemBus.anyInterrupting() && getIE()) {
                                 this.idling = false;
                                 yield S3_INTERRUPT;
                             } else if (this.idling) {
@@ -211,9 +212,9 @@ public class CDP1802 implements Processor, Closeable {
                     };
                 }
             }
-            case S2_DMA_IN, S2_DMA_OUT -> switch (this.emulator.getDmaStatus()) {
+            case S2_DMA_IN, S2_DMA_OUT -> switch (this.systemBus.getDmaStatus()) {
                 case NONE -> {
-                    if (this.emulator.anyInterrupting() && getIE()) {
+                    if (this.systemBus.anyInterrupting() && getIE()) {
                         yield S3_INTERRUPT;
                     } else {
                         yield S0_FETCH;
@@ -243,7 +244,7 @@ public class CDP1802 implements Processor, Closeable {
     private int onFetch() {
         int pc = getR(getP());
         this.currentInstructionAddress = pc;
-        int opcode = this.emulator.getBus().readByte(pc);
+        int opcode = this.systemBus.getBus().readByte(pc);
         setR(getP(), pc + 1);
         setI((opcode & 0xF0) >>> 4);
         setN(opcode & 0x0F);
@@ -251,13 +252,13 @@ public class CDP1802 implements Processor, Closeable {
     }
 
     private int onDmaIn() {
-        this.emulator.getBus().writeByte(getR(0), this.emulator.dispatchDmaIn(getR(0)));
+        this.systemBus.getBus().writeByte(getR(0), this.systemBus.dispatchDmaIn(getR(0)));
         setR(0, getR(0) + 1);
         return HANDLED;
     }
 
     private int onDmaOut() {
-        this.emulator.dispatchDmaOut(getR(0), this.emulator.getBus().readByte(getR(0)));
+        this.systemBus.dispatchDmaOut(getR(0), this.systemBus.getBus().readByte(getR(0)));
         setR(0, getR(0) + 1);
         return HANDLED;
     }
@@ -274,10 +275,10 @@ public class CDP1802 implements Processor, Closeable {
         return switch (getI()) {
             case 0x0 -> {
                 if (getN() != 0) { // 0N: LDN | M(R(N)) → D; FOR N not 0
-                    setD(this.emulator.getBus().readByte(getR(getN())));
+                    setD(this.systemBus.getBus().readByte(getR(getN())));
                 } else { // 00: IDL | IDLE.
                     this.idling = true;
-                    this.emulator.getBus().readByte(getR(0)); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(0)); // Dummy read for accurate bus activity
                 }
                 yield HANDLED;
             }
@@ -291,11 +292,11 @@ public class CDP1802 implements Processor, Closeable {
             }
             case 0x3 -> switch (getN()) {
                 case 0x0 -> { // 30: BR | M(R(P)) -> R(P).0
-                    setR0(getP(), this.emulator.getBus().readByte(getR(getP())));
+                    setR0(getP(), this.systemBus.getBus().readByte(getR(getP())));
                     yield HANDLED;
                 }
                 case 0x1 -> { // 31: BQ | IF Q = 1, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getQ()) {
                         setR0(getP(), value);
                     } else {
@@ -304,7 +305,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x2 -> { // 32: BZ | IF D = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getD() == 0) {
                         setR0(getP(), value);
                     } else {
@@ -313,7 +314,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x3 -> { // 33: BDF | IF DF = 1, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getDF()) {
                         setR0(getP(), value);
                     } else {
@@ -322,7 +323,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x4 -> { // 34: B1 | IF EF1 = 1, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getEF(0)) {
                         setR0(getP(), value);
                     } else {
@@ -331,7 +332,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x5 -> { // 35: B2 | IF EF2 = 1, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getEF(1)) {
                         setR0(getP(), value);
                     } else {
@@ -340,7 +341,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x6 -> { // 36: B3 | IF EF3 = 1, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getEF(2)) {
                         setR0(getP(), value);
                     } else {
@@ -349,7 +350,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x7 -> { // 37: B4 | IF EF4 = 1, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getEF(3)) {
                         setR0(getP(), value);
                     } else {
@@ -358,12 +359,12 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x8 -> { // 38: NBR | R(P) + 1 → R(P)
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0x9 -> { // 39: BNQ | IF Q = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (!getQ()) {
                         setR0(getP(), value);
                     } else {
@@ -372,7 +373,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xA -> { // 3A: BNZ | IF D NOT 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (getD() != 0) {
                         setR0(getP(), value);
                     } else {
@@ -381,7 +382,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xB -> { // 3B: BNF | IF DF = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (!getDF()) {
                         setR0(getP(), value);
                     } else {
@@ -390,7 +391,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xC -> { // 3C: BN1 | IF EF1 = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (!getEF(0)) {
                         setR0(getP(), value);
                     } else {
@@ -399,7 +400,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xD -> { // 3D: BN2 | IF EF2 = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (!getEF(1)) {
                         setR0(getP(), value);
                     } else {
@@ -408,7 +409,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xE -> { // 3E: BN3 | IF EF3 = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (!getEF(2)) {
                         setR0(getP(), value);
                     } else {
@@ -417,7 +418,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xF -> { // 3F: BN4 | IF EF4 = 0, M(R(P)) → R(P).0, ELSE R(P) + 1 → R(P)
-                    int value = this.emulator.getBus().readByte(getR(getP()));
+                    int value = this.systemBus.getBus().readByte(getR(getP()));
                     if (!getEF(3)) {
                         setR0(getP(), value);
                     } else {
@@ -428,37 +429,37 @@ public class CDP1802 implements Processor, Closeable {
                 default -> 0;
             };
             case 0x4 -> { // 4N: LDA | M(R(N)) → D; R(N) + 1 → R(N)
-                setD(this.emulator.getBus().readByte(getR(getN())));
+                setD(this.systemBus.getBus().readByte(getR(getN())));
                 setR(getN(), getR(getN()) + 1);
                 yield HANDLED;
             }
             case 0x5 -> { // 5N: STR | D → M(R(N))
-                this.emulator.getBus().writeByte(getR(getN()), getD());
+                this.systemBus.getBus().writeByte(getR(getN()), getD());
                 yield HANDLED;
             }
             case 0x6 -> {
                 int N = getN();
                 if (N == 0x0) { // 60: IRX | R(X) + 1 → R(X)
-                    this.emulator.getBus().readByte(getR(getX())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getX())); // Dummy read for accurate bus activity
                     setR(getX(), getR(getX()) + 1);
                 } else if (N >= 0x1 && N <= 0x7) { // 6N: OUT | M(R(X)) → BUS; R(X) + 1 → R(X)
                     int NX = N & 7;
-                    this.emulator.dispatchOutput(NX, this.emulator.getBus().readByte(getR(getX())));
+                    this.systemBus.dispatchOutput(NX, this.systemBus.getBus().readByte(getR(getX())));
                     setR(getX(), getR(getX()) + 1);
                 } else if (N >= 0x9 && N <= 0xF) { // 6N: INP | BUS → M(R(X)), D
                     int NX = N & 7;
-                    int input = this.emulator.dispatchInput(NX);
-                    this.emulator.getBus().writeByte(getR(getX()), input);
+                    int input = this.systemBus.dispatchInput(NX);
+                    this.systemBus.getBus().writeByte(getR(getX()), input);
                     setD(input);
                 } else if (N == 0x8) { // 68: Undefined. Return 0xFF from pull up data bus
-                    this.emulator.getBus().writeByte(getR(getX()), 0xFF);
+                    this.systemBus.getBus().writeByte(getR(getX()), 0xFF);
                     setD(0xFF);
                 }
                 yield HANDLED;
             }
             case 0x7 -> switch (getN()) {
                 case 0x0 -> { // 70: RET | M(R(X)) → (X, P); R(X) + 1 → R(X), 1 → IE
-                    int value = this.emulator.getBus().readByte(getR(getX()));
+                    int value = this.systemBus.getBus().readByte(getR(getX()));
                     setR(getX(), getR(getX()) + 1);
                     setX((value & 0xF0) >>> 4);
                     setP(value & 0x0F);
@@ -466,7 +467,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x1 -> { // 71: DIS | M(R(X)) → (X, P); R(X) + 1 → R(X), 0 → IE
-                    int value = this.emulator.getBus().readByte(getR(getX()));
+                    int value = this.systemBus.getBus().readByte(getR(getX()));
                     setR(getX(), getR(getX()) + 1);
                     setX((value & 0xF0) >>> 4);
                     setP(value & 0x0F);
@@ -474,23 +475,23 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x2 -> { // 72: LDXA | M(R(X)) → D; R(X) + 1 → R(X)
-                    setD(this.emulator.getBus().readByte(getR(getX())));
+                    setD(this.systemBus.getBus().readByte(getR(getX())));
                     setR(getX(), getR(getX()) + 1);
                     yield HANDLED;
                 }
                 case 0x3 -> { // 73: STXD | D → M(R(X)); R(X) - 1 → R(X)
-                    this.emulator.getBus().writeByte(getR(getX()), getD());
+                    this.systemBus.getBus().writeByte(getR(getX()), getD());
                     setR(getX(), getR(getX()) - 1);
                     yield HANDLED;
                 }
                 case 0x4 -> { // 74: ADC | M(R(X)) + D + DF → DF, D
-                    int result = this.emulator.getBus().readByte(getR(getX())) + getD() + (getDF() ? 1 : 0);
+                    int result = this.systemBus.getBus().readByte(getR(getX())) + getD() + (getDF() ? 1 : 0);
                     setD(result);
                     setDF(result > 0xFF);
                     yield HANDLED;
                 }
                 case 0x5 -> { // 75: SBD | M(R(X)) - D - (NOT DF) → DF, D
-                    int result = this.emulator.getBus().readByte(getR(getX())) - getD() - (getDF() ? 0 : 1);
+                    int result = this.systemBus.getBus().readByte(getR(getX())) - getD() - (getDF() ? 0 : 1);
                     setD(result);
                     setDF(result >= 0);
                     yield HANDLED;
@@ -503,19 +504,19 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x7 -> { // 77: SMB | D - M(R(X)) - (NOT DF) → DF, D
-                    int result = getD() - this.emulator.getBus().readByte(getR(getX())) - (getDF() ? 0 : 1);
+                    int result = getD() - this.systemBus.getBus().readByte(getR(getX())) - (getDF() ? 0 : 1);
                     setD(result);
                     setDF(result >= 0);
                     yield HANDLED;
                 }
                 case 0x8 -> { // 78: SAV | T → M(R(X))
-                    this.emulator.getBus().writeByte(getR(getX()), getT());
+                    this.systemBus.getBus().writeByte(getR(getX()), getT());
                     yield HANDLED;
                 }
                 case 0x9 -> { // 79: MARK | (X, P) → T; (X, P) → M(R(2)), THEN P → X; R(2) - 1 → R(2)
                     int value = (getX() << 4) | getP();
                     setT(value);
-                    this.emulator.getBus().writeByte(getR(2), value);
+                    this.systemBus.getBus().writeByte(getR(2), value);
                     setX(getP());
                     setR(2, getR(2) - 1);
                     yield HANDLED;
@@ -529,14 +530,14 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xC -> { // 7C: ADCI | M(R(P)) + D + DF → DF, D; R(P) + 1 → R(P)
-                    int result = this.emulator.getBus().readByte(getR(getP())) + getD() + (getDF() ? 1 : 0);
+                    int result = this.systemBus.getBus().readByte(getR(getP())) + getD() + (getDF() ? 1 : 0);
                     setD(result);
                     setDF(result > 0xFF);
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0xD -> { // 7D: SBDI | M(R(P)) - D - (Not DF) → DF, D; R(P) + 1 → R(P)
-                    int result = this.emulator.getBus().readByte(getR(getP())) - getD() - (getDF() ? 0 : 1);
+                    int result = this.systemBus.getBus().readByte(getR(getP())) - getD() - (getDF() ? 0 : 1);
                     setD(result);
                     setDF(result >= 0);
                     setR(getP(), getR(getP()) + 1);
@@ -550,7 +551,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xF -> { // 7F: SMBI | D - M(R(P)) - (NOT DF) → DF, D; R(P) + 1 → R(P)
-                    int result = getD() - this.emulator.getBus().readByte(getR(getP())) - (getDF() ? 0 : 1);
+                    int result = getD() - this.systemBus.getBus().readByte(getR(getP())) - (getDF() ? 0 : 1);
                     setD(result);
                     setDF(result >= 0);
                     setR(getP(), getR(getP()) + 1);
@@ -582,23 +583,23 @@ public class CDP1802 implements Processor, Closeable {
                 case 0x0 -> { // C0: LBR | M(R(P)) → R(P). 1, M(R(P) + 1) → R(P).0
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
                         setR1(getP(), getB());
-                        setR0(getP(), this.emulator.getBus().readByte(getR(getP())));
+                        setR0(getP(), this.systemBus.getBus().readByte(getR(getP())));
                     }
                     yield HANDLED;
                 }
                 case 0x1 -> { // C1: LBQ | IF Q = 1, M(R(P)) → R(P).1, M(R(P) + 1) → R(P).0, ELSE R(P) + 2 → R(P)
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
-                        int lowByte = this.emulator.getBus().readByte(getR(getP()));
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         if (getQ()) {
                             setR1(getP(), getB());
                             setR0(getP(), lowByte);
@@ -611,11 +612,11 @@ public class CDP1802 implements Processor, Closeable {
                 case 0x2 -> { // C2: LBZ | IF D = 0, M(R(P)) → R(P).1, M(R(P) + 1) → R(P).0, ELSE R(P) + 2 → R(P)
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
-                        int lowByte = this.emulator.getBus().readByte(getR(getP()));
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         if (getD() == 0) {
                             setR1(getP(), getB());
                             setR0(getP(), lowByte);
@@ -628,11 +629,11 @@ public class CDP1802 implements Processor, Closeable {
                 case 0x3 -> { // C3: LBDF | IF DF = 1, M(R(P)) → R(P).1, M(R(P) + 1) → R(P).0, ELSE R(P) + 2 → R(P)
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
-                        int lowByte = this.emulator.getBus().readByte(getR(getP()));
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         if (getDF()) {
                             setR1(getP(), getB());
                             setR0(getP(), lowByte);
@@ -644,12 +645,12 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0x4 -> { // C4: NOP | NO OPERATION
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     yield HANDLED;
                 }
                 case 0x5 -> { // C5: LSNQ | IF Q = 0, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (!getQ()) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -657,7 +658,7 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0x6 -> { // LSNZ | IF D Not 0, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (getD() != 0) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -665,7 +666,7 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0x7 -> { // C7: LSNF | IF DF = 0, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (!getDF()) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -673,18 +674,18 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0x8 -> { // C8: NLBR | R(P) + 2 → R(P)
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0x9 -> { // C9: LBNQ | IF Q = 0, M(R(P)) → R(P).1, M(R(P) + 1) → R(P).0, ELSE R(P) + 2 → R(P)
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
-                        int lowByte = this.emulator.getBus().readByte(getR(getP()));
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         if (!getQ()) {
                             setR1(getP(), getB());
                             setR0(getP(), lowByte);
@@ -697,11 +698,11 @@ public class CDP1802 implements Processor, Closeable {
                 case 0xA -> { // CA: LBNZ | IF D Not 0, M(R(P)) → R(P).1, M(R(P) + 1) → R(P).0, ELSE R(P) + 2 → R(P)
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
-                        int lowByte = this.emulator.getBus().readByte(getR(getP()));
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         if (getD() != 0) {
                             setR1(getP(), getB());
                             setR0(getP(), lowByte);
@@ -714,11 +715,11 @@ public class CDP1802 implements Processor, Closeable {
                 case 0xB -> { // CB: LBNF | IF DF = 0, M(R(P)) → R(P).1, M(R(P) + 1) → R(P).0, ELSE
                     if (!this.longInstruction) {
                         this.longInstruction = true;
-                        setB(this.emulator.getBus().readByte(getR(getP())));
+                        setB(this.systemBus.getBus().readByte(getR(getP())));
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
-                        int lowByte = this.emulator.getBus().readByte(getR(getP()));
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         if (!getDF()) {
                             setR1(getP(), getB());
                             setR0(getP(), lowByte);
@@ -730,7 +731,7 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0xC -> { // CC: LSIE | IF IE = 1, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (getIE()) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -738,7 +739,7 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0xD -> { // CD: LSQ | IF Q = 1, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (getQ()) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -746,7 +747,7 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0xE -> { // CE: LSZ | IF D = 0, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (getD() == 0) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -754,7 +755,7 @@ public class CDP1802 implements Processor, Closeable {
                 }
                 case 0xF -> { // CF: LSDF | IF DF = 1, R(P) + 2 → R(P), ELSE CONTINUE
                     this.longInstruction = !this.longInstruction;
-                    this.emulator.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
+                    this.systemBus.getBus().readByte(getR(getP())); // Dummy read for accurate bus activity
                     if (getDF()) {
                         setR(getP(), getR(getP()) + 1);
                     }
@@ -774,29 +775,29 @@ public class CDP1802 implements Processor, Closeable {
             }
             case 0xF -> switch (getN()) {
                 case 0x0 -> { // F0: LDX | M(R(X)) → D
-                    setD(this.emulator.getBus().readByte(getR(getX())));
+                    setD(this.systemBus.getBus().readByte(getR(getX())));
                     yield HANDLED;
                 }
                 case 0x1 -> { // F1: OR | M(R(X)) OR D → D
-                    setD(this.emulator.getBus().readByte(getR(getX())) | getD());
+                    setD(this.systemBus.getBus().readByte(getR(getX())) | getD());
                     yield HANDLED;
                 }
                 case 0x2 -> { // F2: AND | M(R(X)) AND D → D
-                    setD(this.emulator.getBus().readByte(getR(getX())) & getD());
+                    setD(this.systemBus.getBus().readByte(getR(getX())) & getD());
                     yield HANDLED;
                 }
                 case 0x3 -> { // F3: XOR | M(R(X)) XOR D → D
-                    setD(this.emulator.getBus().readByte(getR(getX())) ^ getD());
+                    setD(this.systemBus.getBus().readByte(getR(getX())) ^ getD());
                     yield HANDLED;
                 }
                 case 0x4 -> { // F4: ADD | M(R(X)) + D → DF, D
-                    int result = this.emulator.getBus().readByte(getR(getX())) + getD();
+                    int result = this.systemBus.getBus().readByte(getR(getX())) + getD();
                     setD(result);
                     setDF(result > 0xFF);
                     yield HANDLED;
                 }
                 case 0x5 -> { // F5: SD | M(R(X)) - D → DF, D
-                    int result = this.emulator.getBus().readByte(getR(getX())) - getD();
+                    int result = this.systemBus.getBus().readByte(getR(getX())) - getD();
                     setD(result);
                     setDF(result >= 0);
                     yield HANDLED;
@@ -808,40 +809,40 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0x7 -> { // F7: SM | D - M(R(X)) → DF, D
-                    int result = getD() - this.emulator.getBus().readByte(getR(getX()));
+                    int result = getD() - this.systemBus.getBus().readByte(getR(getX()));
                     setD(result);
                     setDF(result >= 0);
                     yield HANDLED;
                 }
                 case 0x8 -> { // F8: LDI | M(R(P)) → D; R(P) + 1 → R(P)
-                    setD(this.emulator.getBus().readByte(getR(getP())));
+                    setD(this.systemBus.getBus().readByte(getR(getP())));
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0x9 -> { // F9: ORI | M(R(P)) OR D → D; R(P) + 1 → R(P)
-                    setD(this.emulator.getBus().readByte(getR(getP())) | getD());
+                    setD(this.systemBus.getBus().readByte(getR(getP())) | getD());
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0xA -> { // FA: ANI | M(R(P)) AND D → D; R(P) + 1 → R(P)
-                    setD(this.emulator.getBus().readByte(getR(getP())) & getD());
+                    setD(this.systemBus.getBus().readByte(getR(getP())) & getD());
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0xB -> { // FB: XRI | M(R(P)) XOR D → D; R(P) + 1 → R(P)
-                    setD(this.emulator.getBus().readByte(getR(getP())) ^ getD());
+                    setD(this.systemBus.getBus().readByte(getR(getP())) ^ getD());
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0xC -> { // FC: ADI | M(R(P)) + D → DF, D; R(P) + 1 → R(P)
-                    int result = this.emulator.getBus().readByte(getR(getP())) + getD();
+                    int result = this.systemBus.getBus().readByte(getR(getP())) + getD();
                     setD(result);
                     setDF(result > 0xFF);
                     setR(getP(), getR(getP()) + 1);
                     yield HANDLED;
                 }
                 case 0xD -> { // FD: SDI | M(R(P)) - D → DF, D; R(P) + 1 → R(P)
-                    int result = this.emulator.getBus().readByte(getR(getP())) - getD();
+                    int result = this.systemBus.getBus().readByte(getR(getP())) - getD();
                     setD(result);
                     setDF(result >= 0);
                     setR(getP(), getR(getP()) + 1);
@@ -854,7 +855,7 @@ public class CDP1802 implements Processor, Closeable {
                     yield HANDLED;
                 }
                 case 0xF -> { // FF: SMI | D - M(R(P)) → DF, D; R(P) + 1 → R(P)
-                    int result = getD() - this.emulator.getBus().readByte(getR(getP()));
+                    int result = getD() - this.systemBus.getBus().readByte(getR(getP()));
                     setD(result);
                     setDF(result >= 0);
                     setR(getP(), getR(getP()) + 1);
@@ -866,17 +867,8 @@ public class CDP1802 implements Processor, Closeable {
         };
     }
 
-    @Override
-    public void close() throws IOException {
-        this.emulator.getEmulatorSettings().getJchip().getDataManager().putTransient(REGISTERS_ENTRY_KEY, Arrays.copyOf(this.registers, this.registers.length));
-    }
-
     public static boolean isHandled(int flags) {
-        return isSet(flags, HANDLED);
-    }
-
-    public static boolean isSet(int flags, int mask) {
-        return (flags & mask) != 0;
+        return Processor.testBit(flags, HANDLED);
     }
 
     public enum State {
@@ -897,6 +889,22 @@ public class CDP1802 implements Processor, Closeable {
             return this == S2_DMA_IN || this == S2_DMA_OUT;
         }
 
+
+    }
+
+    public interface SystemBus extends io.github.arkosammy12.jemu.systems.SystemBus {
+
+        IODevice.DmaStatus getDmaStatus();
+
+        boolean anyInterrupting();
+
+        int dispatchDmaIn(int address);
+
+        void dispatchDmaOut(int address, int value);
+
+        int dispatchInput(int port);
+
+        void dispatchOutput(int port, int value);
 
     }
 

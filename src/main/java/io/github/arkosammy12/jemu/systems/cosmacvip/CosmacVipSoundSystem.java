@@ -22,7 +22,7 @@ public class CosmacVipSoundSystem implements SoundSystem {
     };
 
     public CosmacVipSoundSystem(Emulator emulator) {
-        this.jemu = emulator.getEmulatorSettings().getJchip();
+        this.jemu = emulator.getEmulatorSettings().getJemu();
     }
 
     public void pushSamples(int soundTimer) {

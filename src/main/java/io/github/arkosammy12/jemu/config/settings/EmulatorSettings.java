@@ -12,7 +12,7 @@ import java.util.Optional;
 
 public interface EmulatorSettings {
 
-    Jemu getJchip();
+    Jemu getJemu();
 
     int[] getRom();
 

@@ -3,8 +3,9 @@ package io.github.arkosammy12.jemu.systems.cosmacvip;
 import io.github.arkosammy12.jemu.config.settings.CosmacVipEmulatorSettings;
 import io.github.arkosammy12.jemu.systems.Bus;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.systems.ReadWriteBus;
 
-public class CosmacVipBus implements Bus {
+public class CosmacVipBus implements ReadWriteBus {
 
     private static final int[] MONITOR_ROM = {
             0xF8, 0x80, 0xB2, 0xF8, 0x08, 0xA2, 0xE2, 0xD2,
@@ -184,6 +185,7 @@ public class CosmacVipBus implements Bus {
         }
     }
 
+    @Override
     public int readByte(int address) {
         int actualAddress = this.addressMsbLatched ? address | 0x8000 : address;
         int value;
@@ -196,6 +198,7 @@ public class CosmacVipBus implements Bus {
         return value;
     }
 
+    @Override
     public void writeByte(int address, int value) {
         int actualAddress = this.addressMsbLatched ? address | 0x8000 : address;
         this.dataBus = value;

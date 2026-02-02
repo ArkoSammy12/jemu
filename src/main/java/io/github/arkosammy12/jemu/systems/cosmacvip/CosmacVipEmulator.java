@@ -1,5 +1,7 @@
 package io.github.arkosammy12.jemu.systems.cosmacvip;
 
+import io.github.arkosammy12.jemu.cpu.CDP1802;
+import io.github.arkosammy12.jemu.exceptions.InvalidInstructionException;
 import io.github.arkosammy12.jemu.systems.Emulator;
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.config.settings.CosmacVipEmulatorSettings;
@@ -17,10 +19,11 @@ import java.awt.event.KeyAdapter;
 import java.util.List;
 import java.util.function.Function;
 
+import static io.github.arkosammy12.jemu.cpu.CDP1802.isHandled;
 import static io.github.arkosammy12.jemu.systems.cosmacvip.IODevice.DmaStatus.IN;
 import static io.github.arkosammy12.jemu.systems.cosmacvip.IODevice.DmaStatus.OUT;
 
-public class CosmacVipEmulator implements Emulator {
+public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     public static final int CYCLES_PER_FRAME = 3668;
     public static final String REGISTERS_ENTRY_KEY = "cosmacvip.processor.registers";
@@ -44,7 +47,7 @@ public class CosmacVipEmulator implements Emulator {
 
     public CosmacVipEmulator(CosmacVipEmulatorSettings emulatorSettings, CosmacVipEmulatorSettings.Chip8Interpreter chip8Interpreter) {
         try {
-            this.jemu = emulatorSettings.getJchip();
+            this.jemu = emulatorSettings.getJemu();
             this.settings = emulatorSettings;
             this.chip8Interpreter = chip8Interpreter;
             this.system = emulatorSettings.getSystem();
@@ -67,6 +70,7 @@ public class CosmacVipEmulator implements Emulator {
             this.debuggerSchema = this.createDebuggerSchema();
             this.disassembler = new CosmacVipDisassembler<>(this);
             this.disassembler.setProgramCounterSupplier(this::getActualCurrentInstructionAddress);
+            this.processor.restoreRegisters(this.getEmulatorSettings());
         } catch (Exception e) {
             throw new EmulatorException(e);
         }
@@ -215,7 +219,7 @@ public class CosmacVipEmulator implements Emulator {
 
     private void runCycle() {
         CDP1802.State currentState = this.processor.getCurrentState();
-        this.processor.cycle();
+        this.cycleCpu();
         this.cycleIoDevices();
         this.processor.nextState();
 
@@ -227,7 +231,7 @@ public class CosmacVipEmulator implements Emulator {
 
     @Override
     public void executeCycle() {
-        this.processor.cycle();
+        this.cycleCpu();
         this.cycleIoDevices();
         this.processor.nextState();
         this.display.flush();
@@ -237,6 +241,13 @@ public class CosmacVipEmulator implements Emulator {
     private int getActualCurrentInstructionAddress() {
         int address = this.processor.getCurrentInstructionAddress();
         return this.bus.isAddressMsbLatched() ? address | 0x8000 : address;
+    }
+
+    private void cycleCpu() {
+        int flags = this.processor.cycle();
+        if (!isHandled(flags)) {
+            throw new InvalidInstructionException((this.processor.getI() << 4) | this.processor.getN(), this.getSystem());
+        }
     }
 
     private void cycleIoDevices() {
@@ -261,7 +272,7 @@ public class CosmacVipEmulator implements Emulator {
     public void close() {
         try {
             if (this.processor != null) {
-                this.processor.close();
+                this.processor.saveRegisters(this.getEmulatorSettings());
             }
             if (this.display != null) {
                 this.display.close();

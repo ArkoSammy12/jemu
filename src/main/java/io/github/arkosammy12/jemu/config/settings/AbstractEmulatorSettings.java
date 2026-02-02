@@ -24,10 +24,11 @@ public abstract class AbstractEmulatorSettings implements EmulatorSettings {
         byte[] rawRom = rawRomOptional.get();
         int[] rom = EmulatorSettings.loadRom(rawRom);
         this.rom = Arrays.copyOf(rom, rom.length);
+
     }
 
     @Override
-    public Jemu getJchip() {
+    public Jemu getJemu() {
         return this.jemu;
     }
 

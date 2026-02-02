@@ -43,7 +43,7 @@ public class CosmacVIPKeypad extends KeyAdapter implements IODevice {
     }
 
     public CosmacVIPKeypad(CosmacVipEmulator emulator) {
-        this.jemu = emulator.getEmulatorSettings().getJchip();
+        this.jemu = emulator.getEmulatorSettings().getJemu();
         this.emulator = emulator;
     }
 

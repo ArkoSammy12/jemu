@@ -1,5 +1,6 @@
 package io.github.arkosammy12.jemu.util;
 
+import io.github.arkosammy12.jemu.config.settings.GameBoyEmulatorSettings;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.config.Serializable;
@@ -13,9 +14,10 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 public enum System implements DisplayNameProvider, Serializable {
-    HYBRID_CHIP_8("hybrid-chip-8", "HYBRID CHIP-8", (jemu, settings) -> new CosmacVipEmulatorSettings(jemu, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8, settings)),
-    HYBRID_CHIP_8X("hybrid-chip-8x", "HYBRID CHIP-8X", (jemu, settings) -> new CosmacVipEmulatorSettings(jemu, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8X, settings)),
-    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", (jemu, settings) -> new CosmacVipEmulatorSettings(jemu, CosmacVipEmulatorSettings.Chip8Interpreter.NONE, settings));
+    HYBRID_CHIP_8("hybrid-chip-8", "HYBRID CHIP-8", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8)),
+    HYBRID_CHIP_8X("hybrid-chip-8x", "HYBRID CHIP-8X", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8X)),
+    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.NONE)),
+    GAME_BOY("game-boy", "Game Boy", (jemu, initializer) -> new GameBoyEmulatorSettings(jemu, initializer, GameBoyEmulatorSettings.Model.DMG));
 
     private final String identifier;
     private final String displayName;

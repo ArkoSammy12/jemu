@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.systems;
 
 import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
+import io.github.arkosammy12.jemu.cpu.Processor;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.ui.debugger.DebuggerSchema;
 import io.github.arkosammy12.jemu.util.System;
@@ -25,6 +26,7 @@ public interface Emulator extends AutoCloseable {
 
     List<KeyAdapter> getKeyAdapters();
 
+    @Nullable
     DebuggerSchema getDebuggerSchema();
 
     @Nullable

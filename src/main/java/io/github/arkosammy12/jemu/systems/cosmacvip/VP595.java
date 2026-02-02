@@ -15,7 +15,7 @@ public class VP595 implements SoundSystem, IODevice {
     private double phase = 0.0;
 
     public VP595(Emulator emulator) {
-        this.jemu = emulator.getEmulatorSettings().getJchip();
+        this.jemu = emulator.getEmulatorSettings().getJemu();
     }
 
     @Override

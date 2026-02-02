@@ -115,7 +115,7 @@ public class MemoryTable extends JTable {
         if (emulator == null) {
             return;
         }
-        Jemu.State state = emulator.getEmulatorSettings().getJchip().getState();
+        Jemu.State state = emulator.getEmulatorSettings().getJemu().getState();
         boolean updateChangeHighlights = state.isRunning() || state.isStepping();
         SwingUtilities.invokeLater(() -> {
             if (!this.isShowing()) {
