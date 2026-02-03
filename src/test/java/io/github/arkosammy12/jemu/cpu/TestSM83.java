@@ -26,7 +26,7 @@ public class TestSM83 extends SM83 {
         this.setL(initialState.getL());
 
         this.setIME(initialState.getIME() != 0);
-        this.setEI(initialState.getIE() != 0);
+        //his.setEI(initialState.getIE() != 0);
     }
 
 }
