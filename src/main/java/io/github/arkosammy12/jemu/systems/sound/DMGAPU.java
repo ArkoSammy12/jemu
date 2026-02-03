@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.systems.sound;
 
-import io.github.arkosammy12.jemu.systems.gameboy.GameBoyEmulator;
+import io.github.arkosammy12.jemu.systems.GameBoyEmulator;
 
 public class DMGAPU implements SoundSystem {
 

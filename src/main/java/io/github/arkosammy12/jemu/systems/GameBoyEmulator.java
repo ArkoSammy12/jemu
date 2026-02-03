@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.systems.gameboy;
+package io.github.arkosammy12.jemu.systems;
 
 import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
 import io.github.arkosammy12.jemu.config.settings.GameBoyEmulatorSettings;
@@ -7,7 +7,6 @@ import io.github.arkosammy12.jemu.systems.cpu.Processor;
 import io.github.arkosammy12.jemu.systems.cpu.SM83;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.main.Jemu;
-import io.github.arkosammy12.jemu.systems.*;
 import io.github.arkosammy12.jemu.systems.sound.DMGAPU;
 import io.github.arkosammy12.jemu.systems.sound.SoundSystem;
 import io.github.arkosammy12.jemu.systems.video.DMGPPU;

@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.config.settings;
 import io.github.arkosammy12.jemu.config.initializers.CommonInitializer;
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.systems.Emulator;
-import io.github.arkosammy12.jemu.systems.gameboy.GameBoyEmulator;
+import io.github.arkosammy12.jemu.systems.GameBoyEmulator;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 import io.github.arkosammy12.jemu.util.System;
 
