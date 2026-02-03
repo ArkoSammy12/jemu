@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.ui.video;
 
-import io.github.arkosammy12.jemu.systems.Display;
+import io.github.arkosammy12.jemu.systems.video.Display;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 
 import javax.swing.*;

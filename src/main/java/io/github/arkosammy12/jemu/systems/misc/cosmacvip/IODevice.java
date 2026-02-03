@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems.misc.cosmacvip;
 
 public interface IODevice {
 

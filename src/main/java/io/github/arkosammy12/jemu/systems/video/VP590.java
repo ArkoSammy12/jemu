@@ -1,4 +1,6 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems.video;
+
+import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
 
 import java.util.Arrays;
 

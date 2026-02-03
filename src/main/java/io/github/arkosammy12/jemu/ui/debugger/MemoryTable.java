@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.ui.debugger;
 
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.systems.Emulator;
-import io.github.arkosammy12.jemu.systems.Bus;
+import io.github.arkosammy12.jemu.systems.bus.Bus;
 import io.github.arkosammy12.jemu.main.MainWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

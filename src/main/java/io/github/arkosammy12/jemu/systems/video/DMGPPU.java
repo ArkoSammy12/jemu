@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.systems.gameboy;
+package io.github.arkosammy12.jemu.systems.video;
 
-import io.github.arkosammy12.jemu.systems.Display;
+import io.github.arkosammy12.jemu.systems.gameboy.GameBoyEmulator;
 
 public class DMGPPU<E extends GameBoyEmulator> extends Display<E> {
 

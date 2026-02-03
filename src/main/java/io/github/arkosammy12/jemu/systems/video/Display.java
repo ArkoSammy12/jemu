@@ -1,5 +1,6 @@
-package io.github.arkosammy12.jemu.systems;
+package io.github.arkosammy12.jemu.systems.video;
 
+import io.github.arkosammy12.jemu.systems.Emulator;
 import io.github.arkosammy12.jemu.ui.video.DisplayRenderer;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 

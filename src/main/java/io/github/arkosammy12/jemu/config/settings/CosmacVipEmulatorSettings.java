@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.config.settings;
 
 import io.github.arkosammy12.jemu.config.initializers.CommonInitializer;
-import io.github.arkosammy12.jemu.systems.cosmacvip.CosmacVipEmulator;
+import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
 import io.github.arkosammy12.jemu.systems.Emulator;
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.util.DisplayAngle;

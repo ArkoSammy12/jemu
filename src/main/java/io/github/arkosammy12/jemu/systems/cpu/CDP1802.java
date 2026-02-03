@@ -1,12 +1,12 @@
-package io.github.arkosammy12.jemu.cpu;
+package io.github.arkosammy12.jemu.systems.cpu;
 
 import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
-import io.github.arkosammy12.jemu.systems.cosmacvip.IODevice;
+import io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice;
 
 import java.util.Arrays;
 
-import static io.github.arkosammy12.jemu.cpu.CDP1802.State.*;
-import static io.github.arkosammy12.jemu.systems.cosmacvip.CosmacVipEmulator.REGISTERS_ENTRY_KEY;
+import static io.github.arkosammy12.jemu.systems.cpu.CDP1802.State.*;
+import static io.github.arkosammy12.jemu.systems.CosmacVipEmulator.REGISTERS_ENTRY_KEY;
 
 public class CDP1802 implements Processor {
 

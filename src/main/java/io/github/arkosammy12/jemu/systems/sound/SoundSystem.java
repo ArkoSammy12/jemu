@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.systems;
+package io.github.arkosammy12.jemu.systems.sound;
 
 public interface SoundSystem {
 

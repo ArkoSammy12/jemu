@@ -1,6 +1,8 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems.bus;
 
 import io.github.arkosammy12.jemu.config.settings.CosmacVipEmulatorSettings;
+import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
+import io.github.arkosammy12.jemu.systems.video.VP590;
 
 public class HybridChip8XBus extends CosmacVipBus {
 

@@ -1,8 +1,9 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems;
 
-import io.github.arkosammy12.jemu.cpu.CDP1802;
+import io.github.arkosammy12.jemu.systems.bus.CosmacVipBus;
+import io.github.arkosammy12.jemu.systems.bus.HybridChip8XBus;
+import io.github.arkosammy12.jemu.systems.cpu.CDP1802;
 import io.github.arkosammy12.jemu.exceptions.InvalidInstructionException;
-import io.github.arkosammy12.jemu.systems.Emulator;
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.config.settings.CosmacVipEmulatorSettings;
 import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
@@ -10,7 +11,13 @@ import io.github.arkosammy12.jemu.disassembler.CosmacVipDisassembler;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.disassembler.AbstractDisassembler;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.systems.SoundSystem;
+import io.github.arkosammy12.jemu.systems.misc.cosmacvip.CosmacVIPKeypad;
+import io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice;
+import io.github.arkosammy12.jemu.systems.sound.CosmacVipSoundSystem;
+import io.github.arkosammy12.jemu.systems.sound.SoundSystem;
+import io.github.arkosammy12.jemu.systems.sound.VP595;
+import io.github.arkosammy12.jemu.systems.video.CDP1861;
+import io.github.arkosammy12.jemu.systems.video.VP590;
 import io.github.arkosammy12.jemu.ui.debugger.DebuggerSchema;
 import io.github.arkosammy12.jemu.util.System;
 import org.jetbrains.annotations.Nullable;
@@ -19,9 +26,9 @@ import java.awt.event.KeyAdapter;
 import java.util.List;
 import java.util.function.Function;
 
-import static io.github.arkosammy12.jemu.cpu.CDP1802.isHandled;
-import static io.github.arkosammy12.jemu.systems.cosmacvip.IODevice.DmaStatus.IN;
-import static io.github.arkosammy12.jemu.systems.cosmacvip.IODevice.DmaStatus.OUT;
+import static io.github.arkosammy12.jemu.systems.cpu.CDP1802.isHandled;
+import static io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice.DmaStatus.IN;
+import static io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice.DmaStatus.OUT;
 
 public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 

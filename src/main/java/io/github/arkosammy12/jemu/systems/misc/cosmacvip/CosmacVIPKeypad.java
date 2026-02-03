@@ -1,6 +1,7 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems.misc.cosmacvip;
 
 import io.github.arkosammy12.jemu.main.Jemu;
+import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
 import io.github.arkosammy12.jemu.util.KeyboardLayout;
 
 import java.awt.event.KeyAdapter;

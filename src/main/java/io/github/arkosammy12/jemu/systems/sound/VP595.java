@@ -1,11 +1,11 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems.sound;
 
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.systems.Emulator;
 import io.github.arkosammy12.jemu.main.AudioRenderer;
-import io.github.arkosammy12.jemu.systems.SoundSystem;
+import io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice;
 
-import static io.github.arkosammy12.jemu.systems.cosmacvip.CosmacVipSoundSystem.SQUARE_WAVE_AMPLITUDE;
+import static io.github.arkosammy12.jemu.systems.sound.CosmacVipSoundSystem.SQUARE_WAVE_AMPLITUDE;
 
 public class VP595 implements SoundSystem, IODevice {
 

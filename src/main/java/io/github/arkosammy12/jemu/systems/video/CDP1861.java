@@ -1,6 +1,7 @@
-package io.github.arkosammy12.jemu.systems.cosmacvip;
+package io.github.arkosammy12.jemu.systems.video;
 
-import io.github.arkosammy12.jemu.systems.Display;
+import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
+import io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice;
 
 public class CDP1861<E extends CosmacVipEmulator> extends Display<E> implements IODevice {
 

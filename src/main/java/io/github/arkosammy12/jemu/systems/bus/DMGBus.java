@@ -1,7 +1,6 @@
-package io.github.arkosammy12.jemu.systems.gameboy;
+package io.github.arkosammy12.jemu.systems.bus;
 
-import io.github.arkosammy12.jemu.systems.Bus;
-import io.github.arkosammy12.jemu.systems.ReadWriteBus;
+import io.github.arkosammy12.jemu.systems.gameboy.GameBoyEmulator;
 
 public class DMGBus implements ReadWriteBus {
 

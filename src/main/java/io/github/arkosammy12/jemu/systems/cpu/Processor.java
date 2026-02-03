@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.cpu;
+package io.github.arkosammy12.jemu.systems.cpu;
 
 public interface Processor {
 
