@@ -74,10 +74,6 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
 
         this.cpu.acceptTestCase(this.testCase);
 
-        if (this.testCase.getName().startsWith("C0 0F BE")) {
-            int a = 1;
-        }
-
         for (List<Object> cycle : cycles) {
             this.cpu.cycle();
             this.cpu.nextState();
