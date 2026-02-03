@@ -1,8 +1,9 @@
 package io.github.arkosammy12.jemu.ssts.sm83;
 
-import io.github.arkosammy12.jemu.cpu.SingleStepSM83;
+import io.github.arkosammy12.jemu.cpu.TestSM83;
 import io.github.arkosammy12.jemu.systems.bus.ReadWriteBus;
 import io.github.arkosammy12.jemu.systems.SystemBus;
+import io.github.arkosammy12.jemu.util.FlatTestBus;
 import org.tinylog.Logger;
 import java.util.List;
 
@@ -12,13 +13,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class SM83TestCaseBench implements SystemBus {
 
     private final SM83TestCase testCase;
-    private final SingleStepSM83 cpu;
-    private final SM83TestBus bus;
+    private final TestSM83 cpu;
+    private final FlatTestBus bus;
 
     public SM83TestCaseBench(SM83TestCase testCase) {
         this.testCase = testCase;
-        this.cpu = new SingleStepSM83(this, testCase);
-        this.bus = new SM83TestBus(testCase);
+        this.cpu = new TestSM83(this);
+        this.cpu.acceptTestCase(testCase);
+        this.bus = new FlatTestBus(0xFFFF + 1, 0xFFFF);
+        List<List<Integer>> ram = testCase.getInitialState().getRam();
+        for (List<Integer> ramElement : ram) {
+            this.bus.writeByte(ramElement.get(0), ramElement.get(1));
+        }
     }
 
     @Override
@@ -73,43 +79,6 @@ public class SM83TestCaseBench implements SystemBus {
             assertEquals(value, this.bus.readByte(address));
         }
 
-    }
-
-    private static class SM83TestBus implements ReadWriteBus {
-
-        private final int[] ram = new int[0xFFFF + 1];
-
-        private SM83TestBus(SM83TestCase testCase) {
-            for (List<Integer> ramElement : testCase.getInitialState().getRam()) {
-                this.ram[ramElement.get(0)] = ramElement.get(1);
-            }
-        }
-
-
-        @Override
-        public void writeByte(int address, int value) {
-            this.ram[address] = value & 0xFF;
-        }
-
-        @Override
-        public int readByte(int address) {
-            return this.ram[address];
-        }
-
-        @Override
-        public int getMemorySize() {
-            return this.ram.length;
-        }
-
-        @Override
-        public int getMemoryBoundsMask() {
-            return 0xFFFF;
-        }
-
-        @Override
-        public int getByte(int address) {
-            return this.readByte(address);
-        }
     }
 
 }

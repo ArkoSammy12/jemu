@@ -5,11 +5,13 @@ import io.github.arkosammy12.jemu.ssts.sm83.SM83TestState;
 import io.github.arkosammy12.jemu.systems.SystemBus;
 import io.github.arkosammy12.jemu.systems.cpu.SM83;
 
-public class SingleStepSM83 extends SM83 {
+public class TestSM83 extends SM83 {
 
-    public SingleStepSM83(SystemBus systemBus, SM83TestCase testCase) {
+    public TestSM83(SystemBus systemBus) {
         super(systemBus);
+    }
 
+    public void acceptTestCase(SM83TestCase testCase) {
         SM83TestState initialState = testCase.getInitialState();
 
         this.setPC(initialState.getPC());
@@ -26,6 +28,5 @@ public class SingleStepSM83 extends SM83 {
         this.setIME(initialState.getIME() != 0);
         this.setEI(initialState.getIE() != 0);
     }
-
 
 }

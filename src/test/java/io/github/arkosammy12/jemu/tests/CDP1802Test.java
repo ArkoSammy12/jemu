@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.tests;
 
-import io.github.arkosammy12.jemu.ssts.sm83.SM83TestBench;
+import io.github.arkosammy12.jemu.ssts.cdp1802.CDP1802TestBench;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -11,15 +11,15 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-public class SM83Test {
+public class CDP1802Test {
 
     @Test
-    public void sm83_ssts() {
-        URL url = SM83Test.class.getClassLoader().getResource("ssts/sm83/v1");
+    public void cdp1802_ssts() {
+        URL url = SM83Test.class.getClassLoader().getResource("ssts/cdp1802/v1");
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
             testFilePaths.forEach(path -> {
                 try {
-                    SM83TestBench testBench = new SM83TestBench(path);
+                    CDP1802TestBench testBench = new CDP1802TestBench(path);
                     testBench.runTest();
                 } catch (IOException e) {
                     throw new RuntimeException(e);

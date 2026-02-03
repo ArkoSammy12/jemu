@@ -587,8 +587,9 @@ public class CDP1802 implements Processor {
                         setR(getP(), getR(getP()) + 1);
                     } else {
                         this.longInstruction = false;
+                        int lowByte = this.systemBus.getBus().readByte(getR(getP()));
                         setR1(getP(), getB());
-                        setR0(getP(), this.systemBus.getBus().readByte(getR(getP())));
+                        setR0(getP(), lowByte);
                     }
                     yield HANDLED;
                 }

@@ -11,7 +11,7 @@ import java.util.List;
 
 public class SM83TestBench {
 
-    SM83TestFile testFile;
+    private final SM83TestFile testFile;
 
     public SM83TestBench(Path filePath) throws IOException {
         Gson gson = new Gson();
@@ -20,7 +20,7 @@ public class SM83TestBench {
     }
 
     public void runTest() {
-        List<SM83TestCase> testCases = this.testFile.getTestCases();
+        List<SM83TestCase> testCases = this.testFile.testCases();
         for (SM83TestCase testCase : testCases) {
             SM83TestCaseBench testCaseBench = new SM83TestCaseBench(testCase);
             testCaseBench.runTest();
