@@ -8,7 +8,7 @@ import io.github.arkosammy12.jemu.systems.cpu.SM83;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyCartridge;
-import io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyMMIOController;
+import io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyMMIOBus;
 import io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyTimerController;
 import io.github.arkosammy12.jemu.systems.sound.DMGAPU;
 import io.github.arkosammy12.jemu.systems.sound.SoundSystem;
@@ -38,7 +38,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     private final DMGAPU apu;
 
     private final GameBoyCartridge cartridge;
-    private final GameBoyMMIOController mmioController;
+    private final GameBoyMMIOBus mmioController;
     private final GameBoyTimerController timerController;
 
     public GameBoyEmulator(GameBoyEmulatorSettings emulatorSettings) {
@@ -52,7 +52,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.apu = new DMGAPU(this);
 
         this.cartridge = GameBoyCartridge.getCartridge(this);
-        this.mmioController = new GameBoyMMIOController(this);
+        this.mmioController = new GameBoyMMIOBus(this);
         this.timerController = new GameBoyTimerController(this);
     }
 
@@ -100,7 +100,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.cartridge;
     }
 
-    public GameBoyMMIOController getMMIOController() {
+    public GameBoyMMIOBus getMMIOController() {
         return this.mmioController;
     }
 

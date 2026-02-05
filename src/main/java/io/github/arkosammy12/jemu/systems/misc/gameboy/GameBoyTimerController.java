@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.systems.GameBoyEmulator;
 import io.github.arkosammy12.jemu.systems.bus.Bus;
 import io.github.arkosammy12.jemu.systems.cpu.SM83;
 
-import static io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyMMIOController.*;
+import static io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyMMIOBus.*;
 
 // The implementation of this class assumes one cycle call per M-cycle, before the CPU is cycled
 public class GameBoyTimerController implements Bus {

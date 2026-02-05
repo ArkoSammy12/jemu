@@ -2,9 +2,8 @@ package io.github.arkosammy12.jemu.systems.misc.gameboy;
 
 import io.github.arkosammy12.jemu.systems.GameBoyEmulator;
 import io.github.arkosammy12.jemu.systems.bus.Bus;
-import org.tinylog.Logger;
 
-public class GameBoyMMIOController implements Bus {
+public class GameBoyMMIOBus implements Bus {
 
     public static final int JOYP_ADDR = 0xFF00;
     public static final int SB_ADDR = 0xFF01;
@@ -63,12 +62,10 @@ public class GameBoyMMIOController implements Bus {
 
     private final GameBoyEmulator emulator;
 
-    private int joypad;
-
     private int interruptFlag;
     private int interruptEnable;
 
-    public GameBoyMMIOController(GameBoyEmulator emulator) {
+    public GameBoyMMIOBus(GameBoyEmulator emulator) {
         this.emulator = emulator;
     }
 
@@ -87,9 +84,9 @@ public class GameBoyMMIOController implements Bus {
     @Override
     public void writeByte(int address, int value) {
         if (address == JOYP_ADDR) {
-            this.joypad = value & 0xFF;
+            //this.joypad = value & 0xFF;
         } else if (address == SB_ADDR) {
-            System.out.print((char) value);
+            System.out.print(value + " ");
         } else if (address == SC_ADDR) {
 
         } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
@@ -111,7 +108,7 @@ public class GameBoyMMIOController implements Bus {
     @Override
     public int readByte(int address) {
         if (address == JOYP_ADDR) {
-            return joypad;
+            return 0xFF;
         } else if (address == SB_ADDR) {
             return 0xFF;
         } else if (address == SC_ADDR) {

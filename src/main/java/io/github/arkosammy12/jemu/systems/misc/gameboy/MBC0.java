@@ -3,53 +3,48 @@ package io.github.arkosammy12.jemu.systems.misc.gameboy;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.GameBoyEmulator;
 
-import static io.github.arkosammy12.jemu.systems.bus.GameBoyBus.*;
 
 public class MBC0 extends GameBoyCartridge {
 
-    private final int externalRamLength;
-    protected int[] romX;
-    protected int[] externalRam;
+    private final int[] rom = new int[0x8000];
+    private final int[] sRam;
 
     public MBC0(GameBoyEmulator emulator, int cartridgeType) {
         super(emulator, cartridgeType);
-        this.romX = new int[0x4000];
 
-        System.arraycopy(this.originalRom, this.rom0.length, this.romX, 0, this.romX.length);
+        this.sRam = switch (this.ramSizeHeader) {
+            case 0x00 -> null;
+            case 0x01 -> new int[0x800];
+            case 0x02 -> new int[0x2000];
+            default -> throw new EmulatorException("Incompatible RAM size header \"0x%02X\" for MBC0 GameBoy cartridge type!".formatted(this.ramSizeHeader));
+        };
 
-        switch (this.ramBankAmount) {
-            case 0x00 -> this.externalRamLength = 0x0;
-            case 0x01 -> this.externalRamLength = 0x800;
-            case 0x02 -> this.externalRamLength = 0x2000;
-            default -> throw new EmulatorException("Illegal RAM size value " + String.format("%02X", this.ramBankAmount) + " for MBC0 cartridge!");
-        }
-
-        if (this.externalRamLength > 0) {
-            this.externalRam = new int[this.externalRamLength];
+        try {
+            System.arraycopy(this.originalRom, 0, this.rom, 0, this.rom.length);
+        } catch (Exception e) {
+            throw new EmulatorException("Error initializing GameBoy cartridge ROM!", e);
         }
 
     }
 
     @Override
     public void writeByte(int address, int value) {
-        if (address >= SRAM_START && address <= SRAM_END) {
-            address -= SRAM_START;
-            if (address < this.externalRamLength) {
-                this.externalRam[address] = value & 0xFF;
+        if (address >= 0xA000 && address <= 0xBFFF) {
+            address -= 0xA000;
+            if (this.sRam != null && address < this.sRam.length) {
+                this.sRam[address] = value & 0xFF;
             }
         }
     }
 
     @Override
     public int readByte(int address) {
-        if (address >= ROM0_START && address <= ROM0_END) {
-            return this.rom0[address - ROM0_START];
-        } else if (address >= ROMX_START && address <= ROMX_END) {
-            return this.romX[address - ROMX_START];
-        } else if (address >= SRAM_START && address <= SRAM_END) {
-            address -= SRAM_START;
-            if (address < this.externalRamLength) {
-                return this.externalRam[address];
+        if (address >= 0x0000 && address <= 0x7FFF) {
+            return this.rom[address];
+        } else if (address >= 0xA000 && address <= 0xBFFF) {
+            address -= 0xA000;
+            if (this.sRam != null && address < this.sRam.length) {
+                return this.sRam[address];
             } else {
                 return 0xFF;
             }
@@ -59,3 +54,4 @@ public class MBC0 extends GameBoyCartridge {
     }
 
 }
+
