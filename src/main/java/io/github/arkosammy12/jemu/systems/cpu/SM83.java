@@ -1,9 +1,26 @@
 package io.github.arkosammy12.jemu.systems.cpu;
 
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.systems.SystemBus;
 
 public class SM83 implements Processor {
+
+    public static final int JOYP_BIT = 4;
+    public static final int SERIAL_BIT = 3;
+    public static final int TIMER_BIT = 2;
+    public static final int LCD_BIT = 1;
+    public static final int VBLANK_BIT = 0;
+
+    public static final int JOYP_MASK = 1 << JOYP_BIT;
+    public static final int SERIAL_MASK = 1 << SERIAL_BIT;
+    public static final int TIMER_MASK = 1 << TIMER_BIT;
+    public static final int LCD_MASK = 1 << LCD_BIT;
+    public static final int VBLANK_MASK = 1 << VBLANK_BIT;
+
+    private static final int JOYP_INT_VECTOR = 0x0060;
+    private static final int SERIAL_INT_VECTOR = 0x0058;
+    private static final int TIMER_INT_VECTOR = 0x0050;
+    private static final int LCD_INT_VECTOR = 0x0048;
+    private static final int VBL_INT_VECTOR = 0x0040;
 
     private static final int Z_MASK = 1 << 7;
     private static final int N_MASK = 1 << 6;
@@ -12,12 +29,16 @@ public class SM83 implements Processor {
 
     public static final int PREFIX = 0xCB;
     private static final int TERMINATE_INSTRUCTION = -1;
+    private static final int NO_INTERRUPT = -1;
 
     private final SystemBus systemBus;
+
+    private final int[] hram = new int[127];
 
     private int programCounter = 0x0100; // PC, 16 bits
     private int stackPointer = 0xFFFE; // SP, 16 bits
     private int instructionRegister; // IR, 8 bits
+
     private boolean interruptMasterEnable;
     private boolean enableInterrupts;
 
@@ -28,11 +49,21 @@ public class SM83 implements Processor {
 
     private int WZ; // 16 bits
 
-    private int machineCycleIndex = TERMINATE_INSTRUCTION;
     private boolean opcodeIsPrefixed = false;
+    private boolean haltBug = false;
+    private boolean servicingInterrupt = false;
+    private int machineCycleIndex = TERMINATE_INSTRUCTION;
 
     public SM83(SystemBus systemBus) {
         this.systemBus = systemBus;
+    }
+
+    public void writeHRam(int address, int value) {
+        this.hram[address] = value;
+    }
+
+    public int readHRam(int address) {
+        return this.hram[address];
     }
 
     protected void setPC(int value) {
@@ -223,34 +254,129 @@ public class SM83 implements Processor {
 
     @Override
     public int cycle() {
+
+        // Set the value of IME on the rising edge of this M-cycle, as a result of EI being set on the previous cycle, delaying its effect for 1 cycle.
         if (getEI()) {
             setEI(false);
             setIME(true);
         }
+
+        // If we are currently executing an instruction or interrupt servicing request, step through it
         if (this.machineCycleIndex >= 0) {
-            if (this.opcodeIsPrefixed) {
+
+            if (this.servicingInterrupt) {
+                this.serviceInterrupt();
+            } else if (this.opcodeIsPrefixed) {
                 this.executePrefixed();
             } else {
                 this.execute();
             }
+
+            // Once the instruction or handler signals its end, reset the prefix signal
             if (this.machineCycleIndex < 0) {
                 this.opcodeIsPrefixed = false;
             }
         }
+
+        // Once an instruction is over...
         if (this.machineCycleIndex < 0) {
+
+            // Fetch the next opcode
             this.fetch();
-            if (getIR() == PREFIX && !this.opcodeIsPrefixed) {
+
+            // If we aren't in the middle of fetching a prefixed instruction, then check for interrupts
+            if (!this.opcodeIsPrefixed && checkInterrupts()) {
+
+                // Update signal and begin the interrupt servicing routine by setting the machine cycle index to 0
+                this.servicingInterrupt = true;
+                machineCycleIndex = 0;
+            } else if (getIR() == PREFIX && !this.opcodeIsPrefixed) {
+
+                // Otherwise, if the fetched byte is a prefix, and we haven't set the prefix flag, then we set it to trigger another fetch on the next cycle
                 this.opcodeIsPrefixed = true;
             } else {
-                this.machineCycleIndex = 0;
+
+                // Otherwise, begin executing the current opcode by setting the machine cycle index to 0
+                machineCycleIndex = 0;
             }
         }
+
         return 0;
     }
 
     private void fetch() {
         setIR(this.systemBus.getBus().readByte(getPC()));
-        setPC(getPC() + 1);
+        if (!this.haltBug) {
+            setPC(getPC() + 1);
+        }
+        this.haltBug = false;
+    }
+
+    private void serviceInterrupt() {
+        switch (machineCycleIndex) {
+            case 0 -> {
+                setPC(getPC() - 1);
+                setIME(false);
+                machineCycleIndex = 1;
+            }
+            case 1 -> {
+                setSP(getSP() - 1);
+                machineCycleIndex = 2;
+            }
+            case 2 -> {
+                systemBus.getBus().writeByte(getSP(), (getPC() & 0xFF00) >>> 8);
+                setSP(getSP() - 1);
+                machineCycleIndex = 3;
+            }
+            case 3 -> {
+                systemBus.getBus().writeByte(getSP(), getPC() & 0xFF);
+                int interruptMask = getInterruptMask();
+                systemBus.setIF(Processor.clearBit(systemBus.getIF(), interruptMask));
+                setWZ(getInterruptVector(interruptMask));
+                machineCycleIndex = 4;
+            }
+            case 4 -> {
+                setPC(getWZ());
+                this.servicingInterrupt = false;
+                machineCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private boolean checkInterrupts() {
+        return getIME() && interruptsPending();
+    }
+
+    private boolean interruptsPending() {
+        return (systemBus.getIE() & systemBus.getIF()) != 0;
+    }
+
+    private int getInterruptMask() {
+        int IF = systemBus.getIF() & systemBus.getIE();
+        if ((IF & VBLANK_MASK) != 0) {
+            return VBLANK_MASK;
+        } else if ((IF & LCD_MASK) != 0) {
+            return LCD_MASK;
+        } else if ((IF & TIMER_MASK) != 0) {
+            return TIMER_MASK;
+        } else if ((IF & SERIAL_MASK) != 0) {
+            return SERIAL_MASK;
+        } else if ((IF & JOYP_MASK) != 0) {
+            return JOYP_MASK;
+        } else {
+           return 0;
+        }
+    }
+
+    private static int getInterruptVector(int servicingInterruptMask) {
+        return switch (servicingInterruptMask) {
+            case VBLANK_MASK -> VBL_INT_VECTOR;
+            case LCD_MASK -> LCD_INT_VECTOR;
+            case TIMER_MASK -> TIMER_INT_VECTOR;
+            case SERIAL_MASK -> SERIAL_INT_VECTOR;
+            case JOYP_MASK -> JOYP_INT_VECTOR;
+            default -> 0x0000;
+        };
     }
 
     private void execute() {
@@ -700,8 +826,23 @@ public class SM83 implements Processor {
             }
             case 1 -> {
                 if (z == 6 && y == 6) { // HALT
-                    // TODO: =============== IMPLEMENT ===============
-                    machineCycleIndex = TERMINATE_INSTRUCTION;
+                    switch (machineCycleIndex) {
+                        case 0 -> {
+                            if (interruptsPending()) {
+                                this.haltBug = true;
+                                machineCycleIndex = TERMINATE_INSTRUCTION;
+                            } else {
+                                machineCycleIndex = 1;
+                            }
+                        }
+                        case 1 -> {
+                            if (interruptsPending()) {
+                                machineCycleIndex = TERMINATE_INSTRUCTION;
+                            } else {
+                                machineCycleIndex = 1;
+                            }
+                        }
+                    }
                 } else if (z == 6) { // LD r, (HL)
                     switch (machineCycleIndex) {
                         case 0 -> {
@@ -1918,6 +2059,16 @@ public class SM83 implements Processor {
 
     private static int getQ(int opcode) {
         return (opcode & 0b00001000) >>> 3;
+    }
+
+    public interface SystemBus extends io.github.arkosammy12.jemu.systems.SystemBus {
+
+        int getIE();
+
+        int getIF();
+
+        void setIF(int value);
+
     }
 
 

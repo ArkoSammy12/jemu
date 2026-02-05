@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.ui.debugger;
 
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.systems.Emulator;
-import io.github.arkosammy12.jemu.systems.bus.Bus;
+import io.github.arkosammy12.jemu.systems.bus.BusView;
 import io.github.arkosammy12.jemu.main.MainWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -94,7 +94,7 @@ public class MemoryTable extends JTable {
     }
 
     private void onResetting(@NotNull Emulator emulator) {
-        Bus memory = emulator.getBus();
+        BusView memory = emulator.getBusView();
         SwingUtilities.invokeLater(() -> {
             this.model.memory = memory;
             this.bytes = new int[memory.getMemorySize()];
@@ -188,7 +188,7 @@ public class MemoryTable extends JTable {
 
     private class Model extends DefaultTableModel {
 
-        private Bus memory;
+        private BusView memory;
 
         private int bytesPerRow = 8;
         private int rowCount;

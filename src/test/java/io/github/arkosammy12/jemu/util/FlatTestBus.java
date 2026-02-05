@@ -1,15 +1,13 @@
 package io.github.arkosammy12.jemu.util;
 
-import io.github.arkosammy12.jemu.systems.bus.ReadWriteBus;
+import io.github.arkosammy12.jemu.systems.bus.Bus;
 
-public class FlatTestBus implements ReadWriteBus {
+public class FlatTestBus implements Bus {
 
     private final int[] ram;
-    private final int memoryBoundsMask;
 
-    public FlatTestBus(int size, int memoryBoundsMask) {
+    public FlatTestBus(int size) {
         this.ram = new int[size];
-        this.memoryBoundsMask = memoryBoundsMask;
     }
 
     @Override
@@ -20,21 +18,6 @@ public class FlatTestBus implements ReadWriteBus {
     @Override
     public int readByte(int address) {
         return this.ram[address];
-    }
-
-    @Override
-    public int getMemorySize() {
-        return this.ram.length;
-    }
-
-    @Override
-    public int getMemoryBoundsMask() {
-        return this.memoryBoundsMask;
-    }
-
-    @Override
-    public int getByte(int address) {
-        return this.readByte(address);
     }
 
 }

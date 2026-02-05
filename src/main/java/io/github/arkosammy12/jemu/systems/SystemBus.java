@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.systems;
 
-import io.github.arkosammy12.jemu.systems.bus.ReadWriteBus;
+import io.github.arkosammy12.jemu.systems.bus.Bus;
 
 public interface SystemBus {
 
-    ReadWriteBus getBus();
+    Bus getBus();
 
 }

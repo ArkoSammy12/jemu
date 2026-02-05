@@ -4,7 +4,7 @@ import io.github.arkosammy12.jemu.config.settings.CosmacVipEmulatorSettings;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
 
-public class CosmacVipBus implements ReadWriteBus {
+public class CosmacVipBus implements Bus, BusView {
 
     private static final int[] MONITOR_ROM = {
             0xF8, 0x80, 0xB2, 0xF8, 0x08, 0xA2, 0xE2, 0xD2,

@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.ssts.sm83;
 
 import io.github.arkosammy12.jemu.cpu.TestSM83;
-import io.github.arkosammy12.jemu.systems.bus.ReadWriteBus;
-import io.github.arkosammy12.jemu.systems.SystemBus;
+import io.github.arkosammy12.jemu.systems.bus.Bus;
+import io.github.arkosammy12.jemu.systems.cpu.SM83;
 import io.github.arkosammy12.jemu.util.FlatTestBus;
 import org.tinylog.Logger;
 import java.util.List;
@@ -10,7 +10,7 @@ import java.util.List;
 import static io.github.arkosammy12.jemu.systems.cpu.SM83.PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SM83TestCaseBench implements SystemBus {
+public class SM83TestCaseBench implements SM83.SystemBus {
 
     private final SM83TestCase testCase;
     private final TestSM83 cpu;
@@ -20,7 +20,7 @@ public class SM83TestCaseBench implements SystemBus {
         this.testCase = testCase;
         this.cpu = new TestSM83(this);
         this.cpu.acceptTestCase(testCase);
-        this.bus = new FlatTestBus(0xFFFF + 1, 0xFFFF);
+        this.bus = new FlatTestBus(0xFFFF + 1);
         List<List<Integer>> ram = testCase.getInitialState().getRam();
         for (List<Integer> ramElement : ram) {
             this.bus.writeByte(ramElement.get(0), ramElement.get(1));
@@ -28,7 +28,7 @@ public class SM83TestCaseBench implements SystemBus {
     }
 
     @Override
-    public ReadWriteBus getBus() {
+    public Bus getBus() {
         return this.bus;
     }
 
@@ -78,6 +78,22 @@ public class SM83TestCaseBench implements SystemBus {
             int value = ramElement.get(1);
             assertEquals(value, this.bus.readByte(address));
         }
+
+    }
+
+    // TODO: VERIFY CORRECT RETURN VALUES FOR THESE REGISTERS
+    @Override
+    public int getIE() {
+        return 0;
+    }
+
+    @Override
+    public int getIF() {
+        return 0;
+    }
+
+    @Override
+    public void setIF(int value) {
 
     }
 

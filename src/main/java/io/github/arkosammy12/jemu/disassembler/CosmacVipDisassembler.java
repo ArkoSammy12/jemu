@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.disassembler;
 
 import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
-import io.github.arkosammy12.jemu.systems.bus.Bus;
+import io.github.arkosammy12.jemu.systems.bus.BusView;
 
 public class CosmacVipDisassembler<E extends CosmacVipEmulator> extends AbstractDisassembler<E> {
 
@@ -11,7 +11,7 @@ public class CosmacVipDisassembler<E extends CosmacVipEmulator> extends Abstract
 
     @Override
     protected int getLengthForInstructionAt(int address) {
-        Bus bus = this.emulator.getBus();
+        BusView bus = this.emulator.getBusView();
         int opcode = bus.getByte(address);
         return switch (getI(opcode)) {
             case 0x3 -> switch (getN(opcode)) {
@@ -36,7 +36,7 @@ public class CosmacVipDisassembler<E extends CosmacVipEmulator> extends Abstract
 
     @Override
     protected int getBytecodeForInstructionAt(int address) {
-        Bus bus = this.emulator.getBus();
+        BusView bus = this.emulator.getBusView();
         int firstByte = bus.getByte(address);
         return switch (this.getLengthForInstructionAt(address)) {
             case 3 -> (firstByte << 16) | (bus.getByte(address + 1) << 8) | bus.getByte(address + 2);
@@ -47,7 +47,7 @@ public class CosmacVipDisassembler<E extends CosmacVipEmulator> extends Abstract
 
     @Override
     protected String getTextForInstructionAt(int address) {
-        Bus bus = this.emulator.getBus();
+        BusView bus = this.emulator.getBusView();
         int opcode = bus.getByte(address);
         return switch (getI(opcode)) {
             case 0x0 -> {

@@ -1,8 +1,7 @@
 package io.github.arkosammy12.jemu.ssts.cdp1802;
 
 import io.github.arkosammy12.jemu.cpu.TestCDP1802;
-import io.github.arkosammy12.jemu.ssts.sm83.SM83TestCase;
-import io.github.arkosammy12.jemu.systems.bus.ReadWriteBus;
+import io.github.arkosammy12.jemu.systems.bus.Bus;
 import io.github.arkosammy12.jemu.systems.cpu.CDP1802;
 import io.github.arkosammy12.jemu.systems.misc.cosmacvip.IODevice;
 import io.github.arkosammy12.jemu.util.FlatTestBus;
@@ -21,7 +20,7 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
     public CDP1802TestCaseBench(CDP1802TestCase testCase) {
         this.testCase = testCase;
         this.cpu = new TestCDP1802(this);
-        this.bus = new FlatTestBus(0xFFFF + 1, 0xFFFF);
+        this.bus = new FlatTestBus(0xFFFF + 1);
         List<List<Integer>> ram = testCase.getInitialState().getRam();
         for (List<Integer> ramElement : ram) {
             this.bus.writeByte(ramElement.get(0), ramElement.get(1));
@@ -59,7 +58,7 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
     }
 
     @Override
-    public ReadWriteBus getBus() {
+    public Bus getBus() {
         return this.bus;
     }
 

@@ -2,14 +2,8 @@ package io.github.arkosammy12.jemu.systems.bus;
 
 public interface Bus {
 
-    int getMemorySize();
+    void writeByte(int address, int value);
 
-    int getMemoryBoundsMask();
-
-    int getByte(int address);
-
-    default int getMaximumAddress() {
-        return this.getMemoryBoundsMask();
-    }
+    int readByte(int address);
 
 }

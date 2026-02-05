@@ -1,5 +1,6 @@
 package io.github.arkosammy12.jemu.systems;
 
+import io.github.arkosammy12.jemu.systems.bus.Bus;
 import io.github.arkosammy12.jemu.systems.bus.CosmacVipBus;
 import io.github.arkosammy12.jemu.systems.bus.HybridChip8XBus;
 import io.github.arkosammy12.jemu.systems.cpu.CDP1802;
@@ -89,7 +90,12 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     }
 
     @Override
-    public CosmacVipBus getBus() {
+    public CosmacVipBus getBusView() {
+        return this.bus;
+    }
+
+    @Override
+    public Bus getBus() {
         return this.bus;
     }
 
@@ -360,7 +366,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
             debuggerSchema.<Integer>createStackEntry()
                     .withName(String.format("%01X", i))
-                    .withStateUpdater(() -> this.getBus().getByte(this.processor.getR(finalI)))
+                    .withStateUpdater(() -> this.getBusView().getByte(this.processor.getR(finalI)))
                     .withToStringFunction(val -> String.format("%02X", val));
 
         }

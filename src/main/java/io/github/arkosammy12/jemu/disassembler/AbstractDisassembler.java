@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.disassembler;
 
 import io.github.arkosammy12.jemu.systems.Emulator;
-import io.github.arkosammy12.jemu.systems.bus.Bus;
+import io.github.arkosammy12.jemu.systems.bus.BusView;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jctools.queues.MpscBlockingConsumerArrayQueue;
 import org.jetbrains.annotations.NotNull;
@@ -199,7 +199,7 @@ public abstract class AbstractDisassembler<E extends Emulator> implements Disass
     }
 
     private void disassembleStatic() {
-        Bus bus = this.emulator.getBus();
+        BusView bus = this.emulator.getBusView();
         if (this.currentStaticDisassemblerPointer >= bus.getMemorySize()) {
             this.staticDisassemblyFinished = true;
             return;
