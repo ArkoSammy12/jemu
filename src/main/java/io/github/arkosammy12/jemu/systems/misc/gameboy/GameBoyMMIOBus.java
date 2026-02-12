@@ -49,10 +49,12 @@ public class GameBoyMMIOBus implements Bus {
     public static final int SCX_ADDR = 0xFF43;
     public static final int LY_ADDR = 0xFF44;
     public static final int LYC_ADDR = 0xFF45;
+
     public static final int DMA_ADDR = 0xFF46;
+
     public static final int BGP_ADDR = 0xFF47;
     public static final int OBP0_ADDR = 0xFF48;
-    public static final int OPB1_ADDR = 0xFF49;
+    public static final int OBP1_ADDR = 0xFF49;
     public static final int WY_ADDR = 0xFF4A;
     public static final int WX_ADDR = 0xFF4B;
 
@@ -86,17 +88,18 @@ public class GameBoyMMIOBus implements Bus {
         if (address == JOYP_ADDR) {
             //this.joypad = value & 0xFF;
         } else if (address == SB_ADDR) {
-            System.out.print(value + " ");
+            System.out.print((char) value);
         } else if (address == SC_ADDR) {
 
         } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
             this.emulator.getTimerController().writeByte(address, value);
         } else if (address == IF_ADDR) {
-            //Logger.info(value & 0xFF);
+
             this.interruptFlag = value & 0xFF;
         } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
             // TODO: APU
         } else if (address >= LCDC_ADDR && address <= WX_ADDR) {
+            this.emulator.getDisplay().writeByte(address, value);
             // TODO: PPU
         } else if (address == BANK_ADDR) {
 
@@ -120,9 +123,8 @@ public class GameBoyMMIOBus implements Bus {
         } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
             // TODO: APU
             return 0xFF;
-        } else if (address >= LCDC_ADDR && address <= WX_ADDR) {
-            // TODO: PPU
-            return 0xFF;
+        } else if ((address >= LCDC_ADDR && address <= LYC_ADDR) || (address >= BGP_ADDR && address <= WX_ADDR)) {
+            return this.emulator.getDisplay().readByte(address);
         } else if (address == BANK_ADDR) {
             return 0xFF;
         } else if (address == IE_ADDR) {

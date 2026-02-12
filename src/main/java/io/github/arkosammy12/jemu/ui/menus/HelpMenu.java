@@ -44,7 +44,7 @@ public class HelpMenu extends JMenu {
         sourceItem.setMnemonic(KeyEvent.VK_S);
         sourceItem.addActionListener(_ -> {
             try {
-                Desktop.getDesktop().browse(new URI("https://github.com/ArkoSammy12/jchip"));
+                Desktop.getDesktop().browse(new URI("https://github.com/ArkoSammy12/jemu"));
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(mainWindow, "Unable to open source link.");
             }

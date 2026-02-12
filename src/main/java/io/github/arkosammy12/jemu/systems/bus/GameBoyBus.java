@@ -3,6 +3,8 @@ package io.github.arkosammy12.jemu.systems.bus;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.GameBoyEmulator;
 
+import static io.github.arkosammy12.jemu.systems.misc.gameboy.GameBoyMMIOBus.DMA_ADDR;
+
 public class GameBoyBus implements Bus, BusView {
 
     public static final int ROM0_START = 0x0000;
@@ -42,9 +44,14 @@ public class GameBoyBus implements Bus, BusView {
 
     private final GameBoyEmulator emulator;
 
-    private final int[] vRam = new int[0x2000];
     private final int[] wRam = new int[0x2000];
-    private final int[] oam = new int[0x00A0];
+
+    private int oamDmaControl;
+    private int oamTransferDelay;
+    private boolean oamTransferInProgress;
+    private int oamTransferredBytes;
+
+    private int lastOamByte;
 
     public GameBoyBus(GameBoyEmulator emulator) {
         this.emulator = emulator;
@@ -69,12 +76,14 @@ public class GameBoyBus implements Bus, BusView {
 
     @Override
     public int readByte(int address) {
-        if (address >= ROM0_START && address <= ROM0_END) {
+        if (this.oamTransferInProgress && !(address >= HRAM_START && address <= HRAM_END)) {
+            return this.lastOamByte;
+        } else if (address >= ROM0_START && address <= ROM0_END) {
             return this.emulator.getCartridge().readByte(address);
         } else if (address >= ROMX_START && address <= ROMX_END) {
             return this.emulator.getCartridge().readByte(address);
         } else if (address >= VRAM_START && address <= VRAM_END) {
-            return this.vRam[address - VRAM_START];
+            return this.emulator.getDisplay().readByte(address);
         } else if (address >= SRAM_START && address <= SRAM_END) {
             return this.emulator.getCartridge().readByte(address);
         } else if (address >= WRAM0_START && address <= WRAM0_END) {
@@ -84,12 +93,16 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address >= ECHO_START && address <= ECHO_END) {
             return this.wRam[address & 0x1FFF];
         } else if (address >= OAM_START && address <= OAM_END) {
-            return this.oam[address - OAM_START];
+            return this.emulator.getDisplay().readByte(address);
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
             // TODO: IMPLEMENT OAM LOCKING/UNLOCKING. RETURN 0 WHEN UNLOCKED, 0xFF WHEN LOCKED
             return 0;
         } else if (address >= IO_START && address <= IO_END) {
-            return this.emulator.getMMIOController().readByte(address);
+            if (address == DMA_ADDR) {
+                return this.oamDmaControl;
+            } else {
+                return this.emulator.getMMIOController().readByte(address);
+            }
         } else if (address >= HRAM_START && address <= HRAM_END) {
             return this.emulator.getProcessor().readHRam(address - HRAM_START);
         } else if (address == IE_REGISTER) {
@@ -102,12 +115,15 @@ public class GameBoyBus implements Bus, BusView {
     @Override
     public void writeByte(int address, int value) {
         value &= 0xFF;
+        if (this.oamTransferInProgress && !(address >= HRAM_START && address <= HRAM_END)) {
+            return;
+        }
         if (address >= ROM0_START && address <= ROM0_END) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if (address >= ROMX_START && address <= ROMX_END) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if (address >= VRAM_START && address <= VRAM_END) {
-            this.vRam[address - VRAM_START] = value;
+            this.emulator.getDisplay().writeByte(address, value);
         } else if (address >= SRAM_START && address <= SRAM_END) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if (address >= WRAM0_START && address <= WRAM0_END) {
@@ -117,11 +133,108 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address >= ECHO_START && address <= ECHO_END) {
             this.wRam[address & 0x1FFF] = value;
         } else if (address >= OAM_START && address <= OAM_END) {
-            this.oam[address - OAM_START] = value;
+            this.emulator.getDisplay().writeByte(address, value);
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
             // TODO: TRIGGER OAM BUG
         } else if (address >= IO_START && address <= IO_END) {
+            if (address == DMA_ADDR) {
+                this.oamDmaControl = value & 0xFF;
+                this.oamTransferDelay = 1;
+            } else {
+                this.emulator.getMMIOController().writeByte(address, value);
+            }
+        } else if (address >= HRAM_START && address <= HRAM_END) {
+            this.emulator.getProcessor().writeHRam(address - HRAM_START, value);
+        } else if (address == IE_REGISTER) {
             this.emulator.getMMIOController().writeByte(address, value);
+        } else {
+            throw new EmulatorException("Invalid address: " + String.format("%04X", address) + " for the GameBoy system!");
+        }
+    }
+
+    public void cycle() {
+        if (this.oamTransferDelay > 0) {
+            this.oamTransferDelay--;
+            if (this.oamTransferDelay == 0) {
+                this.oamTransferInProgress = true;
+                this.oamTransferredBytes = 0;
+            }
+        }
+
+        if (this.oamTransferInProgress) {
+            int sourceAddress = (this.oamDmaControl << 8) | (this.oamTransferredBytes);
+            int oamByte = this.readByteDma(sourceAddress);
+            this.writeByteDma(0xFE00 | this.oamTransferredBytes, oamByte);
+            this.lastOamByte = oamByte;
+            this.oamTransferredBytes++;
+            if (oamTransferredBytes > 0x9F) {
+                this.oamTransferInProgress = false;
+            }
+        }
+    }
+
+    private int readByteDma(int address) {
+        if (address >= ROM0_START && address <= ROM0_END) {
+            return this.emulator.getCartridge().readByte(address);
+        } else if (address >= ROMX_START && address <= ROMX_END) {
+            return this.emulator.getCartridge().readByte(address);
+        } else if (address >= VRAM_START && address <= VRAM_END) {
+            return this.emulator.getDisplay().readByte(address);
+        } else if (address >= SRAM_START && address <= SRAM_END) {
+            return this.emulator.getCartridge().readByte(address);
+        } else if (address >= WRAM0_START && address <= WRAM0_END) {
+            return this.wRam[address - WRAM0_START];
+        } else if (address >= WRAMX_START && address <= WRAMX_END) {
+            return this.wRam[address - WRAM0_START];
+        } else if (address >= ECHO_START && address <= ECHO_END) {
+            return this.wRam[address & 0x1FFF];
+        } else if (address >= OAM_START && address <= OAM_END) {
+            return this.emulator.getDisplay().readByte(address);
+        } else if (address >= UNUSED_START && address <= UNUSED_END) {
+            // TODO: IMPLEMENT OAM LOCKING/UNLOCKING. RETURN 0 WHEN UNLOCKED, 0xFF WHEN LOCKED
+            return 0;
+        } else if (address >= IO_START && address <= IO_END) {
+            if (address == DMA_ADDR) {
+                return this.oamDmaControl;
+            } else {
+                return this.emulator.getMMIOController().readByte(address);
+            }
+        } else if (address >= HRAM_START && address <= HRAM_END) {
+            return this.emulator.getProcessor().readHRam(address - HRAM_START);
+        } else if (address == IE_REGISTER) {
+            return this.emulator.getMMIOController().readByte(address);
+        } else {
+            throw new EmulatorException("Invalid address: " + String.format("%04X", address) + " for the GameBoy system!");
+        }
+    }
+
+    private void writeByteDma(int address, int value) {
+        value &= 0xFF;
+        if (address >= ROM0_START && address <= ROM0_END) {
+            this.emulator.getCartridge().writeByte(address, value);
+        } else if (address >= ROMX_START && address <= ROMX_END) {
+            this.emulator.getCartridge().writeByte(address, value);
+        } else if (address >= VRAM_START && address <= VRAM_END) {
+            this.emulator.getDisplay().writeByte(address, value);
+        } else if (address >= SRAM_START && address <= SRAM_END) {
+            this.emulator.getCartridge().writeByte(address, value);
+        } else if (address >= WRAM0_START && address <= WRAM0_END) {
+            this.wRam[address - WRAM0_START] = value;
+        } else if (address >= WRAMX_START && address <= WRAMX_END) {
+            this.wRam[address - WRAM0_START] = value;
+        } else if (address >= ECHO_START && address <= ECHO_END) {
+            this.wRam[address & 0x1FFF] = value;
+        } else if (address >= OAM_START && address <= OAM_END) {
+            this.emulator.getDisplay().writeByte(address, value);
+        } else if (address >= UNUSED_START && address <= UNUSED_END) {
+            // TODO: TRIGGER OAM BUG
+        } else if (address >= IO_START && address <= IO_END) {
+            if (address == DMA_ADDR) {
+                this.oamDmaControl = value & 0xFF;
+                this.oamTransferDelay = 1;
+            } else {
+                this.emulator.getMMIOController().writeByte(address, value);
+            }
         } else if (address >= HRAM_START && address <= HRAM_END) {
             this.emulator.getProcessor().writeHRam(address - HRAM_START, value);
         } else if (address == IE_REGISTER) {

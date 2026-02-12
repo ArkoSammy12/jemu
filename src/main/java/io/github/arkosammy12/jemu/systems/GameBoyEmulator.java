@@ -72,7 +72,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public Display<?> getDisplay() {
+    public DMGPPU<?> getDisplay() {
         return this.ppu;
     }
 
@@ -125,14 +125,20 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     public void executeFrame() {
         for (int i = 0; i < M_CYCLES_PER_FRAME; i++) {
             this.timerController.cycle();
+            this.bus.cycle();
             this.cpu.cycle();
+            this.ppu.cycle();
         }
+        this.ppu.flush();
     }
 
     @Override
     public void executeCycle() {
         this.timerController.cycle();
+        this.bus.cycle();
         this.cpu.cycle();
+        this.ppu.cycle();
+        this.ppu.flush();
     }
 
     @Override
