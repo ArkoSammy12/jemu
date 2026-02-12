@@ -113,7 +113,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
         if (address >= OAM_START && address <= OAM_END) {
             //int ppuMode = this.getPpuMode();
             //if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
-                //this.oam[address - OAM_START] = value & 0xFF;
+                this.oam[address - OAM_START] = value & 0xFF;
             //}
         } else if (address >= VRAM_START && address <= VRAM_END) {
             //if (this.getPpuMode() != DRAWING_MODE) {
