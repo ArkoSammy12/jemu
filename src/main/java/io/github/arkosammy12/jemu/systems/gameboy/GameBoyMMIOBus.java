@@ -85,7 +85,7 @@ public class GameBoyMMIOBus implements Bus {
     @Override
     public void writeByte(int address, int value) {
         if (address == JOYP_ADDR) {
-
+            this.emulator.getJoypad().writeJoyP(value);
         } else if (address == SB_ADDR) {
 
         } else if (address == SC_ADDR) {
@@ -108,7 +108,7 @@ public class GameBoyMMIOBus implements Bus {
     @Override
     public int readByte(int address) {
         if (address == JOYP_ADDR) {
-            return 0xFF;
+            return this.emulator.getJoypad().readJoyP();
         } else if (address == SB_ADDR) {
             return 0xFF;
         } else if (address == SC_ADDR) {

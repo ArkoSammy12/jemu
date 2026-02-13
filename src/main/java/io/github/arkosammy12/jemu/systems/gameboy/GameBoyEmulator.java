@@ -29,6 +29,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     private final GameBoyBus bus;
     private final DMGPPU<?> ppu;
     private final DMGAPU apu;
+    private final GameBoyJoypad joypad;
 
     private final GameBoyCartridge cartridge;
     private final GameBoyMMIOBus mmioController;
@@ -39,6 +40,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.emulatorSettings = emulatorSettings;
         this.system = emulatorSettings.getSystem();
 
+        this.joypad = new GameBoyJoypad(this);
         this.cpu = new SM83(this);
         this.bus = new GameBoyBus(this);
         this.ppu = new DMGPPU<>(this);
@@ -69,6 +71,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.ppu;
     }
 
+    public GameBoyJoypad getJoypad() {
+        return this.joypad;
+    }
+
     @Override
     public SoundSystem getSoundSystem() {
         return this.apu;
@@ -86,7 +92,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     @Override
     public List<KeyAdapter> getKeyAdapters() {
-        return List.of();
+        return List.of(this.joypad);
     }
 
     public GameBoyCartridge getCartridge() {
@@ -100,7 +106,6 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     public GameBoyTimerController getTimerController() {
         return this.timerController;
     }
-
 
     @Override
     @Nullable
@@ -146,7 +151,14 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     @Override
     public void close() throws Exception {
-
+        if (this.ppu != null) {
+            this.ppu.close();
+        }
+        /*
+        if (this.disassembler != null) {
+            this.disassembler.close();
+        }
+         */
     }
 
     @Override
