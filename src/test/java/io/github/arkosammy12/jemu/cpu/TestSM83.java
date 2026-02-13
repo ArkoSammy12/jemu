@@ -2,8 +2,7 @@ package io.github.arkosammy12.jemu.cpu;
 
 import io.github.arkosammy12.jemu.ssts.sm83.SM83TestCase;
 import io.github.arkosammy12.jemu.ssts.sm83.SM83TestState;
-import io.github.arkosammy12.jemu.systems.SystemBus;
-import io.github.arkosammy12.jemu.systems.cpu.SM83;
+import io.github.arkosammy12.jemu.systems.gameboy.SM83;
 
 public class TestSM83 extends SM83 {
 

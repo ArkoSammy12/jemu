@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.disassembler;
 
-import io.github.arkosammy12.jemu.systems.CosmacVipEmulator;
-import io.github.arkosammy12.jemu.systems.bus.BusView;
+import io.github.arkosammy12.jemu.systems.cosmacvip.CosmacVipEmulator;
+import io.github.arkosammy12.jemu.systems.common.BusView;
 
 public class CosmacVipDisassembler<E extends CosmacVipEmulator> extends AbstractDisassembler<E> {
 

@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.config.settings;
 
 import io.github.arkosammy12.jemu.main.Jemu;
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 import io.github.arkosammy12.jemu.util.System;

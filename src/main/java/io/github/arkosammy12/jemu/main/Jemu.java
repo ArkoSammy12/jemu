@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.main;
 import com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme;
 import io.github.arkosammy12.jemu.config.CLIArgs;
 import io.github.arkosammy12.jemu.config.DataManager;
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.util.System;
 import io.github.arkosammy12.jemu.util.FrameLimiter;

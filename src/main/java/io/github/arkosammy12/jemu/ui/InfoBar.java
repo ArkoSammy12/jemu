@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.ui;
 
 import io.github.arkosammy12.jemu.main.Jemu;
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;

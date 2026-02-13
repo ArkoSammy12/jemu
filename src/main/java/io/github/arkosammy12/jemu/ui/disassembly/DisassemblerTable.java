@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.ui.disassembly;
 
 import io.github.arkosammy12.jemu.main.Jemu;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
 import io.github.arkosammy12.jemu.main.MainWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

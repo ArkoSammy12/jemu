@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.config.DataManager;
 import io.github.arkosammy12.jemu.config.initializers.ApplicationInitializer;
 import io.github.arkosammy12.jemu.config.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.config.initializers.EmulatorInitializerConsumer;
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
 import io.github.arkosammy12.jemu.main.MainWindow;
 import io.github.arkosammy12.jemu.ui.util.DebuggerLabelTable;
 import net.miginfocom.layout.AlignX;

@@ -6,7 +6,7 @@ import javax.sound.sampled.FloatControl;
 import javax.sound.sampled.SourceDataLine;
 
 import static io.github.arkosammy12.jemu.main.Main.MAIN_FRAMERATE;
-import static io.github.arkosammy12.jemu.systems.sound.SoundSystem.SAMPLE_RATE;
+import static io.github.arkosammy12.jemu.systems.common.SoundSystem.SAMPLE_RATE;
 
 import java.io.Closeable;
 import java.util.Queue;

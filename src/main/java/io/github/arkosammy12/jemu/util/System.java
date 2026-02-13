@@ -7,7 +7,7 @@ import io.github.arkosammy12.jemu.config.Serializable;
 import io.github.arkosammy12.jemu.config.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.config.settings.CosmacVipEmulatorSettings;
 import io.github.arkosammy12.jemu.config.settings.EmulatorSettings;
-import io.github.arkosammy12.jemu.systems.Emulator;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
 import picocli.CommandLine;
 
 import java.util.Optional;

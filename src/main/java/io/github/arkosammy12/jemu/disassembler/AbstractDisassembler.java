@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.disassembler;
 
-import io.github.arkosammy12.jemu.systems.Emulator;
-import io.github.arkosammy12.jemu.systems.bus.BusView;
+import io.github.arkosammy12.jemu.systems.common.Emulator;
+import io.github.arkosammy12.jemu.systems.common.BusView;
 import it.unimi.dsi.fastutil.ints.IntArrayList;
 import org.jctools.queues.MpscBlockingConsumerArrayQueue;
 import org.jetbrains.annotations.NotNull;
