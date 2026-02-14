@@ -181,6 +181,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
                         for (int[] ints : this.lcd) {
                             Arrays.fill(ints, DMG_LCD_OFF_COLOR);
                         }
+                        this.flush();
                     }
                     if (!oldLcdEnable && newLcdEnable) {
                         this.enablePixelWritesDelay = 2;
