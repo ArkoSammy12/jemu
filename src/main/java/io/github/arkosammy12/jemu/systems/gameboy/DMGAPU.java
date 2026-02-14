@@ -41,6 +41,12 @@ public class DMGAPU implements SoundSystem, Bus {
     private int soundPanning = UNUSED_BITS_NRX1; // NR51
     private int soundToggle = UNUSED_BITS_NR52; // NR52
 
+
+    /*
+    // TODO randomize this, but this is one sample from my hardware. This is from @dtabacaru in emudev discord
+    wave_ram = {0xE2, 0xB7, 0x10, 0x95, 0xC8, 0x6B, 0x0A, 0xF7, 0x02, 0xF6, 0x63, 0xCB, 0x59, 0xE3, 0x90, 0x2F};
+     */
+
     private final int[] waveRam = new int[16];
 
     public DMGAPU(GameBoyEmulator emulator) {
@@ -57,18 +63,18 @@ public class DMGAPU implements SoundSystem, Bus {
                 case NR10_ADDR -> this.channel1Sweep;
                 case NR11_ADDR -> this.channel1LengthTimerAndDutyCycle;
                 case NR12_ADDR -> this.channel1VolumeAndEnvelope;
-                case NR13_ADDR -> this.channel1PeriodLow;
+                case NR13_ADDR -> 0xFF;
                 case NR14_ADDR -> this.channel1PeriodHighAndControl;
                 case NR21_ADDR -> this.channel2LengthTimerAndDutyCycle;
                 case NR22_ADDR -> this.channel2VolumeAndEnvelope;
-                case NR23_ADDR -> this.channel2PeriodLow;
+                case NR23_ADDR -> 0xFF;
                 case NR24_ADDR -> this.channel2PeriodHighAndControl;
                 case NR30_ADDR -> this.channel3DacEnable;
-                case NR31_ADDR -> this.channel3LengthTimer;
+                case NR31_ADDR -> 0xFF;
                 case NR32_ADDR -> this.channel3OutputLevel;
-                case NR33_ADDR -> this.channel3PeriodLow;
+                case NR33_ADDR -> 0xFF;
                 case NR34_ADDR -> this.channel3PeriodHighAndControl;
-                case NR41_ADDR -> this.channel4LengthTimer;
+                case NR41_ADDR -> 0xFF;
                 case NR42_ADDR -> this.channel4VolumeAndEnvelope;
                 case NR43_ADDR -> this.channel4FrequencyAndRandomness;
                 case NR44_ADDR -> this.channel4Control;
@@ -116,5 +122,7 @@ public class DMGAPU implements SoundSystem, Bus {
     public void pushSamples() {
 
     }
+
+    // TODO: APU wave channel cycled every 2 T-cycles
 
 }
