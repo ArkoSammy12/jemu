@@ -2,7 +2,6 @@ package io.github.arkosammy12.jemu.systems.gameboy;
 
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.common.Processor;
-import org.tinylog.Logger;
 
 public class SM83 implements Processor {
 
@@ -31,7 +30,6 @@ public class SM83 implements Processor {
 
     public static final int PREFIX = 0xCB;
     private static final int TERMINATE_INSTRUCTION = -1;
-    private static final int NO_INTERRUPT = -1;
 
     private final SystemBus systemBus;
 
@@ -44,10 +42,10 @@ public class SM83 implements Processor {
     private boolean interruptMasterEnable;
     private boolean enableInterrupts;
 
-    private int AF = 0x01B0; // 16 bits
-    private int BC = 0x0013; // 16 bits
-    private int DE = 0x00D8; // 16 bits
-    private int HL = 0x014D; // 16 bits
+    private int AF; // 16 bits
+    private int BC; // 16 bits
+    private int DE; // 16 bits
+    private int HL; // 16 bits
 
     private int WZ; // 16 bits
 
@@ -60,12 +58,12 @@ public class SM83 implements Processor {
         this.systemBus = systemBus;
     }
 
-    public void writeHRam(int address, int value) {
-        this.hram[address] = value;
-    }
-
     public int readHRam(int address) {
         return this.hram[address];
+    }
+
+    public void writeHRam(int address, int value) {
+        this.hram[address] = value & 0xFF;
     }
 
     protected void setPC(int value) {

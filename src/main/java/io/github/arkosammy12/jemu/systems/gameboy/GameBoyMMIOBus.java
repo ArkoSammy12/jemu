@@ -5,7 +5,9 @@ import io.github.arkosammy12.jemu.systems.common.Bus;
 public class GameBoyMMIOBus implements Bus {
 
     public static final int JOYP_ADDR = 0xFF00;
+
     public static final int SB_ADDR = 0xFF01;
+
     public static final int SC_ADDR = 0xFF02;
 
     public static final int DIV_ADDR = 0xFF04;
@@ -83,29 +85,6 @@ public class GameBoyMMIOBus implements Bus {
     }
 
     @Override
-    public void writeByte(int address, int value) {
-        if (address == JOYP_ADDR) {
-            this.emulator.getJoypad().writeJoyP(value);
-        } else if (address == SB_ADDR) {
-
-        } else if (address == SC_ADDR) {
-
-        } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
-            this.emulator.getTimerController().writeByte(address, value);
-        } else if (address == IF_ADDR) {
-            this.interruptFlag = value & 0xFF;
-        } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
-            // TODO: APU
-        } else if (address >= LCDC_ADDR && address <= WX_ADDR) {
-            this.emulator.getDisplay().writeByte(address, value);
-        } else if (address == BANK_ADDR) {
-            this.emulator.getCartridge().disableBootRom();
-        } else if (address == IE_ADDR) {
-            this.interruptEnable = value & 0xFF;
-        }
-    }
-
-    @Override
     public int readByte(int address) {
         if (address == JOYP_ADDR) {
             return this.emulator.getJoypad().readJoyP();
@@ -119,19 +98,37 @@ public class GameBoyMMIOBus implements Bus {
             return this.interruptFlag;
         } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
             // TODO: APU
-
             if (address == NR52_ADDR) {
                 return 0;
             }
             return 0xFF;
         } else if ((address >= LCDC_ADDR && address <= LYC_ADDR) || (address >= BGP_ADDR && address <= WX_ADDR)) {
             return this.emulator.getDisplay().readByte(address);
-        } else if (address == BANK_ADDR) {
-            return this.emulator.getCartridge().isBootRomEnabled() ? 0 : 1;
         } else if (address == IE_ADDR) {
             return this.interruptEnable;
         } else {
             return 0xFF;
+        }
+    }
+
+    @Override
+    public void writeByte(int address, int value) {
+        if (address == JOYP_ADDR) {
+            this.emulator.getJoypad().writeJoyP(value);
+        } else if (address == SB_ADDR) {
+
+        } else if (address == SC_ADDR) {
+
+        } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
+            this.emulator.getTimerController().writeByte(address, value);
+        } else if (address == IF_ADDR) {
+            this.interruptFlag = value & 0xFF;
+        } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
+            // TODO: APU
+        } else if ((address >= LCDC_ADDR && address <= LYC_ADDR) || (address >= BGP_ADDR && address <= WX_ADDR)) {
+            this.emulator.getDisplay().writeByte(address, value);
+        } else if (address == IE_ADDR) {
+            this.interruptEnable = value & 0xFF;
         }
     }
 

@@ -51,6 +51,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
     private final int[][] lcd;
 
     private long cycles;
+    private boolean enablePixelWrites;
+    private int enablePixelWritesDelay;
+
     private boolean oldStatInterruptLine;
 
     private boolean firstOamScanCycle;
@@ -119,6 +122,39 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
     }
 
     @Override
+    public int readByte(int address) {
+        if (address >= OAM_START && address <= OAM_END) {
+            //int ppuMode = this.getPpuMode();
+            //if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
+            return this.oam[address - OAM_START];
+            //} else {
+            //return 0xFF;
+            //}
+        } else if (address >= VRAM_START && address <= VRAM_END) {
+            //if (this.getPpuMode() != DRAWING_MODE) {
+            return this.vRam[address - VRAM_START];
+            //} else {
+            //return 0xFF;
+            //}
+        } else {
+            return switch (address) {
+                case LCDC_ADDR -> this.lcdControl;
+                case STAT_ADDR -> this.ppuStatus;
+                case SCY_ADDR -> this.scrollY;
+                case SCX_ADDR -> this.scrollX;
+                case LY_ADDR -> this.lcdY;
+                case LYC_ADDR -> this.lcdYCompare;
+                case BGP_ADDR -> this.backgroundPalette;
+                case OBP0_ADDR -> this.objectPalette0;
+                case OBP1_ADDR -> this.objectPalette1;
+                case WY_ADDR -> this.windowY;
+                case WX_ADDR -> this.windowX;
+                default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
+            };
+        }
+    }
+
+    @Override
     public void writeByte(int address, int value) {
         if (address >= OAM_START && address <= OAM_END) {
             //int ppuMode = this.getPpuMode();
@@ -140,14 +176,17 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
                         this.setPpuMode(HBLANK_MODE);
                     }
                     if (oldLcdEnable && !newLcdEnable) {
+                        this.enablePixelWrites = false;
+                        this.enablePixelWritesDelay = -1;
                         for (int[] ints : this.lcd) {
                             Arrays.fill(ints, DMG_LCD_OFF_COLOR);
                         }
                     }
+                    if (!oldLcdEnable && newLcdEnable) {
+                        this.enablePixelWritesDelay = 2;
+                    }
                 }
-                case STAT_ADDR -> {
-                    this.ppuStatus = (value & 0b11111000) | (this.ppuStatus & 0b111);
-                }
+                case STAT_ADDR -> this.ppuStatus = (value & 0b11111000) | (this.ppuStatus & 0b111);
                 case SCY_ADDR -> this.scrollY = value & 0xFF;
                 case SCX_ADDR -> this.scrollX = value & 0xFF;
                 case LY_ADDR -> {}
@@ -159,39 +198,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
                 case WX_ADDR -> this.windowX = value & 0xFF;
                 default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
             }
-        }
-    }
-
-    @Override
-    public int readByte(int address) {
-        if (address >= OAM_START && address <= OAM_END) {
-            //int ppuMode = this.getPpuMode();
-            //if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
-                return this.oam[address - OAM_START];
-            //} else {
-                //return 0xFF;
-            //}
-        } else if (address >= VRAM_START && address <= VRAM_END) {
-            //if (this.getPpuMode() != DRAWING_MODE) {
-                return this.vRam[address - VRAM_START];
-            //} else {
-                //return 0xFF;
-            //}
-        } else {
-            return switch (address) {
-                case LCDC_ADDR -> this.lcdControl;
-                case STAT_ADDR -> this.ppuStatus;
-                case SCY_ADDR -> this.scrollY;
-                case SCX_ADDR -> this.scrollX;
-                case LY_ADDR -> this.lcdY;
-                case LYC_ADDR -> this.lcdYCompare;
-                case BGP_ADDR -> this.backgroundPalette;
-                case OBP0_ADDR -> this.objectPalette0;
-                case OBP1_ADDR -> this.objectPalette1;
-                case WY_ADDR -> this.windowY;
-                case WX_ADDR -> this.windowX;
-                default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
-            };
         }
     }
 
@@ -226,6 +232,12 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
         }
 
         if (currentPpuMode != VBLANK_MODE && nextPpuMode == VBLANK_MODE) {
+            if (this.enablePixelWritesDelay > 0) {
+                this.enablePixelWritesDelay--;
+                if (this.enablePixelWritesDelay <= 0) {
+                    this.enablePixelWrites = true;
+                }
+            }
             this.triggerVBlankInterrupt();
             this.flush();
         }
@@ -326,7 +338,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
 
         if (this.getScanlineCycle() >= CYCLES_PER_SCANLINE - 1) {
             this.firstHBlankCycle = false;
-            return (this.lcdY == 143) ? VBLANK_MODE : OAM_SCAN_MODE;
+            return (this.lcdY >= 143) ? VBLANK_MODE : OAM_SCAN_MODE;
         } else {
             return HBLANK_MODE;
         }
@@ -576,7 +588,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
         }
 
         if (finalPixel != null) {
-            if (this.pixelX >= 8) {
+            if (this.pixelX >= 8 && this.enablePixelWrites) {
                 this.lcd[this.pixelX - 8][this.lcdY] = finalPixel;
             }
             this.pixelX++;

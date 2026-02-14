@@ -27,20 +27,8 @@ public class MBC0 extends GameBoyCartridge {
     }
 
     @Override
-    public void writeByte(int address, int value) {
-        if (address >= 0xA000 && address <= 0xBFFF) {
-            address -= 0xA000;
-            if (this.sRam != null && address < this.sRam.length) {
-                this.sRam[address] = value & 0xFF;
-            }
-        }
-    }
-
-    @Override
     public int readByte(int address) {
-        if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
-            return BOOTIX[address];
-        } else if (address >= 0x0000 && address <= 0x7FFF) {
+        if (address >= 0x0000 && address <= 0x7FFF) {
             return this.rom[address];
         } else if (address >= 0xA000 && address <= 0xBFFF) {
             address -= 0xA000;
@@ -51,6 +39,16 @@ public class MBC0 extends GameBoyCartridge {
             }
         } else {
             throw new EmulatorException("Invalid address " + String.format("%04X", address) + " for MBC0 cartridge read!");
+        }
+    }
+
+    @Override
+    public void writeByte(int address, int value) {
+        if (address >= 0xA000 && address <= 0xBFFF) {
+            address -= 0xA000;
+            if (this.sRam != null && address < this.sRam.length) {
+                this.sRam[address] = value & 0xFF;
+            }
         }
     }
 

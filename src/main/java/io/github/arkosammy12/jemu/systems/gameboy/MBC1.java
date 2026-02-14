@@ -48,7 +48,29 @@ public class MBC1 extends GameBoyCartridge {
         }
 
         this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
+    }
 
+    @Override
+    public int readByte(int address) {
+        if (address >= 0x0000 && address <= 0x3FFF) {
+            if ((this.mode & 1) != 0) {
+                return this.romBanks[(this.bank2 << 5) & this.romBankMask][address];
+            } else {
+                return this.romBanks[0][address];
+            }
+        } else if (address >= 0x4000 && address <= 0x7FFF) {
+            return this.romBanks[((this.bank2 << 5) | this.bank1) & this.romBankMask][address - 0x4000];
+        } else if (address >= 0xA000 && address <= 0xBFFF) {
+            if (this.ramGate != 0b1010 || this.ramBanks == null) {
+                return 0xFF;
+            } else if ((this.mode & 1) != 0) {
+                return this.ramBanks[this.bank2][address - 0xA000];
+            } else {
+                return this.ramBanks[0][address - 0xA000];
+            }
+        } else {
+            throw new EmulatorException("Invalid address " + String.format("%04X", address) + " for MBC1 cartridge read!");
+        }
     }
 
     @Override
@@ -73,31 +95,6 @@ public class MBC1 extends GameBoyCartridge {
                     this.ramBanks[0][address - 0xA000] = value & 0xFF;
                 }
             }
-        }
-    }
-
-    @Override
-    public int readByte(int address) {
-        if (this.enableBootRom && address >= 0 && address <= 0x00FF) {
-            return BOOTIX[address];
-        } else if (address >= 0x0000 && address <= 0x3FFF) {
-            if ((this.mode & 1) != 0) {
-                return this.romBanks[(this.bank2 << 5) & this.romBankMask][address];
-            } else {
-                return this.romBanks[0][address];
-            }
-        } else if (address >= 0x4000 && address <= 0x7FFF) {
-            return this.romBanks[((this.bank2 << 5) | this.bank1) & this.romBankMask][address - 0x4000];
-        } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramGate != 0b1010 || this.ramBanks == null) {
-                return 0xFF;
-            } else if ((this.mode & 1) != 0) {
-                return this.ramBanks[this.bank2][address - 0xA000];
-            } else {
-                return this.ramBanks[0][address - 0xA000];
-            }
-        } else {
-            throw new EmulatorException("Invalid address " + String.format("%04X", address) + " for MBC1 cartridge read!");
         }
     }
 
