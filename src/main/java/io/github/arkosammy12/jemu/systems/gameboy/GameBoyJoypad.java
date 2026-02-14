@@ -74,11 +74,6 @@ public class GameBoyJoypad extends KeyAdapter {
         return this.joyP;
     }
 
-    private void triggerJoyPInterrupt() {
-        int IF = this.emulator.getMMIOController().getIF();
-        this.emulator.getMMIOController().setIF(Processor.setBit(IF, SM83.JOYP_MASK));
-    }
-
     private synchronized void updateJoyP() {
         boolean originalBit0 = (this.joyP & A_RIGHT_MASK) != 0;
         boolean originalBit1 = (this.joyP & B_LEFT_MASK) != 0;
@@ -131,6 +126,11 @@ public class GameBoyJoypad extends KeyAdapter {
             this.triggerJoyPInterrupt();
         }
 
+    }
+
+    private void triggerJoyPInterrupt() {
+        int IF = this.emulator.getMMIOController().getIF();
+        this.emulator.getMMIOController().setIF(Processor.setBit(IF, SM83.JOYP_MASK));
     }
 
 }

@@ -227,6 +227,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
 
         if (currentPpuMode != VBLANK_MODE && nextPpuMode == VBLANK_MODE) {
             this.triggerVBlankInterrupt();
+            this.flush();
         }
 
         boolean lyEqualsLyc = this.lcdY == this.lcdYCompare;

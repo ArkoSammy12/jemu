@@ -127,7 +127,6 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
             this.cpu.cycle();
             this.ppu.cycle();
         }
-        this.ppu.flush();
     }
 
     @Override
