@@ -68,6 +68,7 @@ public class GameBoyTimerController implements Bus {
     // It is assumed that this is called once per M-cycle, after the CPU performs the action of the current cycle, but before it fetches (if instruction ended), or polls for interrupts (if any)
     public void cycle() {
 
+        this.reloadOccurred = false;
         this.cycleSystemClock();
         this.cycleSystemClock();
         this.cycleSystemClock();
@@ -78,7 +79,6 @@ public class GameBoyTimerController implements Bus {
     private void cycleSystemClock() {
 
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
-        this.reloadOccurred = false;
         if (this.reloadDelay > 0) {
             this.reloadDelay--;
 
