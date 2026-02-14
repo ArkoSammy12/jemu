@@ -81,7 +81,7 @@ public class DMGAPU implements SoundSystem, Bus {
                 case NR50_ADDR -> this.masterVolumeAndVinPanning;
                 case NR51_ADDR -> this.soundPanning;
                 case NR52_ADDR -> this.soundToggle;
-                default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
+                default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy APU".formatted(address));
             };
         }
     }
@@ -113,7 +113,7 @@ public class DMGAPU implements SoundSystem, Bus {
                 case NR50_ADDR -> this.masterVolumeAndVinPanning = value & 0xFF;
                 case NR51_ADDR -> this.soundPanning = (value & 0xFF) | UNUSED_BITS_NRX1;
                 case NR52_ADDR -> this.soundToggle = (value & 0xFF) | UNUSED_BITS_NR52;
-                default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
+                default -> throw new IllegalArgumentException("Invalid address \"%04X\" for GameBoy APU".formatted(address));
             };
         }
     }
