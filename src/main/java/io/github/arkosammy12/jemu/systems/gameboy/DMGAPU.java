@@ -41,7 +41,7 @@ public class DMGAPU implements SoundSystem, Bus {
     private int soundPanning = UNUSED_BITS_NRX1; // NR51
     private int soundToggle = UNUSED_BITS_NR52; // NR52
 
-    private int[] waveRam = new int[16];
+    private final int[] waveRam = new int[16];
 
     public DMGAPU(GameBoyEmulator emulator) {
 
