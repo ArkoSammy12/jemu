@@ -5,7 +5,6 @@ import io.github.arkosammy12.jemu.systems.common.Bus;
 
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.*;
 
-// The implementation of this class assumes one cycle call per M-cycle, before the CPU is cycled
 public class GameBoyTimerController implements Bus {
 
     private final GameBoyEmulator emulator;
@@ -26,15 +25,39 @@ public class GameBoyTimerController implements Bus {
     private boolean oldTimerInput = false;
 
     private int reloadDelay = -1;
-    private boolean reload = false;
 
     public GameBoyTimerController(GameBoyEmulator emulator) {
         this.emulator = emulator;
     }
 
-    public void cycle() {
+    @Override
+    public int readByte(int address) {
+        return switch (address) {
+            case DIV_ADDR -> (this.systemClock & 0xFF00) >>> 8;
+            case TIMA_ADDR -> this.timerCounter;
+            case TMA_ADDR -> this.timerModulo;
+            case TAC_ADDR -> this.timerControl;
+            default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
+        };
+    }
 
-        this.reload = false;
+    @Override
+    public void writeByte(int address, int value) {
+        switch (address) {
+            case DIV_ADDR -> this.systemClock = 0;
+            case TIMA_ADDR -> {
+                if (this.reloadDelay > 0) {
+                    this.reloadDelay = -1;
+                }
+                this.timerCounter = value & 0xFF;
+            }
+            case TMA_ADDR -> this.timerModulo = value & 0xFF;
+            case TAC_ADDR -> this.timerControl = value & 0xFF;
+            default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
+        }
+    }
+
+    public void cycle() {
 
         this.cycleSystemClock();
         this.cycleSystemClock();
@@ -45,11 +68,12 @@ public class GameBoyTimerController implements Bus {
 
     private void cycleSystemClock() {
 
+        this.systemClock = (this.systemClock + 1) & 0xFFFF;
+
         if (this.reloadDelay > 0) {
             this.reloadDelay--;
 
             if (this.reloadDelay <= 0) {
-                this.reload = true;
                 this.timerCounter = this.timerModulo;
                 this.triggerInterrupt();
             }
@@ -77,45 +101,11 @@ public class GameBoyTimerController implements Bus {
         }
 
         this.oldTimerInput = timerInput;
-        this.systemClock = (this.systemClock + 1) & 0xFFFF;
     }
 
     private void triggerInterrupt() {
         this.emulator.getMMIOController().setIF(this.emulator.getMMIOController().getIF() | SM83.TIMER_MASK);
     }
 
-    @Override
-    public void writeByte(int address, int value) {
-        switch (address) {
-            case DIV_ADDR -> this.systemClock = 0;
-            case TIMA_ADDR -> {
-                if (this.reloadDelay > 0) {
-                    this.reloadDelay = -1;
-                }
-                if (!this.reload) {
-                    this.timerCounter = value & 0xFF;
-                }
-            }
-            case TMA_ADDR -> {
-                this.timerModulo = value & 0xFF;
-                if (this.reload) {
-                    this.timerCounter = this.timerModulo;
-                }
-            }
-            case TAC_ADDR -> this.timerControl = value & 0xFF;
-            default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
-        }
-    }
-
-    @Override
-    public int readByte(int address) {
-        return switch (address) {
-            case DIV_ADDR -> (this.systemClock & 0xFF00) >>> 8;
-            case TIMA_ADDR -> this.timerCounter;
-            case TMA_ADDR -> this.timerModulo;
-            case TAC_ADDR -> this.timerControl;
-            default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
-        };
-    }
-
 }
+

@@ -252,9 +252,7 @@ public class SM83 implements Processor {
         return this.WZ & 0xFF;
     }
 
-    @Override
     public int cycle() {
-
         // Set the value of IME on the rising edge of this M-cycle, as a result of EI being set on the previous cycle, delaying its effect for 1 cycle.
         if (getEI()) {
             setEI(false);
@@ -277,7 +275,10 @@ public class SM83 implements Processor {
                 this.opcodeIsPrefixed = false;
             }
         }
+        return 0;
+    }
 
+    public void nextState() {
         // Once an instruction is over...
         if (this.machineCycleIndex < 0) {
 
@@ -300,8 +301,6 @@ public class SM83 implements Processor {
                 machineCycleIndex = 0;
             }
         }
-
-        return 0;
     }
 
     private void fetch() {

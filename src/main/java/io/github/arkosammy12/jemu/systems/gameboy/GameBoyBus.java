@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.systems.gameboy;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.common.Bus;
 import io.github.arkosammy12.jemu.systems.common.BusView;
+import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.BANK_ADDR;
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.DMA_ADDR;
@@ -77,6 +78,7 @@ public class GameBoyBus implements Bus, BusView {
     private int oamDmaControl;
     private int oamTransferDelay;
     private boolean oamTransferInProgress;
+    private boolean oamBusLock;
     private int oamTransferredBytes;
 
     private int lastOamByte;
@@ -104,8 +106,17 @@ public class GameBoyBus implements Bus, BusView {
 
     @Override
     public int readByte(int address) {
-        if (this.oamTransferInProgress && !(address >= HRAM_START && address <= HRAM_END)) {
-            return this.lastOamByte;
+        if (this.oamBusLock) {
+            if (address >= OAM_START && address <= UNUSED_END) {
+                Logger.info("a");
+                return 0xFF;
+            } else if (address >= HRAM_START && address <= HRAM_END) {
+                Logger.info("b");
+                return this.emulator.getProcessor().readHRam(address - HRAM_START);
+            } else {
+                Logger.info("c");
+                return this.lastOamByte;
+            }
         } else if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
             return BOOTIX[address];
         } else if (address >= ROM0_START && address <= ROM0_END) {
@@ -125,8 +136,7 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address >= OAM_START && address <= OAM_END) {
             return this.emulator.getDisplay().readByte(address);
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
-            // TODO: IMPLEMENT OAM LOCKING/UNLOCKING. RETURN 0 WHEN UNLOCKED, 0xFF WHEN LOCKED
-            return 0;
+            return 0x00;
         } else if (address >= IO_START && address <= IO_END) {
             if (address == DMA_ADDR) {
                 return this.oamDmaControl;
@@ -146,10 +156,11 @@ public class GameBoyBus implements Bus, BusView {
 
     @Override
     public void writeByte(int address, int value) {
-        if (this.oamTransferInProgress && !(address >= HRAM_START && address <= HRAM_END)) {
-            return;
-        }
-        if (address >= ROM0_START && address <= ROM0_END) {
+        if (this.oamBusLock) {
+            if (address >= HRAM_START && address <= HRAM_END) {
+                this.emulator.getProcessor().writeHRam(address - HRAM_START, value);
+            }
+        } else if (address >= ROM0_START && address <= ROM0_END) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if (address >= ROMX_START && address <= ROMX_END) {
             this.emulator.getCartridge().writeByte(address, value);
@@ -191,6 +202,8 @@ public class GameBoyBus implements Bus, BusView {
             if (this.oamTransferDelay <= 0) {
                 this.oamTransferInProgress = true;
                 this.oamTransferredBytes = 0;
+            } else if (this.oamTransferDelay == 1) {
+                this.oamBusLock = true;
             }
         }
 
@@ -202,6 +215,7 @@ public class GameBoyBus implements Bus, BusView {
             this.oamTransferredBytes++;
             if (oamTransferredBytes > 0x9F) {
                 this.oamTransferInProgress = false;
+                this.oamBusLock = false;
             }
         }
     }
