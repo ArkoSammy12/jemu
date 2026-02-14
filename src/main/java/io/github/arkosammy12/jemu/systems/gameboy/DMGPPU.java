@@ -124,18 +124,18 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
     @Override
     public int readByte(int address) {
         if (address >= OAM_START && address <= OAM_END) {
-            //int ppuMode = this.getPpuMode();
-            //if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
-            return this.oam[address - OAM_START];
-            //} else {
-            //return 0xFF;
-            //}
+            int ppuMode = this.getPpuMode();
+            if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
+                return this.oam[address - OAM_START];
+            } else {
+                return 0xFF;
+            }
         } else if (address >= VRAM_START && address <= VRAM_END) {
-            //if (this.getPpuMode() != DRAWING_MODE) {
-            return this.vRam[address - VRAM_START];
-            //} else {
-            //return 0xFF;
-            //}
+            if (this.getPpuMode() != DRAWING_MODE) {
+                return this.vRam[address - VRAM_START];
+            } else {
+                return 0xFF;
+            }
         } else {
             return switch (address) {
                 case LCDC_ADDR -> this.lcdControl;
@@ -157,14 +157,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
     @Override
     public void writeByte(int address, int value) {
         if (address >= OAM_START && address <= OAM_END) {
-            //int ppuMode = this.getPpuMode();
-            //if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
-                this.oam[address - OAM_START] = value & 0xFF;
-            //}
+            int ppuMode = this.getPpuMode();
+            if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
+              this.oam[address - OAM_START] = value & 0xFF;
+            }
         } else if (address >= VRAM_START && address <= VRAM_END) {
-            //if (this.getPpuMode() != DRAWING_MODE) {
-                this.vRam[address - VRAM_START] = value & 0xFF;
-            //}
+            if (this.getPpuMode() != DRAWING_MODE) {
+              this.vRam[address - VRAM_START] = value & 0xFF;
+            }
         } else {
             switch (address) {
                 case LCDC_ADDR -> {
@@ -666,6 +666,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends Display<E> implements Bus
 
     private int getScanlineCycle() {
         return Math.toIntExact(this.cycles % CYCLES_PER_SCANLINE);
+    }
+
+    public void writeOamDma(int address, int value) {
+        if (address >= OAM_START && address <= OAM_END) {
+            this.oam[address - OAM_START] = value & 0xFF;
+        } else {
+            throw new IllegalArgumentException("Invalid GameBoy OAM address \"%04X\"!".formatted(address));
+        }
     }
 
     private int getOamByte(int address) {

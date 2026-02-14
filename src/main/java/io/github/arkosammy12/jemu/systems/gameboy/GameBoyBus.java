@@ -3,7 +3,6 @@ package io.github.arkosammy12.jemu.systems.gameboy;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.common.Bus;
 import io.github.arkosammy12.jemu.systems.common.BusView;
-import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.BANK_ADDR;
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.DMA_ADDR;
@@ -108,13 +107,10 @@ public class GameBoyBus implements Bus, BusView {
     public int readByte(int address) {
         if (this.oamBusLock) {
             if (address >= OAM_START && address <= UNUSED_END) {
-                Logger.info("a");
                 return 0xFF;
             } else if (address >= HRAM_START && address <= HRAM_END) {
-                Logger.info("b");
                 return this.emulator.getProcessor().readHRam(address - HRAM_START);
             } else {
-                Logger.info("c");
                 return this.lastOamByte;
             }
         } else if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
@@ -210,7 +206,7 @@ public class GameBoyBus implements Bus, BusView {
         if (this.oamTransferInProgress) {
             int sourceAddress = (this.oamDmaControl << 8) | (this.oamTransferredBytes);
             int oamByte = this.readByteDma(sourceAddress);
-            this.emulator.getDisplay().writeByte(0xFE00 | this.oamTransferredBytes, oamByte);
+            this.emulator.getDisplay().writeOamDma(0xFE00 | this.oamTransferredBytes, oamByte);
             this.lastOamByte = oamByte;
             this.oamTransferredBytes++;
             if (oamTransferredBytes > 0x9F) {

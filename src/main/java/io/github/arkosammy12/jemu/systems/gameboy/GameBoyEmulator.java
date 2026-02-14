@@ -6,13 +6,14 @@ import io.github.arkosammy12.jemu.systems.common.Bus;
 import io.github.arkosammy12.jemu.systems.common.Emulator;
 import io.github.arkosammy12.jemu.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.main.Jemu;
-import io.github.arkosammy12.jemu.systems.common.SoundSystem;
 import io.github.arkosammy12.jemu.ui.debugger.DebuggerSchema;
 import io.github.arkosammy12.jemu.util.System;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.KeyAdapter;
 import java.util.List;
+
+import static io.github.arkosammy12.jemu.systems.gameboy.SM83.INSTRUCTION_FINISHED_FLAG;
 
 public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
@@ -22,8 +23,9 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     private static final int M_CYCLES_PER_FRAME = T_CYCLES_PER_FRAME / 4;
 
     private final Jemu jemu;
-    private final GameBoyEmulatorSettings  emulatorSettings;
+    private final GameBoyEmulatorSettings emulatorSettings;
     private final System system;
+    private int currentInstructionsPerFrame;
 
     private final SM83 cpu;
     private final GameBoyBus bus;
@@ -122,26 +124,33 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     @Override
     public void executeFrame() {
         for (int i = 0; i < M_CYCLES_PER_FRAME; i++) {
-            this.cpu.cycle();
-            this.bus.cycle();
-            this.timerController.cycle();
-            this.cpu.nextState();
-            this.ppu.cycle();
+            this.runCycle();
         }
+        this.apu.pushSamples();
     }
 
     @Override
     public void executeCycle() {
-        this.cpu.cycle();
+        this.runCycle();
+    }
+
+    private void runCycle() {
+        int flags = this.cpu.cycle();
         this.bus.cycle();
         this.timerController.cycle();
         this.cpu.nextState();
         this.ppu.cycle();
+
+        if ((flags & INSTRUCTION_FINISHED_FLAG) != 0) {
+            this.currentInstructionsPerFrame++;
+        }
     }
 
     @Override
     public int getCurrentInstructionsPerFrame() {
-        return 0;
+        int ret = this.currentInstructionsPerFrame;
+        this.currentInstructionsPerFrame = 0;
+        return ret;
     }
 
     @Override

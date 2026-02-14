@@ -5,6 +5,8 @@ import io.github.arkosammy12.jemu.systems.common.Processor;
 
 public class SM83 implements Processor {
 
+    public static final int INSTRUCTION_FINISHED_FLAG = 1;
+
     public static final int JOYP_BIT = 4;
     public static final int SERIAL_BIT = 3;
     public static final int TIMER_BIT = 2;
@@ -253,6 +255,8 @@ public class SM83 implements Processor {
     }
 
     public int cycle() {
+        int flags = 0;
+
         // Set the value of IME on the rising edge of this M-cycle, as a result of EI being set on the previous cycle, delaying its effect for 1 cycle.
         if (getEI()) {
             setEI(false);
@@ -262,6 +266,7 @@ public class SM83 implements Processor {
         // If we are currently executing an instruction or interrupt servicing request, step through it
         if (this.machineCycleIndex >= 0) {
 
+            boolean originalServicingInterrupt = this.servicingInterrupt;
             if (this.servicingInterrupt) {
                 this.serviceInterrupt();
             } else if (this.opcodeIsPrefixed) {
@@ -273,9 +278,14 @@ public class SM83 implements Processor {
             // Once the instruction or handler signals its end, reset the prefix signal
             if (this.machineCycleIndex < 0) {
                 this.opcodeIsPrefixed = false;
+
+                if (!originalServicingInterrupt && !this.servicingInterrupt) {
+                    flags |= INSTRUCTION_FINISHED_FLAG;
+                }
+
             }
         }
-        return 0;
+        return flags;
     }
 
     public void nextState() {

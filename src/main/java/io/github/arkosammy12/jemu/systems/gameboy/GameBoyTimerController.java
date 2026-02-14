@@ -23,6 +23,7 @@ public class GameBoyTimerController implements Bus {
     private int timerControl; // TAC
 
     private boolean oldTimerInput = false;
+    private boolean reloadOccurred = false;
 
     private int reloadDelay = -1;
 
@@ -37,7 +38,7 @@ public class GameBoyTimerController implements Bus {
             case TIMA_ADDR -> this.timerCounter;
             case TMA_ADDR -> this.timerModulo;
             case TAC_ADDR -> this.timerControl;
-            default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
+            default -> throw new EmulatorException("Invalid GameBoy timer address " + String.format("%04X", address) + "!");
         };
     }
 
@@ -46,17 +47,25 @@ public class GameBoyTimerController implements Bus {
         switch (address) {
             case DIV_ADDR -> this.systemClock = 0;
             case TIMA_ADDR -> {
-                if (this.reloadDelay > 0) {
+                if (this.reloadDelay >= 0) {
                     this.reloadDelay = -1;
                 }
-                this.timerCounter = value & 0xFF;
+                if (!this.reloadOccurred) {
+                    this.timerCounter = value & 0xFF;
+                }
             }
-            case TMA_ADDR -> this.timerModulo = value & 0xFF;
+            case TMA_ADDR -> {
+                this.timerModulo = value & 0xFF;
+                if (this.reloadOccurred) {
+                    this.timerCounter = this.timerModulo;
+                }
+            }
             case TAC_ADDR -> this.timerControl = value & 0xFF;
             default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
         }
     }
 
+    // It is assumed that this is called once per M-cycle, after the CPU performs the action of the current cycle, but before it fetches (if instruction ended), or polls for interrupts (if any)
     public void cycle() {
 
         this.cycleSystemClock();
@@ -69,13 +78,14 @@ public class GameBoyTimerController implements Bus {
     private void cycleSystemClock() {
 
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
-
+        this.reloadOccurred = false;
         if (this.reloadDelay > 0) {
             this.reloadDelay--;
 
             if (this.reloadDelay <= 0) {
                 this.timerCounter = this.timerModulo;
                 this.triggerInterrupt();
+                this.reloadOccurred = true;
             }
 
         }
