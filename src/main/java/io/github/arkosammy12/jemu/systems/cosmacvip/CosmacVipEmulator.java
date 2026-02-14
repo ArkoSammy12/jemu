@@ -201,7 +201,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
             this.runCycles();
         }
         this.display.flush();
-        this.soundSystem.pushSamples(this.processor.getQ() ? 1 : 0);
+        this.soundSystem.pushSamples();
     }
 
     private void runCycles() {

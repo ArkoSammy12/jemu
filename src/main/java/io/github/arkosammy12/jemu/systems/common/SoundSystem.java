@@ -4,6 +4,6 @@ public interface SoundSystem {
 
     int SAMPLE_RATE = 44100;
 
-    void pushSamples(int soundTimer);
+    void pushSamples();
 
 }

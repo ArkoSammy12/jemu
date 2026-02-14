@@ -10,6 +10,7 @@ public class CosmacVipSoundSystem implements SoundSystem {
     public static final int SQUARE_WAVE_AMPLITUDE = 4;
 
     protected final Jemu jemu;
+    protected final CosmacVipEmulator emulator;
     protected double step = (4000 * Math.pow(2.0, (175 - 64) / 48.0)) / 128.0 / SAMPLE_RATE;
     protected double phase = 0.0;
 
@@ -21,12 +22,13 @@ public class CosmacVipSoundSystem implements SoundSystem {
             0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0
     };
 
-    public CosmacVipSoundSystem(Emulator emulator) {
+    public CosmacVipSoundSystem(CosmacVipEmulator emulator) {
         this.jemu = emulator.getEmulatorSettings().getJemu();
+        this.emulator = emulator;
     }
 
-    public void pushSamples(int soundTimer) {
-        if (soundTimer <= 0) {
+    public void pushSamples() {
+        if (!this.emulator.getProcessor().getQ()) {
             this.phase = 0;
             return;
         }

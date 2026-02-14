@@ -76,7 +76,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public SoundSystem getSoundSystem() {
+    public DMGAPU getSoundSystem() {
         return this.apu;
     }
 

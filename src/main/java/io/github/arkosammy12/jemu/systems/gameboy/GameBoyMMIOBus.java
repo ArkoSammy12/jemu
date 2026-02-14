@@ -97,11 +97,7 @@ public class GameBoyMMIOBus implements Bus {
         } else if (address == IF_ADDR) {
             return this.interruptFlag;
         } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
-            // TODO: APU
-            if (address == NR52_ADDR) {
-                return 0;
-            }
-            return 0xFF;
+            return this.emulator.getSoundSystem().readByte(address);
         } else if ((address >= LCDC_ADDR && address <= LYC_ADDR) || (address >= BGP_ADDR && address <= WX_ADDR)) {
             return this.emulator.getDisplay().readByte(address);
         } else if (address == IE_ADDR) {
@@ -124,7 +120,7 @@ public class GameBoyMMIOBus implements Bus {
         } else if (address == IF_ADDR) {
             this.interruptFlag = value & 0xFF;
         } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
-            // TODO: APU
+            this.emulator.getSoundSystem().writeByte(address, value);
         } else if ((address >= LCDC_ADDR && address <= LYC_ADDR) || (address >= BGP_ADDR && address <= WX_ADDR)) {
             this.emulator.getDisplay().writeByte(address, value);
         } else if (address == IE_ADDR) {

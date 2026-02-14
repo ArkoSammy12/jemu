@@ -10,12 +10,14 @@ import static io.github.arkosammy12.jemu.systems.cosmacvip.CosmacVipSoundSystem.
 public class VP595 implements SoundSystem, IODevice {
 
     private final Jemu jemu;
+    private final CosmacVipEmulator emulator;
 
     private double frequencyLatch = 27535.0 / (0x80 + 1);
     private double phase = 0.0;
 
-    public VP595(Emulator emulator) {
+    public VP595(CosmacVipEmulator emulator) {
         this.jemu = emulator.getEmulatorSettings().getJemu();
+        this.emulator = emulator;
     }
 
     @Override
@@ -30,9 +32,9 @@ public class VP595 implements SoundSystem, IODevice {
     }
 
     @Override
-    public void pushSamples(int soundTimer) {
+    public void pushSamples() {
         double frequency = frequencyLatch;
-        if (soundTimer <= 0) {
+        if (!this.emulator.getProcessor().getQ()) {
             phase = 0;
             return;
         }
