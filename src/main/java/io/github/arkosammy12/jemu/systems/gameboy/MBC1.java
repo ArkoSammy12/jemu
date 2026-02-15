@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.systems.gameboy;
 
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
-
+import org.tinylog.Logger;
 
 public class MBC1 extends GameBoyCartridge {
 
@@ -9,6 +9,7 @@ public class MBC1 extends GameBoyCartridge {
     private final int[][] ramBanks;
 
     private final int romBankMask;
+    private final int ramBankMask;
 
     private int ramGate;
     private int bank1 = 1;
@@ -48,6 +49,8 @@ public class MBC1 extends GameBoyCartridge {
         }
 
         this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
+        this.ramBankMask = this.ramBanks == null ? 0:  ((1 << (32 - Integer.numberOfLeadingZeros(this.ramBanks.length))) - 1) >> 1;
+
     }
 
     @Override
@@ -64,12 +67,12 @@ public class MBC1 extends GameBoyCartridge {
             if (this.ramGate != 0b1010 || this.ramBanks == null) {
                 return 0xFF;
             } else if ((this.mode & 1) != 0) {
-                return this.ramBanks[this.bank2][address - 0xA000];
+                return this.ramBanks[this.bank2 & this.ramBankMask][address - 0xA000];
             } else {
                 return this.ramBanks[0][address - 0xA000];
             }
         } else {
-            throw new EmulatorException("Invalid address " + String.format("%04X", address) + " for MBC1 cartridge read!");
+            throw new EmulatorException("Invalid GameBoy MBC1 cartridge address \"%04X\"!".formatted(address));
         }
     }
 
@@ -79,10 +82,10 @@ public class MBC1 extends GameBoyCartridge {
             this.ramGate = value & 0xF;
         } else if (address >= 0x2000 && address <= 0x3FFF) {
             this.bank1 = value & 0b11111;
-            this.bank1 &= this.romBankMask;
             if (this.bank1 == 0) {
                 this.bank1 = 1;
             }
+            this.bank1 &= this.romBankMask;
         } else if (address >= 0x4000 && address <= 0x5FFF) {
             this.bank2 = value & 0b11;
         } else if (address >= 0x6000 && address <= 0x7FFF) {
@@ -90,7 +93,7 @@ public class MBC1 extends GameBoyCartridge {
         } else if (address >= 0xA000 && address <= 0xBFFF) {
             if (this.ramGate == 0b1010 && this.ramBanks != null) {
                 if ((this.mode & 1) != 0) {
-                    this.ramBanks[this.bank2][address - 0xA000] = value & 0xFF;
+                    this.ramBanks[this.bank2 & this.ramBankMask][address - 0xA000] = value & 0xFF;
                 } else {
                     this.ramBanks[0][address - 0xA000] = value & 0xFF;
                 }

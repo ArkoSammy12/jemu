@@ -266,7 +266,7 @@ public class SM83 implements Processor {
         // If we are currently executing an instruction or interrupt servicing request, step through it
         if (this.machineCycleIndex >= 0) {
 
-            boolean originalServicingInterrupt = this.servicingInterrupt;
+            boolean servicedInterrupt = this.servicingInterrupt;
             if (this.servicingInterrupt) {
                 this.serviceInterrupt();
             } else if (this.opcodeIsPrefixed) {
@@ -279,7 +279,7 @@ public class SM83 implements Processor {
             if (this.machineCycleIndex < 0) {
                 this.opcodeIsPrefixed = false;
 
-                if (!originalServicingInterrupt && !this.servicingInterrupt) {
+                if (!servicedInterrupt) {
                     flags |= INSTRUCTION_FINISHED_FLAG;
                 }
 
