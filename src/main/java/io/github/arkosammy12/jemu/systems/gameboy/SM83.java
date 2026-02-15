@@ -1082,7 +1082,7 @@ public class SM83 implements Processor {
                                         setFH((left & 0xF) + (Z & 0xF) > 0xF);
                                         setFC(result > 0xFF);
 
-                                        // Temporarily the sign extension on the W register
+                                        // Temporarily store the sign extension on the W register
                                         setW(Processor.getBit(7, Z) != 0 ? 0xFF : 0x00);
 
                                         machineCycleIndex = 2;
