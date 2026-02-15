@@ -27,9 +27,15 @@ public abstract class GameBoyCartridge implements Bus {
     public static GameBoyCartridge getCartridge(GameBoyEmulator emulator) {
         int cartridgeType = emulator.getEmulatorSettings().getRom()[CARTRIDGE_TYPE_ADDRESS];
         return switch (cartridgeType) {
-            case 0x01, 0x02, 0x03 -> new MBC1(emulator,  cartridgeType);
+            case 0x01, 0x02, 0x03 -> new MBC1(emulator, cartridgeType);
+            case 0x05, 0x06 -> new MBC2(emulator, cartridgeType);
+            case 0x0F, 0x10, 0x11, 0x12, 0x13 -> new MBC3(emulator, cartridgeType);
             default -> new MBC0(emulator, cartridgeType);
         };
+    }
+
+    public void cycle() {
+
     }
 
 }

@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.systems.gameboy;
 
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
-import org.tinylog.Logger;
 
 public class MBC1 extends GameBoyCartridge {
 
@@ -49,7 +48,7 @@ public class MBC1 extends GameBoyCartridge {
         }
 
         this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
-        this.ramBankMask = this.ramBanks == null ? 0:  ((1 << (32 - Integer.numberOfLeadingZeros(this.ramBanks.length))) - 1) >> 1;
+        this.ramBankMask = this.ramBanks == null ? 0 : ((1 << (32 - Integer.numberOfLeadingZeros(this.ramBanks.length))) - 1) >> 1;
 
     }
 
@@ -72,7 +71,7 @@ public class MBC1 extends GameBoyCartridge {
                 return this.ramBanks[0][address - 0xA000];
             }
         } else {
-            throw new EmulatorException("Invalid GameBoy MBC1 cartridge address \"%04X\"!".formatted(address));
+            throw new EmulatorException("Invalid GameBoy MBC1 cartridge address 0x\"%04X\"!".formatted(address));
         }
     }
 
