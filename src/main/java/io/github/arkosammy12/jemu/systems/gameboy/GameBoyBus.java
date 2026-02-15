@@ -105,22 +105,9 @@ public class GameBoyBus implements Bus, BusView {
 
     @Override
     public int readByte(int address) {
-        if (this.oamTransferInProgress) {
-            /*
-            if (address >= OAM_START && address <= UNUSED_END) {
-                return 0xFF;
-            } else if (address >= HRAM_START && address <= HRAM_END) {
-                return this.emulator.getProcessor().readHRam(address - HRAM_START);
-            } else {
-                return this.lastOamByte;
-            }
-             */
-            if (address >= HRAM_START && address <= HRAM_END) {
-                return this.emulator.getProcessor().readHRam(address - HRAM_START);
-            } else {
-                return 0xFF;
-            }
-        } else if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
+        if (this.isOamBusConflict(address)) {
+            return 0xFF;
+        } if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
             return BOOTIX[address];
         } else if (address >= ROM0_START && address <= ROM0_END) {
             return this.emulator.getCartridge().readByte(address);
@@ -241,6 +228,27 @@ public class GameBoyBus implements Bus, BusView {
         } else {
             throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
         }
+    }
+
+    private boolean isOamBusConflict(int address) {
+        if (address >= HRAM_START && address <= HRAM_END) {
+            return false;
+        }
+        boolean oamBusConflict = false;
+        if (this.oamTransferInProgress) {
+            if (address >= OAM_START && address <= OAM_END) {
+                return true;
+            }
+            int sourceAddress = (this.oamDmaControl << 8) | (this.oamTransferredBytes);
+            if (address >= 0x0000 && address <= 0x7FFF && sourceAddress >= 0x0000 && sourceAddress <= 0x7FFF) { // External bus
+                oamBusConflict = true;
+            } else if (address >= 0xA000 && address <= 0xFDFF && sourceAddress >= 0xA000 && sourceAddress <= 0xFDFF) { // External bus
+                oamBusConflict = true;
+            } else if (address >= 0x8000 && address <= 0x9FFF  && sourceAddress >= 0x8000 && sourceAddress <= 0x9FFF) { // VRAM bus
+                oamBusConflict = true;
+            }
+        }
+        return oamBusConflict;
     }
 
 }
