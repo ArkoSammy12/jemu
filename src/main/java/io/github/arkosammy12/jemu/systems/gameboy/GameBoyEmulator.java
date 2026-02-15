@@ -136,10 +136,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     private void runCycle() {
         int flags = this.cpu.cycle();
-        this.bus.cycle();
         this.timerController.cycle();
         this.cpu.nextState();
         this.ppu.cycle();
+        this.bus.cycle();
 
         if ((flags & INSTRUCTION_FINISHED_FLAG) != 0) {
             this.currentInstructionsPerFrame++;

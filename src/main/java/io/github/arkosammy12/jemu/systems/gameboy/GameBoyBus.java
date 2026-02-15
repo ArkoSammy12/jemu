@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.systems.gameboy;
 import io.github.arkosammy12.jemu.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.systems.common.Bus;
 import io.github.arkosammy12.jemu.systems.common.BusView;
+import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.BANK_ADDR;
 import static io.github.arkosammy12.jemu.systems.gameboy.GameBoyMMIOBus.DMA_ADDR;
@@ -77,7 +78,6 @@ public class GameBoyBus implements Bus, BusView {
     private int oamDmaControl;
     private int oamTransferDelay;
     private boolean oamTransferInProgress;
-    private boolean oamBusLock;
     private int oamTransferredBytes;
 
     private int lastOamByte;
@@ -105,7 +105,7 @@ public class GameBoyBus implements Bus, BusView {
 
     @Override
     public int readByte(int address) {
-        if (this.oamBusLock) {
+        if (this.oamTransferInProgress) {
             if (address >= OAM_START && address <= UNUSED_END) {
                 return 0xFF;
             } else if (address >= HRAM_START && address <= HRAM_END) {
@@ -146,17 +146,16 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address == IE_REGISTER) {
             return this.emulator.getMMIOController().readByte(address);
         } else {
-            throw new EmulatorException("Invalid address: " + String.format("%04X", address) + " for the GameBoy system!");
+            throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
         }
     }
 
     @Override
     public void writeByte(int address, int value) {
-        if (this.oamBusLock) {
-            if (address >= HRAM_START && address <= HRAM_END) {
-                this.emulator.getProcessor().writeHRam(address - HRAM_START, value);
-            }
-        } else if (address >= ROM0_START && address <= ROM0_END) {
+        if (this.oamTransferInProgress && address < 0xFF00) {
+            return;
+        }
+        if (address >= ROM0_START && address <= ROM0_END) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if (address >= ROMX_START && address <= ROMX_END) {
             this.emulator.getCartridge().writeByte(address, value);
@@ -188,32 +187,29 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address == IE_REGISTER) {
             this.emulator.getMMIOController().writeByte(address, value);
         } else {
-            throw new EmulatorException("Invalid address: " + String.format("%04X", address) + " for the GameBoy system!");
+            throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
         }
     }
 
     public void cycle() {
-        if (this.oamTransferDelay > 0) {
-            this.oamTransferDelay--;
-            if (this.oamTransferDelay <= 0) {
-                this.oamTransferInProgress = true;
-                this.oamTransferredBytes = 0;
-            } else if (this.oamTransferDelay == 1) {
-                this.oamBusLock = true;
-            }
-        }
-
         if (this.oamTransferInProgress) {
             int sourceAddress = (this.oamDmaControl << 8) | (this.oamTransferredBytes);
             int oamByte = this.readByteDma(sourceAddress);
             this.emulator.getDisplay().writeOamDma(0xFE00 | this.oamTransferredBytes, oamByte);
             this.lastOamByte = oamByte;
             this.oamTransferredBytes++;
-            if (oamTransferredBytes > 0x9F) {
+            if (this.oamTransferredBytes > 0x9F) {
                 this.oamTransferInProgress = false;
-                this.oamBusLock = false;
             }
         }
+        if (this.oamTransferDelay > 0) {
+            this.oamTransferDelay--;
+            if (this.oamTransferDelay <= 0) {
+                this.oamTransferInProgress = true;
+                this.oamTransferredBytes = 0;
+            }
+        }
+
     }
 
     private int readByteDma(int address) {
@@ -236,7 +232,7 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address >= 0xFE00 && address <= 0xFFFF) {
             return this.workRam[address & 0x1FFF];
         } else {
-            throw new EmulatorException("Invalid OAM DMA address: " + String.format("%04X", address) + " for the GameBoy system!");
+            throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
         }
     }
 
