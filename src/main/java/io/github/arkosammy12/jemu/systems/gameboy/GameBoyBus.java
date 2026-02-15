@@ -106,12 +106,19 @@ public class GameBoyBus implements Bus, BusView {
     @Override
     public int readByte(int address) {
         if (this.oamTransferInProgress) {
+            /*
             if (address >= OAM_START && address <= UNUSED_END) {
                 return 0xFF;
             } else if (address >= HRAM_START && address <= HRAM_END) {
                 return this.emulator.getProcessor().readHRam(address - HRAM_START);
             } else {
                 return this.lastOamByte;
+            }
+             */
+            if (address >= HRAM_START && address <= HRAM_END) {
+                return this.emulator.getProcessor().readHRam(address - HRAM_START);
+            } else {
+                return 0xFF;
             }
         } else if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
             return BOOTIX[address];
