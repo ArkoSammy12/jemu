@@ -6,12 +6,16 @@ import io.github.arkosammy12.jemu.systems.common.Emulator;
 import io.github.arkosammy12.jemu.systems.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.util.DisplayAngle;
 import io.github.arkosammy12.jemu.util.System;
+import org.tinylog.Logger;
 
 import java.util.Optional;
 
 public class GameBoyEmulatorSettings extends AbstractEmulatorSettings {
 
     private final String romTitle;
+
+    private static final int HEADER_TITLE_START = 0x0134;
+    private static final int HEADER_TITLE_END = 0x0143;
 
     private final DisplayAngle displayAngle;
     private final System system;
@@ -20,7 +24,20 @@ public class GameBoyEmulatorSettings extends AbstractEmulatorSettings {
     public GameBoyEmulatorSettings(Jemu jemu, CommonInitializer initializer, Model model) {
         super(jemu, initializer);
         this.displayAngle = initializer.getDisplayAngle().orElse(DisplayAngle.DEG_0);
-        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+
+        StringBuilder titleBuilder;
+        String title = null;
+        try {
+            titleBuilder = new StringBuilder();
+            int[] rom = this.getRom();
+            for (int i = HEADER_TITLE_START; i <= HEADER_TITLE_END; i++) {
+                titleBuilder.append((char)rom[i]);
+            }
+            title = titleBuilder.toString();
+        } catch (ArrayIndexOutOfBoundsException e) {
+            Logger.error("Failed to read ROM title from GameBoy cartridge header!", e);
+        }
+        this.romTitle = title != null ? title : initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
         this.system = initializer.getSystem().orElse(System.GAME_BOY);
         this.model = model;
     }
