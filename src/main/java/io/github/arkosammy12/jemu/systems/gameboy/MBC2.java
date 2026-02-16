@@ -11,10 +11,10 @@ public class MBC2 extends GameBoyCartridge {
     private final int[][] romBanks;
     private final int[] sRam = new int[512];
 
+    private final int romBankMask;
+
     private int romBankNumber = 0xF1;
     private int ramGate = 0xF0;
-
-    private final int romBankMask;
 
     public MBC2(GameBoyEmulator emulator, int cartridgeType) {
         super(emulator, cartridgeType);

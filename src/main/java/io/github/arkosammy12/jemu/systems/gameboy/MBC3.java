@@ -2,6 +2,8 @@ package io.github.arkosammy12.jemu.systems.gameboy;
 
 public class MBC3 extends GameBoyCartridge {
 
+    private static final int CLOCK_FREQUENCY = 32768;
+
     public MBC3(GameBoyEmulator emulator, int cartridgeType) {
         super(emulator, cartridgeType);
     }
