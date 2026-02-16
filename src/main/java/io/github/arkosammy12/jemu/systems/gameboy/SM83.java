@@ -257,16 +257,14 @@ public class SM83 implements Processor {
     public int cycle() {
         int flags = 0;
 
-        // Set the value of IME on the rising edge of this M-cycle, as a result of EI being set on the previous cycle, delaying its effect for 1 cycle.
         if (getEI()) {
             setEI(false);
             setIME(true);
         }
 
-        // If we are currently executing an instruction or interrupt servicing request, step through it
         if (this.machineCycleIndex >= 0) {
-
             boolean servicedInterrupt = this.servicingInterrupt;
+
             if (this.servicingInterrupt) {
                 this.serviceInterrupt();
             } else if (this.opcodeIsPrefixed) {
@@ -275,39 +273,26 @@ public class SM83 implements Processor {
                 this.execute();
             }
 
-            // Once the instruction or handler signals its end, reset the prefix signal
             if (this.machineCycleIndex < 0) {
                 this.opcodeIsPrefixed = false;
-
                 if (!servicedInterrupt) {
                     flags |= INSTRUCTION_FINISHED_FLAG;
                 }
-
             }
         }
         return flags;
     }
 
     public void nextState() {
-        // Once an instruction is over...
         if (this.machineCycleIndex < 0) {
-
-            // Fetch the next opcode
             this.fetch();
 
-            // If we aren't in the middle of fetching a prefixed instruction, then check for interrupts
             if (!this.opcodeIsPrefixed && checkInterrupts()) {
-
-                // Update signal and begin the interrupt servicing routine by setting the machine cycle index to 0
                 this.servicingInterrupt = true;
                 machineCycleIndex = 0;
             } else if (getIR() == PREFIX && !this.opcodeIsPrefixed) {
-
-                // Otherwise, if the fetched byte is a prefix, and we haven't set the prefix flag, then we set it to trigger another fetch on the next cycle
                 this.opcodeIsPrefixed = true;
             } else {
-
-                // Otherwise, begin executing the current opcode by setting the machine cycle index to 0
                 machineCycleIndex = 0;
             }
         }
@@ -394,12 +379,6 @@ public class SM83 implements Processor {
         int z = getZ(getIR());
         int p = getP(getIR());
         int q = getQ(getIR());
-
-        /*
-            d = displacement byte (8-bit signed integer)
-            n = 8-bit immediate operand (unsigned integer)
-            nn = 16-bit immediate operand (unsigned integer)
-         */
 
         switch (x) {
             case 0 -> {

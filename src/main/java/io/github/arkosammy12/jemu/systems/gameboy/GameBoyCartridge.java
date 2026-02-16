@@ -29,7 +29,8 @@ public abstract class GameBoyCartridge implements Bus {
         return switch (cartridgeType) {
             case 0x01, 0x02, 0x03 -> new MBC1(emulator, cartridgeType);
             case 0x05, 0x06 -> new MBC2(emulator, cartridgeType);
-            case 0x0F, 0x10, 0x11, 0x12, 0x13 -> new MBC3(emulator, cartridgeType);
+            case 0x0F, 0x10 -> new RTCMBC3(emulator, cartridgeType);
+            case 0x11, 0x12, 0x13 -> new MBC3(emulator, cartridgeType);
             case 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E -> new MBC5(emulator, cartridgeType);
             default -> new MBC0(emulator, cartridgeType);
         };

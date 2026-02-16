@@ -14,9 +14,9 @@ import java.util.Optional;
 import java.util.function.BiFunction;
 
 public enum System implements DisplayNameProvider, Serializable {
-    HYBRID_CHIP_8("hybrid-chip-8", "HYBRID CHIP-8", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8)),
-    HYBRID_CHIP_8X("hybrid-chip-8x", "HYBRID CHIP-8X", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8X)),
     COSMAC_VIP("cosmac-vip", "COSMAC-VIP", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.NONE)),
+    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8)),
+    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", (jemu, initializer) -> new CosmacVipEmulatorSettings(jemu, initializer, CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8X)),
     GAME_BOY("game-boy", "Game Boy", (jemu, initializer) -> new GameBoyEmulatorSettings(jemu, initializer, GameBoyEmulatorSettings.Model.DMG));
 
     private final String identifier;
