@@ -56,7 +56,10 @@ public class RTCMBC3 extends MBC3 {
         if (address >= 0xA000 && address <= 0xBFFF) {
             if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramEnable == 0x0A) {
                 switch (this.ramBankNumber) {
-                    case RTC_S_ADDR -> this.internalSeconds = value & 0x3F;
+                    case RTC_S_ADDR -> {
+                        this.internalSeconds = value & 0x3F;
+                        this.subSecondCounter = 0;
+                    }
                     case RTC_M_ADDR -> this.internalMinutes = value & 0x3F;
                     case RTC_H_ADDR -> this.internalHours = value & 0x1F;
                     case RTC_DL_ADDR -> this.internalDays = (this.internalDays & 0b100000000) | (value & 0xFF);
