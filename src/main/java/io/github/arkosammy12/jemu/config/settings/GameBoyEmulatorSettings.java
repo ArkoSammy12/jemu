@@ -31,7 +31,13 @@ public class GameBoyEmulatorSettings extends AbstractEmulatorSettings {
             titleBuilder = new StringBuilder();
             int[] rom = this.getRom();
             for (int i = HEADER_TITLE_START; i <= HEADER_TITLE_END; i++) {
-                titleBuilder.append((char)rom[i]);
+                int b = rom[i] & 0xFF;
+                if (b == 0x00) {
+                    break;
+                }
+                if (b >= 0x20 && b <= 0x7E) {
+                    titleBuilder.append((char) b);
+                }
             }
             title = titleBuilder.toString();
         } catch (ArrayIndexOutOfBoundsException e) {
