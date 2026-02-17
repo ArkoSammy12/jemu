@@ -1,2 +1,2 @@
 Manifest-Version: 1.0
-Main-Class: io.github.arkosammy12.jemu.main.Main
+Main-Class: io.github.arkosammy12.jemu.application.Main
