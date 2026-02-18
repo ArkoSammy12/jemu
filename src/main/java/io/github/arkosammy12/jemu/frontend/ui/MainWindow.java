@@ -8,7 +8,6 @@ import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitialize
 import io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerPanel;
 import io.github.arkosammy12.jemu.frontend.ui.util.ToggleableSplitPane;
 import io.github.arkosammy12.jemu.frontend.ui.util.WindowTitleManager;
-import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -31,7 +30,7 @@ public class MainWindow extends JFrame implements EmulatorInitializerConsumer, C
     private final ToggleableSplitPane mainSplitPane;
     private final LeftPanel leftPanel;
     private final SettingsBar settingsBar;
-    private final InfoBar infoBar;
+    private final StatusBar statusBar;
 
     private final CC infoBarConstraints;
 
@@ -53,7 +52,7 @@ public class MainWindow extends JFrame implements EmulatorInitializerConsumer, C
 
         this.leftPanel = new LeftPanel(jemu, this);
         this.settingsBar = new SettingsBar(jemu, this);
-        this.infoBar = new InfoBar(jemu);
+        this.statusBar = new StatusBar(jemu);
         DebuggerPanel debuggerPanel = new DebuggerPanel(jemu, this);
         this.mainSplitPane = new ToggleableSplitPane(JSplitPane.HORIZONTAL_SPLIT, this.leftPanel, debuggerPanel, 5, 0.5);
 
@@ -61,7 +60,7 @@ public class MainWindow extends JFrame implements EmulatorInitializerConsumer, C
 
         this.setJMenuBar(this.settingsBar);
         this.add(this.mainSplitPane, new CC().grow().push().wrap());
-        this.add(this.infoBar, this.infoBarConstraints);
+        this.add(this.statusBar, this.infoBarConstraints);
 
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -151,7 +150,7 @@ public class MainWindow extends JFrame implements EmulatorInitializerConsumer, C
 
     public void setInfoBarEnabled(boolean enabled) {
         SwingUtilities.invokeLater(() -> {
-            this.infoBar.setVisible(enabled);
+            this.statusBar.setVisible(enabled);
             this.infoBarConstraints.setHideMode(enabled ? 0 : 3);
             this.revalidate();
             this.repaint();
@@ -166,9 +165,11 @@ public class MainWindow extends JFrame implements EmulatorInitializerConsumer, C
         ));
     }
 
+    /*
     public void onBreakpoint() {
         this.settingsBar.onBreakpoint();
     }
+     */
 
     @Override
     public void close() {

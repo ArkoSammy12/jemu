@@ -18,6 +18,27 @@ import java.util.Optional;
 )
 public class CLIArgs implements EmulatorInitializer {
 
+    private final int quickExitCode;
+
+    public CLIArgs(String[] args) {
+        CommandLine cli = new CommandLine(this);
+        CommandLine.ParseResult parseResult = cli.parseArgs(args);
+        Integer executeHelpResult = CommandLine.executeHelpRequest(parseResult);
+        int exitCodeOnUsageHelp = cli.getCommandSpec().exitCodeOnUsageHelp();
+        int exitCodeOnVersionHelp = cli.getCommandSpec().exitCodeOnVersionHelp();
+        if (executeHelpResult != null) {
+            if (executeHelpResult == exitCodeOnUsageHelp) {
+                this.quickExitCode = exitCodeOnUsageHelp;
+            } else if (executeHelpResult == exitCodeOnVersionHelp) {
+                this.quickExitCode = exitCodeOnVersionHelp;
+            } else {
+                this.quickExitCode = -1;
+            }
+        } else {
+            this.quickExitCode = -1;
+        }
+    }
+
     @CommandLine.Option(
             names = {"--rom", "-r"},
             required = true,
@@ -60,6 +81,10 @@ public class CLIArgs implements EmulatorInitializer {
     @Override
     public Optional<System> getSystem() {
         return this.system;
+    }
+
+    public int getExitCode() {
+        return this.quickExitCode;
     }
 
 }

@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.application.drivers;
 
 import io.github.arkosammy12.jemu.backend.common.VideoGenerator;
 import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
+import org.tinylog.Logger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -80,7 +81,7 @@ public class JPanelVideoDriver extends JPanel implements VideoDriver, Closeable 
         }
     }
 
-    private void updateTransformIfNeeded() {
+        private void updateTransformIfNeeded() {
         int w = this.getWidth();
         int h = this.getHeight();
 
@@ -88,8 +89,7 @@ public class JPanelVideoDriver extends JPanel implements VideoDriver, Closeable 
             return;
         }
 
-
-        double scale = Math.min(w / this.displayWidth, h / this.displayHeight);
+        double scale = Math.min((double) w / this.displayWidth, (double) h / this.displayHeight);
 
         double scaledWidth = this.displayWidth * scale;
         double scaledHeight = this.displayHeight * scale;

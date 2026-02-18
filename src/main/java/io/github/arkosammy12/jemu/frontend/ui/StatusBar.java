@@ -12,7 +12,7 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.util.Objects;
 
-public class InfoBar extends JPanel {
+public class StatusBar extends JPanel {
 
     private final JTextField systemField = createField();
     private final JTextField romTitleField = createField();
@@ -27,7 +27,7 @@ public class InfoBar extends JPanel {
     private long totalIpfSinceLastUpdate = 0;
     private double totalFrameTimeSinceLastUpdate = 0;
 
-    public InfoBar(Jemu jemu) {
+    public StatusBar(Jemu jemu) {
         MigLayout migLayout = new MigLayout(new LC().insets("1"), new AC().gap("5").gap("5").gap("5").gap("5").gap("5"), new AC());
         super(migLayout);
 
@@ -38,12 +38,13 @@ public class InfoBar extends JPanel {
         this.add(createScrollPanel(frameTimeField, "The current frame time value average, in milliseconds."), new CC().grow().push());
         this.add(createScrollPanel(fpsField, "The current frames per second value average."), new CC().grow().push());
 
-        jemu.addStateChangedListener((emulator, _, newState) -> {
-            if (emulator == null || newState.isStopping()) {
+        jemu.addStateChangedListener((systemAdapter, _, newState) -> {
+            if (systemAdapter == null || newState.isStopping()) {
                 this.onStopping();
             }
         });
-        jemu.addEmulatorFrameListener((emulator, _) -> this.onFrame(emulator));
+
+        jemu.addEmulatorFrameListener((systemAdapter, _) -> this.onFrame(systemAdapter));
     }
 
     private static JTextField createField() {

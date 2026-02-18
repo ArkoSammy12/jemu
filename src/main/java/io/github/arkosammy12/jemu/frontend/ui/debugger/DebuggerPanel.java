@@ -207,7 +207,7 @@ public class DebuggerPanel extends JPanel implements EmulatorInitializerConsumer
     }
 
     private void onResetting(@NotNull Emulator emulator) {
-        DebuggerSchema debuggerSchema = emulator.getDebuggerSchema();
+        //DebuggerSchema debuggerSchema = emulator.getDebuggerSchema();
         SwingUtilities.invokeLater(() -> {
             this.debuggerSchema = debuggerSchema;
             this.initializeDebuggerPanel();

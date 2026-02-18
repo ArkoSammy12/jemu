@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.frontend.ui.video;
 import io.github.arkosammy12.jemu.application.Jemu;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
+import org.tinylog.Logger;
 
 import javax.swing.*;
 import java.awt.*;
@@ -19,6 +20,7 @@ public class EmulatorViewport extends JPanel {
         this.setFocusable(true);
         this.setBackground(Color.BLACK);
         this.setPreferredSize(new Dimension(960, this.getHeight()));
+
         this.addMouseListener(new MouseAdapter() {
 
             @Override
@@ -27,6 +29,7 @@ public class EmulatorViewport extends JPanel {
             }
 
         });
+
         jemu.addStateChangedListener((systemAdapter, _, newState) -> {
             if (systemAdapter == null || newState.isStopping()) {
                 this.setDisplayRenderer(null);
@@ -34,11 +37,13 @@ public class EmulatorViewport extends JPanel {
                 this.setDisplayRenderer(systemAdapter.getJPanelVideoDriver());
             }
         });
+
         jemu.addEmulatorFrameListener((systemAdapter, _) -> {
             if (systemAdapter != null) {
                 systemAdapter.getJPanelVideoDriver().requestFrame();
             }
         });
+
         jemu.addShutdownListener(() -> this.setDisplayRenderer(null));
     }
 

@@ -18,12 +18,11 @@ import static io.github.arkosammy12.jemu.application.io.DataManager.tryOptional;
 public class LeftPanel extends JPanel implements EmulatorInitializerConsumer {
 
     private final ToggleableSplitPane splitPane;
-    private final EmulatorViewport emulatorViewport;
 
     public LeftPanel(Jemu jemu, MainWindow mainWindow) {
         MigLayout migLayout = new MigLayout(new LC().insets("0"));
         super(migLayout);
-        this.emulatorViewport = new EmulatorViewport(jemu);
+        EmulatorViewport emulatorViewport = new EmulatorViewport(jemu);
         DisassemblyPanel disassemblyPanel = new DisassemblyPanel(jemu, mainWindow);
         this.splitPane = new ToggleableSplitPane(JSplitPane.VERTICAL_SPLIT, emulatorViewport, disassemblyPanel, 5, 0.75);
 

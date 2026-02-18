@@ -32,9 +32,11 @@ public class SettingsBar extends JMenuBar implements EmulatorInitializer {
         this.add(helpMenu);
     }
 
+    /*
     public void onBreakpoint() {
         this.emulatorMenu.onBreakpoint();
     }
+     */
 
     @Override
     public Optional<byte[]> getRawRom() {

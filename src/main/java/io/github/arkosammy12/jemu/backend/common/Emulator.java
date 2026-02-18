@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.backend.common;
 
 import io.github.arkosammy12.jemu.backend.disassembler.Disassembler;
-import io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerSchema;
 import org.jetbrains.annotations.Nullable;
 
 public interface Emulator extends AutoCloseable {
@@ -18,8 +17,10 @@ public interface Emulator extends AutoCloseable {
 
     BusView getBusView();
 
+    /*
     @Nullable
     DebuggerSchema getDebuggerSchema();
+     */
 
     @Nullable
     Disassembler getDisassembler();

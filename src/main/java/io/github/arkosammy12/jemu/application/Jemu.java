@@ -2,21 +2,16 @@ package io.github.arkosammy12.jemu.application;
 
 import com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
-import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
-import io.github.arkosammy12.jemu.backend.common.SystemHost;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
 import io.github.arkosammy12.jemu.application.io.CLIArgs;
 import io.github.arkosammy12.jemu.application.io.DataManager;
-import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.application.util.System;
 import io.github.arkosammy12.jemu.application.util.FrameLimiter;
-import it.unimi.dsi.fastutil.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
-import picocli.CommandLine;
 
 import javax.swing.*;
 import java.awt.*;
@@ -24,9 +19,9 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
 import java.util.Optional;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.LinkedBlockingDeque;
 
 import static io.github.arkosammy12.jemu.application.Main.MAIN_FRAMERATE;
 
@@ -40,34 +35,28 @@ public class Jemu {
     private final List<FrameListener> emulatorFrameListeners = new CopyOnWriteArrayList<>();
     private final List<ShutdownListener> shutdownListeners = new CopyOnWriteArrayList<>();
 
-    private final Queue<State> queuedStates = new ConcurrentLinkedQueue<>();
     private volatile State currentState = State.STOPPED;
-    private volatile boolean running = true;
-    private volatile boolean muteAudio = false;
-    private int volume = 50;
 
     private final FrameLimiter pacer = new FrameLimiter(MAIN_FRAMERATE, true, true);
     private final DataManager dataManager = new DataManager();
 
     private final Thread emulatorThread;
+    private final BlockingQueue<State> queuedStates = new LinkedBlockingDeque<>();
+
+    private volatile boolean running = true;
+    private volatile boolean muteAudio = false;
+    private int volume = 50;
 
     Jemu(String[] args) {
         this.installEDTExceptionHandler();
         try {
+
             CLIArgs cliArgs;
             if (args.length > 0) {
-                cliArgs = new CLIArgs();
-                CommandLine cli = new CommandLine(cliArgs);
-                CommandLine.ParseResult parseResult = cli.parseArgs(args);
-                Integer executeHelpResult = CommandLine.executeHelpRequest(parseResult);
-                int exitCodeOnUsageHelp = cli.getCommandSpec().exitCodeOnUsageHelp();
-                int exitCodeOnVersionHelp = cli.getCommandSpec().exitCodeOnVersionHelp();
-                if (executeHelpResult != null) {
-                    if (executeHelpResult == exitCodeOnUsageHelp) {
-                        java.lang.System.exit(exitCodeOnUsageHelp);
-                    } else if (executeHelpResult == exitCodeOnVersionHelp) {
-                        java.lang.System.exit(exitCodeOnVersionHelp);
-                    }
+                cliArgs = new CLIArgs(args);
+                int exitCode = cliArgs.getExitCode();
+                if (exitCode >= 0) {
+                    java.lang.System.exit(exitCode);
                 }
             } else {
                 cliArgs = null;
@@ -115,8 +104,10 @@ public class Jemu {
                 this.initializeEmulator(cliArgs);
                 this.reset(false);
             }
+
             SwingUtilities.invokeLater(() -> this.mainWindow.setVisible(true));
             this.emulatorThread = new Thread(this::emulatorLoop, "jemu-emulator-thread");
+
         } catch (Exception e) {
             if (this.mainWindow != null) {
                 SwingUtilities.invokeLater(() -> this.mainWindow.dispose());
@@ -180,21 +171,13 @@ public class Jemu {
     private void emulatorLoop() {
         while (this.running) {
             try {
-                if (this.systemAdapter == null) {
-                    State oldState = this.updateState();
+                while (this.systemAdapter == null) {
+                    State oldState = this.updateState(true);
                     State newState = this.getState();
-                    switch (newState) {
-                        case STOPPED, PAUSED, PAUSED_STOPPED -> onIdle();
-                        case RESETTING_AND_RUNNING -> onResetting(false);
-                        case RESETTING_AND_PAUSING -> onResetting(true);
-                        case STOPPING -> onStopping();
-                        case RUNNING -> onRunning();
-                        case STEPPING_FRAME -> onSteppingFrame();
-                        case STEPPING_CYCLE -> onSteppingCycle();
-                    }
-                    this.notifyStateChangedListeners(oldState, newState);
-                    this.notifyEmulatorFrameListeners();
-                    Thread.sleep(1);
+                    this.processState(oldState, newState);
+                }
+
+                if (this.systemAdapter == null) {
                     continue;
                 }
 
@@ -202,18 +185,10 @@ public class Jemu {
                     Thread.sleep(1);
                     continue;
                 }
-                State oldState = this.updateState();
+
+                State oldState = this.updateState(false);
                 State newState = this.getState();
-                switch (newState) {
-                    case STOPPED, PAUSED, PAUSED_STOPPED -> onIdle();
-                    case RESETTING_AND_RUNNING -> onResetting(false);
-                    case RESETTING_AND_PAUSING -> onResetting(true);
-                    case STOPPING -> onStopping();
-                    case RUNNING -> onRunning();
-                    case STEPPING_FRAME -> onSteppingFrame();
-                    case STEPPING_CYCLE -> onSteppingCycle();
-                }
-                this.notifyStateChangedListeners(oldState, newState);
+                this.processState(oldState, newState);
                 this.notifyEmulatorFrameListeners();
             } catch (EmulatorException e) {
                 Logger.error("Exception while running emulator: {}", e);
@@ -224,6 +199,19 @@ public class Jemu {
                 throw new RuntimeException(e);
             }
         }
+    }
+
+    private void processState(State oldState, State newState) throws Exception {
+        switch (newState) {
+            case STOPPED, PAUSED, PAUSED_STOPPED -> onIdle();
+            case RESETTING_AND_RUNNING -> onResetting(false);
+            case RESETTING_AND_PAUSING -> onResetting(true);
+            case STOPPING -> onStopping();
+            case RUNNING -> onRunning();
+            case STEPPING_FRAME -> onSteppingFrame();
+            case STEPPING_CYCLE -> onSteppingCycle();
+        }
+        this.notifyStateChangedListeners(oldState, newState);
     }
 
     private void initializeEmulator(EmulatorInitializer initializer) {
@@ -305,12 +293,15 @@ public class Jemu {
     }
 
     // TODO
+    /*
     public void onBreakpoint() {
         this.mainWindow.onBreakpoint();
     }
+     */
 
     void onShutdown() throws Exception {
         try {
+            this.emulatorThread.interrupt();
             this.emulatorThread.join();
         } catch (InterruptedException _) {}
         if (this.systemAdapter != null) {
@@ -324,8 +315,8 @@ public class Jemu {
         this.dataManager.save();
     }
 
-    private State updateState() {
-        State enqueuedState = queuedStates.poll();
+    private State updateState(boolean take) throws InterruptedException {
+        State enqueuedState = take ? queuedStates.take() : queuedStates.poll();
         if (enqueuedState == null) {
             return this.getState();
         }

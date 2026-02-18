@@ -7,11 +7,9 @@ import io.github.arkosammy12.jemu.backend.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.backend.disassembler.AbstractDisassembler;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.backend.cores.CDP1802;
-import io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerSchema;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.function.Function;
 
 import static io.github.arkosammy12.jemu.backend.cores.CDP1802.isHandled;
 import static io.github.arkosammy12.jemu.backend.cosmacvip.IODevice.DmaStatus.IN;
@@ -24,7 +22,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     private final CosmacVIPHost host;
     private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
-    private final DebuggerSchema debuggerSchema;
+    //private final DebuggerSchema debuggerSchema;
     private final AbstractDisassembler<?> disassembler;
 
     private final CDP1802 cpu;
@@ -57,7 +55,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
                 this.ioDevices = List.of(this.vdp, this.keypad);
                 this.frameRate = 60;
             }
-            this.debuggerSchema = this.createDebuggerSchema();
+            //this.debuggerSchema = this.createDebuggerSchema();
             this.disassembler = new CosmacVipDisassembler<>(this);
             this.disassembler.setProgramCounterSupplier(this::getActualCurrentInstructionAddress);
             //this.cpu.restoreRegisters(this.getEmulatorSettings());
@@ -101,10 +99,12 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         return this.keypad;
     }
 
+    /*
     @Override
     public DebuggerSchema getDebuggerSchema() {
         return this.debuggerSchema;
     }
+     */
 
     @Override
     public @Nullable Disassembler getDisassembler() {
@@ -272,10 +272,11 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
                 this.disassembler.close();
             }
         } catch (Exception e) {
-            throw new EmulatorException("Error releasing current emulator resources: ", e);
+            throw new EmulatorException("Error releasing emulator resources: ", e);
         }
     }
 
+    /*
     protected DebuggerSchema createDebuggerSchema() {
         DebuggerSchema debuggerSchema = new DebuggerSchema();
         debuggerSchema.setTextSectionName("Cosmac VIP");
@@ -347,5 +348,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         }
         return debuggerSchema;
     }
+     */
 
 }

@@ -122,6 +122,7 @@ public class EmulatorMenu extends JMenu implements EmulatorInitializerConsumer {
         return this.systemMenu.getState();
     }
 
+    /*
     public void onBreakpoint() {
         if (!SwingUtilities.isEventDispatchThread()) {
             try {
@@ -135,6 +136,7 @@ public class EmulatorMenu extends JMenu implements EmulatorInitializerConsumer {
             }
         }
     }
+     */
 
     @Override
     public void accept(EmulatorInitializer initializer) {

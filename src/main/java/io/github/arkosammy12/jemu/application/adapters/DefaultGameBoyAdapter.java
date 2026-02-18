@@ -162,7 +162,12 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
 
     @Override
     public void close() throws IOException {
-
+        if (this.videoDriver != null) {
+            this.videoDriver.close();
+        }
+        if (this.audioDriver != null) {
+            this.audioDriver.close();
+        }
     }
 
 }
