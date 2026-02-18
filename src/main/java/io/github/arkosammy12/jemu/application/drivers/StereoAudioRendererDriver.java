@@ -38,7 +38,9 @@ public class StereoAudioRendererDriver extends DefaultAudioRendererDriver {
         return switch (this.audioGenerator.getBytesPerSample()) {
             case BYTES_1 -> {
                 byte[] buf16 = new byte[this.audioRenderer.getBytesPerFrame()];
-                for (int i = 0; i < buf.length; i++) {
+
+                int frames = buf.length / 2;
+                for (int i = 0; i < frames; i++) {
                     int sample16Left = buf[i * 2] * 256;
                     int sample16Right = buf[(i * 2) + 1] * 256;
 
