@@ -1,13 +1,14 @@
 package io.github.arkosammy12.jemu.application;
 
 import com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme;
-import io.github.arkosammy12.jemu.application.audio.AudioRenderer;
-import io.github.arkosammy12.jemu.application.config.initializers.EmulatorInitializer;
-import io.github.arkosammy12.jemu.application.config.settings.EmulatorSettings;
-import io.github.arkosammy12.jemu.application.ui.MainWindow;
-import io.github.arkosammy12.jemu.application.audio.MonoAudioDriver;
-import io.github.arkosammy12.jemu.application.config.CLIArgs;
-import io.github.arkosammy12.jemu.application.config.DataManager;
+import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
+import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.backend.common.SystemHost;
+import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
+import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
+import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.application.io.CLIArgs;
+import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.application.util.System;
@@ -22,6 +23,7 @@ import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.util.List;
+import java.util.Optional;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -31,7 +33,7 @@ import static io.github.arkosammy12.jemu.application.Main.MAIN_FRAMERATE;
 public class Jemu {
 
     private MainWindow mainWindow;
-    private volatile Emulator currentEmulator;
+    private volatile DefaultSystemAdapter systemAdapter;
 
     private final List<StateChangedListener> stateChangedListeners = new CopyOnWriteArrayList<>();
     private final List<FrameListener> frameListeners = new CopyOnWriteArrayList<>();
@@ -41,10 +43,11 @@ public class Jemu {
     private final Queue<State> queuedStates = new ConcurrentLinkedQueue<>();
     private volatile State currentState = State.STOPPED;
     private volatile boolean running = true;
+    private volatile boolean muteAudio = false;
+    private int volume = 50;
 
     private final FrameLimiter pacer = new FrameLimiter(MAIN_FRAMERATE, true, true);
     private final DataManager dataManager = new DataManager();
-    private final AudioRenderer audioRenderer = new MonoAudioDriver(this, MAIN_FRAMERATE);
 
     private final Thread emulatorThread;
 
@@ -126,8 +129,18 @@ public class Jemu {
         return this.mainWindow;
     }
 
-    public AudioRenderer getAudioRenderer() {
-        return this.audioRenderer;
+    public Optional<AudioRenderer> getAudioRenderer() {
+        return Optional.ofNullable(this.systemAdapter).map(DefaultSystemAdapter::getAudioRenderer);
+    }
+
+    public void setMuted(boolean muted) {
+        this.muteAudio = muted;
+        this.getAudioRenderer().ifPresent(audioRenderer ->  audioRenderer.setMuted(muted));
+    }
+
+    public void setVolume(int volume) {
+        this.volume = volume;
+        this.getAudioRenderer().ifPresent(audioRenderer -> audioRenderer.setVolume(volume));
     }
 
     public DataManager getDataManager() {
@@ -167,7 +180,25 @@ public class Jemu {
     private void emulatorLoop() {
         while (this.running) {
             try {
-                if (!this.audioRenderer.needsFrame()) {
+                if (this.systemAdapter == null) {
+                    State oldState = this.updateState();
+                    State newState = this.getState();
+                    switch (newState) {
+                        case STOPPED, PAUSED, PAUSED_STOPPED -> onIdle();
+                        case RESETTING_AND_RUNNING -> onResetting(false);
+                        case RESETTING_AND_PAUSING -> onResetting(true);
+                        case STOPPING -> onStopping();
+                        case RUNNING -> onRunning();
+                        case STEPPING_FRAME -> onSteppingFrame();
+                        case STEPPING_CYCLE -> onSteppingCycle();
+                    }
+                    this.notifyStateChangedListeners(oldState, newState);
+                    this.notifyEmulatorFrameListeners();
+                    Thread.sleep(1);
+                    continue;
+                }
+
+                if (!this.systemAdapter.getAudioRenderer().needsFrame()) {
                     Thread.sleep(1);
                     continue;
                 }
@@ -196,13 +227,11 @@ public class Jemu {
     }
 
     private void initializeEmulator(EmulatorInitializer initializer) {
-        Pair<Emulator, EmulatorSettings> emulatorAndSettings = System.getEmulator(initializer);
-        this.currentEmulator = emulatorAndSettings.left();
-        EmulatorSettings emulatorSettings = emulatorAndSettings.right();
-        emulatorSettings.setAudioDriver(this.audioRenderer);
-        emulatorSettings.setVideoDriver(this.getMainWindow().getVideoDriver());
-        this.audioRenderer.setAudioGenerator(this.currentEmulator.getAudioGenerator());
-        this.audioRenderer.setFramerate(this.currentEmulator.getFramerate());
+        this.systemAdapter = System.getSystemAdapter(this, initializer);
+        if (this.muteAudio) {
+            this.systemAdapter.getAudioRenderer().setMuted(true);
+        }
+        this.systemAdapter.getAudioRenderer().setVolume(this.volume);
     }
 
     public void reset(boolean startPaused) {
@@ -211,9 +240,9 @@ public class Jemu {
 
     public void setPaused(boolean paused) {
         if (paused) {
-            this.enqueueState(this.currentEmulator == null ? State.PAUSED_STOPPED : State.PAUSED);
+            this.enqueueState(this.systemAdapter == null ? State.PAUSED_STOPPED : State.PAUSED);
         } else {
-            this.enqueueState(this.currentEmulator == null ? State.STOPPED : State.RUNNING);
+            this.enqueueState(this.systemAdapter == null ? State.STOPPED : State.RUNNING);
         }
     }
 
@@ -230,51 +259,48 @@ public class Jemu {
     }
 
     private void onIdle() {
-        this.audioRenderer.setPaused(true);
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
     }
 
     private void onStopping() throws Exception {
-        if (this.currentEmulator != null) {
-            this.currentEmulator.close();
-            this.currentEmulator = null;
+        if (this.systemAdapter != null) {
+            this.systemAdapter.close();
+            this.systemAdapter = null;
         }
-        this.audioRenderer.setPaused(true);
-        this.audioRenderer.setFramerate(MAIN_FRAMERATE);
         this.enqueueState(State.STOPPED);
     }
 
     private void onResetting(boolean resetAndPause) throws Exception {
-        if (this.currentEmulator != null) {
-            this.currentEmulator.close();
+        if (this.systemAdapter != null) {
+            this.systemAdapter.close();
         }
-        this.audioRenderer.setPaused(true);
         this.initializeEmulator(this.mainWindow.getSettingsBar());
         this.enqueueState(resetAndPause ? State.PAUSED : State.RUNNING);
     }
 
     private void onRunning() {
-        if (currentEmulator == null) {
+        if (systemAdapter == null) {
             return;
         }
-        this.audioRenderer.setPaused(false);
-        this.currentEmulator.executeFrame();
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(false));
+        this.systemAdapter.getEmulator().executeFrame();
     }
 
     private void onSteppingFrame() {
-        if (currentEmulator == null) {
+        if (systemAdapter == null) {
             return;
         }
-        this.audioRenderer.setPaused(true);
-        this.currentEmulator.executeFrame();
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.systemAdapter.getEmulator().executeFrame();
         this.enqueueState(State.PAUSED);
     }
 
     private void onSteppingCycle() {
-        if (this.currentEmulator == null) {
+        if (this.systemAdapter == null) {
             return;
         }
-        this.audioRenderer.setPaused(true);
-        this.currentEmulator.executeCycle();
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.systemAdapter.getEmulator().executeCycle();
         this.enqueueState(State.PAUSED);
     }
 
@@ -287,14 +313,13 @@ public class Jemu {
         try {
             this.emulatorThread.join();
         } catch (InterruptedException _) {}
-        if (this.currentEmulator != null) {
-            this.currentEmulator.close();
-            this.currentEmulator = null;
+        if (this.systemAdapter != null) {
+            this.systemAdapter.close();
+            this.systemAdapter = null;
         }
         if (this.mainWindow != null) {
             this.mainWindow.close();
         }
-        this.audioRenderer.close();
         this.notifyShutdownListeners();
         this.dataManager.save();
     }
@@ -314,19 +339,19 @@ public class Jemu {
             return;
         }
         for (StateChangedListener l : this.stateChangedListeners) {
-            l.onStateChanged(this.currentEmulator, oldState, newState);
+            l.onStateChanged(this.systemAdapter, oldState, newState);
         }
     }
 
     private void notifyFrameListeners() {
         for (FrameListener l : this.frameListeners) {
-            l.onFrame(this.currentEmulator, this.currentState);
+            l.onFrame(this.systemAdapter, this.currentState);
         }
     }
 
     private void notifyEmulatorFrameListeners() {
         for (FrameListener l : this.emulatorFrameListeners) {
-            l.onFrame(this.currentEmulator, this.currentState);
+            l.onFrame(this.systemAdapter, this.currentState);
         }
     }
 
@@ -388,13 +413,13 @@ public class Jemu {
 
     public interface FrameListener {
 
-        void onFrame(@Nullable Emulator emulator, State currentState);
+        void onFrame(@Nullable DefaultSystemAdapter systemAdapter, State currentState);
 
     }
 
     public interface StateChangedListener {
 
-        void onStateChanged(@Nullable Emulator emulator, State oldState, State newState);
+        void onStateChanged(@Nullable DefaultSystemAdapter systemAdapter, State oldState, State newState);
 
     }
 

@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.backend.common.Bus;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
-import io.github.arkosammy12.jemu.application.ui.debugger.DebuggerSchema;
+import io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerSchema;
 import org.jetbrains.annotations.Nullable;
 
 import static io.github.arkosammy12.jemu.backend.cores.SM83.INSTRUCTION_FINISHED_FLAG;

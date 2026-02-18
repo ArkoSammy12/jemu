@@ -158,7 +158,7 @@ public class CosmacVipBus implements Bus, BusView {
     }
 
     protected void initializeRam(CosmacVipEmulator emulator, int[] rom) {
-        if (emulator.getChip8Interpreter() == CosmacVipHost.Chip8Interpreter.CHIP_8) {
+        if (emulator.getChip8Interpreter() == CosmacVIPHost.Chip8Interpreter.CHIP_8) {
             System.arraycopy(CHIP_8_INTERPRETER, 0, this.bytes, 0, CHIP_8_INTERPRETER.length);
             System.arraycopy(rom, 0, this.bytes, CHIP_8_INTERPRETER.length, rom.length);
         } else {

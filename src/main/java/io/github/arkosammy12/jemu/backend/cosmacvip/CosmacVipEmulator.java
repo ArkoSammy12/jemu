@@ -7,7 +7,7 @@ import io.github.arkosammy12.jemu.backend.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.backend.disassembler.AbstractDisassembler;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.backend.cores.CDP1802;
-import io.github.arkosammy12.jemu.application.ui.debugger.DebuggerSchema;
+import io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerSchema;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -22,8 +22,8 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     public static final int CYCLES_PER_FRAME = 3668;
     //public static final String REGISTERS_ENTRY_KEY = "cosmacvip.processor.registers";
 
-    private final CosmacVipHost host;
-    private final CosmacVipHost.Chip8Interpreter chip8Interpreter;
+    private final CosmacVIPHost host;
+    private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
     private final DebuggerSchema debuggerSchema;
     private final AbstractDisassembler<?> disassembler;
 
@@ -37,13 +37,13 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     private final int frameRate;
     private int currentInstructionsPerFrame;
 
-    public CosmacVipEmulator(CosmacVipHost host) {
+    public CosmacVipEmulator(CosmacVIPHost host) {
         try {
             this.host = host;
             this.chip8Interpreter = host.getChip8Interpreter();
             this.keypad = new CosmacVIPKeypad<>(this);
             this.cpu = new CDP1802(this);
-            if (this.chip8Interpreter == CosmacVipHost.Chip8Interpreter.CHIP_8X) {
+            if (this.chip8Interpreter == CosmacVIPHost.Chip8Interpreter.CHIP_8X) {
                 this.bus = new HybridChip8XBus(this);
                 this.vdp = new VP590<>(this);
                 VP595<?> vp595 = new VP595<>(this);
@@ -111,7 +111,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         return this.disassembler;
     }
 
-    public CosmacVipHost.Chip8Interpreter getChip8Interpreter() {
+    public CosmacVIPHost.Chip8Interpreter getChip8Interpreter() {
         return this.chip8Interpreter;
     }
 

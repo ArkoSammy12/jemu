@@ -18,14 +18,16 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     private static final int B_LEFT_MASK = 1 << 1;
     private static final int A_RIGHT_MASK = 1;
 
-    private final JoypadButton BUTTON_UP = new JoypadButton('w');
-    private final JoypadButton BUTTON_DOWN = new JoypadButton('s');
-    private final JoypadButton BUTTON_LEFT = new JoypadButton('a');
-    private final JoypadButton BUTTON_RIGHT = new JoypadButton('d');
-    private final JoypadButton BUTTON_START = new JoypadButton('\n');
-    private final JoypadButton BUTTON_SELECT = new JoypadButton('\b');
-    private final JoypadButton BUTTON_A = new JoypadButton('j');
-    private final JoypadButton BUTTON_B = new JoypadButton('k');
+    private boolean up;
+    private boolean down;
+    private boolean left;
+    private boolean right;
+
+    private boolean start;
+    private boolean select;
+
+    private boolean A;
+    private boolean B;
 
     private int joyP = 0xFF;
 
@@ -34,44 +36,39 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     }
 
     @Override
-    public Collection<KeyMapping> getKeyMappings() {
-        return List.of(BUTTON_UP, BUTTON_DOWN, BUTTON_LEFT, BUTTON_RIGHT, BUTTON_START, BUTTON_SELECT, BUTTON_A, BUTTON_B);
+    public void onActionPressed(Action action) {
+        if (!(action instanceof Actions joypadAction)) {
+            return;
+        }
+        switch (joypadAction) {
+            case UP -> up = true;
+            case DOWN -> down = true;
+            case LEFT -> left = true;
+            case RIGHT -> right = true;
+            case START -> start = true;
+            case SELECT -> select = true;
+            case A -> A = true;
+            case B -> B = true;
+        }
+        this.updateJoyP();
     }
 
-    private class JoypadButton implements KeyMapping {
-
-        private final int codePoint;
-        private boolean pressed;
-
-        private final Runnable pressedCallback = () -> {
-            this.pressed = true;
-            updateJoyP();
-        };
-
-        private final Runnable releasedCallback = () -> {
-            this.pressed = false;
-            updateJoyP();
-        };
-
-        private JoypadButton(int codePoint) {
-            this.codePoint = codePoint;
+    @Override
+    public void onActionReleased(Action action) {
+        if (!(action instanceof Actions joypadAction)) {
+            return;
         }
-
-        @Override
-        public int getDefaultCodePoint() {
-            return this.codePoint;
+        switch (joypadAction) {
+            case UP -> up = false;
+            case DOWN -> down = false;
+            case LEFT -> left = false;
+            case RIGHT -> right = false;
+            case START -> start = false;
+            case SELECT -> select = false;
+            case A -> A = false;
+            case B -> B = false;
         }
-
-        @Override
-        public Runnable getKeyPressedCallback() {
-            return this.pressedCallback;
-        }
-
-        @Override
-        public Runnable getKeyReleasedCallback() {
-            return this.releasedCallback;
-        }
-
+        this.updateJoyP();
     }
 
     public synchronized void writeJoyP(int value) {
@@ -95,31 +92,31 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
         int newJoyPLow = START_DOWN_MASK | SELECT_UP_MASK | B_LEFT_MASK | A_RIGHT_MASK;
 
         if (selectButtons) {
-            if (this.BUTTON_A.pressed) {
+            if (this.A) {
                 newJoyPLow &= ~A_RIGHT_MASK;
             }
-            if (this.BUTTON_B.pressed) {
+            if (this.B) {
                 newJoyPLow &= ~B_LEFT_MASK;
             }
-            if (this.BUTTON_SELECT.pressed) {
+            if (this.select) {
                 newJoyPLow &= ~SELECT_UP_MASK;
             }
-            if (this.BUTTON_START.pressed) {
+            if (this.start) {
                 newJoyPLow &= ~START_DOWN_MASK;
             }
         }
 
         if (selectDPad) {
-            if (this.BUTTON_RIGHT.pressed) {
+            if (this.right) {
                 newJoyPLow &= ~A_RIGHT_MASK;
             }
-            if (this.BUTTON_LEFT.pressed) {
+            if (this.left) {
                 newJoyPLow &= ~B_LEFT_MASK;
             }
-            if (this.BUTTON_UP.pressed) {
+            if (this.up) {
                 newJoyPLow &= ~SELECT_UP_MASK;
             }
-            if (this.BUTTON_DOWN.pressed) {
+            if (this.down) {
                 newJoyPLow &= ~START_DOWN_MASK;
             }
         }
@@ -140,6 +137,28 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     private void triggerJoyPInterrupt() {
         int IF = this.emulator.getMMIOController().getIF();
         this.emulator.getMMIOController().setIF(Processor.setBit(IF, SM83.JOYP_MASK));
+    }
+
+    public enum Actions implements Action {
+        UP("Up"),
+        DOWN("Down"),
+        LEFT("Left"),
+        RIGHT("Right"),
+        START("Start"),
+        SELECT("Select"),
+        A("A"),
+        B("B");
+
+        private final String label;
+
+        Actions(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String getLabel() {
+            return this.label;
+        }
     }
 
 }

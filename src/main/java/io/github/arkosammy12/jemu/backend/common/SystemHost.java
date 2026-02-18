@@ -2,7 +2,6 @@ package io.github.arkosammy12.jemu.backend.common;
 
 import io.github.arkosammy12.jemu.backend.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
-
 import java.util.Optional;
 
 public interface SystemHost {

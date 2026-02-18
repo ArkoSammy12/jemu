@@ -1,42 +1,30 @@
 package io.github.arkosammy12.jemu.backend.cosmacvip;
 
 import io.github.arkosammy12.jemu.backend.common.SystemController;
-import io.github.arkosammy12.jemu.backend.drivers.KeyMapping;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
 
 public class CosmacVIPKeypad<E extends CosmacVipEmulator> extends SystemController<E> implements IODevice {
-
-    private final List<KeyMapping> keyMappings = new ArrayList<>();
 
     private final boolean[] keys = new boolean[16];
     private int latchedKey = 0;
 
     public CosmacVIPKeypad(E emulator) {
         super(emulator);
-        this.keyMappings.add(new CosmacVipKeypadMapping('1', 0x1));
-        this.keyMappings.add(new CosmacVipKeypadMapping('2', 0x2));
-        this.keyMappings.add(new CosmacVipKeypadMapping('3', 0x3));
-        this.keyMappings.add(new CosmacVipKeypadMapping('4', 0xC));
-        this.keyMappings.add(new CosmacVipKeypadMapping('q', 0x4));
-        this.keyMappings.add(new CosmacVipKeypadMapping('w', 0x5));
-        this.keyMappings.add(new CosmacVipKeypadMapping('e', 0x6));
-        this.keyMappings.add(new CosmacVipKeypadMapping('r', 0xD));
-        this.keyMappings.add(new CosmacVipKeypadMapping('a', 0x7));
-        this.keyMappings.add(new CosmacVipKeypadMapping('s', 0x8));
-        this.keyMappings.add(new CosmacVipKeypadMapping('d', 0x9));
-        this.keyMappings.add(new CosmacVipKeypadMapping('f', 0xE));
-        this.keyMappings.add(new CosmacVipKeypadMapping('z', 0xA));
-        this.keyMappings.add(new CosmacVipKeypadMapping('x', 0x0));
-        this.keyMappings.add(new CosmacVipKeypadMapping('c', 0xB));
-        this.keyMappings.add(new CosmacVipKeypadMapping('v', 0xF));
     }
 
     @Override
-    public Collection<KeyMapping> getKeyMappings() {
-        return new ArrayList<>(this.keyMappings);
+    public void onActionPressed(Action action) {
+        if (!(action instanceof Actions vipActions)) {
+            return;
+        }
+        this.keys[vipActions.key] = true;
+    }
+
+    @Override
+    public void onActionReleased(Action action) {
+        if (!(action instanceof Actions vipActions)) {
+            return;
+        }
+        this.keys[vipActions.key] = false;
     }
 
     @Override
@@ -54,32 +42,35 @@ public class CosmacVIPKeypad<E extends CosmacVipEmulator> extends SystemControll
         this.latchedKey = value & 0xF;
     }
 
-    private class CosmacVipKeypadMapping implements KeyMapping {
+    public enum Actions implements Action {
+        KEY_0("0", 0x0),
+        KEY_1("1", 0x1),
+        KEY_2("2", 0x2),
+        KEY_3("3", 0x3),
+        KEY_4("4", 0x4),
+        KEY_5("5", 0x5),
+        KEY_6("6", 0x6),
+        KEY_7("7", 0x7),
+        KEY_8("8", 0x8),
+        KEY_9("9", 0x9),
+        KEY_A("A", 0xA),
+        KEY_B("B", 0xB),
+        KEY_C("C", 0xC),
+        KEY_D("D", 0xD),
+        KEY_E("E", 0xE),
+        KEY_F("F", 0xF);
 
-        private final int codePoint;
+        private final String label;
+        private final int key;
 
-        private final Runnable keyPressedCallback;
-        private final Runnable keyReleasedCallback;
-
-        private CosmacVipKeypadMapping(int codePoint, int keypadKey) {
-            this.codePoint = codePoint;
-            this.keyPressedCallback = () -> keys[keypadKey] = true;
-            this.keyReleasedCallback = () -> keys[keypadKey] = false;
+        Actions(String label, int key) {
+            this.label = label;
+            this.key = key;
         }
 
         @Override
-        public int getDefaultCodePoint() {
-            return codePoint;
-        }
-
-        @Override
-        public Runnable getKeyPressedCallback() {
-            return this.keyPressedCallback;
-        }
-
-        @Override
-        public Runnable getKeyReleasedCallback() {
-            return this.keyReleasedCallback;
+        public String getLabel() {
+            return this.label;
         }
 
     }

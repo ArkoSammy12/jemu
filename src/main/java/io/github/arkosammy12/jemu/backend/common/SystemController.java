@@ -1,9 +1,5 @@
 package io.github.arkosammy12.jemu.backend.common;
 
-import io.github.arkosammy12.jemu.backend.drivers.KeyMapping;
-
-import java.util.Collection;
-
 public abstract class SystemController<E extends Emulator> {
 
     protected final E emulator;
@@ -12,6 +8,14 @@ public abstract class SystemController<E extends Emulator> {
         this.emulator = emulator;
     }
 
-    abstract public Collection<KeyMapping> getKeyMappings();
+    abstract public void onActionPressed(Action action);
+
+    abstract public void onActionReleased(Action action);
+
+    public interface Action {
+
+        String getLabel();
+
+    }
 
 }

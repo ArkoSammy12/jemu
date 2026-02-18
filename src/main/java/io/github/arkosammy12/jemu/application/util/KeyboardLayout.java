@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.application.util;
 
-import io.github.arkosammy12.jemu.application.config.Serializable;
+import io.github.arkosammy12.jemu.application.io.Serializable;
 import picocli.CommandLine;
 
 public enum KeyboardLayout implements DisplayNameProvider, Serializable {

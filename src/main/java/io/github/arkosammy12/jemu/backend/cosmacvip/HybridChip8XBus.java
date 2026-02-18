@@ -110,7 +110,7 @@ public class HybridChip8XBus extends CosmacVipBus {
 
     @Override
     protected void initializeRam(CosmacVipEmulator emulator, int[] rom) {
-        if (emulator.getChip8Interpreter() == CosmacVipHost.Chip8Interpreter.CHIP_8X) {
+        if (emulator.getChip8Interpreter() == CosmacVIPHost.Chip8Interpreter.CHIP_8X) {
             System.arraycopy(CHIP_8X_INTERPRETER, 0, this.bytes, 0, CHIP_8X_INTERPRETER.length);
             System.arraycopy(rom, 0, this.bytes, CHIP_8X_INTERPRETER.length, rom.length);
         } else {

@@ -1,13 +1,16 @@
 package io.github.arkosammy12.jemu.application.util;
 
-import io.github.arkosammy12.jemu.application.config.initializers.CoreInitializer;
-import io.github.arkosammy12.jemu.application.config.initializers.EmulatorInitializer;
-import io.github.arkosammy12.jemu.application.config.settings.CosmacVipEmulatorSettings;
-import io.github.arkosammy12.jemu.application.config.settings.EmulatorSettings;
-import io.github.arkosammy12.jemu.application.config.settings.GameBoyEmulatorSettings;
+import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.adapters.DefaultCosmacVIPAdapter;
+import io.github.arkosammy12.jemu.application.adapters.DefaultGameBoyAdapter;
+import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
+import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
+import io.github.arkosammy12.jemu.backend.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.application.config.Serializable;
+import io.github.arkosammy12.jemu.application.io.Serializable;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
+import io.github.arkosammy12.jemu.backend.gameboy.GameBoyHost;
 import it.unimi.dsi.fastutil.Pair;
 import picocli.CommandLine;
 
@@ -15,16 +18,16 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public enum System implements DisplayNameProvider, Serializable {
-    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", args -> new CosmacVipEmulatorSettings(args.coreInitializer(), CosmacVipEmulatorSettings.Chip8Interpreter.NONE)),
-    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", args -> new CosmacVipEmulatorSettings(args.coreInitializer(), CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8)),
-    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", args -> new CosmacVipEmulatorSettings(args.coreInitializer(), CosmacVipEmulatorSettings.Chip8Interpreter.CHIP_8X)),
-    GAME_BOY("game-boy", "Game Boy", args -> new GameBoyEmulatorSettings(args.coreInitializer(), GameBoyEmulatorSettings.Model.DMG));
+    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),
+    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
+    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
+    GAME_BOY("game-boy", "Game Boy", args -> new DefaultGameBoyAdapter(args.jemu(), args.coreInitializer(), GameBoyHost.Model.DMG));
 
     private final String identifier;
     private final String displayName;
-    private final Function<EmulatorSettingsArgs, ? extends EmulatorSettings> args;
+    private final Function<EmulatorSettingsArgs, ? extends DefaultSystemAdapter> args;
 
-    System(String identifier, String displayName, Function<EmulatorSettingsArgs, ? extends EmulatorSettings> args) {
+    System(String identifier, String displayName, Function<EmulatorSettingsArgs, ? extends DefaultSystemAdapter> args) {
         this.identifier = identifier;
         this.displayName = displayName;
         this.args = args;
@@ -35,11 +38,10 @@ public enum System implements DisplayNameProvider, Serializable {
         return this.displayName;
     }
 
-    public static Pair<Emulator, EmulatorSettings> getEmulator(EmulatorInitializer mainInitializer) {
-        Optional<System> optionalVariant = mainInitializer.getSystem();
+    public static DefaultSystemAdapter getSystemAdapter(Jemu jemu, CoreInitializer initializer) {
+        Optional<System> optionalVariant = initializer.getSystem();
         if (optionalVariant.isPresent()) {
-            EmulatorSettings emulatorSettings = optionalVariant.get().args.apply(new EmulatorSettingsArgs(mainInitializer));
-            return Pair.of(emulatorSettings.getEmulator(), emulatorSettings);
+             return optionalVariant.get().args.apply(new EmulatorSettingsArgs(jemu, initializer));
         }
         throw new EmulatorException("Must select a system!");
     }
@@ -67,6 +69,6 @@ public enum System implements DisplayNameProvider, Serializable {
 
     }
 
-    private record EmulatorSettingsArgs(CoreInitializer coreInitializer) {}
+    private record EmulatorSettingsArgs(Jemu jemu, CoreInitializer coreInitializer) {}
 
 }
