@@ -3,10 +3,6 @@ package io.github.arkosammy12.jemu.backend.gameboy;
 import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.common.SystemController;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
-import io.github.arkosammy12.jemu.backend.drivers.KeyMapping;
-
-import java.util.Collection;
-import java.util.List;
 
 public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E> {
 
