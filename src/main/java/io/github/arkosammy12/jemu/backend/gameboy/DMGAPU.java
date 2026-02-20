@@ -27,19 +27,11 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             {1, 1, 1, 1, 1, 1, 0, 0}
     };
 
-    private final Channel1 channel1 = new Channel1();
-    private final Channel2 channel2 = new Channel2();
-    private final Channel3 channel3 = new Channel3();
 
     private int channel4LengthTimer = UNUSED_BITS_NR41; // NR41
     private int channel4VolumeAndEnvelope; // NR42
     private int channel4FrequencyAndRandomness; // NR43
     private int channel4Control = UNUSED_BITS_NRX4; // NR44
-
-    private int nr50; // NR50
-    private int nr51 = UNUSED_BITS_NRX1; // NR51
-    private int nr52 = UNUSED_BITS_NR52; // NR52
-
 
 
     private final byte[] leftChannelSamples = new byte[GameBoyEmulator.T_CYCLES_PER_FRAME];
@@ -49,6 +41,15 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private int lengthControlCycle;
     private int volumeEnvelopeCycle;
     private int sweepCycle;
+
+    private int nr50; // NR50
+    private int nr51 = UNUSED_BITS_NRX1; // NR51
+    private int nr52 = UNUSED_BITS_NR52; // NR52
+
+    private final Channel1 channel1 = new Channel1();
+    private final Channel2 channel2 = new Channel2();
+    private final Channel3 channel3 = new Channel3();
+    private final Channel4 channel4 = new Channel4();
 
     public DMGAPU(E emulator) {
         super(emulator);
@@ -75,9 +76,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 case NR33_ADDR -> 0xFF;
                 case NR34_ADDR -> this.channel3.getNRX4() | UNUSED_BITS_NRX4;
                 case NR41_ADDR -> 0xFF;
-                case NR42_ADDR -> this.channel4VolumeAndEnvelope;
-                case NR43_ADDR -> this.channel4FrequencyAndRandomness;
-                case NR44_ADDR -> this.channel4Control | UNUSED_BITS_NRX4;
+                case NR42_ADDR -> this.channel4.getNRX2();
+                case NR43_ADDR -> this.channel4.getNRX3();
+                case NR44_ADDR -> this.channel4.getNRX4() | UNUSED_BITS_NRX4;
                 case NR50_ADDR -> this.nr50;
                 case NR51_ADDR -> this.nr51 | UNUSED_BITS_NRX1;
                 case NR52_ADDR -> this.nr52 | UNUSED_BITS_NR52;
@@ -106,10 +107,10 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 case NR32_ADDR -> this.channel3.setNRX2(value);
                 case NR33_ADDR -> this.channel3.setNRX3(value);
                 case NR34_ADDR -> this.channel3.setNRX4(value);
-                case NR41_ADDR -> this.channel4LengthTimer = value & 0xFF;
-                case NR42_ADDR -> this.channel4VolumeAndEnvelope = value & 0xFF;
-                case NR43_ADDR -> this.channel4FrequencyAndRandomness = value & 0xFF;
-                case NR44_ADDR -> this.channel4Control = value & 0xFF;
+                case NR41_ADDR -> this.channel4.setNRX1(value);
+                case NR42_ADDR -> this.channel4.setNRX2(value);
+                case NR43_ADDR -> this.channel4.setNRX3(value);
+                case NR44_ADDR -> this.channel4.setNRX4(value);
                 case NR50_ADDR -> this.nr50 = value & 0xFF;
                 case NR51_ADDR -> this.nr51 = value & 0xFF;
                 case NR52_ADDR -> this.nr52 = (value & 0b11110000);
@@ -177,14 +178,15 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             float ch1Dac = this.channel1.tick();
             float ch2Dac = this.channel2.tick();
             float ch3Dac = this.channel3.tick();
+            float ch4Dac = this.channel4.tick();
 
             byte leftSample = 0;
             byte rightSample = 0;
 
             if (this.getMasterAudioEnable()) {
                 if (this.currentSampleIndex >= 0 && this.currentSampleIndex < this.leftChannelSamples.length) {
-                    leftSample = this.mixLeft(ch1Dac, ch2Dac, ch3Dac, 0);
-                    rightSample = this.mixRight(ch1Dac, ch2Dac, ch3Dac, 0);
+                    leftSample = this.mixLeft(ch1Dac, ch2Dac, ch3Dac, ch4Dac);
+                    rightSample = this.mixRight(ch1Dac, ch2Dac, ch3Dac, ch4Dac);
                 }
             }
 
@@ -205,6 +207,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.channel1.clockLength();
             this.channel2.clockLength();
             this.channel3.clockLength();
+            this.channel4.clockLength();
         }
 
         this.volumeEnvelopeCycle++;
@@ -212,6 +215,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.volumeEnvelopeCycle = 0;
             this.channel1.clockEnvelope();
             this.channel2.clockEnvelope();
+            this.channel4.clockEnvelope();
         }
 
 
@@ -248,6 +252,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         if (this.channel3.getLeft()) {
             sample += ch3Dac;
         }
+        if (this.channel4.getLeft()) {
+            sample += ch4Dac;
+        }
         float scaled = sample / 4.0f;
         return (byte)(scaled * 127.0f);
     }
@@ -263,7 +270,10 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         if (this.channel3.getRight()) {
             sample += ch3Dac;
         }
-        float scaled = sample / 4.0f;   // normalize channels
+        if (this.channel4.getRight()) {
+            sample += ch4Dac;
+        }
+        float scaled = sample / 4.0f;
         return (byte)(scaled * 127.0f);
     }
 
@@ -304,7 +314,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.nrx3 = value & 0xFF;
         }
 
-        private int getNRX3() {
+        int getNRX3() {
             return this.nrx3;
         }
 
@@ -698,34 +708,125 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     }
 
-    /*
-    private void setChannel4Enable(boolean enable) {
-        if (enable) {
-            this.nr52 |= 1 << 3;
-        } else {
-            this.nr52 &= ~(1 << 3);
+    private class Channel4 extends AudioChannel {
+
+        private int envelopePeriodTimer;
+        private int envelopeCurrentVolume;
+
+        private int wavePeriodTimer;
+        private int lfsr;
+
+        @Override
+        void setEnabled(boolean enable) {
+            if (enable) {
+                nr52 |= 1 << 3;
+            } else {
+                nr52 &= ~(1 << 3);
+            }
         }
+
+        @Override
+        boolean getEnabled() {
+            return (nr52 & (1 << 3)) != 0;
+        }
+
+        @Override
+        boolean getLeft() {
+            return (nr51 & (1 << 7)) != 0;
+        }
+
+        @Override
+        boolean getRight() {
+            return (nr51 & (1 << 3)) != 0;
+        }
+
+        @Override
+        int getInitialLengthTimer() {
+            return this.nrx1 & 0b111111;
+        }
+
+        private int getInitialVolume() {
+            return (this.nrx2 >>> 4) & 0b1111;
+        }
+
+        private boolean getEnvelopeDirection() {
+            return (this.nrx2 & (1 << 3)) != 0;
+        }
+
+        private int getEnvelopeSweepPace() {
+            return this.nrx2 & 0b111;
+        }
+
+        private int getClockShift() {
+            return (this.nrx3 >>> 4) & 0b1111;
+        }
+
+        private boolean getLFSRWidth() {
+            return (this.nrx3 & (1 << 3)) != 0;
+        }
+
+        private int getClockDivider() {
+            return this.nrx3 & 0b111;
+        }
+
+        @Override
+        float tick() {
+            if (!this.getEnabled()) {
+                return 0;
+            }
+            this.wavePeriodTimer--;
+            if (this.wavePeriodTimer <= 0) {
+                this.wavePeriodTimer = (this.getClockDivider() > 0 ? (this.getClockDivider() << 4) : 8) << this.getClockShift();
+
+                int xorResult = (this.lfsr & 0b01) ^ ((this.lfsr & 0b10) >>> 1);
+                this.lfsr = ((this.lfsr >>> 1) | (xorResult << 14)) & 0x7FFF;
+
+                if (this.getLFSRWidth()) {
+                    this.lfsr = (this.lfsr & (~(1 << 6))) & 0x7FFF;
+                    this.lfsr = (this.lfsr | (xorResult << 6)) & 0x7FFF;
+                }
+
+            }
+
+            int amplitude = ~this.lfsr & 0x01;
+            int dacInput = amplitude * this.envelopeCurrentVolume;
+            return (dacInput / 15.0f) * 2.0f - 1.0f;
+        }
+
+        @Override
+        void trigger() {
+            super.trigger();
+            this.wavePeriodTimer = (this.getClockDivider() > 0 ? (this.getClockDivider() << 4) : 8) << this.getClockShift();
+            this.envelopeCurrentVolume = this.getInitialVolume();
+            this.lfsr = 0x7FFF;
+        }
+
+        void clockEnvelope() {
+            if (!this.getEnabled()) {
+                return;
+            }
+
+            if (this.getEnvelopeSweepPace() == 0) {
+                return;
+            }
+            if (this.envelopePeriodTimer > 0) {
+                this.envelopePeriodTimer--;
+            }
+            if (this.envelopePeriodTimer == 0) {
+                this.envelopePeriodTimer = this.getEnvelopeSweepPace();
+                boolean isUpwards = this.getEnvelopeDirection();
+                int adjustment;
+                if ((this.envelopeCurrentVolume < 0xF && isUpwards) || (this.envelopeCurrentVolume > 0x0 && !isUpwards)) {
+                    if (isUpwards) {
+                        adjustment = 1;
+                    } else {
+                        adjustment = -1;
+                    }
+                    this.envelopeCurrentVolume += adjustment;
+                }
+            }
+        }
+
     }
-
-    private boolean getChannel4Enable() {
-        return (this.nr52 & (1 << 3)) != 0;
-    }
-
-
-    private boolean getChannel4Left() {
-        return (this.nr51 & (1 << 7)) != 0;
-    }
-
-
-    private boolean getChannel4Right() {
-        return (this.nr51 & (1 << 3)) != 0;
-    }
-
-    private boolean getChannel3Right() {
-        return (this.nr51 & (1 << 2)) != 0;
-    }
-
-     */
-
 
 }
