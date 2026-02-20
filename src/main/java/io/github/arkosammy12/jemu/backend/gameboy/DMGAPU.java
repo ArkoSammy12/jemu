@@ -677,12 +677,12 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 amplitude = element & 0xF;
             }
 
-            int shiftAmount = switch (this.currentVolume) {
+            int shiftAmount = switch (this.getOutputLevel()) {
                 case 0 -> 4;
                 case 1 -> 0;
                 case 2 -> 1;
                 case 3 -> 2;
-                default -> throw new EmulatorException("Invalid CH3 output level \"%d\" for the GameBoy!".formatted(this.currentVolume));
+                default -> throw new EmulatorException("Invalid CH3 output level \"%d\" for the GameBoy!".formatted(this.getOutputLevel()));
             };
             int dacInput = amplitude >>> shiftAmount;
             return (dacInput / 15.0f) * 2.0f - 1.0f;
