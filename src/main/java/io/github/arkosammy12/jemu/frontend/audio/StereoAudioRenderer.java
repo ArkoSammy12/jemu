@@ -33,7 +33,6 @@ public class StereoAudioRenderer extends AudioRenderer {
             System.arraycopy(buf, buf.length - frameSize, actualBuf, i, frameSize);
         }
 
-
         return actualBuf;
     }
 

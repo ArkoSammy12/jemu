@@ -27,13 +27,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             {1, 1, 1, 1, 1, 1, 0, 0}
     };
 
-
-    private int channel4LengthTimer = UNUSED_BITS_NR41; // NR41
-    private int channel4VolumeAndEnvelope; // NR42
-    private int channel4FrequencyAndRandomness; // NR43
-    private int channel4Control = UNUSED_BITS_NRX4; // NR44
-
-
     private final byte[] leftChannelSamples = new byte[GameBoyEmulator.T_CYCLES_PER_FRAME];
     private final byte[] rightChannelSamples = new byte[GameBoyEmulator.T_CYCLES_PER_FRAME];
     private int currentSampleIndex = 0;
@@ -42,9 +35,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private int volumeEnvelopeCycle;
     private int sweepCycle;
 
-    private int nr50; // NR50
-    private int nr51 = UNUSED_BITS_NRX1; // NR51
-    private int nr52 = UNUSED_BITS_NR52; // NR52
+    private int nr50;
+    private int nr51;
+    private int nr52;
 
     private final Channel1 channel1 = new Channel1();
     private final Channel2 channel2 = new Channel2();
