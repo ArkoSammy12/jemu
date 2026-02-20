@@ -18,6 +18,8 @@ public class GameBoyTimerController implements Bus {
     private static final int TAC_CLOCK_SELECT_MASK = 0b11;
     private static final int TAC_ENABLE_BIT = 1 << 2;
 
+    private static final int DIV_BIT_4_MASK = 1 << 12;
+
     private int systemClock; // DIV (8 upper bits)
     private int timerCounter; // TIMA
     private int timerModulo; // TMA
@@ -27,6 +29,8 @@ public class GameBoyTimerController implements Bus {
     private boolean reloadOccurred = false;
 
     private int reloadDelay = -1;
+
+    private boolean oldDivBit4 = false;
 
     public GameBoyTimerController(GameBoyEmulator emulator) {
         this.emulator = emulator;
@@ -67,17 +71,20 @@ public class GameBoyTimerController implements Bus {
     }
 
     // It is assumed that this is called once per M-cycle, after the Processor performs the action of the current cycle, but before it fetches (if instruction ended), or polls for interrupts (if any)
-    public void cycle() {
-
+    public boolean cycle() {
         this.reloadOccurred = false;
-        this.cycleSystemClock();
-        this.cycleSystemClock();
-        this.cycleSystemClock();
-        this.cycleSystemClock();
 
+        boolean apuFrameSequencerTick = false;
+
+        apuFrameSequencerTick |= this.cycleSystemClock();
+        apuFrameSequencerTick |= this.cycleSystemClock();
+        apuFrameSequencerTick |= this.cycleSystemClock();
+        apuFrameSequencerTick |= this.cycleSystemClock();
+
+        return apuFrameSequencerTick;
     }
 
-    private void cycleSystemClock() {
+    private boolean cycleSystemClock() {
 
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
         if (this.reloadDelay > 0) {
@@ -112,6 +119,12 @@ public class GameBoyTimerController implements Bus {
         }
 
         this.oldTimerInput = timerInput;
+
+        boolean divBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
+        boolean apuFrameSequencerTick = this.oldDivBit4 && !divBit4;
+        this.oldDivBit4 = divBit4;
+        return apuFrameSequencerTick;
+
     }
 
     private void triggerInterrupt() {

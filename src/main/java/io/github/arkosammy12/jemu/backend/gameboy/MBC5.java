@@ -28,7 +28,7 @@ public class MBC5 extends GameBoyCartridge {
             case 0x06 -> new int[128][0x4000];
             case 0x07 -> new int[256][0x4000];
             case 0x08 -> new int[512][0x4000];
-            default -> throw new EmulatorException("Incompatible ROM size header \"0x%02X\" for MBC5 GameBoy cartridge type!".formatted(this.romSizeHeader));
+            default -> throw new EmulatorException("Incompatible ROM size header \"$%02X\" for MBC5 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
 
         this.ramBanks = switch (this.ramSizeHeader) {
@@ -38,7 +38,7 @@ public class MBC5 extends GameBoyCartridge {
             case 0x03 -> new int[4][0x2000];
             case 0x04 -> new int[16][0x2000];
             case 0x05 -> new int[8][0x2000];
-            default -> throw new EmulatorException("Incompatible RAM size header \"0x%02X\" for MBC5 GameBoy cartridge type!".formatted(this.ramSizeHeader));
+            default -> throw new EmulatorException("Incompatible RAM size header \"$%02X\" for MBC5 GameBoy cartridge type!".formatted(this.ramSizeHeader));
         };
 
         try {
@@ -69,7 +69,7 @@ public class MBC5 extends GameBoyCartridge {
                 return 0xFF;
             }
         } else {
-            throw new EmulatorException("Invalid GameBoy MBC5 cartridge address 0x\"%04X\"!".formatted(address));
+            throw new EmulatorException("Invalid GameBoy MBC5 cartridge address \"$%04X\"!".formatted(address));
         }
     }
 

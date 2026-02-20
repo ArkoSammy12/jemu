@@ -13,7 +13,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     private static final int FRAMERATE = 60;
     private static final int CLOCK_FREQUENCY = 4194304;
-    private static final int T_CYCLES_PER_FRAME = 70224;
+    public static final int T_CYCLES_PER_FRAME = 70224;
     private static final int M_CYCLES_PER_FRAME = T_CYCLES_PER_FRAME / 4;
 
     private final GameBoyHost host;
@@ -118,9 +118,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     private void runCycle() {
         int flags = this.cpu.cycle();
-        this.timerController.cycle();
+        boolean apuFrameSequencerTick = this.timerController.cycle();
         this.cpu.nextState();
         this.ppu.cycle();
+        this.apu.cycle(apuFrameSequencerTick);
         this.cartridge.cycle();
         this.bus.cycle();
 
