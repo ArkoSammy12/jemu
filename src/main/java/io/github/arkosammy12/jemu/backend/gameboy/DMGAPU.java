@@ -59,14 +59,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private int volumeEnvelopeCycle;
     private int sweepCycle;
 
-    private int channel1WaveDutyIndex;
-    private int channel1WavePeriodTimer;
-
-    private int channel1EnvelopePeriodTimer;
-    private int channel1EnvelopeCurrentVolume;
-
-    private int channel1LengthTimer;
-
     private final int[] waveRam = new int[16];
 
     public DMGAPU(E emulator) {
