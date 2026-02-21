@@ -17,7 +17,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private static final int UNUSED_BITS_NRX4 = 0b10111111;
     private static final int UNUSED_BITS_NR30 = 0b01111111;
     private static final int UNUSED_BITS_NR32 = 0b10011111;
-    private static final int UNUSED_BITS_NR41 = 0b11000000;
     private static final int UNUSED_BITS_NR52 = 0b01110000;
 
     private static final float MAX_VOLUME = 15.0f;
