@@ -275,7 +275,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return;
         }
 
-        switch (frameSequencerStep) {
+        switch (this.frameSequencerStep) {
             case 0, 2, 4, 6 -> {
                 this.channel1.clockLength();
                 this.channel2.clockLength();
@@ -802,7 +802,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.waveRamIndex = 0;
             double sum = 0;
             for (int element : this.waveRam) {
-                sum += element >> 4;
+                sum += (element >>> 4) & 0xF;
                 sum += element & 0xF;
             }
             this.dcOffset = sum / (this.waveRam.length * 2);
