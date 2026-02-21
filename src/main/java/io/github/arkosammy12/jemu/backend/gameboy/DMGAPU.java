@@ -46,11 +46,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private final Channel3 channel3 = new Channel3();
     private final Channel4 channel4 = new Channel4();
 
-    private double capacitorLeft;
-    private double capacitorRight;
-
-    private boolean hpfInitializedLeft = false;
-    private boolean hpfInitializedRight = false;
 
     public DMGAPU(E emulator) {
         super(emulator);
@@ -230,10 +225,10 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     private void mixChannels(float ch1, float ch2, float ch3, float ch4) {
 
-        ch1 /= MAX_VOLUME;
-        ch2 /= MAX_VOLUME;
-        ch3 /= MAX_VOLUME;
-        ch4 /= MAX_VOLUME;
+        ch1 = (float) ((ch1 - (channel1.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+        ch2 = (float) ((ch2 - (channel2.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+        ch3 = (float) ((ch3 - channel3.dcOffset) / MAX_VOLUME);
+        ch4 = (float) ((ch4 - (channel4.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
 
         double left = 0;
         double right = 0;
@@ -270,56 +265,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         left *= (float) this.getLeftVolume() / VOLUME_DIVISOR;
         right *= (float) this.getRightVolume() / VOLUME_DIVISOR;
 
-        // Convert to signed [-1, 1] range
-        left = (left - 0.5f) * 2.0f;
-        right = (right - 0.5f) * 2.0f;
-
-        boolean dac = false;
-        dac |= this.channel1.getDacEnable();
-        dac |= this.channel2.getDacEnable();
-        dac |= this.channel3.getDacEnable();
-        dac |= this.channel4.getDacEnable();
-
-        left = this.applyHighPassFilterLeft(left, dac);
-        right = this.applyHighPassFilterRight(right, dac);
-
         this.leftChannelSamples[this.currentSampleIndex] = (byte) (left * SAMPLE_SCALE);
         this.rightChannelSamples[this.currentSampleIndex] = (byte) (right * SAMPLE_SCALE);
         this.currentSampleIndex = (this.currentSampleIndex + 1) % GameBoyEmulator.T_CYCLES_PER_FRAME;
-    }
-
-    private double applyHighPassFilterLeft(double left, boolean dac) {
-        if (!dac) {
-            this.capacitorLeft = 0.0;
-            this.hpfInitializedLeft = false;
-            return 0.0;
-        }
-
-        if (!this.hpfInitializedLeft) {
-            this.capacitorLeft = left;
-            this.hpfInitializedLeft = true;
-        }
-
-        double out = left - this.capacitorLeft;
-        this.capacitorLeft = left - out * 0.999958;
-        return out;
-    }
-
-    private double applyHighPassFilterRight(double right, boolean dac) {
-        if (!dac) {
-            this.capacitorRight = 0.0;
-            this.hpfInitializedRight = false;
-            return 0.0;
-        }
-
-        if (!this.hpfInitializedRight) {
-            this.capacitorRight = right;
-            this.hpfInitializedRight = true;
-        }
-
-        double out = right - this.capacitorRight;
-        this.capacitorRight = right - out * 0.999958;
-        return out;
     }
 
     private void tickFrameSequencer() {
@@ -478,7 +426,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         protected int wavePeriodTimer;
 
         private int envelopePeriodTimer;
-        private int envelopeCurrentVolume;
+        int envelopeCurrentVolume;
         private boolean envelopeUpdating;
 
         @Override
@@ -746,6 +694,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         private int waveRamIndex = 1;
         private int wavePeriodTimer;
+        private double dcOffset;
 
         @Override
         protected void setEnabled(boolean enable) {
@@ -851,6 +800,12 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             super.trigger();
             this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 2;
             this.waveRamIndex = 0;
+            double sum = 0;
+            for (int element : this.waveRam) {
+                sum += element >> 4;
+                sum += element & 0xF;
+            }
+            this.dcOffset = sum / (this.waveRam.length * 2);
         }
 
     }
