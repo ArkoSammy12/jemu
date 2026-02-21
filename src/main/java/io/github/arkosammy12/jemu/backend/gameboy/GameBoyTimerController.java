@@ -131,5 +131,9 @@ public class GameBoyTimerController implements Bus {
         this.emulator.getMMIOController().setIF(this.emulator.getMMIOController().getIF() | SM83.TIMER_MASK);
     }
 
+    public void onAPUPowerOn() {
+        this.oldDivBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
+    }
+
 }
 
