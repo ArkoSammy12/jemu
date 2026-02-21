@@ -190,20 +190,10 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         for (int i = 0; i < samplesPerFrame; i++) {
             int index = (int) pos;
-            double frac = pos - index;
-
             int nextIndex = Math.min(index + 1, GameBoyEmulator.T_CYCLES_PER_FRAME - 1);
 
-            float l1 = this.leftChannelSamples[index];
-            float l2 = this.leftChannelSamples[nextIndex];
-            float leftSample = (float) (l1 + (l2 - l1) * frac);
-
-            float r1 = this.rightChannelSamples[index];
-            float r2 = this.rightChannelSamples[nextIndex];
-            float rightSample = (float) (r1 + (r2 - r1) * frac);
-
-            out[i * 2] = (byte) leftSample;
-            out[(i * 2) + 1] = (byte) rightSample;
+            out[i * 2] = this.leftChannelSamples[nextIndex];
+            out[(i * 2) + 1] = this.rightChannelSamples[nextIndex];
 
             pos += step;
         }
