@@ -422,19 +422,15 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         protected void setNRX4(int value) {
 
             boolean oldEnable = getLengthEnable();
-
             this.nrx4 = value & 0xFF;
-
             boolean newEnable = getLengthEnable();
 
-            // Hardware quirk:
-            // If enabling length during non-length step, clock immediately
             if (!oldEnable && newEnable && !isLengthClockStep()) {
-                clockLength();
+                this.clockLength();
             }
 
-            if (getTrigger()) {
-                trigger();
+            if (this.getTrigger()) {
+                this.trigger();
             }
         }
 
@@ -450,11 +446,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return (this.nrx4 & (1 << 6)) != 0;
         }
 
-        abstract protected int getInitialLengthTimer();
-
         abstract protected boolean getDacEnable();
 
-        protected int getMaxLength() {
+        protected int getMaxLengthTimer() {
             return 64;
         }
 
@@ -465,7 +459,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 this.setEnabled(true);
             }
             if (this.lengthTimer == 0) {
-                this.lengthTimer = this.getMaxLength();
+                this.lengthTimer = this.getMaxLengthTimer();
                 if (this.getLengthEnable() && !isLengthClockStep()) {
                     this.clockLength();
                 }
@@ -495,6 +489,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         private int envelopePeriodTimer;
         private int envelopeCurrentVolume;
+        private boolean envelopeUpdating;
 
         @Override
         protected void setEnabled(boolean enable) {
@@ -525,21 +520,31 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         }
 
         @Override
-        protected int getInitialLengthTimer() {
-            return this.nrx1 & 0b111111;
-        }
-
-        @Override
         protected void setNRX1(int value) {
             super.setNRX1(value);
             this.lengthTimer = 64 - (value & 0x3F);
         }
 
-        @Override
         protected void setNRX2(int value) {
+
+            int oldPeriod = this.getEnvelopeSweepPace();
+            boolean oldIncrease = this.getEnvelopeDirection();
+
             super.setNRX2(value);
             if (!this.getDacEnable()) {
                 this.setEnabled(false);
+            }
+
+            if (this.getEnabled()) {
+                if (oldPeriod == 0 && this.envelopeUpdating) {
+                    this.envelopeCurrentVolume++;
+                } else if (!oldIncrease) {
+                    this.envelopeCurrentVolume += 2;
+                }
+                if (oldIncrease != this.getEnvelopeDirection()) {
+                    this.envelopeCurrentVolume = 16 - this.envelopeCurrentVolume;
+                }
+                this.envelopeCurrentVolume &= 0xF;
             }
         }
 
@@ -589,16 +594,17 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.envelopePeriodTimer = this.getEnvelopeSweepPace();
             this.envelopeCurrentVolume = this.getInitialVolume();
             this.waveDutyIndex = 0;
+            this.envelopeUpdating = true;
         }
 
         protected void clockEnvelope() {
             if (!this.getEnabled()) {
                 return;
             }
-
             if (this.getEnvelopeSweepPace() == 0) {
                 return;
             }
+
             if (this.envelopePeriodTimer > 0) {
                 this.envelopePeriodTimer--;
             }
@@ -613,6 +619,8 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                         adjustment = -1;
                     }
                     this.envelopeCurrentVolume += adjustment;
+                } else {
+                    this.envelopeUpdating = false;
                 }
             }
         }
@@ -733,7 +741,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             int delta = this.sweepShadow >>> this.getSweepIndividualStep();
             return this.getSweepDirection() ? this.sweepShadow - delta : this.sweepShadow + delta;
         }
-
     }
 
     private class Channel3 extends AudioChannel {
@@ -796,12 +803,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return (this.nr30 & (1 << 7)) != 0;
         }
 
-        @Override
-        protected int getInitialLengthTimer() {
-            return this.nrx1;
-        }
-
-        protected int getMaxLength() {
+        protected int getMaxLengthTimer() {
             return 256;
         }
 
@@ -867,6 +869,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         private int envelopePeriodTimer;
         private int envelopeCurrentVolume;
+        private boolean envelopeUpdating;
 
         private int wavePeriodTimer;
         private int lfsr;
@@ -895,11 +898,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return (nr51 & (1 << 3)) != 0;
         }
 
-        @Override
-        protected int getInitialLengthTimer() {
-            return this.nrx1 & 0b111111;
-        }
-
         private int getInitialVolume() {
             return (this.nrx2 >>> 4) & 0b1111;
         }
@@ -912,10 +910,27 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         @Override
         protected void setNRX2(int value) {
+
+            int oldPeriod = this.getEnvelopeSweepPace();
+            boolean oldIncrease = this.getEnvelopeDirection();
+
             super.setNRX2(value);
             if (!this.getDacEnable()) {
                 this.setEnabled(false);
             }
+
+            if (this.getEnabled()) {
+                if (oldPeriod == 0 && this.envelopeUpdating) {
+                    this.envelopeCurrentVolume++;
+                } else if (!oldIncrease) {
+                    this.envelopeCurrentVolume += 2;
+                }
+                if (oldIncrease != this.getEnvelopeDirection()) {
+                    this.envelopeCurrentVolume = 16 - this.envelopeCurrentVolume;
+                }
+                this.envelopeCurrentVolume &= 0xF;
+            }
+
         }
 
         @Override
@@ -972,16 +987,17 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.wavePeriodTimer = (this.getClockDivider() > 0 ? (this.getClockDivider() << 4) : 8) << this.getClockShift();
             this.envelopeCurrentVolume = this.getInitialVolume();
             this.lfsr = 0x7FFF;
+            this.envelopeUpdating = true;
         }
 
-        void clockEnvelope() {
+        protected void clockEnvelope() {
             if (!this.getEnabled()) {
                 return;
             }
-
             if (this.getEnvelopeSweepPace() == 0) {
                 return;
             }
+
             if (this.envelopePeriodTimer > 0) {
                 this.envelopePeriodTimer--;
             }
@@ -996,10 +1012,11 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                         adjustment = -1;
                     }
                     this.envelopeCurrentVolume += adjustment;
+                } else {
+                    this.envelopeUpdating = false;
                 }
             }
         }
-
     }
 
 }
