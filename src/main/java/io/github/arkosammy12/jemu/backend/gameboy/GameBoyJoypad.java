@@ -77,10 +77,10 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     }
 
     private synchronized void updateJoyP() {
-        boolean originalBit0 = (this.joyP & A_RIGHT_MASK) != 0;
-        boolean originalBit1 = (this.joyP & B_LEFT_MASK) != 0;
-        boolean originalBit2 = (this.joyP & SELECT_UP_MASK) != 0;
-        boolean originalBit3 = (this.joyP & START_DOWN_MASK) != 0;
+        boolean originalJoypLowBitsAnd = (this.joyP & A_RIGHT_MASK) != 0;
+        originalJoypLowBitsAnd &= (this.joyP & B_LEFT_MASK) != 0;
+        originalJoypLowBitsAnd &= (this.joyP & SELECT_UP_MASK) != 0;
+        originalJoypLowBitsAnd &= (this.joyP & START_DOWN_MASK) != 0;
 
         boolean selectButtons = (this.joyP & SELECT_BUTTONS_MASK) == 0;
         boolean selectDPad = (this.joyP & SELECT_DPAD_MASK) == 0;
@@ -119,12 +119,12 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
 
         this.joyP = (this.joyP & 0xF0) | (newJoyPLow & 0x0F);
 
-        boolean newBit0 = (this.joyP & A_RIGHT_MASK) != 0;
-        boolean newBit1 = (this.joyP & B_LEFT_MASK) != 0;
-        boolean newBit2 = (this.joyP & SELECT_UP_MASK) != 0;
-        boolean newBit3 = (this.joyP & START_DOWN_MASK) != 0;
+        boolean newJoypLowAnd = (this.joyP & A_RIGHT_MASK) != 0;
+        newJoypLowAnd &= (this.joyP & B_LEFT_MASK) != 0;
+        newJoypLowAnd &= (this.joyP & SELECT_UP_MASK) != 0;
+        newJoypLowAnd &= (this.joyP & START_DOWN_MASK) != 0;
 
-        if ((originalBit0 && !newBit0) || (originalBit1 && !newBit1) || (originalBit2 && !newBit2) || (originalBit3 && !newBit3)) {
+        if (originalJoypLowBitsAnd && !newJoypLowAnd) {
             this.triggerJoyPInterrupt();
         }
 
