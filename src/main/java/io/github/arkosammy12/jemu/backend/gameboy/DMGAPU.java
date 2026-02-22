@@ -111,15 +111,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 case NR50_ADDR -> this.nr50 = value & 0xFF;
                 case NR51_ADDR -> this.nr51 = value & 0xFF;
                 case NR52_ADDR -> {
-                    boolean oldPower = getMasterAudioEnable();
-                    this.nr52 = (value & 0b11110000);
-                    boolean newPower = getMasterAudioEnable();
+                    boolean oldPower = this.getMasterAudioEnable();
+                    this.nr52 = (value & 0b11110000) | (this.nr52 & 0b1111);
+                    boolean newPower = this.getMasterAudioEnable();
 
                     if (!oldPower && newPower) {
                         this.onPowerOn();
-                    }
-
-                    if (oldPower && !newPower) {
+                    } else if (oldPower && !newPower) {
                         this.onPowerOff();
                     }
                 }
@@ -772,18 +770,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return (this.getPeriodHigh() << 8) | this.nrx3;
         }
 
-        private void writeWaveRam(int address, int value) {
-            boolean originalFirstFetchConsumed = this.firstFetchConsumed;
-            this.firstFetchConsumed = this.fetchedFirstByte;
-            if (this.getEnabled()) {
-                if (this.wavePeriodTimer <= 2 && originalFirstFetchConsumed) {
-                    this.waveRam[((this.waveRamIndex - 1) & 31) / 2] = value & 0xFF;
-                }
-            } else {
-                this.waveRam[address - WAVERAM_START] = value & 0xFF;
-            }
-        }
-
         private int readWaveRam(int address) {
             boolean originalFirstFetchConsumed = this.firstFetchConsumed;
             this.firstFetchConsumed = this.fetchedFirstByte;
@@ -795,6 +781,18 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 }
             } else {
                 return this.waveRam[address - WAVERAM_START];
+            }
+        }
+
+        private void writeWaveRam(int address, int value) {
+            boolean originalFirstFetchConsumed = this.firstFetchConsumed;
+            this.firstFetchConsumed = this.fetchedFirstByte;
+            if (this.getEnabled()) {
+                if (this.wavePeriodTimer <= 2 && originalFirstFetchConsumed) {
+                    this.waveRam[((this.waveRamIndex - 1) & 31) / 2] = value & 0xFF;
+                }
+            } else {
+                this.waveRam[address - WAVERAM_START] = value & 0xFF;
             }
         }
 
@@ -833,9 +831,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             };
         }
 
+
         @Override
         protected void trigger() {
-
             if (this.getEnabled() && this.wavePeriodTimer == 4) {
                 int coarseReadByteIndex = ((this.waveRamIndex - 1) & 31) / 2;
                 if (coarseReadByteIndex <= 3) {
