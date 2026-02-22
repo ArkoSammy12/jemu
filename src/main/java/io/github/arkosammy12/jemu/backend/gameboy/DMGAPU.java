@@ -232,10 +232,12 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     private void mixChannels(float ch1, float ch2, float ch3, float ch4) {
 
-        ch1 = (float) ((ch1 - (channel1.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
-        ch2 = (float) ((ch2 - (channel2.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
-        ch3 = (float) ((ch3 - channel3.dcOffset) / MAX_VOLUME);
-        ch4 = (float) ((ch4 - (channel4.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+        ch1 = (float) ((ch1 - (this.channel1.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+        ch2 = (float) ((ch2 - (this.channel2.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+
+        int scale = this.channel3.getShiftAmount() == 4 ? 1 : 1 << this.channel3.getShiftAmount();
+        ch3 = (float) ((ch3 - (this.channel3.dcOffset / scale)) / MAX_VOLUME);
+        ch4 = (float) ((ch4 - (this.channel4.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
 
         double left = 0;
         double right = 0;
@@ -818,14 +820,17 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 amplitude = this.waveSampleBuffer & 0xF;
             }
 
-            int shiftAmount = switch (this.currentOutputLevel) {
+            return amplitude >>> this.getShiftAmount();
+        }
+
+        int getShiftAmount() {
+            return switch (this.currentOutputLevel) {
                 case 0 -> 4;
                 case 1 -> 0;
                 case 2 -> 1;
                 case 3 -> 2;
                 default -> throw new EmulatorException("Invalid CH3 output level \"%d\" for the GameBoy!".formatted(this.currentOutputLevel));
             };
-            return amplitude >>> shiftAmount;
         }
 
         @Override
