@@ -577,7 +577,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             boolean priority = getPriorityForPixelEntry(spritePixel);
             boolean palette = getPaletteForPixelEntry(spritePixel);
             if (spriteColorNumber != 0 && !(priority && bgPixel != 0)) {
-                int colorPaletteIndex = ((palette ? this.objectPalette1 : this.objectPalette0) >> (spriteColorNumber * 2)) & 0b11;
+                int colorPaletteIndex = ((palette ? this.objectPalette1 : this.objectPalette0) >>> (spriteColorNumber * 2)) & 0b11;
                 finalPixel = DMG_PALETTE[colorPaletteIndex];
             }
         }

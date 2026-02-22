@@ -830,10 +830,23 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         @Override
         protected void trigger() {
+
+            if (this.getEnabled() && this.wavePeriodTimer == 4) {
+                int coarseReadByteIndex = ((this.waveRamIndex - 1) & 31) / 2;
+                if (coarseReadByteIndex <= 3) {
+                    this.waveRam[0] = this.waveRam[coarseReadByteIndex];
+                } else {
+                    int beginIndex = coarseReadByteIndex & ~3;
+                    for (int i = beginIndex, j = 0; i <= beginIndex + 3; i++, j++) {
+                        this.waveRam[j] = this.waveRam[i];
+                    }
+                }
+            }
+
             super.trigger();
             this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 2;
-            this.waveRamIndex = 0;
             this.currentOutputLevel = this.getOutputLevel();
+            this.waveRamIndex = 0;
 
             double sum = 0;
             for (int element : this.waveRam) {
