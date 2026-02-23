@@ -21,8 +21,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private static final int UNUSED_BITS_NR52 = 0b01110000;
 
     private static final float MAX_VOLUME = 15.0f;
-    private static final int VOLUME_DIVISOR = 7;
-    private static final int CHANNEL_COUNT = 4;
     private static final float SAMPLE_SCALE = 127.0f;
 
     private static final int[][] DUTY_CYCLES = {
@@ -47,7 +45,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private final Channel3 channel3 = new Channel3();
     private final Channel4 channel4 = new Channel4();
 
-
     public DMGAPU(E emulator) {
         super(emulator);
     }
@@ -58,28 +55,24 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return this.channel3.readWaveRam(address);
         } else {
             return switch (address) {
+                case NR13_ADDR, NR23_ADDR, NR31_ADDR, NR33_ADDR, NR41_ADDR -> 0xFF;
                 case NR10_ADDR -> this.channel1.getNR10() | UNUSED_BITS_NR10;
                 case NR11_ADDR -> this.channel1.getNRX1() | UNUSED_BITS_NRX1;
                 case NR12_ADDR -> this.channel1.getNRX2();
-                case NR13_ADDR -> 0xFF;
                 case NR14_ADDR -> this.channel1.getNRX4() | UNUSED_BITS_NRX4;
                 case NR21_ADDR -> this.channel2.getNRX1() | UNUSED_BITS_NRX1;
                 case NR22_ADDR -> this.channel2.getNRX2();
-                case NR23_ADDR -> 0xFF;
                 case NR24_ADDR -> this.channel2.getNRX4() | UNUSED_BITS_NRX4;
                 case NR30_ADDR -> this.channel3.getNR30() | UNUSED_BITS_NR30;
-                case NR31_ADDR -> 0xFF;
                 case NR32_ADDR -> this.channel3.getNRX2() | UNUSED_BITS_NR32;
-                case NR33_ADDR -> 0xFF;
                 case NR34_ADDR -> this.channel3.getNRX4() | UNUSED_BITS_NRX4;
-                case NR41_ADDR -> 0xFF;
                 case NR42_ADDR -> this.channel4.getNRX2();
                 case NR43_ADDR -> this.channel4.getNRX3();
                 case NR44_ADDR -> this.channel4.getNRX4() | UNUSED_BITS_NRX4;
                 case NR50_ADDR -> this.nr50;
                 case NR51_ADDR -> this.nr51;
                 case NR52_ADDR -> this.nr52 | UNUSED_BITS_NR52;
-                default -> throw new EmulatorException("Invalid address \"%04X\" for GameBoy APU".formatted(address));
+                default -> throw new EmulatorException("Invalid address $%04X for GameBoy APU!".formatted(address));
             };
         }
     }
@@ -111,18 +104,17 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 case NR50_ADDR -> this.nr50 = value & 0xFF;
                 case NR51_ADDR -> this.nr51 = value & 0xFF;
                 case NR52_ADDR -> {
-                    boolean oldPower = this.getMasterAudioEnable();
+                    boolean oldApuPower = this.getMasterAudioEnable();
                     this.nr52 = (value & 0b10000000) | (this.nr52 & 0b00001111);
-                    boolean newPower = this.getMasterAudioEnable();
+                    boolean newApuPower = this.getMasterAudioEnable();
 
-                    if (!oldPower && newPower) {
+                    if (!oldApuPower && newApuPower) {
                         this.onPowerOn();
-                    }
-                    if (oldPower && !newPower) {
+                    } else if (oldApuPower && !newApuPower) {
                         this.onPowerOff();
                     }
                 }
-                default -> throw new EmulatorException("Invalid address \"%04X\" for GameBoy APU".formatted(address));
+                default -> throw new EmulatorException("Invalid address $%04X for GameBoy APU!".formatted(address));
             }
         }
     }
@@ -198,35 +190,27 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
             pos += step;
         }
-
         this.currentSampleIndex = 0;
         return Optional.of(out);
     }
-
 
     public void cycle(boolean tickFrameSequencer) {
         if (tickFrameSequencer) {
             this.tickFrameSequencer();
         }
-
         for (int i = 0; i < 4; i++) {
-
             int ch1 = 0;
             int ch2 = 0;
             int ch3 = 0;
             int ch4 = 0;
-
             if (this.getMasterAudioEnable()) {
                 ch1 = this.channel1.tick();
                 ch2 = this.channel2.tick();
                 ch3 = this.channel3.tick();
                 ch4 = this.channel4.tick();
             }
-
             this.mixChannels(ch1, ch2, ch3, ch4);
-
         }
-
     }
 
     private void mixChannels(float ch1, float ch2, float ch3, float ch4) {
@@ -267,11 +251,11 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             right += ch4;
         }
 
-        left /= CHANNEL_COUNT;
-        right /= CHANNEL_COUNT;
+        left *= (float) (this.getLeftVolume() + 1) / 8.0f;
+        right *= (float) (this.getRightVolume() + 1) / 8.0f;
 
-        left *= (float) this.getLeftVolume() / VOLUME_DIVISOR;
-        right *= (float) this.getRightVolume() / VOLUME_DIVISOR;
+        left /= 4.0f;
+        right /= 4.0f;
 
         this.leftChannelSamples[this.currentSampleIndex] = (byte) (left * SAMPLE_SCALE);
         this.rightChannelSamples[this.currentSampleIndex] = (byte) (right * SAMPLE_SCALE);
@@ -473,8 +457,8 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         protected void setNRX2(int value) {
 
-            int oldPeriod = this.getEnvelopeSweepPace();
-            boolean oldIncrease = this.getEnvelopeDirection();
+            int oldEnvelopeSweepPace = this.getEnvelopeSweepPace();
+            boolean oldEnvelopeDirection = this.getEnvelopeDirection();
 
             super.setNRX2(value);
             if (!this.getDacEnable()) {
@@ -482,12 +466,12 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             }
 
             if (this.getEnabled()) {
-                if (oldPeriod == 0 && this.envelopeUpdating) {
+                if (oldEnvelopeSweepPace == 0 && this.envelopeUpdating) {
                     this.envelopeCurrentVolume++;
-                } else if (!oldIncrease) {
+                } else if (!oldEnvelopeDirection) {
                     this.envelopeCurrentVolume += 2;
                 }
-                if (oldIncrease != this.getEnvelopeDirection()) {
+                if (oldEnvelopeDirection != this.getEnvelopeDirection()) {
                     this.envelopeCurrentVolume = 16 - this.envelopeCurrentVolume;
                 }
                 this.envelopeCurrentVolume &= 0xF;
@@ -526,7 +510,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             }
             this.wavePeriodTimer--;
             if (this.wavePeriodTimer <= 0) {
-                this.wavePeriodTimer = Math.max(4, (2048 - this.getPeriodFull()) * 4);
+                this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 4;
                 this.waveDutyIndex = (this.waveDutyIndex + 1) % 8;
             }
             int amplitude = DUTY_CYCLES[this.getWaveDuty()][this.waveDutyIndex];
@@ -536,7 +520,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         @Override
         protected void trigger() {
             super.trigger();
-            this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 4;
+            this.wavePeriodTimer = Math.max(4, (2048 - this.getPeriodFull()) * 4);
             this.envelopePeriodTimer = this.getEnvelopeSweepPace();
             this.envelopeCurrentVolume = this.getInitialVolume();
             this.waveDutyIndex = 0;
@@ -550,7 +534,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             if (this.getEnvelopeSweepPace() == 0) {
                 return;
             }
-
             if (this.envelopePeriodTimer > 0) {
                 this.envelopePeriodTimer--;
             }
@@ -828,7 +811,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 case 1 -> 0;
                 case 2 -> 1;
                 case 3 -> 2;
-                default -> throw new EmulatorException("Invalid CH3 output level \"%d\" for the GameBoy!".formatted(this.currentOutputLevel));
+                default -> throw new EmulatorException("Invalid CH3 output level \"%d\" for the GameBoy APU!".formatted(this.currentOutputLevel));
             };
         }
 
@@ -840,7 +823,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 if (coarseReadByteIndex <= 3) {
                     this.waveRam[0] = this.waveRam[coarseReadByteIndex];
                 } else {
-                    int beginIndex = coarseReadByteIndex & ~3;
+                    int beginIndex = coarseReadByteIndex & ~0b11;
                     for (int i = beginIndex, j = 0; i <= beginIndex + 3; i++, j++) {
                         this.waveRam[j] = this.waveRam[i];
                     }
@@ -927,7 +910,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 }
                 this.envelopeCurrentVolume &= 0xF;
             }
-
         }
 
         @Override
@@ -963,17 +945,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.wavePeriodTimer--;
             if (this.wavePeriodTimer <= 0) {
                 this.wavePeriodTimer = (this.getClockDivider() > 0 ? (this.getClockDivider() << 4) : 8) << this.getClockShift();
-
                 int xorResult = (this.lfsr & 0b01) ^ ((this.lfsr & 0b10) >>> 1);
                 this.lfsr = ((this.lfsr >>> 1) | (xorResult << 14)) & 0x7FFF;
-
                 if (this.getLFSRWidth()) {
                     this.lfsr = (this.lfsr & (~(1 << 6))) & 0x7FFF;
                     this.lfsr = (this.lfsr | (xorResult << 6)) & 0x7FFF;
                 }
-
             }
-
             int amplitude = ~this.lfsr & 0x01;
             return amplitude * this.envelopeCurrentVolume;
         }
@@ -994,7 +972,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             if (this.getEnvelopeSweepPace() == 0) {
                 return;
             }
-
             if (this.envelopePeriodTimer > 0) {
                 this.envelopePeriodTimer--;
             }

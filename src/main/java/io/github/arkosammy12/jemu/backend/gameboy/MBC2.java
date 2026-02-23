@@ -24,7 +24,7 @@ public class MBC2 extends GameBoyCartridge {
             case 0x01 -> new int[4][0x4000];
             case 0x02 -> new int[8][0x4000];
             case 0x03 -> new int[16][0x4000];
-            default -> throw new EmulatorException("Incompatible ROM size header \"$%02X\" for MBC2 GameBoy cartridge type!".formatted(this.romSizeHeader));
+            default -> throw new EmulatorException("Incompatible ROM size header $%02X for MBC2 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
 
         try {
@@ -55,7 +55,7 @@ public class MBC2 extends GameBoyCartridge {
                 return 0xFF;
             }
         } else {
-            throw new EmulatorException("Invalid GameBoy MBC2 cartridge address \"$%04X\"!".formatted(address));
+            throw new EmulatorException("Invalid GameBoy MBC2 cartridge read address $%04X!".formatted(address));
         }
     }
 

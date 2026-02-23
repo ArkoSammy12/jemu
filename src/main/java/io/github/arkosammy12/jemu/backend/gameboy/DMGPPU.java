@@ -4,10 +4,8 @@ import io.github.arkosammy12.jemu.backend.common.Bus;
 import io.github.arkosammy12.jemu.backend.common.VideoGenerator;
 import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
-import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
-import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -143,7 +141,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 case OBP1_ADDR -> this.objectPalette1;
                 case WY_ADDR -> this.windowY;
                 case WX_ADDR -> this.windowX;
-                default -> throw new EmulatorException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
+                default -> throw new EmulatorException("Invalid address $%04X for GameBoy PPU!".formatted(address));
             };
         }
     }
@@ -191,7 +189,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 case OBP1_ADDR -> this.objectPalette1 = value & 0xFF;
                 case WY_ADDR -> this.windowY = value & 0xFF;
                 case WX_ADDR -> this.windowX = value & 0xFF;
-                default -> throw new EmulatorException("Invalid address \"%04X\" for GameBoy PPU".formatted(address));
+                default -> throw new EmulatorException("Invalid address $%04X for GameBoy PPU!".formatted(address));
             }
         }
     }
@@ -210,14 +208,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         int currentPpuMode = this.getPpuMode();
         int nextPpuMode = switch (currentPpuMode) {
-            case OAM_SCAN_MODE -> onOamScan();
-            case DRAWING_MODE -> onDrawing();
-            case HBLANK_MODE -> onHBlank();
-            case VBLANK_MODE -> onVBlank();
-            default -> throw new EmulatorException("GameBoy PPU mode \"%d\" is not a valid value!".formatted(currentPpuMode));
+            case OAM_SCAN_MODE -> this.onOamScan();
+            case DRAWING_MODE -> this.onDrawing();
+            case HBLANK_MODE -> this.onHBlank();
+            case VBLANK_MODE -> this.onVBlank();
+            default -> throw new EmulatorException("Invalid GameBoy PPU value \"%d\"!".formatted(currentPpuMode));
         };
-        this.cycles++;
 
+        this.cycles++;
         if (this.cycles % CYCLES_PER_SCANLINE == 0) {
             this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
             if (this.windowPixelRendered) {
@@ -278,7 +276,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
                 for (int i = 0; i < 10; i++) {
                     if (this.spriteBuffer[i] == null) {
-                        if ((this.lcdY + 16 >= spriteY) && (this.lcdY + 16 < spriteY + (getObjectSize() ? 16 : 8))) {
+                        if ((this.lcdY + 16 >= spriteY) && (this.lcdY + 16 < spriteY + (this.getObjectSize() ? 16 : 8))) {
                             this.spriteBuffer[i] = createSpriteBufferEntry(spriteY, spriteX, tileIndex, spriteAttributes);
                         }
                         break;
@@ -296,7 +294,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     yield OAM_SCAN_MODE;
                 }
             }
-            default -> throw new EmulatorException("Invalid OAM scan step number \"%d\"".formatted(this.oamScanStep));
+            default -> throw new EmulatorException("Invalid GameBoy PPU OAM scan step number \"%d\"!".formatted(this.oamScanStep));
         };
     }
 
@@ -357,7 +355,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     private int onDrawing() {
         boolean originalWindowCondition = this.isRenderingWindow();
-
         if (this.pixelX == this.windowX + 1 && this.getWindowEnable()) {
             this.windowXCondition = true;
         }
@@ -416,7 +413,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 } else {
                     int tileMapBase = this.getBackgroundTileMap() ? 0x9C00 : 0x9800;
                     int tileX = ((pixelX + scrollX) >> 3) & 0x1F;
-                    int tileY = ((this.lcdY + this.scrollY) & 0xFF) >> 3;
+                    int tileY = ((this.lcdY + this.scrollY) & 0xFF) >>> 3;
                     int tileMapIndex = tileX + (tileY * 32);
                     tileMapIndex &= 0x3FF;
                     int address = tileMapBase + tileMapIndex;
@@ -472,9 +469,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     private void pushPixelsToBgFifo() {
         for (int i = 7; i >= 0; i--) {
-            int lo = (this.bgFifoTileDataLow  >> i) & 1;
-            int hi = (this.bgFifoTileDataHigh >> i) & 1;
-            this.backgroundFifo.enqueue((hi << 1) | lo);
+            int low = (this.bgFifoTileDataLow >>> i) & 1;
+            int high = (this.bgFifoTileDataHigh >>> i) & 1;
+            this.backgroundFifo.enqueue((high << 1) | low);
         }
         this.bgFifoFetcherX++;
     }
@@ -494,19 +491,17 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case 3 -> {
                 boolean objSize = this.getObjectSize();
                 int spriteEntry = this.spriteBuffer[this.spriteFifoCurrentEntryIndex];
-                int spriteY = getSpriteYFromEntry(spriteEntry);
-                int tileIndex = this.spriteFifoCurrentTileNumber;
                 int spriteAttributes = getSpriteAttributesFromEntry(spriteEntry);
                 boolean yFlip = getYFlipFromAttributes(spriteAttributes);
+                int spriteY = getSpriteYFromEntry(spriteEntry);
+                int tileIndex = this.spriteFifoCurrentTileNumber;
 
                 int width = objSize ? 15 : 7;
                 if (objSize) {
                     tileIndex &= ~1;
                 }
 
-                int row = (lcdY + 16) - spriteY;
-                row %= (width + 1);
-
+                int row = ((lcdY + 16) - spriteY) % (width + 1);
                 if (row < 0) {
                     row += (width + 1);
                 }

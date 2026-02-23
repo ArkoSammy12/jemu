@@ -137,7 +137,7 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address == IE_REGISTER) {
             return this.emulator.getMMIOController().readByte(address);
         } else {
-            throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
+            throw new EmulatorException("Invalid GameBoy memory address $%04X!".formatted(address));
         }
     }
 
@@ -178,7 +178,7 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address == IE_REGISTER) {
             this.emulator.getMMIOController().writeByte(address, value);
         } else {
-            throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
+            throw new EmulatorException("Invalid GameBoy memory address $%04X!".formatted(address));
         }
     }
 
@@ -222,7 +222,7 @@ public class GameBoyBus implements Bus, BusView {
         } else if (address >= 0xFE00 && address <= 0xFFFF) {
             return this.workRam[address & 0x1FFF];
         } else {
-            throw new EmulatorException("Invalid GameBoy memory address: \"%04X\"!".formatted(address));
+            throw new EmulatorException("Invalid GameBoy memory address %04X!".formatted(address));
         }
     }
 

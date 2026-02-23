@@ -43,7 +43,7 @@ public class GameBoyTimerController implements Bus {
             case TIMA_ADDR -> this.timerCounter;
             case TMA_ADDR -> this.timerModulo;
             case TAC_ADDR -> this.timerControl;
-            default -> throw new EmulatorException("Invalid GameBoy timer address " + String.format("%04X", address) + "!");
+            default -> throw new EmulatorException("Invalid GameBoy timer address $%04X!".formatted(address));
         };
     }
 
@@ -66,7 +66,7 @@ public class GameBoyTimerController implements Bus {
                 }
             }
             case TAC_ADDR -> this.timerControl = value & 0xFF;
-            default -> throw new EmulatorException("Invalid timer address " + String.format("%04X", address) + "!");
+            default -> throw new EmulatorException("Invalid GameBoy timer address $%04X!".formatted(address));
         }
     }
 

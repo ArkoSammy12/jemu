@@ -44,7 +44,7 @@ public class RTCMBC3 extends MBC3 {
                     case RTC_H_ADDR -> this.hours;
                     case RTC_DL_ADDR -> this.daysLower;
                     case RTC_DH_ADDR -> this.daysUpperAndControl;
-                    default -> throw new EmulatorException("Invalid RTC register address \"%04X\" for the GameBoy MBC3 cartridge type!");
+                    default -> throw new EmulatorException("Invalid RTC register address %04X for the GameBoy MBC3 cartridge type!");
                 };
             }
         }
@@ -67,7 +67,7 @@ public class RTCMBC3 extends MBC3 {
                         this.internalDays = ((value & 1) << 8) | (this.internalDays & 0xFF);
                         this.daysUpperAndControl = value & 0xC1;
                     }
-                    default -> throw new EmulatorException("Invalid RTC register address \"$%04X\" for the GameBoy MBC3 cartridge type!");
+                    default -> throw new EmulatorException("Invalid RTC register address $%04X for the GameBoy MBC3 cartridge type!");
                 }
             }
         } else if (address >= 0x6000 && address <= 0x7FFF) {
