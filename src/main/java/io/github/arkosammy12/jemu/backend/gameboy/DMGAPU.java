@@ -112,12 +112,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 case NR51_ADDR -> this.nr51 = value & 0xFF;
                 case NR52_ADDR -> {
                     boolean oldPower = this.getMasterAudioEnable();
-                    this.nr52 = (value & 0b11110000) | (this.nr52 & 0b1111);
+                    this.nr52 = (value & 0b10000000) | (this.nr52 & 0b00001111);
                     boolean newPower = this.getMasterAudioEnable();
 
                     if (!oldPower && newPower) {
                         this.onPowerOn();
-                    } else if (oldPower && !newPower) {
+                    }
+                    if (oldPower && !newPower) {
                         this.onPowerOff();
                     }
                 }
@@ -140,23 +141,23 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private void onPowerOff() {
         this.channel1.nr10 = 0;
         this.channel1.nrx1 = 0;
-        this.channel1.nrx2 = 0;
+        this.channel1.setNRX2(0);
         this.channel1.nrx3 = 0;
         this.channel1.nrx4 = 0;
 
         this.channel2.nrx1 = 0;
-        this.channel2.nrx2 = 0;
+        this.channel2.setNRX2(0);
         this.channel2.nrx3 = 0;
         this.channel2.nrx4 = 0;
 
-        this.channel3.nr30 = 0;
+        this.channel3.setNR30(0);
         this.channel3.nrx1 = 0;
         this.channel3.nrx2 = 0;
         this.channel3.nrx3 = 0;
         this.channel3.nrx4 = 0;
 
         this.channel4.nrx1 = 0;
-        this.channel4.nrx2 = 0;
+        this.channel4.setNRX2(0);
         this.channel4.nrx3 = 0;
         this.channel4.nrx4 = 0;
 
