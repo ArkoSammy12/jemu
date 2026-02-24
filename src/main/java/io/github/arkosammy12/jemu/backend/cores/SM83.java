@@ -340,7 +340,7 @@ public class SM83 implements Processor {
     }
 
     private boolean interruptsPending() {
-        return (systemBus.getIE() & systemBus.getIF()) != 0;
+        return (systemBus.getIE() & systemBus.getIF() & 0x1F) != 0;
     }
 
     private int getInterruptMask() {
