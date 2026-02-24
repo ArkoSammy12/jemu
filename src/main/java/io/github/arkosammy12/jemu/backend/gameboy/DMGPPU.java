@@ -206,6 +206,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             return;
         }
 
+        this.cycles++;
         int currentPpuMode = this.getPpuMode();
         int nextPpuMode = switch (currentPpuMode) {
             case OAM_SCAN_MODE -> this.onOamScan();
@@ -215,14 +216,16 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             default -> throw new EmulatorException("Invalid GameBoy PPU value \"%d\"!".formatted(currentPpuMode));
         };
 
-        this.cycles++;
         if (this.cycles % CYCLES_PER_SCANLINE == 0) {
             this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
+
             if (this.windowPixelRendered) {
                 this.windowPixelRendered = false;
                 this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
             }
         }
+
+        this.setPpuMode(nextPpuMode);
 
         if (currentPpuMode != VBLANK_MODE && nextPpuMode == VBLANK_MODE) {
             if (this.enablePixelWritesDelay > 0) {
@@ -250,9 +253,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         if (!this.oldStatInterruptLine && statInterruptLine) {
             this.triggerStatInterrupt();
         }
-        this.oldStatInterruptLine = statInterruptLine;
 
-        this.setPpuMode(nextPpuMode);
+        this.oldStatInterruptLine = statInterruptLine;
     }
 
     private int onOamScan() {
