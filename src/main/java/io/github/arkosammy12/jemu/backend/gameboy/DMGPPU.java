@@ -131,7 +131,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         } else {
             return switch (address) {
                 case LCDC_ADDR -> this.lcdControl;
-                case STAT_ADDR -> this.ppuStatus;
+                case STAT_ADDR -> this.ppuStatus | 0b10000000;
                 case SCY_ADDR -> this.scrollY;
                 case SCX_ADDR -> this.scrollX;
                 case LY_ADDR -> this.lcdY;

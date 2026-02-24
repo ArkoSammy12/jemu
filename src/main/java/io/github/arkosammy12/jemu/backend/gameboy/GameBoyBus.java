@@ -128,7 +128,7 @@ public class GameBoyBus implements Bus, BusView {
             if (address == DMA_ADDR) {
                 return this.oamDmaControl;
             } else if (address == BANK_ADDR) {
-                return this.enableBootRom ? 0 : 1;
+                return (this.enableBootRom ? 0 : 1) | 0b11111110;
             } else {
                 return this.emulator.getMMIOController().readByte(address);
             }
