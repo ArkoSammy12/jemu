@@ -95,7 +95,7 @@ public class GameBoyMMIOBus implements Bus {
         } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
             return this.emulator.getTimerController().readByte(address);
         } else if (address == IF_ADDR) {
-            return this.interruptFlag;
+            return this.interruptFlag | 0b11100000;
         } else if ((address >= NR10_ADDR && address <= NR14_ADDR) || (address >= NR21_ADDR && address <= NR34_ADDR) || (address >= NR41_ADDR && address <= NR52_ADDR) || (address >= WAVERAM_START && address <= WAVERAM_END)) {
             return this.emulator.getAudioGenerator().readByte(address);
         } else if ((address >= LCDC_ADDR && address <= LYC_ADDR) || (address >= BGP_ADDR && address <= WX_ADDR)) {
