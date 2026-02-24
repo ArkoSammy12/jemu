@@ -208,6 +208,15 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         this.cycles++;
         int currentPpuMode = this.getPpuMode();
+
+        if (this.cycles % CYCLES_PER_SCANLINE == 0) {
+            this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
+            if (this.windowPixelRendered) {
+                this.windowPixelRendered = false;
+                this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
+            }
+        }
+
         int nextPpuMode = switch (currentPpuMode) {
             case OAM_SCAN_MODE -> this.onOamScan();
             case DRAWING_MODE -> this.onDrawing();
@@ -216,14 +225,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             default -> throw new EmulatorException("Invalid GameBoy PPU value \"%d\"!".formatted(currentPpuMode));
         };
 
-        if (this.cycles % CYCLES_PER_SCANLINE == 0) {
-            this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
-
-            if (this.windowPixelRendered) {
-                this.windowPixelRendered = false;
-                this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
-            }
-        }
 
         this.setPpuMode(nextPpuMode);
 
@@ -236,6 +237,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
             this.triggerVBlankInterrupt();
             this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.lcd));
+
+            // For some reason, Mooneye test vblank_stat_intr-GS.gb expects this
+            if (this.getMode2InterruptSelect()) {
+                this.triggerStatInterrupt();
+            }
         }
 
         boolean lyEqualsLyc = this.lcdY == this.lcdYCompare;
