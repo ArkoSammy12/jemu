@@ -249,7 +249,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         this.nextState(scanlineNumberIncremented);
 
-        if (this.scanlineCycle >= 4) {
+        if (this.scanlineCycle >= 3) {
             if (this.lcdY == this.lcdYCompare) {
                 this.setLyEqualsLycFlag();
             } else {
@@ -328,17 +328,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 } else if (this.scanlineNumber == 153) {
                     this.lcdY = 0;
                 }
+
                 this.dotCycleIndex = 4;
             }
-            case 4 -> {
-                this.dotCycleIndex = 5;
-            }
-            case 5 -> {
-                this.dotCycleIndex = 6;
-            }
-            case 6 -> {
-
-            }
+            case 4 -> {}
         }
     }
 
