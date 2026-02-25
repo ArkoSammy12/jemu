@@ -238,9 +238,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
             if (originalScanlineNumber != 153) {
                 this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
+                this.clearLyEqualsLycFlag();
             }
             this.dotCycleIndex = 0;
-            this.clearLyEqualsLycFlag();
             if (this.windowPixelRendered) {
                 this.windowPixelRendered = false;
                 this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
@@ -249,13 +249,13 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         this.nextState(scanlineNumberIncremented);
 
-        //if (this.scanlineCycle >= 3) {
+        if (this.scanlineCycle >= 3) {
             if (this.lcdY == this.lcdYCompare) {
                 this.setLyEqualsLycFlag();
             } else {
                 this.clearLyEqualsLycFlag();
             }
-        //}
+        }
 
         boolean statInterruptLine = false;
         statInterruptLine |= this.getLycInterruptSelect() && this.getLyEqualsLycFlag();
@@ -269,8 +269,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     }
 
-    private void nextState(boolean lcdYIncremented) {
-        if (lcdYIncremented) {
+    private void nextState(boolean scanlineNumberIncremented) {
+        if (scanlineNumberIncremented) {
             this.dotCycleIndex = 0;
         }
         Mode oldMode = this.currentMode;
@@ -303,10 +303,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.dotCycleIndex = 2;
             }
             case 2 -> {
-                this.setPpuMode(Mode.MODE_1_VBLANK.getValue());
                 this.dotCycleIndex = 3;
             }
             case 3 -> {
+                this.setPpuMode(Mode.MODE_1_VBLANK.getValue());
                 if (this.scanlineNumber == 144) {
                     this.triggerVBlankInterrupt();
                     this.windowYCondition = false;
@@ -327,6 +327,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.lcd));
                 } else if (this.scanlineNumber == 153) {
                     this.lcdY = 0;
+                    this.clearLyEqualsLycFlag();
                 }
 
                 this.dotCycleIndex = 4;
