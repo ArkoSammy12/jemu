@@ -6,7 +6,6 @@ import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
-import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -56,6 +55,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private Mode currentMode = Mode.MODE_0_HBLANK;
     private int scanlineCycle;
     private int dotCycleIndex;
+    private int scanlineNumber;
 
     private boolean enablePixelWrites;
     private int enablePixelWritesDelay;
@@ -164,6 +164,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     this.lcdControl = value & 0xFF;
                     boolean newLcdEnable = this.getLcdPpuEnable();
                     if (oldLcdEnable != newLcdEnable) {
+                        this.scanlineNumber = 0;
                         this.lcdY = 0;
                         this.scanlineCycle = 0;
                         this.currentMode = Mode.MODE_0_HBLANK;
@@ -193,7 +194,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     }
 
     private void onLcdOn() {
-        this.enablePixelWritesDelay = 1;
+        this.enablePixelWritesDelay = 2;
         this.scanlineCycle = 4;
     }
 
@@ -218,10 +219,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             return;
         }
 
-        boolean lcdYIncremented = false;
+        boolean scanlineNumberIncremented = false;
         this.scanlineCycle++;
         if (this.scanlineCycle >= CYCLES_PER_SCANLINE) {
-            lcdYIncremented = true;
+            scanlineNumberIncremented = true;
             this.scanlineCycle = 0;
         }
 
@@ -232,8 +233,12 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case MODE_3_DRAWING -> this.onDrawing();
         }
 
-        if (lcdYIncremented) {
-            this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
+        if (scanlineNumberIncremented) {
+            int originalScanlineNumber = this.scanlineNumber;
+            this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
+            if (originalScanlineNumber != 153) {
+                this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
+            }
             this.dotCycleIndex = 0;
             this.clearLyEqualsLycFlag();
             if (this.windowPixelRendered) {
@@ -242,7 +247,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
         }
 
-        this.nextState(lcdYIncremented);
+        this.nextState(scanlineNumberIncremented);
 
         if (this.scanlineCycle >= 4) {
             if (this.lcdY == this.lcdYCompare) {
@@ -270,13 +275,13 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
         Mode oldMode = this.currentMode;
         if (this.scanlineCycle == 0) {
-            if (this.lcdY >= 144) {
+            if (this.scanlineNumber >= 144) {
                 this.currentMode = Mode.MODE_1_VBLANK;
             } else {
                 this.currentMode = Mode.MODE_2_OAM_SCAN;
             }
         } else if (this.scanlineCycle == 80) {
-            if (this.lcdY >= 144) {
+            if (this.scanlineNumber >= 144) {
                 this.currentMode = Mode.MODE_1_VBLANK;
             } else {
                 this.currentMode = Mode.MODE_3_DRAWING;
@@ -292,12 +297,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onVBlank() {
         switch (this.dotCycleIndex) {
             case 0 -> {
-                if (this.enablePixelWritesDelay > 0) {
-                    this.enablePixelWritesDelay--;
-                    if (this.enablePixelWritesDelay == 0) {
-                        this.enablePixelWrites = true;
-                    }
-                }
                 this.dotCycleIndex = 1;
             }
             case 1 -> {
@@ -308,7 +307,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.dotCycleIndex = 3;
             }
             case 3 -> {
-                if (this.lcdY == 144) {
+                if (this.scanlineNumber == 144) {
                     this.triggerVBlankInterrupt();
                     this.windowYCondition = false;
                     this.windowLine = 0;
@@ -318,11 +317,28 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                         this.triggerStatInterrupt();
                     }
 
+                    if (this.enablePixelWritesDelay > 0) {
+                        this.enablePixelWritesDelay--;
+                        if (this.enablePixelWritesDelay == 0) {
+                            this.enablePixelWrites = true;
+                        }
+                    }
+
                     this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.lcd));
+                } else if (this.scanlineNumber == 153) {
+                    this.lcdY = 0;
                 }
                 this.dotCycleIndex = 4;
             }
-            case 4 -> {}
+            case 4 -> {
+                this.dotCycleIndex = 5;
+            }
+            case 5 -> {
+                this.dotCycleIndex = 6;
+            }
+            case 6 -> {
+
+            }
         }
     }
 
@@ -373,7 +389,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onOamScan() {
         switch (this.dotCycleIndex) {
             case 0 -> {
-                if (this.lcdY == this.windowY) {
+                if (this.scanlineNumber == this.windowY) {
                     this.windowYCondition = true;
                 }
                 this.dotCycleIndex = 1;
@@ -401,7 +417,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         for (int i = 0; i < 10; i++) {
             if (this.spriteBuffer[i] == null) {
-                if ((this.lcdY + 16 >= spriteY) && (this.lcdY + 16 < spriteY + (this.getObjectSize() ? 16 : 8))) {
+                if ((this.scanlineNumber + 16 >= spriteY) && (this.scanlineNumber + 16 < spriteY + (this.getObjectSize() ? 16 : 8))) {
                     this.spriteBuffer[i] = createSpriteBufferEntry(spriteY, spriteX, tileIndex, spriteAttributes);
                 }
                 break;
@@ -490,7 +506,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 } else {
                     int tileMapBase = this.getBackgroundTileMap() ? 0x9C00 : 0x9800;
                     int tileX = ((pixelX + scrollX) >> 3) & 0x1F;
-                    int tileY = ((this.lcdY + this.scrollY) & 0xFF) >>> 3;
+                    int tileY = ((this.scanlineNumber + this.scrollY) & 0xFF) >>> 3;
                     int tileMapIndex = tileX + (tileY * 32);
                     tileMapIndex &= 0x3FF;
                     int address = tileMapBase + tileMapIndex;
@@ -513,7 +529,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 if (this.isRenderingWindow()) {
                     effectiveAddress = (effectiveAddress + (2 * (this.windowLine % 8))) & 0xFFFF;
                 } else {
-                    effectiveAddress = (effectiveAddress + (2 * ((this.lcdY + this.scrollY) % 8))) & 0xFFFF;
+                    effectiveAddress = (effectiveAddress + (2 * ((this.scanlineNumber + this.scrollY) % 8))) & 0xFFFF;
                 }
 
                 this.bgFifoTileDataEffectiveAddress = effectiveAddress;
@@ -578,7 +594,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     tileIndex &= ~1;
                 }
 
-                int row = ((lcdY + 16) - spriteY) % (width + 1);
+                int row = ((scanlineNumber + 16) - spriteY) % (width + 1);
                 if (row < 0) {
                     row += (width + 1);
                 }
@@ -656,7 +672,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         if (finalPixel != null) {
             if (this.pixelX >= 8 && this.enablePixelWrites) {
-                this.lcd[this.pixelX - 8][this.lcdY] = finalPixel;
+                this.lcd[this.pixelX - 8][this.scanlineNumber] = finalPixel;
             }
             this.pixelX++;
         }
@@ -720,6 +736,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     private void setPpuMode(int mode) {
         this.ppuStatus = (this.ppuStatus & 0b11111100) | (mode & 0b11);
+    }
+
+    private void setLcdY(int value) {
+        this.scanlineNumber = value % SCANLINES_PER_FRAME;
     }
 
     private void setLyEqualsLycFlag() {
