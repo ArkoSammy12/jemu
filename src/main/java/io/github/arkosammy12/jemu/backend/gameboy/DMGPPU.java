@@ -6,7 +6,6 @@ import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
-import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -459,10 +458,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         int currentSpriteEntryIndex = this.getSpriteEntryIndexMatchingX(this.pixelX);
         if ((currentSpriteEntryIndex >= 0 || this.spriteFifoStep >= 0) && this.getObjectEnable()) {
-            if (this.bgFifoStep != 6) {
-                if (this.bgFifoStep < 0) {
-                    this.bgFifoStep = 0;
-                }
+            if (this.bgFifoStep >= 0 && this.bgFifoStep <= 5) {
                 this.tickBackgroundFifo();
             } else {
                 if (this.spriteFifoStep < 0) {
