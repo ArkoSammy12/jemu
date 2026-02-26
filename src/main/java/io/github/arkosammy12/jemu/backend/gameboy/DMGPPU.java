@@ -219,10 +219,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             return;
         }
 
-        boolean scanlineNumberIncremented = false;
+        boolean incrementScanlineNumber = false;
         this.scanlineCycle++;
         if (this.scanlineCycle >= CYCLES_PER_SCANLINE) {
-            scanlineNumberIncremented = true;
+            incrementScanlineNumber = true;
             this.scanlineCycle = 0;
         }
 
@@ -233,7 +233,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case MODE_3_DRAWING -> this.onDrawing();
         }
 
-        if (scanlineNumberIncremented) {
+        if (incrementScanlineNumber) {
             int originalScanlineNumber = this.scanlineNumber;
             this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
             if (originalScanlineNumber != 153) {
@@ -247,7 +247,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
         }
 
-        this.nextState(scanlineNumberIncremented);
+        this.nextState(incrementScanlineNumber);
 
         if (this.scanlineCycle >= 3) {
             if (this.lcdY == this.lcdYCompare) {
