@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -178,9 +179,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 }
                 case STAT_ADDR -> this.ppuStatus = (value & 0b11111000) | (this.ppuStatus & 0b111);
                 case SCY_ADDR -> this.scrollY = value & 0xFF;
-                case SCX_ADDR -> {
-                    this.scrollX = value & 0xFF;
-                }
+                case SCX_ADDR -> this.scrollX = value & 0xFF;
                 case LY_ADDR -> {}
                 case LYC_ADDR -> this.lcdYCompare = value & 0xFF;
                 case BGP_ADDR -> this.backgroundPalette = value & 0xFF;
@@ -389,21 +388,21 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.dotCycleIndex = 1;
             }
             case 1 -> {
-                this.scanOamEntry();
+                this.tickOamScan();
                 this.dotCycleIndex = 2;
             }
             case 2, 4 -> {
                 this.dotCycleIndex = 3;
             }
             case 3 -> {
-                this.scanOamEntry();
+                this.tickOamScan();
                 this.setPpuMode(Mode.MODE_2_OAM_SCAN.getValue());
                 this.dotCycleIndex = 4;
             }
         }
     }
 
-    private void scanOamEntry() {
+    private void tickOamScan() {
         int spriteY = this.getOamByte(0xFE00 + (this.scannedEntries * 4));
         int spriteX = this.getOamByte(0xFE00 + (this.scannedEntries * 4) + 1);
         int tileIndex = this.getOamByte(0xFE00 + (this.scannedEntries * 4) + 2);
