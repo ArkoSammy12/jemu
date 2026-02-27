@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -75,7 +76,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     private static final int TERMINATE_BG_FETCHER = -1;
     private final IntArrayFIFOQueue backgroundFifo = new IntArrayFIFOQueue(8);
-    private int bgFifoStep = TERMINATE_BG_FETCHER;
+    private int bgFifoStep = 0;
     private int bgFifoFetcherX;
     private int bgFifoCurrentTileNumber;
     private int bgFifoTileDataEffectiveAddress;
@@ -85,7 +86,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private static final int TERMINATE_SPRITE_FETCHER = -1;
     private final LinkedList<Integer> spriteFifo = new LinkedList<>();
     private int spriteFifoCurrentEntryIndex;
-    private int spriteFifoStep = TERMINATE_SPRITE_FETCHER;
+    private int spriteFifoStep = 0;
     private int spriteFifoCurrentTileNumber;
     private int spriteFifoTileDataEffectiveAddress;
     private int spriteFifoTileDataLow;
@@ -217,18 +218,21 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             return;
         }
 
-        boolean incrementScanlineNumber = false;
-        this.scanlineCycle++;
-        if (this.scanlineCycle >= CYCLES_PER_SCANLINE) {
-            incrementScanlineNumber = true;
-            this.scanlineCycle = 0;
-        }
+        this.nextState();
 
         switch (this.currentMode) {
             case MODE_0_HBLANK -> this.onHBlank();
             case MODE_1_VBLANK -> this.onVBlank();
             case MODE_2_OAM_SCAN -> this.onOamScan();
             case MODE_3_DRAWING -> this.onDrawing();
+        }
+
+        boolean incrementScanlineNumber = false;
+        this.scanlineCycle++;
+        if (this.scanlineCycle >= CYCLES_PER_SCANLINE) {
+            incrementScanlineNumber = true;
+            this.scanlineCycle = 0;
+            this.dotCycleIndex = 0;
         }
 
         if (incrementScanlineNumber) {
@@ -244,8 +248,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
             }
         }
-
-        this.nextState(incrementScanlineNumber);
 
         if (this.scanlineCycle >= 3) {
             if (this.lcdY == this.lcdYCompare) {
@@ -267,10 +269,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     }
 
-    private void nextState(boolean scanlineNumberIncremented) {
-        if (scanlineNumberIncremented) {
-            this.dotCycleIndex = 0;
-        }
+    private void nextState() {
         Mode oldMode = this.currentMode;
         if (this.scanlineCycle == 0) {
             if (this.scanlineNumber >= 144) {
@@ -337,6 +336,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onHBlank() {
         switch (this.dotCycleIndex) {
             case 0 -> {
+                if (this.spriteCount > 0) {
+                    Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4));
+                }
+                this.spriteCount = 0;
+
                 this.scannedEntries = 0;
 
                 this.pixelX = 0;
@@ -344,7 +348,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.windowXCondition = false;
 
                 this.backgroundFifo.clear();
-                this.bgFifoStep = TERMINATE_BG_FETCHER;
+                this.bgFifoStep = 0;
                 this.bgFifoFetcherX = 0;
                 this.bgFifoCurrentTileNumber = 0;
                 this.bgFifoTileDataEffectiveAddress = 0;
@@ -358,7 +362,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     this.spriteFifo.add(null);
                 }
 
-                this.spriteFifoStep = TERMINATE_SPRITE_FETCHER;
+                this.spriteFifoStep = 0;
                 this.spriteFifoCurrentEntryIndex = -1;
                 this.spriteFifoCurrentTileNumber = 0;
                 this.spriteFifoTileDataEffectiveAddress = 0;
@@ -374,7 +378,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
                 this.dotCycleIndex = 3;
             }
-            case 3 -> {}
+            case 3 -> {
+                this.dotCycleIndex = 4;
+            }
+            case 4 -> {}
         }
     }
 
@@ -450,15 +457,15 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
 
         if (!originalWindowCondition && this.isRenderingWindow()) {
-            this.bgFifoStep = TERMINATE_BG_FETCHER;
+            this.bgFifoStep = 0;
             this.bgFifoFetcherX = 0;
             this.windowPixelRendered = true;
             this.backgroundFifo.clear();
         }
 
         int currentSpriteEntryIndex = this.getSpriteEntryIndexMatchingX(this.pixelX);
-        if ((currentSpriteEntryIndex >= 0 || this.spriteFifoStep >= 0) && this.getObjectEnable()) {
-            if (this.bgFifoStep >= 0 && this.bgFifoStep <= 5) {
+        if ((currentSpriteEntryIndex >= 0/* || this.spriteFifoStep >= 0*/) && this.getObjectEnable()) {
+            if ((this.bgFifoStep >= 0 && this.bgFifoStep <= 5) /*|| this.backgroundFifo.isEmpty()*/) {
                 this.tickBackgroundFifo();
             } else {
                 if (this.spriteFifoStep < 0) {
@@ -625,9 +632,13 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.spriteBuffer[this.spriteFifoCurrentEntryIndex] = null;
                 this.spriteFifoCurrentEntryIndex = -1;
                 this.spriteFifoStep = TERMINATE_SPRITE_FETCHER;
+
+                this.spriteCount++;
             }
         }
     }
+
+    private int spriteCount;
 
     private void tickPixelShifter() {
         if (this.backgroundFifo.isEmpty()) {
