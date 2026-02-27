@@ -336,9 +336,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onHBlank() {
         switch (this.dotCycleIndex) {
             case 0 -> {
+                /*
                 if (this.spriteCount > 0) {
                     Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4));
                 }
+                 */
                 this.spriteCount = 0;
 
                 this.scannedEntries = 0;
