@@ -19,11 +19,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     public static final int WIDTH = 160;
     public static final int HEIGHT = 144;
 
-    private static final int OAM_SCAN_MODE = 2;
-    private static final int DRAWING_MODE = 3;
-    private static final int HBLANK_MODE = 0;
-    private static final int VBLANK_MODE = 1;
-
     private static final int CYCLES_PER_SCANLINE = 456;
     private static final int SCANLINES_PER_FRAME = 154;
 
@@ -118,13 +113,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     public int readByte(int address) {
         if (address >= OAM_START && address <= OAM_END) {
             int ppuMode = this.getPpuMode();
-            if (ppuMode == OAM_SCAN_MODE || ppuMode == DRAWING_MODE) {
+            if (Mode.MODE_0_HBLANK.matchesValue(ppuMode) || Mode.MODE_1_VBLANK.matchesValue(ppuMode) || !this.getLcdPpuEnable()) {
+                return this.oam[address - OAM_START];
+            } else {
                 return 0xFF;
             }
-            return this.oam[address - OAM_START];
 
         } else if (address >= VRAM_START && address <= VRAM_END) {
-            if (this.getPpuMode() != DRAWING_MODE || !this.getLcdPpuEnable()) {
+            if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
                 return this.vRam[address - VRAM_START];
             } else {
                 return 0xFF;
@@ -151,11 +147,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     public void writeByte(int address, int value) {
         if (address >= OAM_START && address <= OAM_END) {
             int ppuMode = this.getPpuMode();
-            if (ppuMode == HBLANK_MODE || ppuMode == VBLANK_MODE) {
+            if (Mode.MODE_0_HBLANK.matchesValue(ppuMode) || Mode.MODE_1_VBLANK.matchesValue(ppuMode) || !this.getLcdPpuEnable()) {
               this.oam[address - OAM_START] = value & 0xFF;
             }
         } else if (address >= VRAM_START && address <= VRAM_END) {
-            if (this.getPpuMode() != DRAWING_MODE) {
+            if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
               this.vRam[address - VRAM_START] = value & 0xFF;
             }
         } else {
@@ -169,7 +165,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                         this.lcdY = 0;
                         this.scanlineCycle = 0;
                         this.currentMode = Mode.MODE_0_HBLANK;
-                        this.setPpuMode(HBLANK_MODE);
+                        this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
                     }
                     if (!oldLcdEnable && newLcdEnable) {
                         this.onLcdOn();
@@ -259,9 +255,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         boolean statInterruptLine = false;
         statInterruptLine |= this.getLycInterruptSelect() && this.getLyEqualsLycFlag();
-        statInterruptLine |= this.getMode0InterruptSelect() && this.getPpuMode() == HBLANK_MODE;
-        statInterruptLine |= this.getMode1InterruptSelect() && this.getPpuMode() == VBLANK_MODE;
-        statInterruptLine |= this.getMode2InterruptSelect() && this.getPpuMode() == OAM_SCAN_MODE;
+        statInterruptLine |= this.getMode0InterruptSelect() && Mode.MODE_0_HBLANK.matchesValue(this.getPpuMode());
+        statInterruptLine |= this.getMode1InterruptSelect() && Mode.MODE_1_VBLANK.matchesValue(this.getPpuMode());
+        statInterruptLine |= this.getMode2InterruptSelect() && Mode.MODE_2_OAM_SCAN.matchesValue(this.getPpuMode());
         if (!this.oldStatInterruptLine && statInterruptLine) {
             this.triggerStatInterrupt();
         }
@@ -853,10 +849,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     }
 
     private enum Mode {
-        MODE_0_HBLANK(HBLANK_MODE),
-        MODE_1_VBLANK(VBLANK_MODE),
-        MODE_2_OAM_SCAN(OAM_SCAN_MODE),
-        MODE_3_DRAWING(DRAWING_MODE);
+        MODE_0_HBLANK(0),
+        MODE_1_VBLANK(1),
+        MODE_2_OAM_SCAN(2),
+        MODE_3_DRAWING(3);
 
         private final int value;
 
