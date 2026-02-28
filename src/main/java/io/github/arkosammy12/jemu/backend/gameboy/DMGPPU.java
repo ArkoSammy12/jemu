@@ -52,6 +52,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private int scanlineCycle;
     private int dotCycleIndex;
     private int scanlineNumber;
+    private int statModeForInterrupt;
 
     private boolean enablePixelWrites;
     private int enablePixelWritesDelay;
@@ -69,7 +70,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private final Integer[] spriteBuffer = new Integer[10];
     private int scannedEntries = 0;
 
-    private static final int TERMINATE_BG_FETCHER = -1;
     private final IntArrayFIFOQueue backgroundFifo = new IntArrayFIFOQueue(8);
     private int bgFifoStep = 0;
     private int bgFifoFetcherX;
@@ -78,7 +78,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private int bgFifoTileDataLow;
     private int bgFifoTileDataHigh;
 
-    private static final int TERMINATE_SPRITE_FETCHER = -1;
     private final LinkedList<Integer> spriteFifo = new LinkedList<>();
     private int spriteFifoCurrentEntryIndex;
     private int spriteFifoStep = 0;
@@ -166,6 +165,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                         this.scanlineCycle = 0;
                         this.currentMode = Mode.MODE_0_HBLANK;
                         this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
+                        this.setStatModeForInterrupt(Mode.MODE_0_HBLANK.getValue());
                     }
                     if (!oldLcdEnable && newLcdEnable) {
                         this.onLcdOn();
@@ -255,9 +255,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
         boolean statInterruptLine = false;
         statInterruptLine |= this.getLycInterruptSelect() && this.getLyEqualsLycFlag();
-        statInterruptLine |= this.getMode0InterruptSelect() && Mode.MODE_0_HBLANK.matchesValue(this.getPpuMode());
-        statInterruptLine |= this.getMode1InterruptSelect() && Mode.MODE_1_VBLANK.matchesValue(this.getPpuMode());
-        statInterruptLine |= this.getMode2InterruptSelect() && Mode.MODE_2_OAM_SCAN.matchesValue(this.getPpuMode());
+        statInterruptLine |= this.getMode0InterruptSelect() && Mode.MODE_0_HBLANK.matchesValue(this.statModeForInterrupt);
+        statInterruptLine |= this.getMode1InterruptSelect() && Mode.MODE_1_VBLANK.matchesValue(this.statModeForInterrupt);
+        statInterruptLine |= this.getMode2InterruptSelect() && Mode.MODE_2_OAM_SCAN.matchesValue(this.statModeForInterrupt);
         if (!this.oldStatInterruptLine && statInterruptLine) {
             this.triggerStatInterrupt();
         }
@@ -300,6 +300,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
             case 3 -> {
                 this.setPpuMode(Mode.MODE_1_VBLANK.getValue());
+                this.setStatModeForInterrupt(Mode.MODE_1_VBLANK.getValue());
                 if (this.scanlineNumber == 144) {
                     this.triggerVBlankInterrupt();
                     this.windowYCondition = false;
@@ -322,7 +323,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     this.lcdY = 0;
                     this.clearLyEqualsLycFlag();
                 }
-
                 this.dotCycleIndex = 4;
             }
             case 4 -> {}
@@ -337,6 +337,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4));
                 }
                  */
+
                 this.spriteCount = 0;
 
                 this.scannedEntries = 0;
@@ -370,16 +371,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.dotCycleIndex = 1;
             }
             case 1 -> {
+                this.setStatModeForInterrupt(Mode.MODE_0_HBLANK.getValue());
+                this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
                 this.dotCycleIndex = 2;
             }
-            case 2 -> {
-                this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
-                this.dotCycleIndex = 3;
-            }
-            case 3 -> {
-                this.dotCycleIndex = 4;
-            }
-            case 4 -> {}
+            case 2 -> {}
         }
     }
 
@@ -401,6 +397,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case 3 -> {
                 this.tickOamScan();
                 this.setPpuMode(Mode.MODE_2_OAM_SCAN.getValue());
+                this.setStatModeForInterrupt(Mode.MODE_2_OAM_SCAN.getValue());
                 this.dotCycleIndex = 4;
             }
         }
@@ -411,7 +408,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         int spriteX = this.getOamByte(0xFE00 + (this.scannedEntries * 4) + 1);
         int tileIndex = this.getOamByte(0xFE00 + (this.scannedEntries * 4) + 2);
         int spriteAttributes = this.getOamByte(0xFE00 + (this.scannedEntries * 4) + 3);
-
         for (int i = 0; i < 10; i++) {
             if (this.spriteBuffer[i] == null) {
                 if ((this.scanlineNumber + 16 >= spriteY) && (this.scanlineNumber + 16 < spriteY + (this.getObjectSize() ? 16 : 8))) {
@@ -439,6 +435,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
             case 3 -> {
                 this.setPpuMode(Mode.MODE_3_DRAWING.getValue());
+                this.setStatModeForInterrupt(Mode.MODE_3_DRAWING.getValue());
                 this.tickDraw();
                 this.dotCycleIndex = 4;
             }
@@ -462,29 +459,34 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
 
         int currentSpriteEntryIndex = this.getSpriteEntryIndexMatchingX(this.pixelX);
-        if ((currentSpriteEntryIndex >= 0/* || this.spriteFifoStep >= 0*/) && this.getObjectEnable()) {
-            if ((this.bgFifoStep >= 0 && this.bgFifoStep <= 5) /*|| this.backgroundFifo.isEmpty()*/) {
+        if (currentSpriteEntryIndex >= 0 && this.getObjectEnable()) {
+            /*
+            if (getSpriteXFromEntry(this.spriteBuffer[currentSpriteEntryIndex]) == 2) {
+                int a = 1;
+            }
+             */
+            if ((this.bgFifoStep >= 0 && this.bgFifoStep <= 4) || this.backgroundFifo.isEmpty()) {
                 this.tickBackgroundFifo();
-            } else {
-                if (this.spriteFifoStep < 0) {
-                    this.spriteFifoStep = 0;
+                if (this.bgFifoStep >= 4) {
+                    if (this.spriteFifoCurrentEntryIndex < 0) {
+                        this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
+                    }
+                    this.tickSpriteFifo();
                 }
+            } else {
                 if (this.spriteFifoCurrentEntryIndex < 0) {
                     this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
                 }
                 this.tickSpriteFifo();
             }
         } else {
-            if (this.bgFifoStep < 0) {
-                this.bgFifoStep = 0;
-            }
-            this.tickBackgroundFifo();
             this.tickPixelShifter();
+            this.tickBackgroundFifo();
         }
     }
 
     private void tickBackgroundFifo() {
-        switch (bgFifoStep) {
+        switch (this.bgFifoStep) {
             case 0 -> {
                 this.bgFifoStep = 1;
             }
@@ -537,8 +539,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case 5 -> {
                 this.bgFifoTileDataHigh = this.getVRamByte((this.bgFifoTileDataEffectiveAddress + 1) & 0xFFFF);
                 if (this.backgroundFifo.isEmpty()) {
-                    this.pushPixelsToBgFifo();
-                    this.bgFifoStep = TERMINATE_BG_FETCHER;
+                    this.pushBgPixels();
+                    this.bgFifoStep = 0;
                 } else {
                     this.bgFifoStep = 6;
                 }
@@ -547,14 +549,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 if (!this.backgroundFifo.isEmpty()) {
                     this.bgFifoStep = 6;
                 } else {
-                    this.pushPixelsToBgFifo();
-                    this.bgFifoStep = TERMINATE_BG_FETCHER;
+                    this.pushBgPixels();
+                    this.bgFifoStep = 0;
                 }
             }
         }
     }
 
-    private void pushPixelsToBgFifo() {
+    private void pushBgPixels() {
         for (int i = 7; i >= 0; i--) {
             int low = (this.bgFifoTileDataLow >>> i) & 1;
             int high = (this.bgFifoTileDataHigh >>> i) & 1;
@@ -629,7 +631,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
                 this.spriteBuffer[this.spriteFifoCurrentEntryIndex] = null;
                 this.spriteFifoCurrentEntryIndex = -1;
-                this.spriteFifoStep = TERMINATE_SPRITE_FETCHER;
+                this.spriteFifoStep = 0;
 
                 this.spriteCount++;
             }
@@ -736,8 +738,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         this.ppuStatus = (this.ppuStatus & 0b11111100) | (mode & 0b11);
     }
 
-    private void setLcdY(int value) {
-        this.scanlineNumber = value % SCANLINES_PER_FRAME;
+    private void setStatModeForInterrupt(int mode) {
+        if (!(mode >= 0 && mode <= 3)) {
+            throw new EmulatorException(new IllegalArgumentException("Invalid GameBoy PPU STAT mode for interrupt value %d!".formatted(mode)));
+        }
+        this.statModeForInterrupt = mode;
     }
 
     private void setLyEqualsLycFlag() {
