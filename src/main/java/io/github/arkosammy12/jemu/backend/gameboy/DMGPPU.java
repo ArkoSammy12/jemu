@@ -72,6 +72,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     private final IntArrayFIFOQueue backgroundFifo = new IntArrayFIFOQueue(8);
     private int bgFifoStep = 0;
+    private boolean bgFifoFirstFetch = true;
     private int bgFifoFetcherX;
     private int bgFifoCurrentTileNumber;
     private int bgFifoTileDataEffectiveAddress;
@@ -223,14 +224,27 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case MODE_3_DRAWING -> this.onDrawing();
         }
 
-        boolean incrementScanlineNumber = false;
+        //boolean incrementScanlineNumber = false;
         this.scanlineCycle++;
         if (this.scanlineCycle >= CYCLES_PER_SCANLINE) {
-            incrementScanlineNumber = true;
+            //incrementScanlineNumber = true;
             this.scanlineCycle = 0;
             this.dotCycleIndex = 0;
+
+            int originalScanlineNumber = this.scanlineNumber;
+            this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
+            if (originalScanlineNumber != 153) {
+                this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
+                this.clearLyEqualsLycFlag();
+            }
+            this.dotCycleIndex = 0;
+            if (this.windowPixelRendered) {
+                this.windowPixelRendered = false;
+                this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
+            }
         }
 
+        /*
         if (incrementScanlineNumber) {
             int originalScanlineNumber = this.scanlineNumber;
             this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
@@ -244,6 +258,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
             }
         }
+         */
 
         if (this.scanlineCycle >= 3) {
             if (this.lcdY == this.lcdYCompare) {
@@ -332,12 +347,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onHBlank() {
         switch (this.dotCycleIndex) {
             case 0 -> {
+
                 /*
                 if (this.spriteCount > 0) {
-                    Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4));
+                    Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f. Cycles spent stalling or processing sprites: %d".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4, dotsSpentInSpritePlusStalling));
                 }
                  */
 
+                this.dotsSpentInSpritePlusStalling = 0;
                 this.spriteCount = 0;
 
                 this.scannedEntries = 0;
@@ -348,6 +365,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
                 this.backgroundFifo.clear();
                 this.bgFifoStep = 0;
+                this.bgFifoFirstFetch = true;
                 this.bgFifoFetcherX = 0;
                 this.bgFifoCurrentTileNumber = 0;
                 this.bgFifoTileDataEffectiveAddress = 0;
@@ -371,11 +389,17 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.dotCycleIndex = 1;
             }
             case 1 -> {
-                this.setStatModeForInterrupt(Mode.MODE_0_HBLANK.getValue());
-                this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
                 this.dotCycleIndex = 2;
             }
-            case 2 -> {}
+            case 2 -> {
+                this.dotCycleIndex = 3;
+            }
+            case 3 -> {
+                this.setStatModeForInterrupt(Mode.MODE_0_HBLANK.getValue());
+                this.setPpuMode(Mode.MODE_0_HBLANK.getValue());
+                this.dotCycleIndex = 4;
+            }
+            case 4 -> {}
         }
     }
 
@@ -445,6 +469,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
     }
 
+    private int dotsSpentInSpritePlusStalling;
+
     private void tickDraw() {
         boolean originalWindowCondition = this.isRenderingWindow();
         if (this.pixelX == this.windowX + 1 && this.getWindowEnable()) {
@@ -458,31 +484,39 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             this.backgroundFifo.clear();
         }
 
+
         int currentSpriteEntryIndex = this.getSpriteEntryIndexMatchingX(this.pixelX);
         if (currentSpriteEntryIndex >= 0 && this.getObjectEnable()) {
+
             /*
-            if (getSpriteXFromEntry(this.spriteBuffer[currentSpriteEntryIndex]) == 2) {
+            if (getSpriteXFromEntry(this.spriteBuffer[currentSpriteEntryIndex]) == 160) {
+                int a = 1;
+            }
+            if (getSpriteXFromEntry(this.spriteBuffer[currentSpriteEntryIndex]) == 0) {
                 int a = 1;
             }
              */
-            if ((this.bgFifoStep >= 0 && this.bgFifoStep <= 4) || this.backgroundFifo.isEmpty()) {
-                this.tickBackgroundFifo();
-                if (this.bgFifoStep >= 4) {
+
+            if ((this.bgFifoStep >= 0 && this.bgFifoStep <= 3) || this.backgroundFifo.isEmpty()) {
+                if (this.bgFifoStep >= 2 && !this.backgroundFifo.isEmpty()) {
                     if (this.spriteFifoCurrentEntryIndex < 0) {
                         this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
                     }
                     this.tickSpriteFifo();
                 }
+                this.tickBackgroundFifo();
             } else {
                 if (this.spriteFifoCurrentEntryIndex < 0) {
                     this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
                 }
                 this.tickSpriteFifo();
             }
+            //this.dotsSpentInSpritePlusStalling++;
         } else {
             this.tickPixelShifter();
             this.tickBackgroundFifo();
         }
+
     }
 
     private void tickBackgroundFifo() {
@@ -514,24 +548,32 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.bgFifoStep = 3;
             }
             case 3 -> {
-                int effectiveAddress;
-                if (this.getBackgroundAndWindowTiles()) {
-                    effectiveAddress = 0x8000 + (this.bgFifoCurrentTileNumber * 16);
+                if (this.bgFifoFirstFetch) {
+                    this.bgFifoFirstFetch = false;
+                    for (int i = 7; i >= 0; i--) {
+                        this.backgroundFifo.enqueue(0);
+                    }
+                    this.bgFifoStep = 0;
                 } else {
-                    byte signedTileNumber =  (byte) this.bgFifoCurrentTileNumber;
-                    effectiveAddress = 0x9000 + (signedTileNumber * 16);
+                    int effectiveAddress;
+                    if (this.getBackgroundAndWindowTiles()) {
+                        effectiveAddress = 0x8000 + (this.bgFifoCurrentTileNumber * 16);
+                    } else {
+                        byte signedTileNumber =  (byte) this.bgFifoCurrentTileNumber;
+                        effectiveAddress = 0x9000 + (signedTileNumber * 16);
+                    }
+
+                    if (this.isRenderingWindow()) {
+                        effectiveAddress = (effectiveAddress + (2 * (this.windowLine % 8))) & 0xFFFF;
+                    } else {
+                        effectiveAddress = (effectiveAddress + (2 * ((this.scanlineNumber + this.scrollY) % 8))) & 0xFFFF;
+                    }
+
+                    this.bgFifoTileDataEffectiveAddress = effectiveAddress;
+                    this.bgFifoTileDataLow = this.getVRamByte(effectiveAddress);
+
+                    this.bgFifoStep = 4;
                 }
-
-                if (this.isRenderingWindow()) {
-                    effectiveAddress = (effectiveAddress + (2 * (this.windowLine % 8))) & 0xFFFF;
-                } else {
-                    effectiveAddress = (effectiveAddress + (2 * ((this.scanlineNumber + this.scrollY) % 8))) & 0xFFFF;
-                }
-
-                this.bgFifoTileDataEffectiveAddress = effectiveAddress;
-                this.bgFifoTileDataLow = this.getVRamByte(effectiveAddress);
-
-                this.bgFifoStep = 4;
             }
             case 4 -> {
                 this.bgFifoStep = 5;
@@ -546,11 +588,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 }
             }
             case 6 -> {
-                if (!this.backgroundFifo.isEmpty()) {
-                    this.bgFifoStep = 6;
-                } else {
+                if (this.backgroundFifo.isEmpty()) {
                     this.pushBgPixels();
                     this.bgFifoStep = 0;
+                } else {
+                    this.bgFifoStep = 6;
                 }
             }
         }
