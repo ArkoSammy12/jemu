@@ -20,27 +20,29 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     private int currentInstructionsPerFrame;
 
     private final SM83 cpu;
-    private final GameBoyBus bus;
+    private final DMGBus bus;
     private final DMGPPU<?> ppu;
     private final DMGAPU<?> apu;
     private final GameBoyJoypad<?> joypad;
 
     private final GameBoyCartridge cartridge;
-    private final GameBoyMMIOBus mmioController;
-    private final GameBoyTimerController timerController;
+    private final DMGMMIOBus mmioController;
+    private final GameBoyTimerController<?> timerController;
+    private final DMGSerialController serialController;
 
     public GameBoyEmulator(GameBoyHost host) {
         this.host = host;
 
         this.joypad = new GameBoyJoypad<>(this);
         this.cpu = new SM83(this);
-        this.bus = new GameBoyBus(this);
+        this.bus = new DMGBus(this);
         this.ppu = new DMGPPU<>(this);
         this.apu = new DMGAPU<>(this);
 
         this.cartridge = GameBoyCartridge.getCartridge(this);
-        this.mmioController = new GameBoyMMIOBus(this);
-        this.timerController = new GameBoyTimerController(this);
+        this.mmioController = new DMGMMIOBus(this);
+        this.timerController = new GameBoyTimerController<>(this);
+        this.serialController = new DMGSerialController<>(this);
     }
 
     @Override
@@ -54,7 +56,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public GameBoyBus getBusView() {
+    public DMGBus getBusView() {
         return this.bus;
     }
 
@@ -82,12 +84,16 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.cartridge;
     }
 
-    public GameBoyMMIOBus getMMIOController() {
+    public DMGMMIOBus getMMIOController() {
         return this.mmioController;
     }
 
-    public GameBoyTimerController getTimerController() {
+    public GameBoyTimerController<?> getTimerController() {
         return this.timerController;
+    }
+
+    public DMGSerialController<?> getSerialController() {
+        return this.serialController;
     }
 
     /*
@@ -122,6 +128,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.cpu.nextState();
         this.ppu.cycle();
         this.apu.cycle(apuFrameSequencerTick);
+        this.serialController.cycle();
         this.cartridge.cycle();
         this.bus.cycle();
 

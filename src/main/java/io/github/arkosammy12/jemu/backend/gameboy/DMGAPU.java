@@ -5,11 +5,10 @@ import io.github.arkosammy12.jemu.backend.common.AudioGenerator;
 import io.github.arkosammy12.jemu.backend.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import org.jetbrains.annotations.NotNull;
-import org.tinylog.Logger;
 
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.backend.gameboy.GameBoyMMIOBus.*;
+import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.*;
 
 public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> implements Bus {
 
@@ -109,9 +108,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                     boolean newApuPower = this.getMasterAudioEnable();
 
                     if (!oldApuPower && newApuPower) {
-                        this.onPowerOn();
+                        this.onApuOn();
                     } else if (oldApuPower && !newApuPower) {
-                        this.onPowerOff();
+                        this.onApuOff();
                     }
                 }
                 default -> throw new EmulatorException("Invalid address $%04X for GameBoy APU!".formatted(address));
@@ -119,7 +118,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         }
     }
 
-    private void onPowerOn() {
+    private void onApuOn() {
         this.emulator.getTimerController().onAPUPowerOn();
         this.frameSequencerStep = 0;
         this.channel1.waveDutyIndex = 0;
@@ -130,7 +129,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         this.channel3.firstFetchConsumed = false;
     }
 
-    private void onPowerOff() {
+    private void onApuOff() {
         this.channel1.nr10 = 0;
         this.channel1.nrx1 = 0;
         this.channel1.setNRX2(0);

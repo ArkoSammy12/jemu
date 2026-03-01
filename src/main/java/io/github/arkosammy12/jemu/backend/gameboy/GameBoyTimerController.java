@@ -4,11 +4,11 @@ import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.backend.common.Bus;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 
-import static io.github.arkosammy12.jemu.backend.gameboy.GameBoyMMIOBus.*;
+import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.*;
 
-public class GameBoyTimerController implements Bus {
+public class GameBoyTimerController<E extends GameBoyEmulator> implements Bus {
 
-    private final GameBoyEmulator emulator;
+    private final E emulator;
 
     private static final int FREQ_0 = 1 << 9;
     private static final int FREQ_1 = 1 << 3;
@@ -32,7 +32,7 @@ public class GameBoyTimerController implements Bus {
 
     private boolean oldDivBit4 = false;
 
-    public GameBoyTimerController(GameBoyEmulator emulator) {
+    public GameBoyTimerController(E emulator) {
         this.emulator = emulator;
     }
 

@@ -6,13 +6,12 @@ import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
-import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import static io.github.arkosammy12.jemu.backend.gameboy.GameBoyBus.*;
-import static io.github.arkosammy12.jemu.backend.gameboy.GameBoyMMIOBus.*;
+import static io.github.arkosammy12.jemu.backend.gameboy.DMGBus.*;
+import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.*;
 
 public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> implements Bus {
 

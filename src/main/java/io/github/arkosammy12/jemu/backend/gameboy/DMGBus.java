@@ -4,10 +4,10 @@ import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.backend.common.Bus;
 import io.github.arkosammy12.jemu.backend.common.BusView;
 
-import static io.github.arkosammy12.jemu.backend.gameboy.GameBoyMMIOBus.BANK_ADDR;
-import static io.github.arkosammy12.jemu.backend.gameboy.GameBoyMMIOBus.DMA_ADDR;
+import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.BANK_ADDR;
+import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.DMA_ADDR;
 
-public class GameBoyBus implements Bus, BusView {
+public class DMGBus implements Bus, BusView {
 
     // Bootix boot-rom for the DMG. Courtesy of Ashiepaws https://github.com/Ashiepaws/Bootix
     protected static final int[] BOOTIX = {
@@ -81,7 +81,7 @@ public class GameBoyBus implements Bus, BusView {
 
     protected boolean enableBootRom = true;
 
-    public GameBoyBus(GameBoyEmulator emulator) {
+    public DMGBus(GameBoyEmulator emulator) {
         this.emulator = emulator;
     }
 

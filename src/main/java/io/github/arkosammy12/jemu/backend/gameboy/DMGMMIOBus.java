@@ -2,12 +2,11 @@ package io.github.arkosammy12.jemu.backend.gameboy;
 
 import io.github.arkosammy12.jemu.backend.common.Bus;
 
-public class GameBoyMMIOBus implements Bus {
+public class DMGMMIOBus implements Bus {
 
     public static final int JOYP_ADDR = 0xFF00;
 
     public static final int SB_ADDR = 0xFF01;
-
     public static final int SC_ADDR = 0xFF02;
 
     public static final int DIV_ADDR = 0xFF04;
@@ -68,7 +67,7 @@ public class GameBoyMMIOBus implements Bus {
     private int interruptFlag;
     private int interruptEnable;
 
-    public GameBoyMMIOBus(GameBoyEmulator emulator) {
+    public DMGMMIOBus(GameBoyEmulator emulator) {
         this.emulator = emulator;
     }
 
@@ -89,9 +88,9 @@ public class GameBoyMMIOBus implements Bus {
         if (address == JOYP_ADDR) {
             return this.emulator.getSystemController().readJoyP();
         } else if (address == SB_ADDR) {
-            return 0xFF;
+            return this.emulator.getSerialController().readByte(address);
         } else if (address == SC_ADDR) {
-            return 0xFF;
+            return this.emulator.getSerialController().readByte(address);
         } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
             return this.emulator.getTimerController().readByte(address);
         } else if (address == IF_ADDR) {
@@ -112,9 +111,9 @@ public class GameBoyMMIOBus implements Bus {
         if (address == JOYP_ADDR) {
             this.emulator.getSystemController().writeJoyP(value);
         } else if (address == SB_ADDR) {
-
+            this.emulator.getSerialController().writeByte(address, value);
         } else if (address == SC_ADDR) {
-
+            this.emulator.getSerialController().writeByte(address, value);
         } else if (address >= DIV_ADDR && address <= TAC_ADDR) {
             this.emulator.getTimerController().writeByte(address, value);
         } else if (address == IF_ADDR) {
