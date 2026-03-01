@@ -3,7 +3,6 @@ package io.github.arkosammy12.jemu.backend.gameboy;
 import io.github.arkosammy12.jemu.backend.common.Bus;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
-import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.SB_ADDR;
 import static io.github.arkosammy12.jemu.backend.gameboy.DMGMMIOBus.SC_ADDR;
