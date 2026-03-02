@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.backend.common.Processor;
 import io.github.arkosammy12.jemu.backend.cores.SM83;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -223,10 +224,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             case MODE_3_DRAWING -> this.onDrawing();
         }
 
-        //boolean incrementScanlineNumber = false;
         this.scanlineCycle++;
         if (this.scanlineCycle >= CYCLES_PER_SCANLINE) {
-            //incrementScanlineNumber = true;
             this.scanlineCycle = 0;
             this.dotCycleIndex = 0;
 
@@ -236,28 +235,12 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
                 this.clearLyEqualsLycFlag();
             }
-            this.dotCycleIndex = 0;
-            if (this.windowPixelRendered) {
-                this.windowPixelRendered = false;
-                this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
-            }
-        }
 
-        /*
-        if (incrementScanlineNumber) {
-            int originalScanlineNumber = this.scanlineNumber;
-            this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
-            if (originalScanlineNumber != 153) {
-                this.lcdY = (this.lcdY + 1) % SCANLINES_PER_FRAME;
-                this.clearLyEqualsLycFlag();
-            }
-            this.dotCycleIndex = 0;
             if (this.windowPixelRendered) {
                 this.windowPixelRendered = false;
                 this.windowLine = (this.windowLine + 1) % SCANLINES_PER_FRAME;
             }
         }
-         */
 
         if (this.scanlineCycle >= 3) {
             if (this.lcdY == this.lcdYCompare) {
@@ -276,7 +259,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             this.triggerStatInterrupt();
         }
         this.oldStatInterruptLine = statInterruptLine;
-
     }
 
     private void nextState() {
@@ -313,9 +295,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.dotCycleIndex = 3;
             }
             case 3 -> {
-                this.setPpuMode(Mode.MODE_1_VBLANK.getValue());
-                this.setStatModeForInterrupt(Mode.MODE_1_VBLANK.getValue());
                 if (this.scanlineNumber == 144) {
+                    this.setPpuMode(Mode.MODE_1_VBLANK.getValue());
+                    this.setStatModeForInterrupt(Mode.MODE_1_VBLANK.getValue());
                     this.triggerVBlankInterrupt();
                     this.windowYCondition = false;
                     this.windowLine = 0;
@@ -346,7 +328,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onHBlank() {
         switch (this.dotCycleIndex) {
             case 0 -> {
-
                 /*
                 if (this.spriteCount > 0) {
                     Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f. Cycles spent stalling or processing sprites: %d".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4, dotsSpentInSpritePlusStalling));
@@ -414,13 +395,20 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.tickOamScan();
                 this.dotCycleIndex = 2;
             }
-            case 2, 4 -> {
+            case 2 -> {
                 this.dotCycleIndex = 3;
             }
             case 3 -> {
-                this.tickOamScan();
                 this.setPpuMode(Mode.MODE_2_OAM_SCAN.getValue());
                 this.setStatModeForInterrupt(Mode.MODE_2_OAM_SCAN.getValue());
+                this.tickOamScan();
+                this.dotCycleIndex = 4;
+            }
+            case 4 -> {
+                this.dotCycleIndex = 5;
+            }
+            case 5 -> {
+                this.tickOamScan();
                 this.dotCycleIndex = 4;
             }
         }
@@ -483,38 +471,38 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             this.backgroundFifo.clear();
         }
 
-
         int currentSpriteEntryIndex = this.getSpriteEntryIndexMatchingX(this.pixelX);
-        if (currentSpriteEntryIndex >= 0 && this.getObjectEnable()) {
+        boolean fetchingSprite = currentSpriteEntryIndex >= 0 && this.getObjectEnable();
 
-            /*
+        if (!fetchingSprite) {
+            this.tickPixelShifter();
+        }
+
+        /*
+        if (currentSpriteEntryIndex >= 0) {
             if (getSpriteXFromEntry(this.spriteBuffer[currentSpriteEntryIndex]) == 160) {
                 int a = 1;
             }
             if (getSpriteXFromEntry(this.spriteBuffer[currentSpriteEntryIndex]) == 0) {
                 int a = 1;
             }
-             */
-
-            if ((this.bgFifoStep >= 0 && this.bgFifoStep <= 3) || this.backgroundFifo.isEmpty()) {
-                if (this.bgFifoStep >= 2 && !this.backgroundFifo.isEmpty()) {
-                    if (this.spriteFifoCurrentEntryIndex < 0) {
-                        this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
-                    }
-                    this.tickSpriteFifo();
-                }
-                this.tickBackgroundFifo();
-            } else {
-                if (this.spriteFifoCurrentEntryIndex < 0) {
-                    this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
-                }
-                this.tickSpriteFifo();
-            }
-            //this.dotsSpentInSpritePlusStalling++;
-        } else {
-            this.tickPixelShifter();
-            this.tickBackgroundFifo();
         }
+         */
+
+        if (!fetchingSprite || this.backgroundFifo.isEmpty() || (this.bgFifoStep <= 1)) {
+            this.tickBackgroundFifo();
+        } else {
+            if (this.spriteFifoCurrentEntryIndex < 0) {
+                this.spriteFifoCurrentEntryIndex = currentSpriteEntryIndex;
+            }
+            this.tickSpriteFifo();
+        }
+
+        /*
+        if (fetchingSprite) {
+            dotsSpentInSpritePlusStalling++;
+        }
+         */
 
     }
 
