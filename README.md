@@ -12,7 +12,7 @@ A Java Development Kit targeting Java version 25 or later is required to build t
 Clone the repository and run the following command on the top level directory:
 
 ```
-mvv clean package
+mvnw clean package
 ```
 
 An execute `.jar` file should have then been generated in `/target/jemu-x.y.z.jar`.
