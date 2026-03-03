@@ -97,4 +97,9 @@ public class SM83TestCaseBench implements SM83.SystemBus {
 
     }
 
+    @Override
+    public void onStopInstruction() {
+
+    }
+
 }

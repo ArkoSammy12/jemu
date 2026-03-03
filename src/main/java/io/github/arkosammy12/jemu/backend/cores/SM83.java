@@ -414,6 +414,7 @@ public class SM83 implements Processor {
                             }
                             case 2 -> { // STOP
                                 // TODO: =============== IMPLEMENT ===============
+                                systemBus.onStopInstruction();
                                 machineCycleIndex = TERMINATE_INSTRUCTION;
                             }
                             case 3 -> { // JR d
@@ -2054,6 +2055,8 @@ public class SM83 implements Processor {
         int getIF();
 
         void setIF(int value);
+
+        void onStopInstruction();
 
     }
 

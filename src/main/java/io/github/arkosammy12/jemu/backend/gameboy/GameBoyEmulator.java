@@ -169,6 +169,11 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
+    public void onStopInstruction() {
+
+    }
+
+    @Override
     public int getIF() {
         return this.mmioController.getIF();
     }
