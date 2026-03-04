@@ -1,10 +1,10 @@
-package io.github.arkosammy12.jemu.frontend.ui.debugger;
+package io.github.arkosammy12.jemu.frontend.oldui.debugger;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.common.BusView;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

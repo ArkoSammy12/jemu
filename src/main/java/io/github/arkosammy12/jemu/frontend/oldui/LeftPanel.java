@@ -1,12 +1,12 @@
-package io.github.arkosammy12.jemu.frontend.ui;
+package io.github.arkosammy12.jemu.frontend.oldui;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
-import io.github.arkosammy12.jemu.frontend.ui.disassembly.DisassemblyPanel;
-import io.github.arkosammy12.jemu.frontend.ui.util.ToggleableSplitPane;
-import io.github.arkosammy12.jemu.frontend.ui.video.EmulatorViewport;
+import io.github.arkosammy12.jemu.frontend.oldui.disassembly.DisassemblyPanel;
+import io.github.arkosammy12.jemu.frontend.oldui.util.ToggleableSplitPane;
+import io.github.arkosammy12.jemu.frontend.oldui.video.EmulatorViewport;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;

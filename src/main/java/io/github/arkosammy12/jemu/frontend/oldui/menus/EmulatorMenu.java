@@ -1,12 +1,12 @@
-package io.github.arkosammy12.jemu.frontend.ui.menus;
+package io.github.arkosammy12.jemu.frontend.oldui.menus;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.Serializable;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
-import io.github.arkosammy12.jemu.frontend.ui.util.EnumMenu;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.util.EnumMenu;
 import io.github.arkosammy12.jemu.application.util.System;
 
 import javax.swing.*;

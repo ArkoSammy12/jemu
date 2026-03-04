@@ -1,8 +1,8 @@
-package io.github.arkosammy12.jemu.frontend.ui.menus;
+package io.github.arkosammy12.jemu.frontend.oldui.menus;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.application.Main;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 
 import javax.swing.*;
 import java.awt.*;

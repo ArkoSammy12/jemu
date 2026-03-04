@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.ui.util;
+package io.github.arkosammy12.jemu.frontend.oldui.util;
 
 import javax.swing.*;
 import java.awt.event.KeyEvent;

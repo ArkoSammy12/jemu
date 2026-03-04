@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.ui.menus;
+package io.github.arkosammy12.jemu.frontend.oldui.menus;
 
 import com.formdev.flatlaf.icons.*;
 import com.formdev.flatlaf.util.SystemFileChooser;
@@ -8,7 +8,7 @@ import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.ApplicationInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.tinylog.Logger;
 

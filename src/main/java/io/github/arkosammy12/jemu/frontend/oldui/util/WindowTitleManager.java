@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.frontend.ui.util;
+package io.github.arkosammy12.jemu.frontend.oldui.util;
 
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import org.apache.commons.collections4.list.GrowthList;
 
 import javax.swing.*;

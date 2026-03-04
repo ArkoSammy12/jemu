@@ -4,7 +4,7 @@ import com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import io.github.arkosammy12.jemu.application.io.CLIArgs;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;

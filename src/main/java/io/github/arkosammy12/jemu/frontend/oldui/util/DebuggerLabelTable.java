@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.frontend.ui.util;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
-import io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerLabel;
+package io.github.arkosammy12.jemu.frontend.oldui.util;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.debugger.DebuggerLabel;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;

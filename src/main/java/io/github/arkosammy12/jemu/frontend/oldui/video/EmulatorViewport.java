@@ -1,9 +1,8 @@
-package io.github.arkosammy12.jemu.frontend.ui.video;
+package io.github.arkosammy12.jemu.frontend.oldui.video;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
-import org.tinylog.Logger;
 
 import javax.swing.*;
 import java.awt.*;

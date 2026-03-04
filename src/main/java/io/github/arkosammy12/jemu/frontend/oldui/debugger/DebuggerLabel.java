@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.ui.debugger;
+package io.github.arkosammy12.jemu.frontend.oldui.debugger;
 
 import javax.swing.*;
 import java.awt.*;

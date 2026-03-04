@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.ui.debugger;
+package io.github.arkosammy12.jemu.frontend.oldui.debugger;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
@@ -7,8 +7,8 @@ import io.github.arkosammy12.jemu.application.io.initializers.ApplicationInitial
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
-import io.github.arkosammy12.jemu.frontend.ui.util.DebuggerLabelTable;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.util.DebuggerLabelTable;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;

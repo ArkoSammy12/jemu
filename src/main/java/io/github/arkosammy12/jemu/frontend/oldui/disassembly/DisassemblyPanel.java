@@ -1,11 +1,11 @@
-package io.github.arkosammy12.jemu.frontend.ui.disassembly;
+package io.github.arkosammy12.jemu.frontend.oldui.disassembly;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.ApplicationInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;

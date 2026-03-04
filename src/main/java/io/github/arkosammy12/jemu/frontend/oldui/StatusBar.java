@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.ui;
+package io.github.arkosammy12.jemu.frontend.oldui;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;

@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.ui.debugger;
+package io.github.arkosammy12.jemu.frontend.oldui.debugger;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -7,7 +7,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.github.arkosammy12.jemu.frontend.ui.debugger.DebuggerPanel.*;
+import static io.github.arkosammy12.jemu.frontend.oldui.debugger.DebuggerPanel.*;
 
 public class DebuggerSchema {
 

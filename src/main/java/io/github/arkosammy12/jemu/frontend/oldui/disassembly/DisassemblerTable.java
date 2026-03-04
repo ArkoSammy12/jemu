@@ -1,10 +1,10 @@
-package io.github.arkosammy12.jemu.frontend.ui.disassembly;
+package io.github.arkosammy12.jemu.frontend.oldui.disassembly;
 
 import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.backend.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
