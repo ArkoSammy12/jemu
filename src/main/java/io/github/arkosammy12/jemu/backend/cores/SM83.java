@@ -318,13 +318,14 @@ public class SM83 implements Processor {
             case 2 -> {
                 systemBus.getBus().writeByte(getSP(), (getPC() & 0xFF00) >>> 8);
                 setSP(getSP() - 1);
-                int interruptMask = getInterruptMask();
-                systemBus.setIF(Processor.clearBit(systemBus.getIF(), interruptMask));
-                setWZ(getInterruptVector(interruptMask));
+                setZ(systemBus.getIE());
                 machineCycleIndex = 3;
             }
             case 3 -> {
                 systemBus.getBus().writeByte(getSP(), getPC() & 0xFF);
+                int interruptMask = getInterruptMask(systemBus.getIF(), getZ());
+                systemBus.setIF(Processor.clearBit(systemBus.getIF(), interruptMask));
+                setWZ(getInterruptVector(interruptMask));
                 machineCycleIndex = 4;
             }
             case 4 -> {
@@ -343,17 +344,17 @@ public class SM83 implements Processor {
         return (systemBus.getIE() & systemBus.getIF() & 0x1F) != 0;
     }
 
-    private int getInterruptMask() {
-        int IF = systemBus.getIF() & systemBus.getIE();
-        if ((IF & VBLANK_MASK) != 0) {
+    private int getInterruptMask(int IF, int IE) {
+        int intersection = IF & IE & 0x1F;
+        if ((intersection & VBLANK_MASK) != 0) {
             return VBLANK_MASK;
-        } else if ((IF & LCD_MASK) != 0) {
+        } else if ((intersection & LCD_MASK) != 0) {
             return LCD_MASK;
-        } else if ((IF & TIMER_MASK) != 0) {
+        } else if ((intersection & TIMER_MASK) != 0) {
             return TIMER_MASK;
-        } else if ((IF & SERIAL_MASK) != 0) {
+        } else if ((intersection & SERIAL_MASK) != 0) {
             return SERIAL_MASK;
-        } else if ((IF & JOYP_MASK) != 0) {
+        } else if ((intersection & JOYP_MASK) != 0) {
             return JOYP_MASK;
         } else {
            return 0;
