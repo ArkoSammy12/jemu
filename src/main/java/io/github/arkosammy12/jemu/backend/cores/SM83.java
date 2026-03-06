@@ -312,22 +312,22 @@ public class SM83 implements Processor {
                 machineCycleIndex = 1;
             }
             case 1 -> {
-                setSP(getSP() - 1);
                 machineCycleIndex = 2;
             }
             case 2 -> {
-                systemBus.getBus().writeByte(getSP(), (getPC() & 0xFF00) >>> 8);
                 setSP(getSP() - 1);
-                setZ(systemBus.getIE());
                 machineCycleIndex = 3;
             }
             case 3 -> {
-                systemBus.getBus().writeByte(getSP(), getPC() & 0xFF);
-                setW(systemBus.getIF());
+                systemBus.getBus().writeByte(getSP(), (getPC() & 0xFF00) >>> 8);
+                setSP(getSP() - 1);
+                setZ(systemBus.getIE());
                 machineCycleIndex = 4;
             }
             case 4 -> {
-                int IF = getW();
+                systemBus.getBus().writeByte(getSP(), getPC() & 0xFF);
+
+                int IF = systemBus.getIF();
                 int IE = getZ();
                 int interruptMask = getInterruptMask(IF, IE);
                 systemBus.setIF(Processor.clearBit(IF, interruptMask));
