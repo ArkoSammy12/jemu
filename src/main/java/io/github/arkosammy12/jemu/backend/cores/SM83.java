@@ -323,13 +323,15 @@ public class SM83 implements Processor {
             }
             case 3 -> {
                 systemBus.getBus().writeByte(getSP(), getPC() & 0xFF);
-                int interruptMask = getInterruptMask(systemBus.getIF(), getZ());
-                systemBus.setIF(Processor.clearBit(systemBus.getIF(), interruptMask));
-                setWZ(getInterruptVector(interruptMask));
+                setW(systemBus.getIF());
                 machineCycleIndex = 4;
             }
             case 4 -> {
-                setPC(getWZ());
+                int IF = getW();
+                int IE = getZ();
+                int interruptMask = getInterruptMask(IF, IE);
+                systemBus.setIF(Processor.clearBit(IF, interruptMask));
+                setPC(getInterruptVector(interruptMask));
                 this.servicingInterrupt = false;
                 machineCycleIndex = TERMINATE_INSTRUCTION;
             }
@@ -344,7 +346,7 @@ public class SM83 implements Processor {
         return (systemBus.getIE() & systemBus.getIF() & 0x1F) != 0;
     }
 
-    private int getInterruptMask(int IF, int IE) {
+    private static int getInterruptMask(int IF, int IE) {
         int intersection = IF & IE & 0x1F;
         if ((intersection & VBLANK_MASK) != 0) {
             return VBLANK_MASK;
