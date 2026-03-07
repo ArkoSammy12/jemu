@@ -19,6 +19,10 @@ public non-sealed class ResetEvent implements Event {
         this.resetIntoPaused = resetIntoPaused;
     }
 
+    public boolean resetIntoPaused() {
+        return this.resetIntoPaused;
+    }
+
     public void onCompleted(@Nullable Supplier<JPanel> systemDisplaySupplier) {
 
     }

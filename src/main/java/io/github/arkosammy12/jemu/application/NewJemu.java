@@ -9,6 +9,7 @@ import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.swing.events.Event;
+import io.github.arkosammy12.jemu.frontend.swing.events.PauseEvent;
 import io.github.arkosammy12.jemu.frontend.swing.events.ResetEvent;
 import io.github.arkosammy12.jemu.frontend.swing.events.StopEvent;
 import org.tinylog.Logger;
@@ -62,9 +63,8 @@ public final class NewJemu {
         while (this.running) {
             try {
                 while (this.currentSystem == null) {
-                    State oldState = this.updateState(true);
-                    State newState = this.currentState;
-                    this.processState(oldState, newState);
+                    this.updateState(true);
+                    this.processState(this.currentState);
                 }
 
                 if (this.currentSystem == null) {
@@ -76,9 +76,8 @@ public final class NewJemu {
                     continue;
                 }
 
-                State oldState = this.updateState(false);
-                State newState = this.currentState;
-                this.processState(oldState, newState);
+                this.updateState(false);
+                this.processState(this.currentState);
                 if (this.currentSystem != null) {
                     this.currentSystem.onFrame();
                 }
@@ -95,6 +94,43 @@ public final class NewJemu {
         }
     }
 
+    private void updateState(boolean take) throws Exception {
+        Event enqueuedEvent = take ? this.mainWindow.waitEvent() : this.mainWindow.pollEvent();
+        State enqueuedState = switch (enqueuedEvent) {
+            case ResetEvent resetEvent -> {
+                this.onResetting(resetEvent);
+                resetEvent.onCompleted(this.currentSystem.getVideoDriver().orElse(null) instanceof JPanel jPanel ? () -> jPanel : null);
+                yield resetEvent.resetIntoPaused() ? State.PAUSED : State.RUNNING;
+            }
+            case StopEvent stopEvent -> {
+                this.onStopping();
+                stopEvent.onCompleted();
+                yield State.STOPPED;
+            }
+            case PauseEvent pauseEvent -> {
+                boolean stopped = this.currentSystem == null;
+                pauseEvent.onCompleted(stopped);
+                if (pauseEvent.getPause()) {
+                    yield stopped ? State.PAUSE_STOPPED : State.PAUSED;
+                } else {
+                    yield stopped ? State.STOPPED : State.RUNNING;
+                }
+            }
+            case null, default -> null;
+        };
+        if (enqueuedState == null) {
+            return;
+        }
+        this.currentState = enqueuedState;
+    }
+
+    private void processState(State state) {
+        switch (state) {
+            case STOPPED, PAUSED, PAUSE_STOPPED -> onIdle();
+            case RUNNING -> onRunning();
+        }
+    }
+
     private void onIdle() {
         this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
     }
@@ -107,11 +143,13 @@ public final class NewJemu {
         this.currentSystem.getEmulator().executeFrame();
     }
 
-    private void onResetting(ResetEvent resetEvent, boolean resetAndPause) throws Exception {
+    private void onResetting(ResetEvent resetEvent) throws Exception {
         if (this.currentSystem != null) {
             this.currentSystem.close();
         }
+
         EmulatorInitializer emulatorInitializer = new EmulatorInitializer() {
+
             @Override
             public Optional<Path> getRomPath() {
                 return mainWindow.getMainMenuBar().getFileMenu().getSelectedRomPath();
@@ -131,7 +169,9 @@ public final class NewJemu {
             public Optional<KeyboardLayout> getKeyboardLayout() {
                 return Optional.empty();
             }
+
         };
+
         this.initializeEmulator(emulatorInitializer);
     }
 
@@ -152,13 +192,6 @@ public final class NewJemu {
         this.currentSystem.getAudioRenderer().setVolume(50);
     }
 
-    private void processState(State oldState, State newState) {
-        switch (newState) {
-            case STOPPED -> onIdle();
-            case RUNNING -> onRunning();
-        }
-    }
-
     void onShutdown() throws Exception {
         try {
             this.emulatorThread.interrupt();
@@ -175,37 +208,11 @@ public final class NewJemu {
         //this.dataManager.save();
     }
 
-    private State updateState(boolean take) throws Exception {
-        Event enqueuedEvent = take ? this.mainWindow.waitEvent() : this.mainWindow.pollEvent();
-        if (enqueuedEvent == null) {
-            return this.currentState;
-        }
-
-        State enqueuedState = switch (enqueuedEvent) {
-            case ResetEvent resetEvent -> {
-                this.onResetting(resetEvent, false);
-                resetEvent.onCompleted(this.currentSystem.getVideoDriver().orElse(null) instanceof JPanel jPanel ? () -> jPanel : null);
-                yield State.RUNNING;
-            }
-            case StopEvent stopEvent -> {
-                this.onStopping();
-                stopEvent.onCompleted();
-                yield State.STOPPED;
-            }
-            default -> null;
-        };
-
-        if (enqueuedState == null) {
-            return this.currentState;
-        }
-        State oldState = this.currentState;
-        this.currentState = enqueuedState;
-        return oldState;
-    }
-
     private enum State {
         STOPPED,
-        RUNNING
+        PAUSE_STOPPED,
+        RUNNING,
+        PAUSED,
     }
 
 }
