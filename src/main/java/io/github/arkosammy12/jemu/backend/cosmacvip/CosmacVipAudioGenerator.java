@@ -36,7 +36,7 @@ public class CosmacVipAudioGenerator<E extends CosmacVipEmulator> extends AudioG
 
     @Override
     public Optional<byte[]> getSampleFrame() {
-        Optional<AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
+        Optional<? extends AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
         if (!this.emulator.getCpu().getQ() || optionalAudioDriver.isEmpty()) {
             this.phase = 0;
             return Optional.empty();

@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.application.adapters;
 
 import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.NewJemu;
 import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.application.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.application.drivers.JPanelVideoDriver;
@@ -37,7 +38,7 @@ public class DefaultCosmacVIPAdapter extends DefaultSystemAdapter implements Cos
     private final DefaultAudioRendererDriver audioDriver;
     private final AudioRenderer audioRenderer;
 
-    public DefaultCosmacVIPAdapter(Jemu jemu, CoreInitializer initializer, Chip8Interpreter chip8Interpreter) {
+    public DefaultCosmacVIPAdapter(NewJemu jemu, CoreInitializer initializer, Chip8Interpreter chip8Interpreter) {
         super(initializer);
 
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
@@ -105,7 +106,7 @@ public class DefaultCosmacVIPAdapter extends DefaultSystemAdapter implements Cos
     }
 
     @Override
-    public Optional<AudioDriver> getAudioDriver() {
+    public Optional<? extends DefaultAudioRendererDriver> getAudioDriver() {
         return Optional.of(this.audioDriver);
     }
 

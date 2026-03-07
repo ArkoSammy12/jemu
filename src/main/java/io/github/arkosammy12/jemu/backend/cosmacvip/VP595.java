@@ -41,7 +41,7 @@ public class VP595<E extends CosmacVipEmulator> extends AudioGenerator<E> implem
     @Override
     public Optional<byte[]> getSampleFrame() {
         double frequency = frequencyLatch;
-        Optional<AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
+        Optional<? extends AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
         if (!this.emulator.getCpu().getQ() || optionalAudioDriver.isEmpty()) {
             phase = 0;
             return Optional.empty();

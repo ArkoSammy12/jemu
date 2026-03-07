@@ -194,8 +194,9 @@ public class Jemu {
                 Logger.error("Exception while running emulator: {}", e);
                 this.mainWindow.showExceptionDialog(e);
                 this.stop();
-            } catch (InterruptedException _) {}
-            catch (Exception e) {
+            } catch (InterruptedException _) {
+
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -215,7 +216,7 @@ public class Jemu {
     }
 
     private void initializeEmulator(EmulatorInitializer initializer) {
-        this.systemAdapter = System.getSystemAdapter(this, initializer);
+        //this.systemAdapter = System.getSystemAdapter(this, initializer);
         if (this.muteAudio) {
             this.systemAdapter.getAudioRenderer().setMuted(true);
         }

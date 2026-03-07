@@ -1,17 +1,16 @@
 package io.github.arkosammy12.jemu.application.drivers;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.NewJemu;
 import io.github.arkosammy12.jemu.backend.common.AudioGenerator;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.MonoAudioRenderer;
-import org.tinylog.Logger;
 
 import java.io.IOException;
 import java.util.Optional;
 
 public class MonoAudioRendererDriver extends DefaultAudioRendererDriver {
 
-    public MonoAudioRendererDriver(Jemu jemu, AudioGenerator<?> audioGenerator, MonoAudioRenderer audioRenderer) {
+    public MonoAudioRendererDriver(NewJemu jemu, AudioGenerator<?> audioGenerator, MonoAudioRenderer audioRenderer) {
         super(jemu, audioGenerator, audioRenderer);
     }
 
@@ -26,7 +25,7 @@ public class MonoAudioRendererDriver extends DefaultAudioRendererDriver {
     }
 
     @Override
-    protected void onFrame() {
+    public void onFrame() {
         Optional<byte[]> optionalSamples = this.audioGenerator.getSampleFrame();
         if (optionalSamples.isEmpty()) {
             this.audioRenderer.pushSampleFrame(null);
