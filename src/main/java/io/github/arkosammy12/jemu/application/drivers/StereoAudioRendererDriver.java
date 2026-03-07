@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.application.drivers;
 
-import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.NewJemu;
 import io.github.arkosammy12.jemu.backend.common.AudioGenerator;
 import io.github.arkosammy12.jemu.frontend.audio.StereoAudioRenderer;

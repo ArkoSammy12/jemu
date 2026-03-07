@@ -16,7 +16,7 @@ public class MainMenuBar {
 
         this.jMenuBar = new JMenuBar();
 
-        this.fileMenu = new FileMenu(jFrame);
+        this.fileMenu = new FileMenu(mainWindow, jFrame);
         this.emulatorMenu = new EmulatorMenu(mainWindow);
 
         this.jMenuBar.add(this.fileMenu.getJMenu());

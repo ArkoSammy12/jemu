@@ -2,6 +2,8 @@ package io.github.arkosammy12.jemu.frontend.swing.menus;
 
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
+import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
@@ -12,6 +14,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.io.File;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,25 +30,36 @@ public class FileMenu extends MenuBarMenu {
     private final JMenu openRecentMenu;
     private final JMenuItem clearRecentsButton;
     private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(10);
+    private final String[] fileExtensions;
 
-    public FileMenu(JFrame jFrame) {
+    public FileMenu(MainWindow mainWindow, JFrame jFrame) {
         super();
 
         this.jMenu.setText("File");
         this.jMenu.setMnemonic(KeyEvent.VK_F);
 
+        List<String> fileExtensions = new ArrayList<>();
+        for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
+            Optional<String[]> extensions = systemDescriptor.getFileExtensions();
+            if (extensions.isEmpty()) {
+                continue;
+            }
+            fileExtensions.addAll(Arrays.asList(extensions.get()));
+        }
+        this.fileExtensions = fileExtensions.toArray(String[]::new);
+
         JMenuItem openItem = new JMenuItem("Open");
         openItem.addActionListener(_ -> {
             SystemFileChooser chooser = new SystemFileChooser();
-            // TODO: File filters
+            chooser.setFileFilter(new SystemFileChooser.FileNameExtensionFilter("ROMs", this.fileExtensions));
             if (this.currentDirectory != null) {
                 chooser.setCurrentDirectory(this.currentDirectory.toFile());
             }
             if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this.jMenu)) == JFileChooser.APPROVE_OPTION) {
                 Path selectedRomPath = chooser.getSelectedFile().toPath();
+                this.loadFile(selectedRomPath);
+                this.addRecentFilePath(selectedRomPath);
                 this.currentDirectory = selectedRomPath.getParent();
-
-
             }
             openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK, true));
             openItem.setIcon(new FlatFileViewFileIcon());

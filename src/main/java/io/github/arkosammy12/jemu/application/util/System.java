@@ -20,18 +20,20 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public enum System implements DisplayNameProvider, Serializable, SystemDescriptor {
-    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),
-    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
-    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
-    GAME_BOY("game-boy", "Game Boy", args -> new DefaultGameBoyAdapter(args.jemu(), args.coreInitializer(), GameBoyHost.Model.DMG));
+    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", new String[] {"cos", "bin"}, args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),
+    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", new String[] {"ch8", "hc8"}, args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
+    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", new String[] {"ch8", "c8x"}, args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
+    GAME_BOY("game-boy", "Game Boy", new String[] {"gb"}, args -> new DefaultGameBoyAdapter(args.jemu(), args.coreInitializer(), GameBoyHost.Model.DMG));
 
     private final String identifier;
     private final String displayName;
+    private final String[] fileExtensions;
     private final Function<EmulatorSettingsArgs, ? extends DefaultSystemAdapter> args;
 
-    System(String identifier, String displayName, Function<EmulatorSettingsArgs, ? extends DefaultSystemAdapter> args) {
+    System(String identifier, String displayName, String[] fileExtensions, Function<EmulatorSettingsArgs, ? extends DefaultSystemAdapter> args) {
         this.identifier = identifier;
         this.displayName = displayName;
+        this.fileExtensions = fileExtensions;
         this.args = args;
     }
 
@@ -65,6 +67,11 @@ public enum System implements DisplayNameProvider, Serializable, SystemDescripto
     @Override
     public String getName() {
         return this.getDisplayName();
+    }
+
+    @Override
+    public Optional<String[]> getFileExtensions() {
+        return Optional.ofNullable(this.fileExtensions);
     }
 
     public static class Converter implements CommandLine.ITypeConverter<System> {
