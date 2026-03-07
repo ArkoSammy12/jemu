@@ -1,0 +1,158 @@
+package io.github.arkosammy12.jemu.frontend.swing;
+
+import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.util.SystemInfo;
+import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.swing.events.Event;
+import net.miginfocom.layout.AC;
+import net.miginfocom.layout.CC;
+import net.miginfocom.layout.LC;
+import net.miginfocom.swing.MigLayout;
+import org.jetbrains.annotations.ApiStatus;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import javax.swing.*;
+import java.awt.*;
+import java.awt.desktop.QuitStrategy;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.io.Closeable;
+import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
+import java.util.List;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingDeque;
+
+public class MainWindow implements Closeable {
+
+    @Nullable
+    private JFrame appFrame;
+
+    @Nullable
+    private MainMenuBar menuBar;
+
+    @Nullable
+    private SystemViewport systemViewport;
+
+    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
+    private final Collection<SystemDescriptor> systemDescriptors;
+
+    public MainWindow(String title, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
+
+        this.systemDescriptors = List.copyOf(systemDescriptors);
+
+        if (SystemInfo.isMacOS) {
+            System.setProperty("apple.awt.application.appearance", "system");
+            System.setProperty("apple.awt.application.name", "jemu");
+
+            Desktop desktop = Desktop.getDesktop();
+            if (desktop.isSupported(Desktop.Action.APP_QUIT_HANDLER)) {
+                desktop.setQuitStrategy(QuitStrategy.CLOSE_ALL_WINDOWS);
+                desktop.setQuitHandler((_, response) -> response.performQuit());
+            }
+        }
+
+        System.setProperty("sun.awt.noerasebackground", Boolean.TRUE.toString());
+        System.setProperty("flatlaf.uiScale.allowScaleDown", Boolean.TRUE.toString());
+        System.setProperty("flatlaf.menuBarEmbedded", Boolean.FALSE.toString());
+
+        SwingUtilities.invokeAndWait(() -> {
+            FlatDarkLaf.setup();
+
+            UIManager.put("TitlePane.useWindowDecorations", false);
+            UIManager.put("Component.hideMnemonics", false);
+            UIManager.put("FileChooser.readOnly", true);
+            UIManager.put("Component.arc", 8);
+            UIManager.put("Button.arc", 8);
+
+            ToolTipManager toolTipManager = ToolTipManager.sharedInstance();
+            toolTipManager.setLightWeightPopupEnabled(false);
+            toolTipManager.setInitialDelay(700);
+            toolTipManager.setReshowDelay(700);
+            toolTipManager.setDismissDelay(4000);
+
+            JFrame.setDefaultLookAndFeelDecorated(false);
+            JDialog.setDefaultLookAndFeelDecorated(false);
+            Toolkit.getDefaultToolkit().setDynamicLayout(true);
+
+            this.appFrame = new JFrame(title);
+            MigLayout appFrameLayout = new MigLayout(new LC().insets("0"), new AC(), new AC().gap("0"));
+            this.appFrame.setLayout(appFrameLayout);
+            appFrame.setBackground(Color.BLACK);
+            this.appFrame.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
+
+            this.systemViewport = new SystemViewport();
+            this.menuBar = new MainMenuBar(this, this.appFrame);
+
+            this.appFrame.setJMenuBar(this.menuBar.getJMenuBar());
+            this.appFrame.add(this.systemViewport.getJPanel(), new CC().grow().push().wrap());
+
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+
+            appFrame.requestFocusInWindow();
+            appFrame.setResizable(true);
+            appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
+            appFrame.pack();
+            appFrame.setLocationRelativeTo(null);
+        });
+
+    }
+
+    public Collection<SystemDescriptor> getSystemDescriptors() {
+        return this.systemDescriptors;
+    }
+
+    public void show() {
+        SwingUtilities.invokeLater(() -> this.getJFrame().setVisible(true));
+    }
+
+    public void setClosingHook(Runnable runnable) {
+        this.getJFrame().addWindowListener(new WindowAdapter() {
+
+            @Override
+            public void windowClosing(WindowEvent e) {
+                runnable.run();
+            }
+
+        });
+    }
+
+    public void offerEvent(Event event) {
+        this.eventQueue.offer(event);
+    }
+
+    @Nullable
+    public Event pollEvent() {
+        return this.eventQueue.poll();
+    }
+
+    public Event waitEvent() throws InterruptedException {
+        return this.eventQueue.take();
+    }
+
+    @NotNull
+    @ApiStatus.Internal
+    JFrame getJFrame() {
+        return Objects.requireNonNull(this.appFrame);
+    }
+
+    public SystemViewport getSystemViewport() {
+        return Objects.requireNonNull(this.systemViewport);
+    }
+
+    public MainMenuBar getMainMenuBar() {
+        return Objects.requireNonNull(this.menuBar);
+    }
+
+    @Override
+    public void close() throws IOException {
+        SwingUtilities.invokeLater(() -> {
+            if (this.appFrame != null) {
+                this.appFrame.dispose();
+            }
+        });
+    }
+
+}

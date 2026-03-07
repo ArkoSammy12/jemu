@@ -4,7 +4,7 @@ import com.formdev.flatlaf.intellijthemes.FlatOneDarkIJTheme;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
-import io.github.arkosammy12.jemu.frontend.ui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import io.github.arkosammy12.jemu.application.io.CLIArgs;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
@@ -194,8 +194,9 @@ public class Jemu {
                 Logger.error("Exception while running emulator: {}", e);
                 this.mainWindow.showExceptionDialog(e);
                 this.stop();
-            } catch (InterruptedException _) {}
-            catch (Exception e) {
+            } catch (InterruptedException _) {
+
+            } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }
@@ -215,7 +216,7 @@ public class Jemu {
     }
 
     private void initializeEmulator(EmulatorInitializer initializer) {
-        this.systemAdapter = System.getSystemAdapter(this, initializer);
+        //this.systemAdapter = System.getSystemAdapter(this, initializer);
         if (this.muteAudio) {
             this.systemAdapter.getAudioRenderer().setMuted(true);
         }

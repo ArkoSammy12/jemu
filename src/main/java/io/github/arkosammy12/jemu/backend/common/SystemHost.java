@@ -12,9 +12,9 @@ public interface SystemHost {
 
     Optional<String> getRomTitle();
 
-    Optional<VideoDriver> getVideoDriver();
+    Optional<? extends VideoDriver> getVideoDriver();
 
-    Optional<AudioDriver> getAudioDriver();
+    Optional<? extends AudioDriver> getAudioDriver();
 
     static int[] byteToIntArray(byte[] byteArray) {
         int[] arr = new int[byteArray.length];

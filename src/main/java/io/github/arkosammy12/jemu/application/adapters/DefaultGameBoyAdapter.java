@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.application.adapters;
 
 import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.NewJemu;
 import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.application.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.application.drivers.JPanelVideoDriver;
@@ -41,7 +42,7 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     private final DefaultAudioRendererDriver audioDriver;
     private final AudioRenderer audioRenderer;
 
-    public DefaultGameBoyAdapter(Jemu jemu, CoreInitializer initializer, Model model) {
+    public DefaultGameBoyAdapter(NewJemu jemu, CoreInitializer initializer, Model model) {
         super(initializer);
         StringBuilder titleBuilder;
         String title = null;
@@ -131,7 +132,7 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     }
 
     @Override
-    public Optional<AudioDriver> getAudioDriver() {
+    public Optional<? extends DefaultAudioRendererDriver> getAudioDriver() {
         return Optional.of(this.audioDriver);
     }
 
