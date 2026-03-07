@@ -1,19 +1,15 @@
 package io.github.arkosammy12.jemu.application.util;
 
-import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.NewJemu;
 import io.github.arkosammy12.jemu.application.adapters.DefaultCosmacVIPAdapter;
 import io.github.arkosammy12.jemu.application.adapters.DefaultGameBoyAdapter;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
-import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.backend.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.application.io.Serializable;
-import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import it.unimi.dsi.fastutil.Pair;
 import picocli.CommandLine;
 
 import java.util.Optional;

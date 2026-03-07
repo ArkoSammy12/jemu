@@ -8,10 +8,7 @@ import io.github.arkosammy12.jemu.application.util.System;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.swing.events.Event;
-import io.github.arkosammy12.jemu.frontend.swing.events.PauseEvent;
-import io.github.arkosammy12.jemu.frontend.swing.events.ResetEvent;
-import io.github.arkosammy12.jemu.frontend.swing.events.StopEvent;
+import io.github.arkosammy12.jemu.frontend.swing.events.*;
 import org.tinylog.Logger;
 
 import javax.swing.*;
@@ -116,7 +113,9 @@ public final class NewJemu {
                     yield stopped ? State.STOPPED : State.RUNNING;
                 }
             }
-            case null, default -> null;
+            case StepFrameEvent _ -> State.STEPPING_FRAME;
+            case StepCycleEvent _ -> State.STEPPING_CYCLE;
+            case null -> null;
         };
         if (enqueuedState == null) {
             return;
@@ -128,6 +127,8 @@ public final class NewJemu {
         switch (state) {
             case STOPPED, PAUSED, PAUSE_STOPPED -> onIdle();
             case RUNNING -> onRunning();
+            case STEPPING_FRAME -> onSteppingFrame();
+            case STEPPING_CYCLE -> onSteppingCycle();
         }
     }
 
@@ -139,8 +140,26 @@ public final class NewJemu {
         if (currentSystem == null) {
             return;
         }
-        this.currentSystem.getAudioRenderer().setPaused(false);
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(false));
         this.currentSystem.getEmulator().executeFrame();
+    }
+
+    private void onSteppingFrame() {
+        if (this.currentSystem == null) {
+            return;
+        }
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.currentSystem.getEmulator().executeFrame();
+        this.currentState = State.PAUSED;
+    }
+
+    private void onSteppingCycle() {
+        if (this.currentSystem == null) {
+            return;
+        }
+        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.currentSystem.getEmulator().executeCycle();
+        this.currentState = State.PAUSED;
     }
 
     private void onResetting(ResetEvent resetEvent) throws Exception {
@@ -213,6 +232,8 @@ public final class NewJemu {
         PAUSE_STOPPED,
         RUNNING,
         PAUSED,
+        STEPPING_FRAME,
+        STEPPING_CYCLE
     }
 
 }

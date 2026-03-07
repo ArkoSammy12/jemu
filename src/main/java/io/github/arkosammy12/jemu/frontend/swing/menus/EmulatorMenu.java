@@ -1,11 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.swing.menus;
 
-import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.swing.events.PauseEvent;
-import io.github.arkosammy12.jemu.frontend.swing.events.ResetEvent;
-import io.github.arkosammy12.jemu.frontend.swing.events.StopEvent;
+import io.github.arkosammy12.jemu.frontend.swing.events.*;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -15,11 +12,10 @@ import java.util.function.Supplier;
 
 public class EmulatorMenu extends MenuBarMenu {
 
-    private final JMenuItem resetButton = new JMenuItem("Reset");
     private final JRadioButtonMenuItem pauseButton = new JRadioButtonMenuItem("Pause");
     private final JMenuItem stopButton = new JMenuItem("Stop");
-
-    private final JMenu systemMenu = new JMenu("System");
+    private final JMenuItem stepFrameButton = new JMenuItem("Step Frame");
+    private final JMenuItem stepCycleButton = new JMenuItem("Step Cycle");
 
     @Nullable
     private volatile SystemDescriptor currentSystemDescriptor;
@@ -34,6 +30,7 @@ public class EmulatorMenu extends MenuBarMenu {
         unspecifiedItem.addActionListener(_ -> currentSystemDescriptor = null);
         unspecifiedItem.setSelected(true);
         buttonGroup.add(unspecifiedItem);
+        JMenu systemMenu = new JMenu("System");
         systemMenu.add(unspecifiedItem);
 
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
@@ -43,9 +40,10 @@ public class EmulatorMenu extends MenuBarMenu {
             systemMenu.add(item);
         }
 
-        this.resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
-        this.resetButton.setEnabled(true);
-        this.resetButton.addActionListener(_ -> {
+        JMenuItem resetButton = new JMenuItem("Reset");
+        resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
+        resetButton.setEnabled(true);
+        resetButton.addActionListener(_ -> {
             boolean paused = this.pauseButton.isSelected();
             mainWindow.offerEvent(new ResetEvent(this.currentSystemDescriptor, paused) {
 
@@ -53,8 +51,8 @@ public class EmulatorMenu extends MenuBarMenu {
                 public void onCompleted(Supplier<JPanel> panelSupplier) {
                     stopButton.setEnabled(true);
                     mainWindow.getSystemViewport().setSystemDisplayPanel(panelSupplier);
-                    //stepFrameButton.setEnabled(paused);
-                    //stepCycleButton.setEnabled(paused);
+                    stepFrameButton.setEnabled(paused);
+                    stepCycleButton.setEnabled(paused);
                 }
 
             });
@@ -84,8 +82,8 @@ public class EmulatorMenu extends MenuBarMenu {
                 public void onCompleted() {
                     stopButton.setEnabled(false);
                     pauseButton.setSelected(false);
-                    //stepFrameButton.setEnabled(false);
-                    //stepCycleButton.setEnabled(false);
+                    stepFrameButton.setEnabled(false);
+                    stepCycleButton.setEnabled(false);
                     mainWindow.getSystemViewport().setSystemDisplayPanel(null);
                 }
 
@@ -93,9 +91,29 @@ public class EmulatorMenu extends MenuBarMenu {
 
         });
 
+        this.stepFrameButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK, true));
+        this.stepFrameButton.setEnabled(false);
+        this.stepFrameButton.addActionListener(_ -> {
+            if (!this.pauseButton.isSelected()) {
+                return;
+            }
+            mainWindow.offerEvent(new StepFrameEvent());
+        });
+
+        this.stepCycleButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK, true));
+        this.stepCycleButton.setEnabled(false);
+        this.stepCycleButton.addActionListener(_ -> {
+            if (!this.pauseButton.isSelected()) {
+                return;
+            }
+            mainWindow.offerEvent(new StepCycleEvent());
+        });
+
         this.jMenu.add(resetButton);
         this.jMenu.add(pauseButton);
         this.jMenu.add(stopButton);
+        this.jMenu.add(stepFrameButton);
+        this.jMenu.add(stepCycleButton);
 
         this.jMenu.addSeparator();
 
@@ -105,24 +123,24 @@ public class EmulatorMenu extends MenuBarMenu {
     private void onPause(boolean pause, boolean coreStopped) {
         if (pause) {
             if (coreStopped) {
-                //this.stepFrameButton.setEnabled(false);
-                //this.stepCycleButton.setEnabled(false);
+                this.stepFrameButton.setEnabled(false);
+                this.stepCycleButton.setEnabled(false);
             } else {
                 stopButton.setEnabled(true);
-                //this.stepFrameButton.setEnabled(true);
-                //this.stepCycleButton.setEnabled(true);
+                this.stepFrameButton.setEnabled(true);
+                this.stepCycleButton.setEnabled(true);
             }
 
         } else {
             if (coreStopped) {
                 stopButton.setEnabled(false);
                 pauseButton.setSelected(false);
-                //stepFrameButton.setEnabled(false);
-                //stepCycleButton.setEnabled(false);
+                stepFrameButton.setEnabled(false);
+                stepCycleButton.setEnabled(false);
             } else {
                 stopButton.setEnabled(true);
-                //stepFrameButton.setEnabled(false);
-                //stepCycleButton.setEnabled(false);
+                stepFrameButton.setEnabled(false);
+                stepCycleButton.setEnabled(false);
             }
         }
     }
