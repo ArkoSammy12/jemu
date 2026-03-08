@@ -82,6 +82,13 @@ public final class NewJemu {
             } catch (EmulatorException e) {
                 Logger.error("Exception while running emulator: {}", e);
                 //this.mainWindow.showExceptionDialog();
+                if (this.currentSystem != null) {
+                    try {
+                        this.currentSystem.close();
+                    } catch (Exception _) {}
+                    this.mainWindow.getSystemViewport().setSystemDisplayPanel(null);
+                    this.currentSystem = null;
+                }
                 this.mainWindow.offerEvent(new StopEvent());
             } catch (InterruptedException _) {
 
