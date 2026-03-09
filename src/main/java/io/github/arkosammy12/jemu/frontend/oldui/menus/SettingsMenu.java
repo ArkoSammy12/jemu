@@ -8,7 +8,7 @@ import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitialize
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
 import io.github.arkosammy12.jemu.frontend.oldui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.oldui.util.EnumMenu;
-import io.github.arkosammy12.jemu.application.util.KeyboardLayout;
+import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
 
 import javax.swing.*;
 import java.awt.event.InputEvent;

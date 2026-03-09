@@ -155,6 +155,14 @@ public class MainWindow implements Closeable {
         });
     }
 
+    public void showCoreError(Throwable e) {
+        this.showDialog("Emulation error: %s".formatted(e.getClass().getSimpleName()), e.getMessage(), DialogType.ERROR);
+    }
+
+    public void showDialog(String title, String message, DialogType dialogType) {
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getjOptionPaneMessageTypeId()));
+    }
+
     public void submitEmulatorCommand(EmulatorCommand emulatorCommand) {
         this.emulatorCommandQueue.offer(emulatorCommand);
     }
@@ -206,6 +214,23 @@ public class MainWindow implements Closeable {
                 this.appFrame.dispose();
             }
         });
+    }
+
+    public enum DialogType {
+        INFORMATION(JOptionPane.INFORMATION_MESSAGE),
+        WARNING(JOptionPane.WARNING_MESSAGE),
+        ERROR(JOptionPane.ERROR_MESSAGE);
+
+        private final int jOptionPaneMessageTypeId;
+
+        DialogType(int jOptionPaneMessageTypeId) {
+            this.jOptionPaneMessageTypeId = jOptionPaneMessageTypeId;
+        }
+
+        private int getjOptionPaneMessageTypeId() {
+            return this.jOptionPaneMessageTypeId;
+        }
+
     }
 
 }

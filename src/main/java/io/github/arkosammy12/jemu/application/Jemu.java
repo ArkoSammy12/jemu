@@ -3,7 +3,8 @@ package io.github.arkosammy12.jemu.application;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
-import io.github.arkosammy12.jemu.application.util.KeyboardLayout;
+import io.github.arkosammy12.jemu.frontend.swing.menus.HelpMenu;
+import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
 import io.github.arkosammy12.jemu.application.util.System;
 import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
@@ -38,6 +39,14 @@ public final class Jemu {
                     throw new RuntimeException(e);
                 }
             });
+
+            HelpMenu helpMenu = this.mainWindow.getMainMenuBar().getHelpMenu();
+            helpMenu.setAuthorName("ArkoSammy12");
+            helpMenu.setProjectName("jemu");
+            helpMenu.setVersionString(Main.VERSION_STRING);
+            helpMenu.setProjectSourceLink("https://github.com/ArkoSammy12/jemu");
+            helpMenu.setProjectBugReportLink("https://github.com/ArkoSammy12/jemu/issues");
+
             this.emulatorThread = new Thread(this::emulatorLoop, "jemu-emulator-thread");
             this.mainWindow.show();
         } catch (Exception e) {
@@ -82,8 +91,8 @@ public final class Jemu {
                 }
 
             } catch (EmulatorException e) {
-                Logger.error("Exception while running emulator: {}", e);
-                //this.mainWindow.showExceptionDialog();
+                Logger.error("Emulation error: {}", e);
+                this.mainWindow.showCoreError(e);
                 if (this.currentSystem != null) {
                     try {
                         this.currentSystem.close();
