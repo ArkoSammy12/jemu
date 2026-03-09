@@ -48,7 +48,7 @@ public final class Jemu {
         }
     }
 
-    public Optional<AudioRenderer> getAudioRenderer() {
+    public Optional<AudioRenderer> getCurrentAudioRenderer() {
         return Optional.ofNullable(this.currentSystem).map(DefaultSystemAdapter::getAudioRenderer);
     }
 
@@ -140,14 +140,14 @@ public final class Jemu {
     }
 
     private void onIdle() {
-        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.getCurrentAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
     }
 
     private void onRunning() {
         if (currentSystem == null) {
             return;
         }
-        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(false));
+        this.getCurrentAudioRenderer().ifPresent(renderer -> renderer.setPaused(false));
         this.currentSystem.getEmulator().executeFrame();
         this.mainWindow.getStatusBar().update(this.currentSystem.getRomTitle().orElse(""), this.currentSystem.getSystemName());
     }
@@ -156,7 +156,7 @@ public final class Jemu {
         if (this.currentSystem == null) {
             return;
         }
-        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.getCurrentAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
         this.currentSystem.getEmulator().executeFrame();
         this.currentState = State.PAUSED;
     }
@@ -165,7 +165,7 @@ public final class Jemu {
         if (this.currentSystem == null) {
             return;
         }
-        this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
+        this.getCurrentAudioRenderer().ifPresent(renderer -> renderer.setPaused(true));
         this.currentSystem.getEmulator().executeCycle();
         this.currentState = State.PAUSED;
     }
