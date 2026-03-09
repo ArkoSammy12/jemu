@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.frontend.swing.menus;
+package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
-import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 
 import javax.swing.*;
 import java.awt.event.InputEvent;

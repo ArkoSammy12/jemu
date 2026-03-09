@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.swing;
+package io.github.arkosammy12.jemu.frontend.gui.swing;
 
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;

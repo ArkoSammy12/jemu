@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.swing.util;
+package io.github.arkosammy12.jemu.frontend.gui.swing.util;
 
 import io.github.arkosammy12.jemu.app.io.Serializable;
 import io.github.arkosammy12.jemu.app.util.DisplayNameProvider;

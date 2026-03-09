@@ -1,9 +1,9 @@
-package io.github.arkosammy12.jemu.frontend.swing;
+package io.github.arkosammy12.jemu.frontend.gui.swing;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;

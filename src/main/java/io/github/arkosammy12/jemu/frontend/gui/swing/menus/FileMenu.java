@@ -1,9 +1,9 @@
-package io.github.arkosammy12.jemu.frontend.swing.menus;
+package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;

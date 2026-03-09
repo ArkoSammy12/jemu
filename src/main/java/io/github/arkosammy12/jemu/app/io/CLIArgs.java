@@ -4,7 +4,7 @@ import io.github.arkosammy12.jemu.app.Main;
 import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
-import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
+import io.github.arkosammy12.jemu.frontend.gui.swing.util.KeyboardLayout;
 import picocli.CommandLine;
 
 import java.nio.file.Path;

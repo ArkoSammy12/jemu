@@ -1,8 +1,8 @@
-package io.github.arkosammy12.jemu.frontend.swing.menus;
+package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;

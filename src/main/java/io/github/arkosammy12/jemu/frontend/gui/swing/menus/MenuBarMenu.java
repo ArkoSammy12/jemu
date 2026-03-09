@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.swing.menus;
+package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
 import org.jetbrains.annotations.ApiStatus;
 

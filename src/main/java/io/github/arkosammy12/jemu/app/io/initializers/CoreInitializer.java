@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.app.io.initializers;
 
-import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
+import io.github.arkosammy12.jemu.frontend.gui.swing.util.KeyboardLayout;
 import io.github.arkosammy12.jemu.app.util.System;
 
 import java.nio.file.Path;

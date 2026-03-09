@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.frontend.swing;
+package io.github.arkosammy12.jemu.frontend.gui.swing;
 
-import io.github.arkosammy12.jemu.frontend.swing.events.StopEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.StopEmulatorCommand;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;

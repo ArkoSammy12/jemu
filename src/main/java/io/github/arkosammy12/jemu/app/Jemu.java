@@ -3,13 +3,13 @@ package io.github.arkosammy12.jemu.app;
 import io.github.arkosammy12.jemu.app.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
-import io.github.arkosammy12.jemu.frontend.swing.menus.HelpMenu;
-import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.menus.HelpMenu;
+import io.github.arkosammy12.jemu.frontend.gui.swing.util.KeyboardLayout;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
-import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import org.tinylog.Logger;
 
 import javax.swing.*;
@@ -30,7 +30,7 @@ public final class Jemu {
 
     public Jemu() throws IOException {
         try {
-            this.mainWindow = new io.github.arkosammy12.jemu.frontend.swing.MainWindow("jemu " + Main.VERSION_STRING, Arrays.stream(System.values()).toList());
+            this.mainWindow = new MainWindow("jemu " + Main.VERSION_STRING, Arrays.stream(System.values()).toList());
             this.mainWindow.setClosingHook(() -> {
                 this.running = false;
                 try {

@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.swing.events;
+package io.github.arkosammy12.jemu.frontend.gui.swing.events;
 
 public record StepCycleEmulatorCommand() implements EmulatorCommand {
 
