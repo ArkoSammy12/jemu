@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.application.io;
+package io.github.arkosammy12.jemu.app.io;
 
 import org.jetbrains.annotations.Nullable;
 

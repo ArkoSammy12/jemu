@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.application.io.initializers;
+package io.github.arkosammy12.jemu.app.io.initializers;
 
 import java.util.function.Consumer;
 

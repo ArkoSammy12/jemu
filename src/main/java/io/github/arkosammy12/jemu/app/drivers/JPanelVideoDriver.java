@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.application.drivers;
+package io.github.arkosammy12.jemu.app.drivers;
 
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;

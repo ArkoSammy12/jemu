@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.swing.util;
 
-import io.github.arkosammy12.jemu.application.io.Serializable;
-import io.github.arkosammy12.jemu.application.util.DisplayNameProvider;
+import io.github.arkosammy12.jemu.app.io.Serializable;
+import io.github.arkosammy12.jemu.app.util.DisplayNameProvider;
 import picocli.CommandLine;
 
 public enum KeyboardLayout implements DisplayNameProvider, Serializable {

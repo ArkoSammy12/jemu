@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.application.adapters;
+package io.github.arkosammy12.jemu.app.adapters;
 
-import io.github.arkosammy12.jemu.application.util.System;
+import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;

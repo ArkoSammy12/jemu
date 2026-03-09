@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.application;
+package io.github.arkosammy12.jemu.app;
 
 import com.formdev.flatlaf.util.SystemInfo;
 import org.tinylog.Logger;

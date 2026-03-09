@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.exceptions;
 
-import io.github.arkosammy12.jemu.application.util.System;
+import io.github.arkosammy12.jemu.app.util.System;
 
 public class InvalidInstructionException extends EmulatorException {
 

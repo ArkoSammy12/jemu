@@ -1,11 +1,11 @@
-package io.github.arkosammy12.jemu.application;
+package io.github.arkosammy12.jemu.app;
 
-import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
-import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
-import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.adapters.DefaultSystemAdapter;
+import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.frontend.swing.menus.HelpMenu;
 import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
-import io.github.arkosammy12.jemu.application.util.System;
+import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.swing.MainWindow;

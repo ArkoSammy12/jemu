@@ -1,8 +1,8 @@
-package io.github.arkosammy12.jemu.application.adapters;
+package io.github.arkosammy12.jemu.app.adapters;
 
-import io.github.arkosammy12.jemu.application.drivers.DefaultAudioRendererDriver;
-import io.github.arkosammy12.jemu.application.drivers.JPanelVideoDriver;
-import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
+import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
+import io.github.arkosammy12.jemu.app.drivers.JPanelVideoDriver;
+import io.github.arkosammy12.jemu.app.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 
