@@ -146,6 +146,15 @@ public class MainWindow implements Closeable {
         });
     }
 
+    public void setStatusBarEnabled(boolean enabled) {
+        SwingUtilities.invokeLater(() -> {
+            this.getStatusBar().getJPanel().setVisible(enabled);
+            this.infoBarConstraints.setHideMode(enabled ? 0 : 3);
+            this.getJFrame().revalidate();
+            this.getJFrame().repaint();
+        });
+    }
+
     public void submitEmulatorCommand(EmulatorCommand emulatorCommand) {
         this.emulatorCommandQueue.offer(emulatorCommand);
     }
