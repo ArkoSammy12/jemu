@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.application.adapters;
 
-import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.application.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.application.drivers.JPanelVideoDriver;
@@ -11,14 +10,12 @@ import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.cosmacvip.CosmacVIPKeypad;
 import io.github.arkosammy12.jemu.backend.cosmacvip.CosmacVipEmulator;
 import io.github.arkosammy12.jemu.backend.cosmacvip.CosmacVIPHost;
-import io.github.arkosammy12.jemu.backend.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.MonoAudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.StereoAudioRenderer;
 import org.jetbrains.annotations.Nullable;
 
-import javax.swing.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -37,7 +34,7 @@ public class DefaultCosmacVIPAdapter extends DefaultSystemAdapter implements Cos
     private final DefaultAudioRendererDriver audioDriver;
     private final AudioRenderer audioRenderer;
 
-    public DefaultCosmacVIPAdapter(Jemu jemu, CoreInitializer initializer, Chip8Interpreter chip8Interpreter) {
+    public DefaultCosmacVIPAdapter(CoreInitializer initializer, Chip8Interpreter chip8Interpreter) {
         super(initializer);
 
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
@@ -74,8 +71,8 @@ public class DefaultCosmacVIPAdapter extends DefaultSystemAdapter implements Cos
         boolean isStereo = this.emulator.getAudioGenerator().isStereo();
 
         this.audioDriver = isStereo
-                ? new StereoAudioRendererDriver(jemu, this.emulator.getAudioGenerator(), new StereoAudioRenderer(framerate))
-                : new MonoAudioRendererDriver(jemu, this.emulator.getAudioGenerator(), new MonoAudioRenderer(framerate));
+                ? new StereoAudioRendererDriver(this.emulator.getAudioGenerator(), new StereoAudioRenderer(framerate))
+                : new MonoAudioRendererDriver(this.emulator.getAudioGenerator(), new MonoAudioRenderer(framerate));
         this.audioRenderer = this.audioDriver.getAudioRenderer();
     }
 
@@ -105,7 +102,7 @@ public class DefaultCosmacVIPAdapter extends DefaultSystemAdapter implements Cos
     }
 
     @Override
-    public Optional<AudioDriver> getAudioDriver() {
+    public Optional<? extends DefaultAudioRendererDriver> getAudioDriver() {
         return Optional.of(this.audioDriver);
     }
 

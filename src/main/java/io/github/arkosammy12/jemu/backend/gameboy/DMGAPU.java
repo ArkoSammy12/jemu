@@ -168,7 +168,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     @Override
     public Optional<byte[]> getSampleFrame() {
-        Optional<AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
+        Optional<? extends AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
         if (optionalAudioDriver.isEmpty()) {
             return Optional.empty();
         }

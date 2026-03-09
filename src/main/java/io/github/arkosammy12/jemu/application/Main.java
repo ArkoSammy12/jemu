@@ -32,7 +32,7 @@ public class Main {
 
         Jemu jemu = null;
         try {
-            jemu = new Jemu(args);
+            jemu = new Jemu();
             jemu.start();
         } catch (Throwable t) {
             Logger.error("jemu has crashed! {}", t);

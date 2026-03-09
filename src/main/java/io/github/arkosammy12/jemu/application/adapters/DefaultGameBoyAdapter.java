@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.application.adapters;
 
-import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.application.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.application.drivers.JPanelVideoDriver;
@@ -9,7 +8,6 @@ import io.github.arkosammy12.jemu.application.drivers.StereoAudioRendererDriver;
 import io.github.arkosammy12.jemu.application.util.System;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.common.SystemHost;
-import io.github.arkosammy12.jemu.backend.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.backend.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.backend.gameboy.GameBoyHost;
@@ -20,7 +18,6 @@ import io.github.arkosammy12.jemu.frontend.audio.StereoAudioRenderer;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
-import javax.swing.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
@@ -41,7 +38,7 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     private final DefaultAudioRendererDriver audioDriver;
     private final AudioRenderer audioRenderer;
 
-    public DefaultGameBoyAdapter(Jemu jemu, CoreInitializer initializer, Model model) {
+    public DefaultGameBoyAdapter(CoreInitializer initializer, Model model) {
         super(initializer);
         StringBuilder titleBuilder;
         String title = null;
@@ -94,8 +91,8 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
         boolean isStereo = this.emulator.getAudioGenerator().isStereo();
 
         this.audioDriver = isStereo
-                ? new StereoAudioRendererDriver(jemu, this.emulator.getAudioGenerator(), new StereoAudioRenderer(framerate))
-                : new MonoAudioRendererDriver(jemu, this.emulator.getAudioGenerator(), new MonoAudioRenderer(framerate));
+                ? new StereoAudioRendererDriver(this.emulator.getAudioGenerator(), new StereoAudioRenderer(framerate))
+                : new MonoAudioRendererDriver(this.emulator.getAudioGenerator(), new MonoAudioRenderer(framerate));
         this.audioRenderer = this.audioDriver.getAudioRenderer();
     }
 
@@ -131,7 +128,7 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     }
 
     @Override
-    public Optional<AudioDriver> getAudioDriver() {
+    public Optional<? extends DefaultAudioRendererDriver> getAudioDriver() {
         return Optional.of(this.audioDriver);
     }
 
