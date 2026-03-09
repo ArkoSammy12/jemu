@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.application.adapters;
 
 import io.github.arkosammy12.jemu.application.util.System;
-import io.github.arkosammy12.jemu.backend.common.Emulator;
-import io.github.arkosammy12.jemu.backend.common.SystemHost;
-import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.common.Emulator;
+import io.github.arkosammy12.jemu.core.common.SystemHost;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 
 import java.io.Closeable;
 import java.nio.file.Files;

@@ -5,10 +5,10 @@ import io.github.arkosammy12.jemu.application.adapters.DefaultCosmacVIPAdapter;
 import io.github.arkosammy12.jemu.application.adapters.DefaultGameBoyAdapter;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.application.io.initializers.CoreInitializer;
-import io.github.arkosammy12.jemu.backend.cosmacvip.CosmacVIPHost;
-import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.application.io.Serializable;
-import io.github.arkosammy12.jemu.backend.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
 import picocli.CommandLine;
 

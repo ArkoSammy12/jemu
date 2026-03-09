@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.util;
 
-import io.github.arkosammy12.jemu.backend.common.Bus;
+import io.github.arkosammy12.jemu.core.common.Bus;
 
 public class FlatTestBus implements Bus {
 

@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitialize
 import io.github.arkosammy12.jemu.frontend.swing.menus.HelpMenu;
 import io.github.arkosammy12.jemu.frontend.swing.util.KeyboardLayout;
 import io.github.arkosammy12.jemu.application.util.System;
-import io.github.arkosammy12.jemu.backend.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.swing.events.*;

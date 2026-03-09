@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.application.drivers;
 
-import io.github.arkosammy12.jemu.backend.common.AudioGenerator;
-import io.github.arkosammy12.jemu.backend.drivers.AudioDriver;
+import io.github.arkosammy12.jemu.core.common.AudioGenerator;
+import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 
 import java.io.Closeable;

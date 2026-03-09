@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.application.drivers;
 
-import io.github.arkosammy12.jemu.backend.common.AudioGenerator;
+import io.github.arkosammy12.jemu.core.common.AudioGenerator;
 import io.github.arkosammy12.jemu.frontend.audio.StereoAudioRenderer;
 
 import java.io.IOException;

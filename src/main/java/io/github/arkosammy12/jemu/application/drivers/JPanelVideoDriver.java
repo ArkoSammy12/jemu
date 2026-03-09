@@ -1,8 +1,7 @@
 package io.github.arkosammy12.jemu.application.drivers;
 
-import io.github.arkosammy12.jemu.backend.common.VideoGenerator;
-import io.github.arkosammy12.jemu.backend.drivers.VideoDriver;
-import org.tinylog.Logger;
+import io.github.arkosammy12.jemu.core.common.VideoGenerator;
+import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
 
 import javax.swing.*;
 import java.awt.*;
