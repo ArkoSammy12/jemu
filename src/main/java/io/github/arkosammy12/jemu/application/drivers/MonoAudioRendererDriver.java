@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.application.drivers;
 
-import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.backend.common.AudioGenerator;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.MonoAudioRenderer;
@@ -10,8 +9,8 @@ import java.util.Optional;
 
 public class MonoAudioRendererDriver extends DefaultAudioRendererDriver {
 
-    public MonoAudioRendererDriver(Jemu jemu, AudioGenerator<?> audioGenerator, MonoAudioRenderer audioRenderer) {
-        super(jemu, audioGenerator, audioRenderer);
+    public MonoAudioRendererDriver(AudioGenerator<?> audioGenerator, MonoAudioRenderer audioRenderer) {
+        super(audioGenerator, audioRenderer);
     }
 
     @Override

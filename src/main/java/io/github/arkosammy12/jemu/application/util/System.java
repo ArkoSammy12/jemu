@@ -16,10 +16,10 @@ import java.util.Optional;
 import java.util.function.Function;
 
 public enum System implements DisplayNameProvider, Serializable, SystemDescriptor {
-    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", new String[] {"cos", "bin"}, args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),
-    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", new String[] {"ch8", "hc8"}, args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
-    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", new String[] {"ch8", "c8x"}, args -> new DefaultCosmacVIPAdapter(args.jemu(), args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
-    GAME_BOY("game-boy", "Game Boy", new String[] {"gb"}, args -> new DefaultGameBoyAdapter(args.jemu(), args.coreInitializer(), GameBoyHost.Model.DMG));
+    COSMAC_VIP("cosmac-vip", "COSMAC-VIP", new String[] {"cos", "bin"}, args -> new DefaultCosmacVIPAdapter(args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),
+    VIP_CHIP_8("vip-chip-8", "VIP CHIP-8", new String[] {"ch8", "hc8"}, args -> new DefaultCosmacVIPAdapter(args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
+    VIP_CHIP_8X("vip-chip-8x", "VIP CHIP-8X", new String[] {"ch8", "c8x"}, args -> new DefaultCosmacVIPAdapter(args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
+    GAME_BOY("game-boy", "Game Boy", new String[] {"gb"}, args -> new DefaultGameBoyAdapter(args.coreInitializer(), GameBoyHost.Model.DMG));
 
     private final String identifier;
     private final String displayName;
