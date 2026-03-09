@@ -42,4 +42,4 @@ bin/
 ### Mac OS ###
 .DS_Store
 
-src/test/resources/ssts
+core/src/test/resources/ssts/

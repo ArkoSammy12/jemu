@@ -8,7 +8,12 @@
     <groupId>io.github.arkosammy12</groupId>
     <artifactId>jemu</artifactId>
     <version>0.0.1</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
+    <modules>
+        <module>core</module>
+        <module>frontend</module>
+        <module>app</module>
+    </modules>
 
     <properties>
         <maven.compiler.source>25</maven.compiler.source>
@@ -30,20 +35,9 @@
             </snapshots>
         </repository>
         -->
-        <repository>
-            <id>enjarai-maven</id>
-            <name>Trans Fish Maven</name>
-            <url>https://maven.enjarai.dev/releases</url>
-        </repository>
     </repositories>
 
-
     <dependencies>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.7.7</version>
-        </dependency>
         <dependency>
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
@@ -66,16 +60,6 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
-            <groupId>com.formdev</groupId>
-            <artifactId>flatlaf</artifactId>
-            <version>3.7</version>
-        </dependency>
-        <dependency>
-            <groupId>com.miglayout</groupId>
-            <artifactId>miglayout-swing</artifactId>
-            <version>11.4.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.apache.commons</groupId>
             <artifactId>commons-collections4</artifactId>
             <version>4.4</version>
@@ -91,16 +75,6 @@
             <version>4.0.5</version>
         </dependency>
         <dependency>
-            <groupId>net.harawata</groupId>
-            <artifactId>appdirs</artifactId>
-            <version>1.5.0</version>
-        </dependency>
-        <dependency>
-            <groupId>io.github.wasabithumb</groupId>
-            <artifactId>jtoml</artifactId>
-            <version>1.4.2</version>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.10.1</version>
@@ -108,50 +82,5 @@
         </dependency>
 
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.5.0</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <createDependencyReducedPom>false</createDependencyReducedPom>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>io.github.arkosammy12.jemu.app.Main</mainClass>
-                                </transformer>
-                            </transformers>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.panteleyev</groupId>
-                <artifactId>jpackage-maven-plugin</artifactId>
-                <version>1.7.1</version>
-                <configuration>
-                    <name>jemu</name>
-                    <type>APP_IMAGE</type>
-                    <mainJar>${project.build.finalName}.jar</mainJar>
-                    <input>${project.build.directory}</input>
-                    <mainClass>io.github.arkosammy12.jemu.app.Main</mainClass>
-                    <runtimeImage>${java.home}</runtimeImage>
-                    <destination>${project.build.directory}/dist</destination>
-                    <removeDestination>true</removeDestination>
-                    <javaOptions>
-                        <option>-Dfile.encoding=UTF-8</option>
-                        <option>--enable-native-access=ALL-UNNAMED</option>
-                        <option>-XX:+UseZGC</option>
-                        <option>-XX:+UseCompactObjectHeaders</option>
-                    </javaOptions>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
+
 </project>
