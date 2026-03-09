@@ -89,7 +89,7 @@ public final class Jemu {
                     this.mainWindow.getSystemViewport().setSystemDisplayPanel(null);
                     this.currentSystem = null;
                 }
-                this.mainWindow.offerEvent(new StopEvent());
+                this.mainWindow.offerEmulatorCommand(new StopEmulatorCommand());
             } catch (InterruptedException _) {
 
             } catch (Exception e) {
@@ -99,29 +99,27 @@ public final class Jemu {
     }
 
     private void updateState(boolean take) throws Exception {
-        Event enqueuedEvent = take ? this.mainWindow.waitEvent() : this.mainWindow.pollEvent();
-        State enqueuedState = switch (enqueuedEvent) {
-            case ResetEvent resetEvent -> {
+        EmulatorCommand enqueuedEmulatorCommand = take ? this.mainWindow.waitEmulatorCommand() : this.mainWindow.pollEmulatorCommand();
+        State enqueuedState = switch (enqueuedEmulatorCommand) {
+            case ResetEmulatorCommand resetEvent -> {
                 this.onResetting(resetEvent);
-                resetEvent.onCompleted(this.currentSystem.getVideoDriver().orElse(null) instanceof JPanel jPanel ? () -> jPanel : null);
+                this.mainWindow.getSystemViewport().setSystemDisplayPanel(this.currentSystem.getVideoDriver().orElse(null) instanceof JPanel jPanel ? () -> jPanel : null);
                 yield resetEvent.resetIntoPaused() ? State.PAUSED : State.RUNNING;
             }
-            case StopEvent stopEvent -> {
+            case StopEmulatorCommand _ -> {
                 this.onStopping();
-                stopEvent.onCompleted();
                 yield State.STOPPED;
             }
-            case PauseEvent pauseEvent -> {
+            case PauseEmulatorCommand(boolean pause) -> {
                 boolean stopped = this.currentSystem == null;
-                pauseEvent.onCompleted(stopped);
-                if (pauseEvent.getPause()) {
+                if (pause) {
                     yield stopped ? State.PAUSE_STOPPED : State.PAUSED;
                 } else {
                     yield stopped ? State.STOPPED : State.RUNNING;
                 }
             }
-            case StepFrameEvent _ -> State.STEPPING_FRAME;
-            case StepCycleEvent _ -> State.STEPPING_CYCLE;
+            case StepFrameEmulatorCommand _ -> State.STEPPING_FRAME;
+            case StepCycleEmulatorCommand _ -> State.STEPPING_CYCLE;
             case null -> null;
         };
         if (enqueuedState == null) {
@@ -169,7 +167,7 @@ public final class Jemu {
         this.currentState = State.PAUSED;
     }
 
-    private void onResetting(ResetEvent resetEvent) throws Exception {
+    private void onResetting(ResetEmulatorCommand resetEvent) throws Exception {
         if (this.currentSystem != null) {
             this.currentSystem.close();
         }

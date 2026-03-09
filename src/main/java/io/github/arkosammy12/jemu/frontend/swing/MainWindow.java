@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.frontend.swing;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.swing.events.Event;
+import io.github.arkosammy12.jemu.frontend.swing.events.*;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -23,6 +23,8 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
 public class MainWindow implements Closeable {
@@ -36,7 +38,13 @@ public class MainWindow implements Closeable {
     @Nullable
     private SystemViewport systemViewport;
 
-    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
+    private final Collection<PauseEmulatorCommand.Callback> pauseCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<ResetEmulatorCommand.Callback> resetCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<StepCycleEmulatorCommand.Callback> stepCycleCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<StepFrameEmulatorCommand.Callback> stepFrameCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<StopEmulatorCommand.Callback> stopCallbacks = new CopyOnWriteArrayList<>();
+
     private final Collection<SystemDescriptor> systemDescriptors;
 
     public MainWindow(String title, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
@@ -96,8 +104,20 @@ public class MainWindow implements Closeable {
             appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
             appFrame.pack();
             appFrame.setLocationRelativeTo(null);
+
         });
 
+    }
+
+    @ApiStatus.Internal
+    public <T extends EmulatorCommand.Callback> void addEmulatorCommandCallback(T callback) {
+        switch (callback) {
+            case PauseEmulatorCommand.Callback c -> this.pauseCallbacks.add(c);
+            case ResetEmulatorCommand.Callback c -> this.resetCallbacks.add(c);
+            case StepCycleEmulatorCommand.Callback c -> this.stepCycleCallbacks.add(c);
+            case StepFrameEmulatorCommand.Callback c -> this.stepFrameCallbacks.add(c);
+            case StopEmulatorCommand.Callback c -> this.stopCallbacks.add(c);
+        }
     }
 
     public Collection<SystemDescriptor> getSystemDescriptors() {
@@ -119,17 +139,31 @@ public class MainWindow implements Closeable {
         });
     }
 
-    public void offerEvent(Event event) {
-        this.eventQueue.offer(event);
+    public void offerEmulatorCommand(EmulatorCommand emulatorCommand) {
+        this.emulatorCommandQueue.offer(emulatorCommand);
     }
 
     @Nullable
-    public Event pollEvent() {
-        return this.eventQueue.poll();
+    public EmulatorCommand pollEmulatorCommand() throws InterruptedException {
+        return this.getEmulatorCommand(false);
     }
 
-    public Event waitEvent() throws InterruptedException {
-        return this.eventQueue.take();
+    public EmulatorCommand waitEmulatorCommand() throws InterruptedException {
+        return this.getEmulatorCommand(true);
+    }
+
+    @Nullable
+    private EmulatorCommand getEmulatorCommand(boolean wait) throws InterruptedException {
+        EmulatorCommand emulatorCommand = wait ? this.emulatorCommandQueue.take() : this.emulatorCommandQueue.poll();
+        switch (emulatorCommand) {
+            case null -> {}
+            case PauseEmulatorCommand command -> this.pauseCallbacks.forEach(c -> c.onPause(command));
+            case ResetEmulatorCommand command -> this.resetCallbacks.forEach(c -> c.onReset(command));
+            case StepCycleEmulatorCommand command -> this.stepCycleCallbacks.forEach(c -> c.onStepCycle(command));
+            case StepFrameEmulatorCommand command -> this.stepFrameCallbacks.forEach(c -> c.onStepFrame(command));
+            case StopEmulatorCommand command -> this.stopCallbacks.forEach(c -> c.onStop(command));
+        }
+        return emulatorCommand;
     }
 
     @NotNull
