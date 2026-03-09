@@ -147,6 +147,7 @@ public final class Jemu {
         }
         this.getAudioRenderer().ifPresent(renderer -> renderer.setPaused(false));
         this.currentSystem.getEmulator().executeFrame();
+        this.mainWindow.getStatusBar().update(this.currentSystem.getRomTitle().orElse(""), this.currentSystem.getSystemName());
     }
 
     private void onSteppingFrame() {

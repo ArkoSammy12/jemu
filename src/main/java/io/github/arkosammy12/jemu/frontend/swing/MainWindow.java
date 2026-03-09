@@ -37,6 +37,11 @@ public class MainWindow implements Closeable {
     @Nullable
     private SystemViewport systemViewport;
 
+    @Nullable
+    private StatusBar statusBar;
+
+    private final CC infoBarConstraints = new CC().grow().pushX().dockSouth().height("18!");
+
     private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
     private final Collection<PauseEmulatorCommand.Callback> pauseCallbacks = new CopyOnWriteArrayList<>();
     private final Collection<ResetEmulatorCommand.Callback> resetCallbacks = new CopyOnWriteArrayList<>();
@@ -92,9 +97,11 @@ public class MainWindow implements Closeable {
 
             this.systemViewport = new SystemViewport();
             this.menuBar = new MainMenuBar(this, this.appFrame);
+            this.statusBar = new StatusBar(this);
 
             this.appFrame.setJMenuBar(this.menuBar.getJMenuBar());
             this.appFrame.add(this.systemViewport.getJPanel(), new CC().grow().push().wrap());
+            this.appFrame.add(this.statusBar.getJPanel(), this.infoBarConstraints);
 
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
@@ -108,19 +115,20 @@ public class MainWindow implements Closeable {
 
     }
 
-    @ApiStatus.Internal
-    public <T extends EmulatorCommand.Callback> void addEmulatorCommandCallback(T callback) {
-        switch (callback) {
-            case PauseEmulatorCommand.Callback c -> this.pauseCallbacks.add(c);
-            case ResetEmulatorCommand.Callback c -> this.resetCallbacks.add(c);
-            case StepCycleEmulatorCommand.Callback c -> this.stepCycleCallbacks.add(c);
-            case StepFrameEmulatorCommand.Callback c -> this.stepFrameCallbacks.add(c);
-            case StopEmulatorCommand.Callback c -> this.stopCallbacks.add(c);
-        }
-    }
-
     public Collection<SystemDescriptor> getSystemDescriptors() {
         return this.systemDescriptors;
+    }
+
+    public SystemViewport getSystemViewport() {
+        return Objects.requireNonNull(this.systemViewport);
+    }
+
+    public MainMenuBar getMainMenuBar() {
+        return Objects.requireNonNull(this.menuBar);
+    }
+
+    public StatusBar getStatusBar() {
+        return Objects.requireNonNull(this.statusBar);
     }
 
     public void show() {
@@ -171,12 +179,15 @@ public class MainWindow implements Closeable {
         return Objects.requireNonNull(this.appFrame);
     }
 
-    public SystemViewport getSystemViewport() {
-        return Objects.requireNonNull(this.systemViewport);
-    }
-
-    public MainMenuBar getMainMenuBar() {
-        return Objects.requireNonNull(this.menuBar);
+    @ApiStatus.Internal
+    public <T extends EmulatorCommand.Callback> void addEmulatorCommandCallback(T callback) {
+        switch (callback) {
+            case PauseEmulatorCommand.Callback c -> this.pauseCallbacks.add(c);
+            case ResetEmulatorCommand.Callback c -> this.resetCallbacks.add(c);
+            case StepCycleEmulatorCommand.Callback c -> this.stepCycleCallbacks.add(c);
+            case StepFrameEmulatorCommand.Callback c -> this.stepFrameCallbacks.add(c);
+            case StopEmulatorCommand.Callback c -> this.stopCallbacks.add(c);
+        }
     }
 
     @Override
