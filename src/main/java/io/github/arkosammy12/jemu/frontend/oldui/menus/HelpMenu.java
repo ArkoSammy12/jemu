@@ -18,8 +18,8 @@ public class HelpMenu extends JMenu {
 
         Runnable showAboutDialog = () -> JOptionPane.showMessageDialog(
                 mainWindow,
-                String.format("Jemu\nVersion %s\n\nBy ArkoSammy12", Main.VERSION_STRING),
-                "About Jemu",
+                String.format("OldJemu\nVersion %s\n\nBy ArkoSammy12", Main.VERSION_STRING),
+                "About OldJemu",
                 JOptionPane.INFORMATION_MESSAGE);
 
         Runnable addAboutItem = () -> {

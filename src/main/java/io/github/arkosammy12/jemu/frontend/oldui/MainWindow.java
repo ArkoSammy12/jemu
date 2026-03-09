@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.Main;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
@@ -38,7 +38,7 @@ public class MainWindow extends JFrame implements EmulatorInitializerConsumer, C
     private int lastUnmaximizedWidth = 0;
     private int lastUnmaximizedHeight = 0;
 
-    public MainWindow(Jemu jemu) {
+    public MainWindow(OldJemu jemu) {
         super(DEFAULT_TITLE);
 
         this.windowTitleManager = new WindowTitleManager(this);

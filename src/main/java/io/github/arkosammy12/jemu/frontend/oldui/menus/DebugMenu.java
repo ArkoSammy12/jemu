@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.menus;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.ApplicationInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
@@ -15,7 +15,7 @@ public class DebugMenu extends JMenu implements EmulatorInitializerConsumer {
     private final JRadioButtonMenuItem showDebuggerButton;
     private final JRadioButtonMenuItem showDisassemblerButton;
 
-    public DebugMenu(Jemu jemu, MainWindow mainWindow) {
+    public DebugMenu(OldJemu jemu, MainWindow mainWindow) {
         super("Debug");
 
         this.setMnemonic(KeyEvent.VK_D);

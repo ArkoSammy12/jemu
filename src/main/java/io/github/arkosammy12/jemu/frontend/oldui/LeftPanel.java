@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializerConsumer;
@@ -19,7 +19,7 @@ public class LeftPanel extends JPanel implements EmulatorInitializerConsumer {
 
     private final ToggleableSplitPane splitPane;
 
-    public LeftPanel(Jemu jemu, MainWindow mainWindow) {
+    public LeftPanel(OldJemu jemu, MainWindow mainWindow) {
         MigLayout migLayout = new MigLayout(new LC().insets("0"));
         super(migLayout);
         EmulatorViewport emulatorViewport = new EmulatorViewport(jemu);

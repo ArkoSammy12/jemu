@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.debugger;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
 import io.github.arkosammy12.jemu.backend.common.BusView;
@@ -33,7 +33,7 @@ public class MemoryTable extends JTable {
 
     private int @Nullable [] bytes;
 
-    public MemoryTable(Jemu jemu) {
+    public MemoryTable(OldJemu jemu) {
         super();
         this.model = new Model();
         this.setModel(model);
@@ -113,7 +113,7 @@ public class MemoryTable extends JTable {
         });
     }
 
-    private void onFrame(@Nullable Emulator emulator, Jemu.State state) {
+    private void onFrame(@Nullable Emulator emulator, OldJemu.State state) {
         if (emulator == null) {
             return;
         }

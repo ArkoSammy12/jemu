@@ -30,9 +30,9 @@ public class Main {
         System.setProperty("flatlaf.uiScale.allowScaleDown", Boolean.TRUE.toString());
         System.setProperty("flatlaf.menuBarEmbedded", Boolean.FALSE.toString());
 
-        NewJemu jemu = null;
+        Jemu jemu = null;
         try {
-            jemu = new NewJemu();
+            jemu = new Jemu();
             jemu.start();
         } catch (Throwable t) {
             Logger.error("jemu has crashed! {}", t);

@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.menus;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.Serializable;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
@@ -26,7 +26,7 @@ public class EmulatorMenu extends JMenu implements EmulatorInitializerConsumer {
 
     private final EnumMenu<System> systemMenu;
 
-    public EmulatorMenu(Jemu jemu, MainWindow mainWindow) {
+    public EmulatorMenu(OldJemu jemu, MainWindow mainWindow) {
         super("Emulator");
         this.mainWindow = mainWindow;
 

@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.disassembly;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.backend.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
@@ -29,7 +29,7 @@ public class DisassemblerTable extends JTable {
     private int hoveredRow = -1;
     private int hoveredColumn = -1;
 
-    public DisassemblerTable(Jemu jemu) {
+    public DisassemblerTable(OldJemu jemu) {
         super();
         this.model = new Model();
         this.setModel(this.model);

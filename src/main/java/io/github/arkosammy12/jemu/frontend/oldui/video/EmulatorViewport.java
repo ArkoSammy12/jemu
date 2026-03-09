@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.video;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 
@@ -13,7 +13,7 @@ public class EmulatorViewport extends JPanel {
 
     private JPanel displayRenderer;
 
-    public EmulatorViewport(Jemu jemu) {
+    public EmulatorViewport(OldJemu jemu) {
         MigLayout migLayout = new MigLayout(new LC().insets("0"));
         super(migLayout);
         this.setFocusable(true);

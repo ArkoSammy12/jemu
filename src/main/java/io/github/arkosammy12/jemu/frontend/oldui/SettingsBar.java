@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.application.util.System;
 import io.github.arkosammy12.jemu.application.util.KeyboardLayout;
@@ -16,7 +16,7 @@ public class SettingsBar extends JMenuBar implements EmulatorInitializer {
     private final EmulatorMenu emulatorMenu;
     private final SettingsMenu settingsMenu;
 
-    public SettingsBar(Jemu jemu, MainWindow mainWindow) {
+    public SettingsBar(OldJemu jemu, MainWindow mainWindow) {
         super();
 
         this.fileMenu = new FileMenu(jemu, mainWindow);

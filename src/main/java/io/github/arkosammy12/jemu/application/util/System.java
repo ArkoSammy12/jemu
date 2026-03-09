@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.application.util;
 
-import io.github.arkosammy12.jemu.application.NewJemu;
+import io.github.arkosammy12.jemu.application.Jemu;
 import io.github.arkosammy12.jemu.application.adapters.DefaultCosmacVIPAdapter;
 import io.github.arkosammy12.jemu.application.adapters.DefaultGameBoyAdapter;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
@@ -38,7 +38,7 @@ public enum System implements DisplayNameProvider, Serializable, SystemDescripto
         return this.displayName;
     }
 
-    public static DefaultSystemAdapter getSystemAdapter(NewJemu jemu, CoreInitializer initializer) {
+    public static DefaultSystemAdapter getSystemAdapter(Jemu jemu, CoreInitializer initializer) {
         Optional<System> optionalVariant = initializer.getSystem();
         if (optionalVariant.isPresent()) {
              return optionalVariant.get().args.apply(new EmulatorSettingsArgs(jemu, initializer));
@@ -79,6 +79,6 @@ public enum System implements DisplayNameProvider, Serializable, SystemDescripto
 
     }
 
-    private record EmulatorSettingsArgs(NewJemu jemu, CoreInitializer coreInitializer) {}
+    private record EmulatorSettingsArgs(Jemu jemu, CoreInitializer coreInitializer) {}
 
 }

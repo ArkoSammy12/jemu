@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.disassembly;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.ApplicationInitializer;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
@@ -22,7 +22,7 @@ public class DisassemblyPanel extends JPanel implements EmulatorInitializerConsu
     private final DisassemblerTable disassemblerTable;
     private final JCheckBox followCheckbox;
 
-    public DisassemblyPanel(Jemu jemu, MainWindow mainWindow) {
+    public DisassemblyPanel(OldJemu jemu, MainWindow mainWindow) {
         MigLayout migLayout = new MigLayout(new LC().insets("0"));
         super(migLayout);
 

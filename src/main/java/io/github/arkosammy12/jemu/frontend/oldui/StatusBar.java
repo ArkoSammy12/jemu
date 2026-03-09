@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.backend.common.Emulator;
 import net.miginfocom.layout.AC;
@@ -27,7 +27,7 @@ public class StatusBar extends JPanel {
     private long totalIpfSinceLastUpdate = 0;
     private double totalFrameTimeSinceLastUpdate = 0;
 
-    public StatusBar(Jemu jemu) {
+    public StatusBar(OldJemu jemu) {
         MigLayout migLayout = new MigLayout(new LC().insets("1"), new AC().gap("5").gap("5").gap("5").gap("5").gap("5"), new AC());
         super(migLayout);
 

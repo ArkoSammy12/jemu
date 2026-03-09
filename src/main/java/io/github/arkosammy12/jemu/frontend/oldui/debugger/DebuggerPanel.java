@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.oldui.debugger;
 
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.ApplicationInitializer;
@@ -62,7 +62,7 @@ public class DebuggerPanel extends JPanel implements EmulatorInitializerConsumer
 
     private final JCheckBox memoryFollowCheckBox;
 
-    public DebuggerPanel(Jemu jemu, MainWindow mainWindow) {
+    public DebuggerPanel(OldJemu jemu, MainWindow mainWindow) {
         MigLayout migLayout = new MigLayout(new LC().insets("0"));
         super(migLayout);
 
@@ -225,7 +225,7 @@ public class DebuggerPanel extends JPanel implements EmulatorInitializerConsumer
         });
     }
 
-    private void onFrame(@Nullable Emulator emulator, Jemu.State state) {
+    private void onFrame(@Nullable Emulator emulator, OldJemu.State state) {
         if (emulator == null) {
             return;
         }

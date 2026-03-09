@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.frontend.oldui.menus;
 
 import com.formdev.flatlaf.icons.*;
 import com.formdev.flatlaf.util.SystemFileChooser;
-import io.github.arkosammy12.jemu.application.Jemu;
+import io.github.arkosammy12.jemu.application.OldJemu;
 import io.github.arkosammy12.jemu.application.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.application.io.DataManager;
 import io.github.arkosammy12.jemu.application.io.initializers.EmulatorInitializer;
@@ -36,7 +36,7 @@ public class FileMenu extends JMenu implements EmulatorInitializerConsumer {
     private final JMenuItem clearRecentButton;
     private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(10);
 
-    public FileMenu(Jemu jemu, MainWindow mainWindow) {
+    public FileMenu(OldJemu jemu, MainWindow mainWindow) {
         super("File");
         this.mainWindow = mainWindow;
 
