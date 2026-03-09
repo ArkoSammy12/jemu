@@ -76,6 +76,8 @@ public final class Jemu {
                 this.updateState(false);
                 this.processState(this.currentState);
                 if (this.currentSystem != null) {
+                    this.currentSystem.getAudioRenderer().setMuted(this.mainWindow.getMainMenuBar().getSettingsMenu().getMuted());
+                    this.currentSystem.getAudioRenderer().setVolume(this.mainWindow.getMainMenuBar().getSettingsMenu().getVolume());
                     this.currentSystem.onFrame();
                 }
 
@@ -209,12 +211,6 @@ public final class Jemu {
 
     private void initializeEmulator(EmulatorInitializer initializer) {
         this.currentSystem = System.getSystemAdapter(this, initializer);
-        /*
-        if (this.muteAudio) {
-            this.systemAdapter.getAudioRenderer().setMuted(true);
-        }
-         */
-        this.currentSystem.getAudioRenderer().setVolume(50);
     }
 
     void onShutdown() throws Exception {

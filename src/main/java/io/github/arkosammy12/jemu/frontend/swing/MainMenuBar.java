@@ -12,6 +12,7 @@ public class MainMenuBar {
 
     private final FileMenu fileMenu;
     private final EmulatorMenu emulatorMenu;
+    private final SettingsMenu settingsMenu;
 
     public MainMenuBar(MainWindow mainWindow, JFrame jFrame) {
 
@@ -19,7 +20,7 @@ public class MainMenuBar {
 
         this.fileMenu = new FileMenu(mainWindow, jFrame);
         this.emulatorMenu = new EmulatorMenu(mainWindow);
-        SettingsMenu settingsMenu = new SettingsMenu(mainWindow);
+        this.settingsMenu = new SettingsMenu(mainWindow);
 
         this.jMenuBar.add(this.fileMenu.getJMenu());
         this.jMenuBar.add(this.emulatorMenu.getJMenu());
@@ -36,6 +37,10 @@ public class MainMenuBar {
 
     public EmulatorMenu getEmulatorMenu() {
         return this.emulatorMenu;
+    }
+
+    public SettingsMenu getSettingsMenu() {
+        return this.settingsMenu;
     }
 
 }
