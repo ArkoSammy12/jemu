@@ -89,7 +89,7 @@ public final class Jemu {
                     this.mainWindow.getSystemViewport().setSystemDisplayPanel(null);
                     this.currentSystem = null;
                 }
-                this.mainWindow.offerEmulatorCommand(new StopEmulatorCommand());
+                this.mainWindow.submitEmulatorCommand(new StopEmulatorCommand());
             } catch (InterruptedException _) {
 
             } catch (Exception e) {

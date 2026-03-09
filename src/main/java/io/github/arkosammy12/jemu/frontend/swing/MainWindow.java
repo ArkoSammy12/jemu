@@ -23,7 +23,6 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -139,7 +138,7 @@ public class MainWindow implements Closeable {
         });
     }
 
-    public void offerEmulatorCommand(EmulatorCommand emulatorCommand) {
+    public void submitEmulatorCommand(EmulatorCommand emulatorCommand) {
         this.emulatorCommandQueue.offer(emulatorCommand);
     }
 

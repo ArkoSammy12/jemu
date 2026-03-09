@@ -43,16 +43,16 @@ public class EmulatorMenu extends MenuBarMenu {
         JMenuItem resetButton = new JMenuItem("Reset");
         resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
         resetButton.setEnabled(true);
-        resetButton.addActionListener(_ -> mainWindow.offerEmulatorCommand(new ResetEmulatorCommand(this.currentSystemDescriptor, this.pauseButton.isSelected())));
+        resetButton.addActionListener(_ -> mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(this.currentSystemDescriptor, this.pauseButton.isSelected())));
 
         this.pauseButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK, true));
         this.pauseButton.setEnabled(true);
         this.pauseButton.setSelected(false);
-        this.pauseButton.addActionListener(_ -> mainWindow.offerEmulatorCommand(new PauseEmulatorCommand(this.pauseButton.isSelected())));
+        this.pauseButton.addActionListener(_ -> mainWindow.submitEmulatorCommand(new PauseEmulatorCommand(this.pauseButton.isSelected())));
 
         this.stopButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK, true));
         this.stopButton.setEnabled(false);
-        this.stopButton.addActionListener(_ -> mainWindow.offerEmulatorCommand(new StopEmulatorCommand()));
+        this.stopButton.addActionListener(_ -> mainWindow.submitEmulatorCommand(new StopEmulatorCommand()));
 
         this.stepFrameButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK, true));
         this.stepFrameButton.setEnabled(false);
@@ -60,7 +60,7 @@ public class EmulatorMenu extends MenuBarMenu {
             if (!this.pauseButton.isSelected()) {
                 return;
             }
-            mainWindow.offerEmulatorCommand(new StepFrameEmulatorCommand());
+            mainWindow.submitEmulatorCommand(new StepFrameEmulatorCommand());
         });
 
         this.stepCycleButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_C, InputEvent.CTRL_DOWN_MASK, true));
@@ -69,7 +69,7 @@ public class EmulatorMenu extends MenuBarMenu {
             if (!this.pauseButton.isSelected()) {
                 return;
             }
-            mainWindow.offerEmulatorCommand(new StepCycleEmulatorCommand());
+            mainWindow.submitEmulatorCommand(new StepCycleEmulatorCommand());
         });
 
         this.jMenu.add(resetButton);
