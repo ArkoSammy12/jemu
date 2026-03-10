@@ -2,11 +2,15 @@ package io.github.arkosammy12.jemu.core.common;
 
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
+
+import java.nio.file.Path;
 import java.util.Optional;
 
 public interface SystemHost {
 
     byte[] getRom();
+
+    Path getRomPath();
 
     String getSystemName();
 
