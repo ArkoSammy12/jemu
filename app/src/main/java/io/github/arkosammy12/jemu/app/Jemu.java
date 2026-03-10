@@ -32,6 +32,10 @@ public final class Jemu {
 
     public Jemu() {
         try {
+            Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
+                Logger.error("Uncaught exception in thread {}", thread.getName(), throwable);
+            });
+
             this.mainWindow = new MainWindow("jemu " + Main.VERSION_STRING, APP_DIR, Arrays.stream(System.values()).toList());
             this.mainWindow.setClosingHook(() -> {
                 this.running = false;
