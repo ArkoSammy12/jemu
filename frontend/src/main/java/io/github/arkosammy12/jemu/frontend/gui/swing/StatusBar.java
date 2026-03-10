@@ -16,7 +16,6 @@ public class StatusBar {
 
     private final JTextField systemField = createField();
     private final JTextField romTitleField = createField();
-    private final JTextField frameTimeField = createField();
     private final JTextField fpsField = createField();
 
     private long lastWindowTitleUpdate = 0;
@@ -30,8 +29,7 @@ public class StatusBar {
 
         this.jPanel.add(createPanel(systemField, "The system used by the currently running ROM."), new CC().growX());
         this.jPanel.add(createPanel(romTitleField, "The name or file name of the currently running ROM."), new CC().growX());
-        this.jPanel.add(createPanel(frameTimeField, "The current frame time value average, in milliseconds."), new CC().growX());
-        this.jPanel.add(createPanel(fpsField, "The current frames per second value average."), new CC().growX());
+        this.jPanel.add(createPanel(fpsField, "The emulation framerate and frame time of the currently running system."), new CC().growX());
 
         mainWindow.<StopEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> {
             this.lastWindowTitleUpdate = 0;
@@ -41,7 +39,6 @@ public class StatusBar {
             SwingUtilities.invokeLater(() -> {
                 this.systemField.setText("");
                 this.romTitleField.setText("");
-                this.frameTimeField.setText("");
                 this.fpsField.setText("");
                 this.jPanel.revalidate();
                 this.jPanel.repaint();
@@ -118,8 +115,7 @@ public class StatusBar {
                 }
 
                 if (fUpdateStats) {
-                    this.frameTimeField.setText("Frame time: " + String.format("%.2f ms", fAverageFrameTimeMs));
-                    this.fpsField.setText("FPS: " + String.format("%.2f", fFps));
+                    this.fpsField.setText("FPS: %.2f (%.2f ms)".formatted(fFps, fAverageFrameTimeMs));
                 }
 
                 this.jPanel.revalidate();
