@@ -3,13 +3,17 @@ package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 public class EmulatorMenu extends MenuBarMenu {
 
@@ -27,13 +31,14 @@ public class EmulatorMenu extends MenuBarMenu {
         this.jMenu.setText("Emulator");
         this.jMenu.setMnemonic(KeyEvent.VK_E);
 
-        ButtonGroup buttonGroup = new ButtonGroup();
-        JRadioButtonMenuItem unspecifiedItem = new JRadioButtonMenuItem("Unspecified");
-        unspecifiedItem.addActionListener(_ -> currentSystemDescriptor = null);
-        unspecifiedItem.setSelected(true);
-        buttonGroup.add(unspecifiedItem);
         JMenu systemMenu = new JMenu("System");
-        systemMenu.add(unspecifiedItem);
+
+        ButtonGroup buttonGroup = new ButtonGroup();
+        JRadioButtonMenuItem automaticItem = new JRadioButtonMenuItem("Automatic");
+        automaticItem.addActionListener(_ -> currentSystemDescriptor = null);
+        automaticItem.setSelected(true);
+        buttonGroup.add(automaticItem);
+        systemMenu.add(automaticItem);
 
         Map<SystemDescriptor, JRadioButtonMenuItem> buttonMap = new HashMap<>();
 
@@ -48,7 +53,46 @@ public class EmulatorMenu extends MenuBarMenu {
         JMenuItem resetButton = new JMenuItem("Reset");
         resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
         resetButton.setEnabled(true);
-        resetButton.addActionListener(_ -> mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(this.currentSystemDescriptor, this.pauseButton.isSelected())));
+        resetButton.addActionListener(_ -> {
+            SystemDescriptor systemDescriptor = this.currentSystemDescriptor;
+            if (systemDescriptor != null) {
+                mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
+                return;
+            }
+
+            Optional<Path> optionalRomPath = mainWindow.getMainMenuBar().getFileMenu().getSelectedRomPath();
+            if (optionalRomPath.isEmpty()) {
+                mainWindow.showDialog("Error attempting to restart", "No selected ROM path to determine system from!", MainWindow.DialogType.ERROR);
+                return;
+            }
+            String fileExtension = FilenameUtils.getExtension(optionalRomPath.get().toString());
+            if (fileExtension.isBlank()) {
+                mainWindow.showDialog("Error attempting to restart", "The file extension of the selected ROM path is blank!", MainWindow.DialogType.ERROR);
+                return;
+            }
+
+            outer: for (SystemDescriptor descriptor : mainWindow.getSystemDescriptors()) {
+                Optional<String[]> optionalFileExtensions = descriptor.getFileExtensions();
+                if (optionalFileExtensions.isEmpty()) {
+                    break;
+                }
+                String[] fileExtensions = optionalFileExtensions.get();
+                for (String extension : fileExtensions) {
+                    if (fileExtension.equals(extension)) {
+                        systemDescriptor = descriptor;
+                        break outer;
+                    }
+                }
+            }
+
+            if (systemDescriptor == null) {
+                mainWindow.showDialog("Error attempting to restart", "File extensiono of selected ROM path does not match of system descriptors!", MainWindow.DialogType.ERROR);
+                return;
+            }
+
+            mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
+
+        });
 
         this.pauseButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK, true));
         this.pauseButton.setEnabled(true);

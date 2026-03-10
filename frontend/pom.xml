@@ -23,6 +23,11 @@
             <artifactId>miglayout-swing</artifactId>
             <version>11.4.2</version>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>2.21.0</version>
+        </dependency>
     </dependencies>
 
 </project>
