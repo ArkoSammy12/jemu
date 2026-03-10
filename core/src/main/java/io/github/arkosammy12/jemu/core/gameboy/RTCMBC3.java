@@ -42,7 +42,7 @@ public class RTCMBC3 extends MBC3 {
                   case 0x03 -> 4 * 0x2000;
                   default -> 0;
             };
-            if (rtcDataStart + 36 - 1 >= saveData.length) {
+            if (rtcDataStart + 36 >= saveData.length) {
                 return;
             }
 
