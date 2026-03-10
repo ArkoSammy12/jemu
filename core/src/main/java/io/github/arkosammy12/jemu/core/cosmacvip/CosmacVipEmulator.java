@@ -23,7 +23,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     private final CosmacVIPHost host;
     private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
     //private final DebuggerSchema debuggerSchema;
-    private final AbstractDisassembler<?> disassembler;
+    //private final AbstractDisassembler<?> disassembler;
 
     private final CDP1802 cpu;
     private final CosmacVipBus bus;
@@ -56,8 +56,8 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
                 this.frameRate = 60;
             }
             //this.debuggerSchema = this.createDebuggerSchema();
-            this.disassembler = new CosmacVipDisassembler<>(this);
-            this.disassembler.setProgramCounterSupplier(this::getActualCurrentInstructionAddress);
+            //this.disassembler = new CosmacVipDisassembler<>(this);
+            //this.disassembler.setProgramCounterSupplier(this::getActualCurrentInstructionAddress);
             //this.cpu.restoreRegisters(this.getEmulatorSettings());
         } catch (Exception e) {
             throw new EmulatorException(e);
@@ -108,7 +108,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     @Override
     public @Nullable Disassembler getDisassembler() {
-        return this.disassembler;
+        return null;
     }
 
     public CosmacVIPHost.Chip8Interpreter getChip8Interpreter() {
@@ -180,11 +180,11 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     @Override
     public void executeFrame() {
-        if (this.disassembler.isEnabled()) {
-            this.runCyclesDebug();
-        } else {
+        //if (this.disassembler.isEnabled()) {
+            //this.runCyclesDebug();
+        //} else {
             this.runCycles();
-        }
+        //}
     }
 
     private void runCycles() {
@@ -197,7 +197,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         for (int i = 0; i < CYCLES_PER_FRAME; i++) {
             //CDP1802.State currentState = this.cpu.getCurrentState();
             this.runCycle();
-            this.disassembler.disassemble(this.getActualCurrentInstructionAddress());
+            //this.disassembler.disassemble(this.getActualCurrentInstructionAddress());
 
             // TODO: Handle breakpoints
             /*
@@ -226,7 +226,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         this.cycleIoDevices();
         this.cpu.nextState();
         //this.display.flush();
-        this.disassembler.disassembleRange(this.getActualCurrentInstructionAddress(), 30, true);
+        //this.disassembler.disassembleRange(this.getActualCurrentInstructionAddress(), 30, true);
     }
 
     private int getActualCurrentInstructionAddress() {
@@ -267,10 +267,12 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
             if (this.cpu != null) {
                 this.cpu.saveRegisters(this.getEmulatorSettings());
             }
-             */
+
             if (this.disassembler != null) {
                 this.disassembler.close();
             }
+
+             */
         } catch (Exception e) {
             throw new EmulatorException("Error releasing emulator resources: ", e);
         }

@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import org.jetbrains.annotations.Nullable;
 
 import static io.github.arkosammy12.jemu.core.cpu.SM83.INSTRUCTION_FINISHED_FLAG;
@@ -46,7 +47,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public SystemHost getHost() {
+    public GameBoyHost getHost() {
         return this.host;
     }
 
@@ -151,11 +152,18 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     @Override
     public void close() {
+        try {
         /*
         if (this.disassembler != null) {
             this.disassembler.close();
         }
          */
+            if (this.cartridge != null) {
+                this.cartridge.save();
+            }
+        } catch (Exception e) {
+            throw new EmulatorException("Error releasing emulator resources: ", e);
+        }
     }
 
     @Override

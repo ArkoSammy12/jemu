@@ -21,6 +21,7 @@ import org.tinylog.Logger;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Optional;
 
 public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameBoyHost {
@@ -37,6 +38,7 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     private final JPanelVideoDriver videoDriver;
     private final DefaultAudioRendererDriver audioDriver;
     private final AudioRenderer audioRenderer;
+    private final Path saveDataDirectory;
 
     public DefaultGameBoyAdapter(CoreInitializer initializer, Model model) {
         super(initializer);
@@ -84,6 +86,8 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
 
         };
 
+        this.saveDataDirectory = this.getRomPath().getParent();
+
         this.emulator = new GameBoyEmulator(this);
         this.videoDriver = new JPanelVideoDriver(this.emulator.getVideoGenerator(), keyAdapter);
 
@@ -110,6 +114,11 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     @Override
     public Model getModel() {
         return this.model;
+    }
+
+    @Override
+    public Path getSaveDataDirectory() {
+        return this.saveDataDirectory;
     }
 
     @Override
@@ -164,6 +173,9 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
         }
         if (this.audioDriver != null) {
             this.audioDriver.close();
+        }
+        if (this.emulator != null) {
+            this.emulator.close();
         }
     }
 

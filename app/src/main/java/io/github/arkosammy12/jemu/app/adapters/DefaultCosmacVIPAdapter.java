@@ -152,6 +152,9 @@ public class DefaultCosmacVIPAdapter extends DefaultSystemAdapter implements Cos
         if (this.audioDriver != null) {
             this.audioDriver.close();
         }
+        if (this.emulator != null) {
+            this.emulator.close();
+        }
     }
 
 }

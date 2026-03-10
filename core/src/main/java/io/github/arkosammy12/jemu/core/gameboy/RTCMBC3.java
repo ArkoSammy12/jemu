@@ -2,6 +2,8 @@ package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 
+import java.util.Optional;
+
 public class RTCMBC3 extends MBC3 {
 
     private static final int CLOCK_FREQUENCY = 32768;
@@ -32,6 +34,29 @@ public class RTCMBC3 extends MBC3 {
 
     public RTCMBC3(GameBoyEmulator emulator, int cartridgeType) {
         super(emulator, cartridgeType);
+
+        if (this.saveData != null) {
+            int rtcDataStart = switch (this.ramSizeHeader) {
+                  case 0x01 -> 0x800;
+                  case 0x02 -> 0x2000;
+                  case 0x03 -> 4 * 0x2000;
+                  default -> 0;
+            };
+            if (rtcDataStart + 36 - 1 >= saveData.length) {
+                return;
+            }
+
+            this.internalSeconds = saveData[rtcDataStart] & 0xFF;
+            this.internalMinutes = saveData[rtcDataStart + 4] & 0xFF;
+            this.internalHours = saveData[rtcDataStart + 8] & 0xFF;
+            this.internalDays = ((saveData[rtcDataStart + 16] != 0 ? 1 : 0) << 8) | (saveData[rtcDataStart + 12] & 0xFF);
+            this.seconds = saveData[rtcDataStart + 20] & 0xFF;
+            this.minutes = saveData[rtcDataStart + 24] & 0xFF;
+            this.hours = saveData[rtcDataStart + 28] & 0xFF;
+            this.daysLower = saveData[rtcDataStart + 32] & 0xFF;
+            this.daysUpperAndControl |= (saveData[rtcDataStart + 36] != 0) ? 1 : 0;
+
+        }
     }
 
     @Override
@@ -128,5 +153,40 @@ public class RTCMBC3 extends MBC3 {
             }
         }
     }
+
+
+    @Override
+    protected Optional<int[]> getSaveData() {
+        return super.getSaveData().map(data -> {
+
+            // VBA-M format 48-byte version. We write 7fffffff7fffffff in little-endian as we do not care about the UNIX timestamp
+            int[] dataWithRtc = new int[data.length + 48];
+
+            System.arraycopy(data, 0, dataWithRtc, 0, data.length);
+
+            dataWithRtc[data.length] = this.internalSeconds & 0xFF;
+            dataWithRtc[data.length + 4] = this.internalMinutes & 0xFF;
+            dataWithRtc[data.length + 8] = this.internalHours & 0xFF;
+            dataWithRtc[data.length + 12] = this.internalDays & 0xFF;
+            dataWithRtc[data.length + 16] = (this.internalDays >>> 8) & 1;
+            dataWithRtc[data.length + 20] = this.seconds & 0xFF;
+            dataWithRtc[data.length + 24] = this.minutes & 0xFF;
+            dataWithRtc[data.length + 28] = this.hours & 0xFF;
+            dataWithRtc[data.length + 32] = this.daysLower & 0xFF;
+            dataWithRtc[data.length + 36] = this.daysUpperAndControl & 1;
+            dataWithRtc[data.length + 40] = 0xFF;
+            dataWithRtc[data.length + 41] = 0xFF;
+            dataWithRtc[data.length + 42] = 0xFF;
+            dataWithRtc[data.length + 43] = 0x7F;
+            dataWithRtc[data.length + 44] = 0xFF;
+            dataWithRtc[data.length + 45] = 0xFF;
+            dataWithRtc[data.length + 46] = 0xFF;
+            dataWithRtc[data.length + 47] = 0x7F;
+
+            return dataWithRtc;
+
+        });
+    }
+
 
 }

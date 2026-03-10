@@ -1,14 +1,22 @@
 package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 public class MBC3 extends GameBoyCartridge {
 
     private final int[][] romBanks;
-    private final int[][] ramBanks;
+    private final int @Nullable [][] ramBanks;
+
+    protected int @Nullable [] saveData;
 
     private final int romBankMask;
     private final int ramBankMask;
+    private final boolean hasBattery;
 
     private int romBankNumber = 1;
     protected int ramBankNumber;
@@ -28,13 +36,19 @@ public class MBC3 extends GameBoyCartridge {
             default -> throw new EmulatorException("Incompatible ROM size header $%02X for MBC3 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
 
-        this.ramBanks = switch (this.ramSizeHeader) {
-            case 0x00 -> null;
-            case 0x01 -> new int[1][0x800];
-            case 0x02 -> new int[1][0x2000];
-            case 0x03 -> new int[4][0x2000];
-            default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC3 GameBoy cartridge type!".formatted(this.ramSizeHeader));
-        };
+        if (cartridgeType == 0x10 || cartridgeType == 0x12 || cartridgeType == 0x13) {
+            this.ramBanks = switch (this.ramSizeHeader) {
+                case 0x00 -> null;
+                case 0x01 -> new int[1][0x800];
+                case 0x02 -> new int[1][0x2000];
+                case 0x03 -> new int[4][0x2000];
+                default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC3 GameBoy cartridge type!".formatted(this.ramSizeHeader));
+            };
+        } else {
+            this.ramBanks = null;
+        }
+
+        this.hasBattery = cartridgeType == 0x0F || cartridgeType == 0x10 || cartridgeType == 0x13;
 
         try {
             for (int i = 0; i < this.romBanks.length; i++) {
@@ -48,6 +62,23 @@ public class MBC3 extends GameBoyCartridge {
 
         this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
         this.ramBankMask = this.ramBanks == null ? 0 : ((1 << (32 - Integer.numberOfLeadingZeros(this.ramBanks.length))) - 1) >> 1;
+
+        if (this.hasBattery) {
+            this.readSaveData().ifPresent(saveData -> {
+                this.saveData = saveData;
+                if (this.ramBanks == null) {
+                    return;
+                }
+                try {
+                    for (int i = 0; i < this.ramBanks.length; i++) {
+                        int[] bank = this.ramBanks[i];
+                        System.arraycopy(saveData, i * bank.length, bank, 0, bank.length);
+                    }
+                } catch (Exception e) {
+                    Logger.error("Error reading save data for GameBoy MBC3 cartridge: {}", e);
+                }
+            });
+        }
     }
 
     @Override
@@ -57,8 +88,14 @@ public class MBC3 extends GameBoyCartridge {
         } else if (address >= 0x4000 && address <= 0x7FFF) {
             return this.romBanks[this.romBankNumber & this.romBankMask][address - 0x4000];
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber <= 0x07 && this.ramEnable == 0x0A) {
-                return this.ramBanks[this.ramBankNumber & this.ramBankMask][address - 0xA000];
+            if (this.ramBankNumber <= 0x07 && this.ramEnable == 0x0A && this.ramBanks != null) {
+                int[] ramBank = this.ramBanks[this.ramBankNumber & this.ramBankMask];
+                address -= 0xA000;
+                if (address < ramBank.length) {
+                    return ramBank[address];
+                } else {
+                    return 0xFF;
+                }
             } else {
                 return 0xFF;
             }
@@ -80,10 +117,19 @@ public class MBC3 extends GameBoyCartridge {
         } else if (address >= 0x4000 && address <= 0x5FFF) {
             this.ramBankNumber = value & 0xFF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber <= 0x07 && this.ramEnable == 0x0A) {
-                this.ramBanks[this.ramBankNumber & this.ramBankMask][address - 0xA000] = value & 0xFF;
+            if (this.ramBankNumber <= 0x07 && this.ramEnable == 0x0A && this.ramBanks != null) {
+                int[] ramBank = this.ramBanks[this.ramBankNumber & this.ramBankMask];
+                address -= 0xA000;
+                if (address < ramBank.length) {
+                    ramBank[address] = value & 0xFF;
+                }
             }
         }
+    }
+
+    @Override
+    protected Optional<int[]> getSaveData() {
+        return Optional.ofNullable(this.hasBattery ? this.ramBanks : null).map(banks -> Arrays.stream(banks).flatMapToInt(Arrays::stream).toArray());
     }
 
 }

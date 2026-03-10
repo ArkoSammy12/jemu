@@ -1,15 +1,19 @@
 package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
 
 import java.util.Arrays;
+import java.util.Optional;
 
 public class MBC2 extends GameBoyCartridge {
 
     private static final int A8_MASK = 1 << 8;
 
     private final int[][] romBanks;
-    private final int[] sRam = new int[512];
+    private final int @Nullable [] sRam;
+    private final boolean hasBattery;
 
     private final int romBankMask;
 
@@ -27,6 +31,14 @@ public class MBC2 extends GameBoyCartridge {
             default -> throw new EmulatorException("Incompatible ROM size header $%02X for MBC2 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
 
+        if (cartridgeType == 0x06) {
+            this.sRam = new int[512];
+            this.hasBattery = true;
+        } else {
+            this.sRam = null;
+            this.hasBattery = false;
+        }
+
         try {
             for (int i = 0; i < this.romBanks.length; i++) {
                 int[] romBank = this.romBanks[i];
@@ -38,7 +50,16 @@ public class MBC2 extends GameBoyCartridge {
         }
 
         this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
-        Arrays.fill(this.sRam, 0xF0);
+
+        if (this.hasBattery) {
+            this.readSaveData().ifPresent(saveData -> {
+                try {
+                    System.arraycopy(saveData, 0, this.sRam, 0, Math.min(saveData.length, this.sRam.length));
+                } catch (Exception e) {
+                    Logger.error("Error reading save data for GameBoy MBC2 cartridge: {}", e);
+                }
+            });
+        }
 
     }
 
@@ -49,8 +70,8 @@ public class MBC2 extends GameBoyCartridge {
         } else if (address >= 0x4000 && address <= 0x7FFF) {
             return this.romBanks[(this.romBankNumber & 0xF) & this.romBankMask][address - 0x4000];
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if ((this.ramGate & 0xF) == 0b1010) {
-                return this.sRam[address & 0x1FF];
+            if ((this.ramGate & 0xF) == 0b1010 && this.sRam != null) {
+                return this.sRam[address & 0x1FF] | 0xF0;
             } else {
                 return 0xFF;
             }
@@ -72,9 +93,15 @@ public class MBC2 extends GameBoyCartridge {
                 this.romBankNumber = effectiveBankNumber & this.romBankMask;
             }
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if ((this.ramGate & 0xF) == 0b1010) {
-                this.sRam[address & 0x1FF] = 0xF0 | (value & 0xF);
+            if ((this.ramGate & 0xF) == 0b1010 && this.sRam != null) {
+                this.sRam[address & 0x1FF] = value & 0xFF;
             }
         }
     }
+
+    @Override
+    protected Optional<int[]> getSaveData() {
+        return Optional.ofNullable(this.hasBattery ? this.sRam : null);
+    }
+
 }

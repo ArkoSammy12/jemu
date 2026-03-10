@@ -1,14 +1,21 @@
 package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
+
+import java.util.Arrays;
+import java.util.Optional;
 
 public class MBC5 extends GameBoyCartridge {
 
     private final int[][] romBanks;
-    private final int[][] ramBanks;
+
+    private final int @Nullable [][] ramBanks;
 
     private final int romBankMask;
     private final int ramBankMask;
+    private final boolean hasBattery;
 
     private int ramGate;
     private int romBankLower = 1;
@@ -31,15 +38,21 @@ public class MBC5 extends GameBoyCartridge {
             default -> throw new EmulatorException("Incompatible ROM size header $%02X for MBC5 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
 
-        this.ramBanks = switch (this.ramSizeHeader) {
-            case 0x00 -> null;
-            case 0x01 -> new int[1][0x800];
-            case 0x02 -> new int[1][0x2000];
-            case 0x03 -> new int[4][0x2000];
-            case 0x04 -> new int[16][0x2000];
-            case 0x05 -> new int[8][0x2000];
-            default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC5 GameBoy cartridge type!".formatted(this.ramSizeHeader));
-        };
+        if (cartridgeType == 0x1A || cartridgeType == 0x1B || cartridgeType == 0x1D || cartridgeType == 0x1E) {
+            this.ramBanks = switch (this.ramSizeHeader) {
+                case 0x00 -> null;
+                case 0x01 -> new int[1][0x800];
+                case 0x02 -> new int[1][0x2000];
+                case 0x03 -> new int[4][0x2000];
+                case 0x04 -> new int[16][0x2000];
+                case 0x05 -> new int[8][0x2000];
+                default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC5 GameBoy cartridge type!".formatted(this.ramSizeHeader));
+            };
+        } else {
+            this.ramBanks = null;
+        }
+
+        this.hasBattery = cartridgeType == 0x1B || cartridgeType == 0x1E;
 
         try {
             for (int i = 0; i < this.romBanks.length; i++) {
@@ -54,6 +67,22 @@ public class MBC5 extends GameBoyCartridge {
         this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
         this.ramBankMask = this.ramBanks == null ? 0 : ((1 << (32 - Integer.numberOfLeadingZeros(this.ramBanks.length))) - 1) >> 1;
 
+        if (this.hasBattery) {
+            this.readSaveData().ifPresent(saveData -> {
+                if (this.ramBanks == null) {
+                    return;
+                }
+                try {
+                    for (int i = 0; i < this.ramBanks.length; i++) {
+                        int[] bank = this.ramBanks[i];
+                        System.arraycopy(saveData, i * bank.length, bank, 0, bank.length);
+                    }
+                } catch (Exception e) {
+                    Logger.error("Error reading save data for GameBoy MBC5 cartridge: {}", e);
+                }
+            });
+        }
+
     }
 
     @Override
@@ -63,8 +92,14 @@ public class MBC5 extends GameBoyCartridge {
         } else if (address >= 0x4000 && address <= 0x7FFF) {
             return this.romBanks[(((this.romBankUpper & 1) << 8) | this.romBankLower) & this.romBankMask][address - 0x4000];
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramGate == 0x0A) {
-                return this.ramBanks[(this.ramBankNumber & 0xF) & this.ramBankMask][address - 0xA000];
+            if (this.ramGate == 0x0A && this.ramBanks != null) {
+                int[] ramBank = this.ramBanks[(this.ramBankNumber & 0xF) & this.ramBankMask];
+                address -= 0xA000;
+                if (address < ramBank.length) {
+                    return ramBank[address];
+                } else {
+                    return 0xFF;
+                }
             } else {
                 return 0xFF;
             }
@@ -84,10 +119,19 @@ public class MBC5 extends GameBoyCartridge {
         } else if (address >= 0x4000 && address <= 0x5FFF) {
             this.ramBankNumber = value & 0xF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramGate == 0x0A) {
-                this.ramBanks[(this.ramBankNumber & 0xF) & this.ramBankMask][address - 0xA000] = value & 0xFF;
+            if (this.ramGate == 0x0A && this.ramBanks != null) {
+                int[] ramBank = this.ramBanks[(this.ramBankNumber & 0xF) & this.ramBankMask];
+                address -= 0xA000;
+                if (address < ramBank.length) {
+                    ramBank[address] = value & 0xFF;
+                }
             }
         }
+    }
+
+    @Override
+    protected Optional<int[]> getSaveData() {
+        return Optional.ofNullable(this.hasBattery ? this.ramBanks : null).map(banks -> Arrays.stream(banks).flatMapToInt(Arrays::stream).toArray());
     }
 
 }
