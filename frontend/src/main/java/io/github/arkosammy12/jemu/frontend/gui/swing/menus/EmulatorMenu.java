@@ -8,6 +8,8 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.util.HashMap;
+import java.util.Map;
 
 public class EmulatorMenu extends MenuBarMenu {
 
@@ -33,11 +35,14 @@ public class EmulatorMenu extends MenuBarMenu {
         JMenu systemMenu = new JMenu("System");
         systemMenu.add(unspecifiedItem);
 
+        Map<SystemDescriptor, JRadioButtonMenuItem> buttonMap = new HashMap<>();
+
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
-            item.addActionListener(_ -> this.currentSystemDescriptor = systemDescriptor);
+            item.addChangeListener(_ -> this.currentSystemDescriptor = systemDescriptor);
             buttonGroup.add(item);
             systemMenu.add(item);
+            buttonMap.put(systemDescriptor, item);
         }
 
         JMenuItem resetButton = new JMenuItem("Reset");
@@ -81,6 +86,15 @@ public class EmulatorMenu extends MenuBarMenu {
         this.jMenu.addSeparator();
 
         this.jMenu.add(systemMenu);
+
+        mainWindow.registerSettingProperty("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
+            for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : buttonMap.entrySet()) {
+                if (button.getKey().getId().equals(s)) {
+                    button.getValue().setSelected(true);
+                    break;
+                }
+            }
+        });
 
         mainWindow.<PauseEmulatorCommand.Callback>addEmulatorCommandCallback(pauseCommand -> {
             SwingUtilities.invokeLater(() -> {

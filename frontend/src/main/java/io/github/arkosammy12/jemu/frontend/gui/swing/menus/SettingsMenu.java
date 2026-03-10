@@ -6,6 +6,8 @@ import javax.swing.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 
+import static io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow.tryParseInt;
+
 public class SettingsMenu extends MenuBarMenu {
 
     private final JSlider volumeSlider;
@@ -43,6 +45,10 @@ public class SettingsMenu extends MenuBarMenu {
         this.getJMenu().add(muteButton);
         this.getJMenu().addSeparator();
         this.getJMenu().add(showInfoBarButton);
+
+        mainWindow.registerSettingProperty("settings.volume", () -> String.valueOf(this.volumeSlider.getValue()), s -> tryParseInt(s).ifPresent(this.volumeSlider::setValue));
+        mainWindow.registerSettingProperty("settings.muted", () -> String.valueOf(this.muteButton.isSelected()), s -> this.muteButton.setSelected(Boolean.parseBoolean(s)));
+        mainWindow.registerSettingProperty("settings.show_status_bar", () -> String.valueOf(showInfoBarButton.isSelected()), s -> showInfoBarButton.setSelected(Boolean.parseBoolean(s)));
 
     }
 

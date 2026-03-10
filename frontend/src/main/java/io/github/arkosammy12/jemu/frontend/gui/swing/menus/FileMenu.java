@@ -21,6 +21,8 @@ import java.util.Optional;
 
 public class FileMenu extends MenuBarMenu {
 
+    private static final int RECENT_FILES_SIZE = 10;
+
     @Nullable
     private volatile Path currentRomPath;
 
@@ -29,7 +31,7 @@ public class FileMenu extends MenuBarMenu {
 
     private final JMenu openRecentMenu;
     private final JMenuItem clearRecentsButton;
-    private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(10);
+    private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(RECENT_FILES_SIZE);
     private final String[] fileExtensions;
 
     public FileMenu(MainWindow mainWindow, JFrame jFrame) {
@@ -107,6 +109,18 @@ public class FileMenu extends MenuBarMenu {
         openRecentMenu.add(clearRecentsButton);
         this.jMenu.add(openItem);
         this.jMenu.add(openRecentMenu);
+
+        for (int i = 0; i < RECENT_FILES_SIZE; i++) {
+            int finalI = i;
+            mainWindow.registerStateProperty("file.recent_file_" + i, () -> finalI < this.recentFilePaths.size() ? this.recentFilePaths.get(finalI).toString() : "", s -> {
+                Path path = Path.of(s);
+                if (!this.recentFilePaths.contains(path) && !s.isBlank()) {
+                    this.addRecentFilePath(path);
+                }
+            });
+        }
+
+        mainWindow.registerStateProperty("file.current_directory", () -> this.currentDirectory == null ? "" : this.currentDirectory.toString(), s -> this.currentDirectory = Path.of(s));
     }
 
     public Optional<Path> getSelectedRomPath() {

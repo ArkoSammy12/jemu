@@ -60,6 +60,11 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     }
 
     @Override
+    public String getId() {
+        return this.identifier;
+    }
+
+    @Override
     public Optional<String[]> getFileExtensions() {
         return Optional.ofNullable(this.fileExtensions);
     }

@@ -11,20 +11,25 @@ import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.desktop.QuitStrategy;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.io.Closeable;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 public class MainWindow implements Closeable {
 
@@ -51,9 +56,29 @@ public class MainWindow implements Closeable {
 
     private final Collection<SystemDescriptor> systemDescriptors;
 
-    public MainWindow(String title, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
+    private Rectangle unmaximizedBounds;
+    private final Path dataDirectory;
+    private final Collection<PropertyEntry> stateProperties = new CopyOnWriteArrayList<>();
+    private final Collection<PropertyEntry> settingProperties = new CopyOnWriteArrayList<>();
+
+    public MainWindow(String title, Path dataDirectory, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
+
+        List<? extends SystemDescriptor> descriptors = new ArrayList<>(systemDescriptors);
+
+        for (int i = 0; i < descriptors.size(); i++) {
+            SystemDescriptor currentDescriptor = descriptors.get(i);
+            for (int j = 0; j < descriptors.size(); j++) {
+                if (j == i) {
+                    continue;
+                }
+                if (currentDescriptor.getId().equals(descriptors.get(j).getId())) {
+                    throw new IllegalArgumentException("Duplicated system descriptor ID \"%s\"!".formatted(currentDescriptor.getId()));
+                }
+            }
+        }
 
         this.systemDescriptors = List.copyOf(systemDescriptors);
+        this.dataDirectory = dataDirectory;
 
         if (SystemInfo.isMacOS) {
             System.setProperty("apple.awt.application.appearance", "system");
@@ -110,6 +135,67 @@ public class MainWindow implements Closeable {
             appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
             appFrame.pack();
             appFrame.setLocationRelativeTo(null);
+
+            unmaximizedBounds = appFrame.getBounds();
+
+            appFrame.addWindowStateListener(e -> {
+                if ((e.getNewState() & Frame.MAXIMIZED_BOTH) == 0) {
+                    unmaximizedBounds = appFrame.getBounds();
+                }
+            });
+
+            appFrame.addComponentListener(new ComponentAdapter() {
+
+                @Override
+                public void componentMoved(ComponentEvent e) {
+                    if ((appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) == 0) {
+                        unmaximizedBounds = appFrame.getBounds();
+                    }
+                }
+
+                @Override
+                public void componentResized(ComponentEvent e) {
+                    if ((appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) == 0) {
+                        unmaximizedBounds = appFrame.getBounds();
+                    }
+                }
+            });
+
+            this.registerStateProperty("frame.x", () -> Integer.toString(unmaximizedBounds.x), s -> tryParseInt(s).ifPresent(x -> appFrame.setLocation(x, appFrame.getY())));
+            this.registerStateProperty("frame.y", () -> Integer.toString(unmaximizedBounds.y), s -> tryParseInt(s).ifPresent(y -> appFrame.setLocation(appFrame.getX(), y)));
+            this.registerStateProperty("frame.width", () -> Integer.toString(unmaximizedBounds.width), s -> tryParseInt(s).ifPresent(width -> appFrame.setSize(new Dimension(width, appFrame.getHeight()))));
+            this.registerStateProperty("frame.height", () -> Integer.toString(unmaximizedBounds.height), s -> tryParseInt(s).ifPresent(height -> appFrame.setSize(new Dimension(appFrame.getWidth(), height))));
+            this.registerStateProperty("frame.extended_state", () -> Integer.toString(appFrame.getExtendedState()), s -> tryParseInt(s).ifPresent(extendedState -> appFrame.setExtendedState(extendedState)));
+
+            try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
+                Properties stateProperties = new Properties();
+                stateProperties.load(input);
+                for (PropertyEntry entry : this.stateProperties) {
+                    String property = stateProperties.getProperty(entry.key());
+                    if (property != null) {
+                        entry.deserializer().accept(property);
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                Logger.warn("swing-state-ui.properties file not found!");
+            } catch (IOException e) {
+                Logger.error("Error restoring swing ui state from properties file: {}", e);
+            }
+
+            try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
+                Properties settingProperties = new Properties();
+                settingProperties.load(input);
+                for (PropertyEntry entry : this.settingProperties) {
+                    String property = settingProperties.getProperty(entry.key());
+                    if (property != null) {
+                        entry.deserializer().accept(property);
+                    }
+                }
+            } catch (FileNotFoundException e) {
+                Logger.warn("swing-state-settings.properties file not found!");
+            } catch (IOException e) {
+                Logger.error("Error restoring swing ui settings from properties file: {}", e);
+            }
 
         });
 
@@ -207,13 +293,53 @@ public class MainWindow implements Closeable {
         }
     }
 
+    @ApiStatus.Internal
+    public void registerStateProperty(String key, Supplier<String> serializer, Consumer<String> deserializer) {
+        this.stateProperties.add(new PropertyEntry(key, serializer, deserializer));
+    }
+
+    @ApiStatus.Internal
+    public void registerSettingProperty(String key, Supplier<String> serializer, Consumer<String> deserializer) {
+        this.settingProperties.add(new PropertyEntry(key, serializer, deserializer));
+    }
+
     @Override
-    public void close() throws IOException {
-        SwingUtilities.invokeLater(() -> {
+    public void close() {
+        Runnable closer = () -> {
             if (this.appFrame != null) {
+                try (FileOutputStream output = new FileOutputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
+                    Properties stateProperties = new Properties();
+                    for (PropertyEntry entry : this.stateProperties) {
+                        stateProperties.setProperty(entry.key(), entry.serializer().get());
+                    }
+                    stateProperties.store(output, "Swing GUI state properties");
+                } catch (IOException e) {
+                    Logger.error("Error storing swing ui state to properties file: {}", e);
+                }
+
+                try (FileOutputStream output = new FileOutputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
+                    Properties settingProperties = new Properties();
+                    for (PropertyEntry entry : this.settingProperties) {
+                        settingProperties.setProperty(entry.key(), entry.serializer().get());
+                    }
+                    settingProperties.store(output, "Swing GUI setting properties");
+                } catch (IOException e) {
+                    Logger.error("Error storing swing ui settings to properties file: {}", e);
+                }
                 this.appFrame.dispose();
             }
-        });
+        };
+
+        if (SwingUtilities.isEventDispatchThread()) {
+            closer.run();
+        } else {
+            try {
+                SwingUtilities.invokeAndWait(closer);
+            } catch (Exception e) {
+                Logger.error("Failed to properly close Main Window object: {}", e);
+            }
+        }
+
     }
 
     public enum DialogType {
@@ -232,5 +358,15 @@ public class MainWindow implements Closeable {
         }
 
     }
+
+    public static Optional<Integer> tryParseInt(String s) {
+        try {
+            return Optional.of(Integer.valueOf(s));
+        } catch (NumberFormatException e) {
+            return Optional.empty();
+        }
+    }
+
+    private record PropertyEntry(String key, Supplier<String> serializer, Consumer<String> deserializer) {}
 
 }

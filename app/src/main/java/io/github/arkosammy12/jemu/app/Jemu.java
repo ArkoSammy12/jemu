@@ -9,6 +9,7 @@ import io.github.arkosammy12.jemu.frontend.gui.swing.menus.HelpMenu;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
+import net.harawata.appdirs.AppDirsFactory;
 import org.tinylog.Logger;
 
 import javax.swing.*;
@@ -19,6 +20,8 @@ import java.util.Optional;
 
 public final class Jemu {
 
+    private static final Path APP_DIR = Path.of(AppDirsFactory.getInstance().getUserDataDir("jemu", null, null));
+
     private volatile DefaultSystemAdapter currentSystem = null;
     private volatile State currentState = State.STOPPED;
 
@@ -27,9 +30,9 @@ public final class Jemu {
     private MainWindow mainWindow;
     private boolean running = true;
 
-    public Jemu() throws IOException {
+    public Jemu() {
         try {
-            this.mainWindow = new MainWindow("jemu " + Main.VERSION_STRING, Arrays.stream(System.values()).toList());
+            this.mainWindow = new MainWindow("jemu " + Main.VERSION_STRING, APP_DIR, Arrays.stream(System.values()).toList());
             this.mainWindow.setClosingHook(() -> {
                 this.running = false;
                 try {

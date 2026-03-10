@@ -6,6 +6,8 @@ public interface SystemDescriptor {
 
     String getName();
 
+    String getId();
+
     Optional<String[]> getFileExtensions();
 
 }
