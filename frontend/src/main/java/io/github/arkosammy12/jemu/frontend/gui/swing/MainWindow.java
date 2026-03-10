@@ -96,6 +96,10 @@ public class MainWindow implements Closeable {
         System.setProperty("flatlaf.menuBarEmbedded", Boolean.FALSE.toString());
 
         SwingUtilities.invokeAndWait(() -> {
+            Toolkit.getDefaultToolkit()
+                    .getSystemEventQueue()
+                    .push(new SafeEventQueue());
+
             FlatDarkLaf.setup();
 
             UIManager.put("TitlePane.useWindowDecorations", false);
@@ -368,5 +372,30 @@ public class MainWindow implements Closeable {
     }
 
     private record PropertyEntry(String key, Supplier<String> serializer, Consumer<String> deserializer) {}
+
+    public class SafeEventQueue extends EventQueue {
+
+        @Override
+        protected void dispatchEvent(AWTEvent event) {
+            try {
+                super.dispatchEvent(event);
+            } catch (Throwable t) {
+                this.handleException(t);
+            }
+        }
+
+        private void handleException(Throwable t) {
+            Logger.error("Uncaught Swing exception", t);
+
+            SwingUtilities.invokeLater(() ->
+                    JOptionPane.showMessageDialog(
+                            getJFrame(),
+                            t.toString(),
+                            "Uncaught Swing UI exception",
+                            JOptionPane.ERROR_MESSAGE
+                    )
+            );
+        }
+    }
 
 }
