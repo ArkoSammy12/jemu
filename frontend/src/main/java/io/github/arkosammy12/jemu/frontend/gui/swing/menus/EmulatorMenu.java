@@ -39,7 +39,7 @@ public class EmulatorMenu extends MenuBarMenu {
 
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
-            item.addChangeListener(_ -> this.currentSystemDescriptor = systemDescriptor);
+            item.addActionListener(_ -> this.currentSystemDescriptor = systemDescriptor);
             buttonGroup.add(item);
             systemMenu.add(item);
             buttonMap.put(systemDescriptor, item);
@@ -90,7 +90,7 @@ public class EmulatorMenu extends MenuBarMenu {
         mainWindow.registerSettingProperty("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
             for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : buttonMap.entrySet()) {
                 if (button.getKey().getId().equals(s)) {
-                    button.getValue().setSelected(true);
+                    button.getValue().doClick();
                     break;
                 }
             }
