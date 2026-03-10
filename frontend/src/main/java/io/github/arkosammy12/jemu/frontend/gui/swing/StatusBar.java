@@ -27,9 +27,9 @@ public class StatusBar {
         MigLayout migLayout = new MigLayout(new LC().insets("1"), new AC(), new AC());
         this.jPanel = new JPanel(migLayout);
 
-        this.jPanel.add(createPanel(systemField, "The system used by the currently running ROM."), new CC().growX());
-        this.jPanel.add(createPanel(romTitleField, "The name or file name of the currently running ROM."), new CC().growX());
-        this.jPanel.add(createPanel(fpsField, "The emulation framerate and frame time of the currently running system."), new CC().growX());
+        this.jPanel.add(createPanel(systemField, "The system used by the currently running ROM.", true), new CC().growX());
+        this.jPanel.add(createPanel(romTitleField, "The name or file name of the currently running ROM.", true), new CC().growX());
+        this.jPanel.add(createPanel(fpsField, "The emulation framerate and frame time of the currently running system.", false), new CC().growX());
 
         mainWindow.<StopEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> {
             this.lastWindowTitleUpdate = 0;
@@ -47,10 +47,12 @@ public class StatusBar {
 
     }
 
-    private static JPanel createPanel(JTextField field, String tooltip) {
+    private static JPanel createPanel(JTextField field, String tooltip, boolean withRightBorder) {
         field.setToolTipText(tooltip);
         JPanel panel = new JPanel(new MigLayout(new LC().insets("0"), new AC().grow(), new AC().align("center")));
-        panel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground")));
+        if (withRightBorder) {
+            panel.setBorder(BorderFactory.createMatteBorder(0, 0, 0, 1, UIManager.getColor("Separator.foreground")));
+        }
         panel.add(field, new CC().alignY("center"));
         return panel;
     }
@@ -115,7 +117,7 @@ public class StatusBar {
                 }
 
                 if (fUpdateStats) {
-                    this.fpsField.setText("FPS: %.2f (%.2f ms)".formatted(fFps, fAverageFrameTimeMs));
+                    this.fpsField.setText("%.2f FPS (%.2f ms)".formatted(fFps, fAverageFrameTimeMs));
                 }
 
                 this.jPanel.revalidate();
