@@ -96,53 +96,47 @@ public class EmulatorMenu extends MenuBarMenu {
             }
         });
 
-        mainWindow.<PauseEmulatorCommand.Callback>addEmulatorCommandCallback(pauseCommand -> {
-            SwingUtilities.invokeLater(() -> {
-                if (pauseCommand.pause()) {
-                    if (emulatorStopped) {
-                        this.stepFrameButton.setEnabled(false);
-                        this.stepCycleButton.setEnabled(false);
-                    } else {
-                        stopButton.setEnabled(true);
-                        this.stepFrameButton.setEnabled(true);
-                        this.stepCycleButton.setEnabled(true);
-                    }
-
+        mainWindow.<PauseEmulatorCommand.Callback>addEmulatorCommandCallback(pauseCommand -> SwingUtilities.invokeLater(() -> {
+            if (pauseCommand.pause()) {
+                if (emulatorStopped) {
+                    this.stepFrameButton.setEnabled(false);
+                    this.stepCycleButton.setEnabled(false);
                 } else {
-                    if (emulatorStopped) {
-                        stopButton.setEnabled(false);
-                        pauseButton.setSelected(false);
-                        stepFrameButton.setEnabled(false);
-                        stepCycleButton.setEnabled(false);
-                    } else {
-                        stopButton.setEnabled(true);
-                        stepFrameButton.setEnabled(false);
-                        stepCycleButton.setEnabled(false);
-                    }
+                    stopButton.setEnabled(true);
+                    this.stepFrameButton.setEnabled(true);
+                    this.stepCycleButton.setEnabled(true);
                 }
-            });
-        });
 
-        mainWindow.<ResetEmulatorCommand.Callback>addEmulatorCommandCallback(resetCommand -> {
-            SwingUtilities.invokeLater(() -> {
-                boolean paused = this.pauseButton.isSelected();
-                stopButton.setEnabled(true);
-                stepFrameButton.setEnabled(paused);
-                stepCycleButton.setEnabled(paused);
-                emulatorStopped = false;
-            });
-        });
+            } else {
+                if (emulatorStopped) {
+                    stopButton.setEnabled(false);
+                    pauseButton.setSelected(false);
+                    stepFrameButton.setEnabled(false);
+                    stepCycleButton.setEnabled(false);
+                } else {
+                    stopButton.setEnabled(true);
+                    stepFrameButton.setEnabled(false);
+                    stepCycleButton.setEnabled(false);
+                }
+            }
+        }));
 
-        mainWindow.<StopEmulatorCommand.Callback>addEmulatorCommandCallback(stopCommand -> {
-            SwingUtilities.invokeLater(() -> {
-                stopButton.setEnabled(false);
-                pauseButton.setSelected(false);
-                stepFrameButton.setEnabled(false);
-                stepCycleButton.setEnabled(false);
-                mainWindow.getSystemViewport().setSystemDisplayPanel(null);
-                emulatorStopped = true;
-            });
-        });
+        mainWindow.<ResetEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+            boolean paused = this.pauseButton.isSelected();
+            stopButton.setEnabled(true);
+            stepFrameButton.setEnabled(paused);
+            stepCycleButton.setEnabled(paused);
+            emulatorStopped = false;
+        }));
+
+        mainWindow.<StopEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+            stopButton.setEnabled(false);
+            pauseButton.setSelected(false);
+            stepFrameButton.setEnabled(false);
+            stepCycleButton.setEnabled(false);
+            mainWindow.getSystemViewport().setSystemDisplayPanel(null);
+            emulatorStopped = true;
+        }));
     }
 
 }
