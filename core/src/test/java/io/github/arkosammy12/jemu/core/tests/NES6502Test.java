@@ -17,6 +17,10 @@ public class NES6502Test {
     @Test
     public void nes6502_ssts() {
         URL url = NES6502Test.class.getClassLoader().getResource("submodules/tests/65x02-ssts/nes6502/v1");
+        if (url == null) {
+            Logger.warn("SST files for NES6502 CPU not found!");
+            return;
+        }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
             testFilePaths.forEach(path -> {
                 try {

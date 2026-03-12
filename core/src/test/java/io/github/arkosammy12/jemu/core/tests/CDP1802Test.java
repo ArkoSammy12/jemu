@@ -17,6 +17,10 @@ public class CDP1802Test {
     @Test
     public void cdp1802_ssts() {
         URL url = SM83Test.class.getClassLoader().getResource("ssts/cdp1802/v1");
+        if (url == null) {
+            Logger.warn("SST files for CDP1802 CPU not found!");
+            return;
+        }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
             testFilePaths.forEach(path -> {
                 try {

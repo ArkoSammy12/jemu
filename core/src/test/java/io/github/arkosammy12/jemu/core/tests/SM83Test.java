@@ -17,6 +17,10 @@ public class SM83Test {
     @Test
     public void sm83_ssts() {
         URL url = SM83Test.class.getClassLoader().getResource("submodules/tests/sm83-ssts/v1");
+        if (url == null) {
+            Logger.warn("SST files for SM83 CPU not found!");
+            return;
+        }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
             testFilePaths.forEach(path -> {
                 try {
