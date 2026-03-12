@@ -1,3 +1,6 @@
 [submodule "core/src/test/resources/submodules/tests/sm83-ssts"]
 	path = core/src/test/resources/submodules/tests/sm83-ssts
 	url = https://github.com/ArkoSammy12/sm83
+[submodule "core/src/test/resources/submodules/tests/65x02-ssts"]
+	path = core/src/test/resources/submodules/tests/65x02-ssts
+	url = https://github.com/ArkoSammy12/65x02

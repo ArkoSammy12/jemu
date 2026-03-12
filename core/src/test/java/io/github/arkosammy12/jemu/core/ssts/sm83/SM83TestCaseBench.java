@@ -79,7 +79,7 @@ public class SM83TestCaseBench implements SM83.SystemBus {
         for (List<Integer> ramElement : finalRam) {
             int address = ramElement.get(0);
             int value = ramElement.get(1);
-            assertEquals(value, this.bus.readByte(address));
+            assertEquals(value, this.bus.readByte(address), "Address: $%04X (%d)".formatted(address, address));
         }
 
     }

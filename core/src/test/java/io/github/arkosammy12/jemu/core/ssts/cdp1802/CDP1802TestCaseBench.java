@@ -100,7 +100,7 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
         for (List<Integer> ramElement : finalRam) {
             int address = ramElement.get(0);
             int value = ramElement.get(1);
-            assertEquals(value, this.bus.readByte(address));
+            assertEquals(value, this.bus.readByte(address), "Address: $%04X (%d)".formatted(address, address));
         }
 
     }
