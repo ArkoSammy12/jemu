@@ -18,7 +18,6 @@ public class NMOS6502 implements Processor {
     private static final int C_MASK = 1;
 
     private final SystemBus systemBus;
-    private final boolean ignoreDecimal;
 
     private int programCounter; // PC, 16 bits
     private int accumulator; // A, 8 bits
@@ -46,9 +45,8 @@ public class NMOS6502 implements Processor {
     private BRKSource brkSource = BRKSource.SOFTWARE;
     private int brkVector = IRQ_BRK_VECTOR;
 
-    public NMOS6502(SystemBus systemBus, boolean ignoreDecimalMode) {
+    public NMOS6502(SystemBus systemBus) {
         this.systemBus = systemBus;
-        this.ignoreDecimal = ignoreDecimalMode;
     }
 
     private void setBrkVector(int vector) {
@@ -159,8 +157,8 @@ public class NMOS6502 implements Processor {
         setP(value ? Processor.setBit(getP(), D_MASK) : Processor.clearBit(getP(), D_MASK));
     }
 
-    private boolean getFD() {
-        return !this.ignoreDecimal && Processor.testBit(getP(), D_MASK);
+    protected boolean getFD() {
+        return Processor.testBit(getP(), D_MASK);
     }
 
     private void setFI(boolean value) {

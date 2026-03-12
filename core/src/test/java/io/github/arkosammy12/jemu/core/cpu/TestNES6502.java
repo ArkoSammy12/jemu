@@ -3,10 +3,10 @@ package io.github.arkosammy12.jemu.core.cpu;
 import io.github.arkosammy12.jemu.core.ssts.nes6502.NES6502TestCase;
 import io.github.arkosammy12.jemu.core.ssts.nes6502.NES6502TestState;
 
-public class TestNES6502 extends NMOS6502 {
+public class TestNES6502 extends NES6502 {
 
     public TestNES6502(SystemBus systemBus) {
-        super(systemBus, true);
+        super(systemBus);
     }
 
     public void acceptTestCase(NES6502TestCase testCase) {
