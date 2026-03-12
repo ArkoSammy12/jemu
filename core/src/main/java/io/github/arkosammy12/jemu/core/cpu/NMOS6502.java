@@ -40,6 +40,7 @@ public class NMOS6502 implements Processor {
 
     private Phase phase = Phase.PHI_1;
     private boolean oldNMI;
+    private boolean signalReset;
     private boolean signalNMI;
     private boolean signalIRQ;
     private BRKSource brkSource = BRKSource.SOFTWARE;
@@ -295,12 +296,14 @@ public class NMOS6502 implements Processor {
 
         if (this.subCycleIndex < 0) {
             setIR(systemBus.getBus().readByte(getPC()));
-            if (systemBus.getRes() || this.signalNMI || this.signalIRQ) {
+            if (this.signalReset || this.signalNMI || this.signalIRQ) {
                 setIR(0x00);
-                if (systemBus.getRes()) {
+                if (this.signalReset) {
                     brkSource = BRKSource.RESET;
+                    this.signalReset = false;
                 } else if (this.signalNMI) {
                     brkSource = BRKSource.NMI;
+                    this.signalNMI = false;
                 } else if (this.signalIRQ) {
                     brkSource = BRKSource.IRQ;
                 }
@@ -323,6 +326,7 @@ public class NMOS6502 implements Processor {
                     this.signalNMI = true;
                 }
                 this.oldNMI = this.systemBus.getNMI();
+                this.signalReset = this.systemBus.getRes();
                 this.signalIRQ = this.systemBus.getIRQ() && !getFI();
             }
         }
@@ -414,7 +418,6 @@ public class NMOS6502 implements Processor {
                     }
                     case 12 -> {
                         setPC(getAddress());
-                        signalNMI = false;
                         brkSource = BRKSource.SOFTWARE;
                         subCycleIndex = 13;
                     }
