@@ -105,6 +105,10 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
         return 0;
     }
 
+    public boolean isBootRomEnabled() {
+        return this.enableBootRom;
+    }
+
     @Override
     public int readByte(int address) {
         if (this.isOamBusConflict(address)) {
@@ -207,7 +211,7 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
 
     }
 
-    private int readByteDma(int address) {
+    protected int readByteDma(int address) {
         if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
             return BOOTIX[address];
         } else if (address >= ROM0_START && address <= ROM0_END) {

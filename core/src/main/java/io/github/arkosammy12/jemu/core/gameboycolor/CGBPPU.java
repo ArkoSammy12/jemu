@@ -18,6 +18,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
 
     private int backgroundPaletteIndex;
     private int objectPaletteIndex;
+    private boolean objectPriorityMode;
 
     private int bgFifoTileNumberPointer;
     private int bgFifoCurrentTileAttributes;
@@ -51,7 +52,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                 case BGPD -> this.bgPaletteRam[this.getBgPaletteAddress()];
                 case OBPI -> this.objectPaletteIndex | 0b01000000;
                 case OBPD -> this.objPaletteRam[this.getObjPaletteAddress()];
-                case OPRI -> 0xFF; // TODO: Implement
+                case OPRI -> this.objectPriorityMode ? 0xFF : 0xFE;
                 default -> super.readByte(address);
             };
         }
@@ -87,7 +88,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                         this.incrementObjPaletteAddress();
                     }
                 }
-                case OPRI -> {} // TODO: Implement
+                case OPRI -> this.objectPriorityMode = (value & 1) != 0;
                 default -> super.writeByte(address, value);
             }
         }
@@ -102,6 +103,10 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
 
     @Override
     protected void tickBackgroundFifo() {
+        if (this.emulator.isDmgCompatibilityMode()) {
+            super.tickBackgroundFifo();
+            return;
+        }
         switch (this.bgFifoStep) {
             case 0 -> {
                 this.bgFifoStep = 1;
@@ -190,6 +195,10 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
 
     @Override
     protected void pushBgPixels() {
+         if (this.emulator.isDmgCompatibilityMode()) {
+             super.pushBgPixels();
+             return;
+         }
         for (int i = 0; i < 8; i++) {
             int bit = getCgbXFlipFromBgAttributes(this.bgFifoCurrentTileAttributes) ? i : (7 - i);
             int low = (this.bgFifoTileDataLow >> bit) & 1;
@@ -204,6 +213,10 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
     @Override
     @SuppressWarnings("DuplicatedCode")
     protected void tickSpriteFifo() {
+        if (this.emulator.isDmgCompatibilityMode()) {
+            super.tickSpriteFifo();
+            return;
+        }
         switch (this.spriteFifoStep) {
             case 0 -> {
                 this.spriteFifoStep = 1;
@@ -257,7 +270,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                         continue;
                     }
                     Integer currentQueuedPixel = this.spriteFifo.get(i);
-                    if (currentQueuedPixel == null || getDmgColorNumberFromObjPixelEntry(currentQueuedPixel) == 0 || this.spriteFifoCurrentEntryIndex < getCgbOamIndexForObjPixelEntry(currentQueuedPixel)) {
+                    if (currentQueuedPixel == null || getDmgColorNumberFromObjPixelEntry(currentQueuedPixel) == 0 || (!this.objectPriorityMode && this.spriteFifoCurrentEntryIndex < getCgbOamIndexForObjPixelEntry(currentQueuedPixel))) {
                         int bit = xFlip ? 1 << i : 1 << (7 - i);
                         int low = (this.spriteFifoTileDataLow & bit) != 0 ? 1 : 0;
                         int high = (this.spriteFifoTileDataHigh & bit) != 0 ? 1 : 0;
@@ -282,14 +295,29 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
             return;
         }
 
+        boolean dmgCompatibilityMode = this.emulator.isDmgCompatibilityMode();
+
         int bgPixel = this.backgroundFifo.dequeueInt();
-        int bgColor = getCgbColorNumberFromBgPixelEntry(bgPixel);
-        boolean bgPriority = getCgbPriorityFromBgPixelEntry(bgPixel);
+
+        int bgColor;
+        boolean bgPriority;
+        int bgPalette;
+
+        if (dmgCompatibilityMode) {
+            bgColor = (this.backgroundPalette >>> ((bgPixel & 0b11) * 2)) & 0b11;;
+            bgPriority = false;
+            bgPalette = 0;
+        } else {
+            bgColor = getCgbColorNumberFromBgPixelEntry(bgPixel);
+            bgPriority = getCgbPriorityFromBgPixelEntry(bgPixel);
+            bgPalette = getCgbPaletteFromBgPixelEntry(bgPixel);
+        }
 
         if (!this.getBackgroundAndWindowEnable()) {
             bgColor = 0;
         }
-        Integer finalPixel = this.getARGBForBgPixelEntry(bgPixel);
+
+        Integer finalPixel = this.getARGBForBgPixelEntry(dmgCompatibilityMode ? bgColor : getCgbColorNumberFromBgPixelEntry(bgPixel), bgPalette);
 
         int bgDiscardTarget = this.scrollX % 8;
         if (!this.isRenderingWindow() && this.discardedPixels < bgDiscardTarget) {
@@ -297,25 +325,39 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
             finalPixel = null;
         }
 
-        Integer spritePixel = this.spriteFifo.poll();
+        Integer objPixel = this.spriteFifo.poll();
         this.spriteFifo.offer(null);
 
-        if (spritePixel != null) {
-            int objColor = getCgbColorNumberFromObjPixelEntry(spritePixel);
-            boolean objPriority = getDmgPriorityForObjPixelEntry(spritePixel);
+        if (objPixel != null) {
+            boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
+
+            int objColor;
+            int objPalette;
+            if (dmgCompatibilityMode) {
+                objColor = getDmgColorNumberFromObjPixelEntry(objPixel);
+                objPalette = getDmgPaletteForObjPixelEntry(objPixel) ? 1 : 0;
+            } else {
+                objColor = getCgbColorNumberFromObjPixelEntry(objPixel);
+                objPalette = getCgbPaletteFromObjPixelEntry(objPixel);
+            }
+
             boolean drawObj = false;
             if (objColor != 0) {
-                if (!this.getBackgroundAndWindowEnable()) {
-                    drawObj = true;
-                } else if (bgColor == 0) {
-                    drawObj = true;
-                } else if (!bgPriority && !objPriority) {
-                    drawObj = true;
+                if (dmgCompatibilityMode) {
+                    drawObj = !(objPriority && bgColor != 0);
+                } else {
+                    drawObj = !this.getBackgroundAndWindowEnable() || bgColor == 0 || (!bgPriority && !objPriority);
                 }
             }
+
             if (drawObj) {
-                finalPixel = this.getARGBForObjPixelEntry(spritePixel);
+                if (dmgCompatibilityMode) {
+                    int objPaletteReg = objPalette != 0 ? this.objectPalette1 : this.objectPalette0;
+                    objColor = (objPaletteReg >>> (objColor * 2)) & 0b11;
+                }
+                finalPixel = this.getARGBForObjPixelEntry(objColor, objPalette);
             }
+
         }
 
         if (finalPixel != null) {
@@ -326,10 +368,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         }
     }
 
-    private int getARGBForBgPixelEntry(int bgPixel) {
-        int colorNumber = getCgbColorNumberFromBgPixelEntry(bgPixel);
-        int palette = getCgbPaletteFromBgPixelEntry(bgPixel);
-
+    private int getARGBForBgPixelEntry(int colorNumber, int palette) {
         int colorRamIndex = (palette * 8) + (colorNumber * 2);
 
         int r5 = this.bgPaletteRam[colorRamIndex] & 0b11111;
@@ -339,10 +378,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         return toARGB(r5, g5, b5);
     }
 
-    private int getARGBForObjPixelEntry(int objPixel) {
-        int colorNumber = getCgbColorNumberFromObjPixelEntry(objPixel);
-        int palette = getCgbPaletteFromObjPixelEntry(objPixel);
-
+    private int getARGBForObjPixelEntry(int colorNumber, int palette) {
         int colorRamIndex = (palette * 8) + (colorNumber * 2);
 
         int r5 = this.objPaletteRam[colorRamIndex] & 0b11111;
@@ -393,7 +429,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         return (pixel >>> 16) & 0b111;
     }
 
-    private boolean getCgbPriorityFromBgPixelEntry(int pixel) {
+    private static boolean getCgbPriorityFromBgPixelEntry(int pixel) {
         return (pixel >>> 8 & 1) != 0;
     }
 

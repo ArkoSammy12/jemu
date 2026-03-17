@@ -13,6 +13,10 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
         super(host);
     }
 
+    public boolean isDmgCompatibilityMode() {
+        return this.getMMIOBus().isDmgCompatibilityMode();
+    }
+
     @Override
     protected DMGBus<?> createBus() {
         this.bus = new CGBBus<>(this);

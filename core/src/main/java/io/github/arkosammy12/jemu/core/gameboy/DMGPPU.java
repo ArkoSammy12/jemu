@@ -39,8 +39,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private int lcdY;
     private int lcdYCompare;
     protected int backgroundPalette;
-    private int objectPalette0;
-    private int objectPalette1;
+    protected int objectPalette0;
+    protected int objectPalette1;
     private int windowY;
     private int windowX;
 
@@ -599,6 +599,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         this.bgFifoFetcherX++;
     }
 
+    @SuppressWarnings("DuplicatedCode")
     protected void tickSpriteFifo() {
         switch (this.spriteFifoStep) {
             case 0 -> {
@@ -692,14 +693,14 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             finalPixel = null;
         }
 
-        Integer spritePixel = this.spriteFifo.poll();
+        Integer objPixel = this.spriteFifo.poll();
         this.spriteFifo.offer(null);
-        if (spritePixel != null) {
-            int spriteColorNumber = getDmgColorNumberFromObjPixelEntry(spritePixel);
-            boolean priority = getDmgPriorityForObjPixelEntry(spritePixel);
-            boolean palette = getDmgPaletteForObjPixelEntry(spritePixel);
-            if (spriteColorNumber != 0 && !(priority && bgPixel != 0)) {
-                int colorPaletteIndex = ((palette ? this.objectPalette1 : this.objectPalette0) >>> (spriteColorNumber * 2)) & 0b11;
+        if (objPixel != null) {
+            int objColorNumber = getDmgColorNumberFromObjPixelEntry(objPixel);
+            boolean priority = getDmgPriorityForObjPixelEntry(objPixel);
+            boolean palette = getDmgPaletteForObjPixelEntry(objPixel);
+            if (objColorNumber != 0 && !(priority && bgPixel != 0)) {
+                int colorPaletteIndex = ((palette ? this.objectPalette1 : this.objectPalette0) >>> (objColorNumber * 2)) & 0b11;
                 finalPixel = DMG_PALETTE[colorPaletteIndex];
             }
         }
@@ -883,7 +884,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         return ((pixel >>> 8) & 1) != 0;
     }
 
-    private static boolean getDmgPaletteForObjPixelEntry(int pixel) {
+    protected static boolean getDmgPaletteForObjPixelEntry(int pixel) {
         return ((pixel >>> 16) & 1) != 0;
     }
 

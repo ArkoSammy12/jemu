@@ -796,9 +796,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 this.currentOutputLevel = this.getOutputLevel();
                 this.fetchedFirstByte = true;
             }
-            if (this.getPeriodFull() > 2043) {
-                return 0;
-            }
+
             int amplitude;
             if (this.waveRamIndex % 2 == 0) {
                 amplitude = (this.waveSampleBuffer >>> 4) & 0xF;

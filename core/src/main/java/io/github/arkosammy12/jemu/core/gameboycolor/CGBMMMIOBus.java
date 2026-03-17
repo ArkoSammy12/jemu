@@ -32,6 +32,7 @@ public class CGBMMMIOBus extends DMGMMIOBus {
     public static final int UNK_3 = 0xFF74;
     public static final int UNK_4 = 0xFF75;
 
+    private boolean dmgCompatibilityMode;
     private int workRamBank = 1;
 
     public CGBMMMIOBus(GameBoyEmulator emulator) {
@@ -40,7 +41,9 @@ public class CGBMMMIOBus extends DMGMMIOBus {
 
     @Override
     public int readByte(int address) {
-        if (address == WBK) {
+        if (address == KEY_0) {
+            return this.dmgCompatibilityMode ? 0xFF : 0xFB;
+        } else if (address == WBK) {
             return this.workRamBank | 0b11111000;
         } else if (address >= BGPI && address <= OPRI || address == VBK) {
             return this.emulator.getVideoGenerator().readByte(address);
@@ -51,16 +54,27 @@ public class CGBMMMIOBus extends DMGMMIOBus {
 
     @Override
     public void writeByte(int address, int value) {
-        if (address == WBK) {
+        if (address == KEY_0) {
+            if (this.emulator.getBus().isBootRomEnabled()) {
+                this.dmgCompatibilityMode = (value & 0b100) != 0;
+            }
+        } else if (address == WBK) {
             this.workRamBank = value & 0b111;
             if (this.workRamBank == 0) {
                 this.workRamBank = 1;
             }
         } else if (address >= BGPI && address <= OPRI || address == VBK) {
-            this.emulator.getVideoGenerator().writeByte(address, value);
+            //if (address != OPRI || this.emulator.getBus().isBootRomEnabled()) {
+            // TODO: Properly investigate when exactly this applies
+                this.emulator.getVideoGenerator().writeByte(address, value);
+            //}
         } else {
             super.writeByte(address, value);
         }
+    }
+
+    public boolean isDmgCompatibilityMode() {
+        return this.dmgCompatibilityMode;
     }
 
     public int getWorkRamBank() {
