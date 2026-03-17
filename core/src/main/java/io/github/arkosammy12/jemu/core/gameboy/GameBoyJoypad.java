@@ -131,8 +131,8 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     }
 
     private void triggerJoyPInterrupt() {
-        int IF = this.emulator.getMMIOController().getIF();
-        this.emulator.getMMIOController().setIF(Processor.setBit(IF, SM83.JOYP_MASK));
+        int IF = this.emulator.getMMIOBus().getIF();
+        this.emulator.getMMIOBus().setIF(Processor.setBit(IF, SM83.JOYP_MASK));
     }
 
     public enum Actions implements Action {

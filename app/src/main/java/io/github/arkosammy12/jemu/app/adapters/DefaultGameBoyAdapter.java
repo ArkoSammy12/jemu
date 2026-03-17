@@ -12,6 +12,7 @@ import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
+import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.MonoAudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.StereoAudioRenderer;
@@ -34,7 +35,7 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
     private final System system;
     private final Model model;
 
-    private final GameBoyEmulator emulator;
+    private final Emulator emulator;
     private final JPanelVideoDriver videoDriver;
     private final DefaultAudioRendererDriver audioDriver;
     private final AudioRenderer audioRenderer;
@@ -88,7 +89,11 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
 
         this.saveDataDirectory = this.getRomPath().getParent();
 
-        this.emulator = new GameBoyEmulator(this);
+        this.emulator = switch (model) {
+            case CGB -> new GameBoyColorEmulator(this);
+            case DMG -> new GameBoyEmulator(this);
+        };
+
         this.videoDriver = new JPanelVideoDriver(this.emulator.getVideoGenerator(), keyAdapter);
 
         int framerate = this.emulator.getFramerate();
@@ -175,7 +180,11 @@ public class DefaultGameBoyAdapter extends DefaultSystemAdapter implements GameB
             this.audioDriver.close();
         }
         if (this.emulator != null) {
-            this.emulator.close();
+            try {
+                this.emulator.close();
+            } catch (Exception e) {
+                Logger.error("Error closing Game Boy emulator resources: {}", e);
+            }
         }
     }
 

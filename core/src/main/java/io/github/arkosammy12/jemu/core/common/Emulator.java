@@ -22,14 +22,14 @@ public interface Emulator extends AutoCloseable {
     DebuggerSchema getDebuggerSchema();
      */
 
+    /*
     @Nullable
     Disassembler getDisassembler();
+     */
 
     void executeFrame();
 
     void executeCycle();
-
-    int getCurrentInstructionsPerFrame();
 
     int getFramerate();
 

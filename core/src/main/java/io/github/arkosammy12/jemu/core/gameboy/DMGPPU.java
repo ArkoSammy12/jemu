@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.core.common.Processor;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -21,8 +22,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private static final int CYCLES_PER_SCANLINE = 456;
     private static final int SCANLINES_PER_FRAME = 154;
 
-    private static final int DMG_LCD_OFF_COLOR = 0xFF9BBC0F;
-
     private static final int[] DMG_PALETTE = {
             0xFF9BBC0F,
             0xFF8BAC0F,
@@ -30,67 +29,67 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             0xFF0F380F
     };
 
-    private final int[] vRam = new int[0x2000];
+    protected final int[] vRam = new int[0x2000];
     private final int[] oam = new int[0x00A0];
 
     private int lcdControl;
     private int ppuStatus;
-    private int scrollY;
-    private int scrollX;
+    protected int scrollY;
+    protected int scrollX;
     private int lcdY;
     private int lcdYCompare;
-    private int backgroundPalette;
+    protected int backgroundPalette;
     private int objectPalette0;
     private int objectPalette1;
     private int windowY;
     private int windowX;
 
-    private final int[][] lcd;
+    protected final int[][] lcd;
 
     private Mode currentMode = Mode.MODE_0_HBLANK;
     private int scanlineCycle;
     private int dotCycleIndex;
-    private int scanlineNumber;
+    protected int scanlineNumber;
     private int statModeForInterrupt;
 
-    private boolean enablePixelWrites;
+    protected boolean enablePixelWrites;
     private int enablePixelWritesDelay;
 
     private boolean oldStatInterruptLine;
 
     private boolean windowPixelRendered;
 
-    private int pixelX;
-    private int discardedPixels;
-    private int windowLine;
+    protected int pixelX;
+    protected int discardedPixels;
+    protected int windowLine;
     private boolean windowYCondition;
     private boolean windowXCondition;
 
-    private final Integer[] spriteBuffer = new Integer[10];
+    protected final Integer[] spriteBuffer = new Integer[10];
     private int scannedEntries = 0;
 
-    private final IntArrayFIFOQueue backgroundFifo = new IntArrayFIFOQueue(8);
-    private int bgFifoStep = 0;
-    private boolean bgFifoFirstFetch = true;
-    private int bgFifoFetcherX;
-    private int bgFifoCurrentTileNumber;
-    private int bgFifoTileDataEffectiveAddress;
-    private int bgFifoTileDataLow;
-    private int bgFifoTileDataHigh;
+    protected final IntArrayFIFOQueue backgroundFifo = new IntArrayFIFOQueue(8);
+    protected int bgFifoStep = 0;
+    protected boolean bgFifoFirstFetch = true;
+    protected int bgFifoFetcherX;
+    protected int bgFifoCurrentTileNumber;
+    protected int bgFifoTileDataEffectiveAddress;
+    protected int bgFifoTileDataLow;
+    protected int bgFifoTileDataHigh;
 
-    private final LinkedList<Integer> spriteFifo = new LinkedList<>();
-    private int spriteFifoCurrentEntryIndex;
-    private int spriteFifoStep = 0;
-    private int spriteFifoCurrentTileNumber;
-    private int spriteFifoTileDataEffectiveAddress;
-    private int spriteFifoTileDataLow;
-    private int spriteFifoTileDataHigh;
+    protected final LinkedList<Integer> spriteFifo = new LinkedList<>();
+    protected int spriteFifoCurrentEntryIndex;
+    protected int spriteFifoStep = 0;
+    protected int spriteFifoCurrentTileNumber;
+    protected int spriteFifoTileDataEffectiveAddress;
+    protected int spriteFifoTileDataLow;
+    protected int spriteFifoTileDataHigh;
 
     public DMGPPU(E emulator) {
         super(emulator);
         this.lcd = new int[this.getImageWidth()][this.getImageHeight()];
         for (int[] ints : this.lcd) {
-            Arrays.fill(ints, DMG_LCD_OFF_COLOR);
+            Arrays.fill(ints, this.getLcdOffColor());
         }
         Arrays.fill(this.spriteBuffer, null);
         for (int i = 0; i < 8; i++) {
@@ -106,6 +105,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     @Override
     public int getImageHeight() {
         return HEIGHT;
+    }
+
+    protected int getLcdOffColor() {
+        return 0xFF9BBC0F;
     }
 
     @Override
@@ -151,7 +154,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
         } else if (address >= VRAM_START && address <= VRAM_END) {
             if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
-              this.vRam[address - VRAM_START] = value & 0xFF;
+                this.vRam[address - VRAM_START] = value & 0xFF;
             }
         } else {
             switch (address) {
@@ -197,7 +200,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         this.enablePixelWrites = false;
         this.enablePixelWritesDelay = -1;
         for (int[] ints : this.lcd) {
-            Arrays.fill(ints, DMG_LCD_OFF_COLOR);
+            Arrays.fill(ints, this.getLcdOffColor());
         }
         this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.lcd));
     }
@@ -213,7 +216,6 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         if (!this.getLcdPpuEnable()) {
             return;
         }
-
         this.nextState();
 
         switch (this.currentMode) {
@@ -295,6 +297,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
             case 3 -> {
                 if (this.scanlineNumber == 144) {
+
                     this.setPpuMode(Mode.MODE_1_VBLANK.getValue());
                     this.setStatModeForInterrupt(Mode.MODE_1_VBLANK.getValue());
                     this.triggerVBlankInterrupt();
@@ -327,44 +330,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private void onHBlank() {
         switch (this.dotCycleIndex) {
             case 0 -> {
-                /*
-                if (this.spriteCount > 0) {
-                    Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f. Cycles spent stalling or processing sprites: %d".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4, dotsSpentInSpritePlusStalling));
-                }
-                 */
-
-                this.dotsSpentInSpritePlusStalling = 0;
-                this.spriteCount = 0;
-
-                this.scannedEntries = 0;
-
-                this.pixelX = 0;
-                this.discardedPixels = 0;
-                this.windowXCondition = false;
-
-                this.backgroundFifo.clear();
-                this.bgFifoStep = 0;
-                this.bgFifoFirstFetch = true;
-                this.bgFifoFetcherX = 0;
-                this.bgFifoCurrentTileNumber = 0;
-                this.bgFifoTileDataEffectiveAddress = 0;
-                this.bgFifoTileDataLow = 0;
-                this.bgFifoTileDataHigh = 0;
-
-                Arrays.fill(this.spriteBuffer, null);
-
-                this.spriteFifo.clear();
-                for (int i = 0; i < 8; i++) {
-                    this.spriteFifo.add(null);
-                }
-
-                this.spriteFifoStep = 0;
-                this.spriteFifoCurrentEntryIndex = -1;
-                this.spriteFifoCurrentTileNumber = 0;
-                this.spriteFifoTileDataEffectiveAddress = 0;
-                this.spriteFifoTileDataLow = 0;
-                this.spriteFifoTileDataHigh = 0;
-
+                this.onHBlankStart();
                 this.dotCycleIndex = 1;
             }
             case 1 -> {
@@ -380,6 +346,46 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
             case 4 -> {}
         }
+    }
+
+    protected void onHBlankStart() {
+        /*
+        if (this.spriteCount > 0) {
+            Logger.info("Sprites: %d. Scanline cycle: %d. Extra dots %d. Extra M-cycles: %f. Cycles spent stalling or processing sprites: %d".formatted(this.spriteCount, this.scanlineCycle, (this.scanlineCycle - 80 - 172), (double)(this.scanlineCycle - 80 - 172)/ 4, dotsSpentInSpritePlusStalling));
+        }
+         */
+
+        this.dotsSpentInSpritePlusStalling = 0;
+        this.spriteCount = 0;
+
+        this.scannedEntries = 0;
+
+        this.pixelX = 0;
+        this.discardedPixels = 0;
+        this.windowXCondition = false;
+
+        this.backgroundFifo.clear();
+        this.bgFifoStep = 0;
+        this.bgFifoFirstFetch = true;
+        this.bgFifoFetcherX = 0;
+        this.bgFifoCurrentTileNumber = 0;
+        this.bgFifoTileDataEffectiveAddress = 0;
+        this.bgFifoTileDataLow = 0;
+        this.bgFifoTileDataHigh = 0;
+
+        Arrays.fill(this.spriteBuffer, null);
+
+        this.spriteFifo.clear();
+        for (int i = 0; i < 8; i++) {
+            this.spriteFifo.add(null);
+        }
+
+        this.spriteFifoStep = 0;
+        this.spriteFifoCurrentEntryIndex = -1;
+        this.spriteFifoCurrentTileNumber = 0;
+        this.spriteFifoTileDataEffectiveAddress = 0;
+        this.spriteFifoTileDataLow = 0;
+        this.spriteFifoTileDataHigh = 0;
     }
 
     private void onOamScan() {
@@ -505,7 +511,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     }
 
-    private void tickBackgroundFifo() {
+    protected void tickBackgroundFifo() {
         switch (this.bgFifoStep) {
             case 0 -> {
                 this.bgFifoStep = 1;
@@ -521,7 +527,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     this.bgFifoCurrentTileNumber = this.getVRamByte(address);
                 } else {
                     int tileMapBase = this.getBackgroundTileMap() ? 0x9C00 : 0x9800;
-                    int tileX = ((pixelX + scrollX) >> 3) & 0x1F;
+                    int tileX = ((this.pixelX + this.scrollX) >> 3) & 0x1F;
                     int tileY = ((this.scanlineNumber + this.scrollY) & 0xFF) >>> 3;
                     int tileMapIndex = tileX + (tileY * 32);
                     tileMapIndex &= 0x3FF;
@@ -584,7 +590,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
     }
 
-    private void pushBgPixels() {
+    protected void pushBgPixels() {
         for (int i = 7; i >= 0; i--) {
             int low = (this.bgFifoTileDataLow >>> i) & 1;
             int high = (this.bgFifoTileDataHigh >>> i) & 1;
@@ -593,13 +599,13 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         this.bgFifoFetcherX++;
     }
 
-    private void tickSpriteFifo() {
+    protected void tickSpriteFifo() {
         switch (this.spriteFifoStep) {
             case 0 -> {
                 this.spriteFifoStep = 1;
             }
             case 1 -> {
-                this.spriteFifoCurrentTileNumber = getTileIndexFromEntry(this.spriteBuffer[this.spriteFifoCurrentEntryIndex]);
+                this.spriteFifoCurrentTileNumber = getTileIndexFromSpriteEntry(this.spriteBuffer[this.spriteFifoCurrentEntryIndex]);
                 this.spriteFifoStep = 2;
             }
             case 2 -> {
@@ -609,8 +615,8 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 boolean objSize = this.getObjectSize();
                 int spriteEntry = this.spriteBuffer[this.spriteFifoCurrentEntryIndex];
                 int spriteAttributes = getSpriteAttributesFromEntry(spriteEntry);
-                boolean yFlip = getYFlipFromAttributes(spriteAttributes);
-                int spriteY = getSpriteYFromEntry(spriteEntry);
+                boolean yFlip = getYFlipFromObjAttributes(spriteAttributes);
+                int spriteY = getSpriteYFromSpriteEntry(spriteEntry);
                 int tileIndex = this.spriteFifoCurrentTileNumber;
 
                 int width = objSize ? 15 : 7;
@@ -618,7 +624,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     tileIndex &= ~1;
                 }
 
-                int row = ((scanlineNumber + 16) - spriteY) % (width + 1);
+                int row = ((this.scanlineNumber + 16) - spriteY) % (width + 1);
                 if (row < 0) {
                     row += (width + 1);
                 }
@@ -636,23 +642,23 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.spriteFifoTileDataHigh = this.getVRamByte((this.spriteFifoTileDataEffectiveAddress + 1) & 0xFFFF);
 
                 int spriteEntry = this.spriteBuffer[this.spriteFifoCurrentEntryIndex];
-                int spriteX = getSpriteXFromEntry(spriteEntry);
+                int spriteX = getSpriteXFromSpriteEntry(spriteEntry);
                 int spriteAttributes = getSpriteAttributesFromEntry(spriteEntry);
-                boolean xFlip = getXFlipFromAttributes(spriteAttributes);
-                boolean priority = getPriorityFromAttributes(spriteAttributes);
-                boolean palette = getDmgPaletteFromAttributes(spriteAttributes);
+                boolean xFlip = getXFlipFromObjAttributes(spriteAttributes);
+                boolean priority = getPriorityFromObjAttributes(spriteAttributes);
+                boolean palette = getDmgPaletteFromObjAttributes(spriteAttributes);
 
                 for (int i = 0; i < 8; i++) {
                     if (spriteX + i < 8) {
                         continue;
                     }
                     Integer currentQueuedPixel = this.spriteFifo.get(i);
-                    if (currentQueuedPixel == null || getColorNumberFromPixelEntry(currentQueuedPixel) == 0) {
+                    if (currentQueuedPixel == null || getDmgColorNumberFromObjPixelEntry(currentQueuedPixel) == 0) {
                         int bit = xFlip ? 1 << i : 1 << (7 - i);
                         int low = (this.spriteFifoTileDataLow & bit) != 0 ? 1 : 0;
                         int high = (this.spriteFifoTileDataHigh & bit) != 0 ? 1 : 0;
                         int colorNumber = (low | (high << 1));
-                        int pixelEntry = createPixelEntry(colorNumber, priority, palette);
+                        int pixelEntry = createDmgObjPixelEntry(colorNumber, priority, palette);
                         this.spriteFifo.set(i, pixelEntry);
                     }
                 }
@@ -666,9 +672,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
     }
 
-    private int spriteCount;
+    protected int spriteCount;
 
-    private void tickPixelShifter() {
+    protected void tickPixelShifter() {
         if (this.backgroundFifo.isEmpty()) {
             return;
         }
@@ -689,9 +695,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         Integer spritePixel = this.spriteFifo.poll();
         this.spriteFifo.offer(null);
         if (spritePixel != null) {
-            int spriteColorNumber = getColorNumberFromPixelEntry(spritePixel);
-            boolean priority = getPriorityForPixelEntry(spritePixel);
-            boolean palette = getPaletteForPixelEntry(spritePixel);
+            int spriteColorNumber = getDmgColorNumberFromObjPixelEntry(spritePixel);
+            boolean priority = getDmgPriorityForObjPixelEntry(spritePixel);
+            boolean palette = getDmgPaletteForObjPixelEntry(spritePixel);
             if (spriteColorNumber != 0 && !(priority && bgPixel != 0)) {
                 int colorPaletteIndex = ((palette ? this.objectPalette1 : this.objectPalette0) >>> (spriteColorNumber * 2)) & 0b11;
                 finalPixel = DMG_PALETTE[colorPaletteIndex];
@@ -706,11 +712,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
     }
 
-    private boolean getLcdPpuEnable() {
+    protected boolean getLcdPpuEnable() {
         return (this.lcdControl & 0b10000000) != 0;
     }
 
-    private boolean getWindowTileMap() {
+    protected boolean getWindowTileMap() {
         return (this.lcdControl & 0b01000000) != 0;
     }
 
@@ -718,15 +724,15 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         return (this.lcdControl & 0b00100000) != 0;
     }
 
-    private boolean getBackgroundAndWindowTiles() {
+    protected boolean getBackgroundAndWindowTiles() {
         return (this.lcdControl & 0b00010000) != 0;
     }
 
-    private boolean getBackgroundTileMap() {
+    protected boolean getBackgroundTileMap() {
         return (this.lcdControl & 0b00001000) != 0;
     }
 
-    private boolean getObjectSize() {
+    protected boolean getObjectSize() {
         return (this.lcdControl & 0b00000100) != 0;
     }
 
@@ -734,7 +740,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         return (this.lcdControl & 0b00000010) != 0;
     }
 
-    private boolean getBackgroundAndWindowEnable() {
+    protected boolean getBackgroundAndWindowEnable() {
         return (this.lcdControl & 0b00000001) != 0;
     }
 
@@ -758,7 +764,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         return (this.ppuStatus & 0b00000100) != 0;
     }
 
-    private int getPpuMode() {
+    protected int getPpuMode() {
         return this.ppuStatus & 0b11;
     }
 
@@ -797,7 +803,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
     }
 
-    private int getVRamByte(int address) {
+    protected int getVRamByte(int address) {
         if (address >= VRAM_START && address <= VRAM_END) {
             return this.vRam[address - VRAM_START];
         } else {
@@ -808,80 +814,80 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private int getSpriteEntryIndexMatchingX(int x) {
         for (int i = 0; i < 10; i++) {
             Integer spriteEntry = this.spriteBuffer[i];
-            if (spriteEntry != null && getSpriteXFromEntry(spriteEntry) == x) {
+            if (spriteEntry != null && getSpriteXFromSpriteEntry(spriteEntry) == x) {
                 return i;
             }
         }
         return -1;
     }
 
-    private boolean isRenderingWindow() {
+    protected boolean isRenderingWindow() {
         return this.windowXCondition && this.windowYCondition;
     }
 
     private void triggerVBlankInterrupt() {
-        int IF = this.emulator.getMMIOController().getIF();
-        this.emulator.getMMIOController().setIF(Processor.setBit(IF, SM83.VBLANK_MASK));
+        int IF = this.emulator.getMMIOBus().getIF();
+        this.emulator.getMMIOBus().setIF(Processor.setBit(IF, SM83.VBLANK_MASK));
     }
 
     private void triggerStatInterrupt() {
-        int IF = this.emulator.getMMIOController().getIF();
-        this.emulator.getMMIOController().setIF(Processor.setBit(IF, SM83.LCD_MASK));
+        int IF = this.emulator.getMMIOBus().getIF();
+        this.emulator.getMMIOBus().setIF(Processor.setBit(IF, SM83.LCD_MASK));
     }
 
     private static int createSpriteBufferEntry(int spriteY, int spriteX, int tileIndex, int spriteAttributes) {
         return ((spriteAttributes & 0xFF) << 24) | ((tileIndex & 0xFF) << 16) | ((spriteX & 0xFF) << 8) | (spriteY & 0xFF);
     }
 
-    private static int getSpriteAttributesFromEntry(int entry) {
+    protected static int getSpriteAttributesFromEntry(int entry) {
         return (entry >>> 24) & 0xFF;
     }
 
-    private static int getTileIndexFromEntry(int entry) {
+    protected static int getTileIndexFromSpriteEntry(int entry) {
         return (entry >>> 16) & 0xFF;
     }
 
-    private static int getSpriteXFromEntry(int entry) {
+    protected static int getSpriteXFromSpriteEntry(int entry) {
         return (entry >>> 8) & 0xFF;
     }
 
-    private static int getSpriteYFromEntry(int entry) {
+    protected static int getSpriteYFromSpriteEntry(int entry) {
         return (entry) & 0xFF;
     }
 
-    private static boolean getPriorityFromAttributes(int spriteAttributes) {
+    protected static boolean getPriorityFromObjAttributes(int spriteAttributes) {
         return (spriteAttributes & 0b10000000) != 0;
     }
 
-    private static boolean getYFlipFromAttributes(int spriteAttributes) {
+    protected static boolean getYFlipFromObjAttributes(int spriteAttributes) {
         return (spriteAttributes & 0b01000000) != 0;
     }
 
-    private static boolean getXFlipFromAttributes(int spriteAttributes) {
+    protected static boolean getXFlipFromObjAttributes(int spriteAttributes) {
         return (spriteAttributes & 0b00100000) != 0;
     }
 
-    private static boolean getDmgPaletteFromAttributes(int spriteAttributes) {
+    private static boolean getDmgPaletteFromObjAttributes(int spriteAttributes) {
         return (spriteAttributes & 0b00010000) != 0;
     }
 
-    private static int createPixelEntry(int colorNumber, boolean priority, boolean palette) {
+    private static int createDmgObjPixelEntry(int colorNumber, boolean priority, boolean palette) {
         return ((palette ? 1 : 0) << 16) | ((priority ? 1 : 0) << 8) | colorNumber;
     }
 
-    private static int getColorNumberFromPixelEntry(int pixel) {
+    protected static int getDmgColorNumberFromObjPixelEntry(int pixel) {
         return pixel & 0b11;
     }
 
-    private static boolean getPriorityForPixelEntry(int pixel) {
+    protected static boolean getDmgPriorityForObjPixelEntry(int pixel) {
         return ((pixel >>> 8) & 1) != 0;
     }
 
-    private static boolean getPaletteForPixelEntry(int pixel) {
+    private static boolean getDmgPaletteForObjPixelEntry(int pixel) {
         return ((pixel >>> 16) & 1) != 0;
     }
 
-    private enum Mode {
+    protected enum Mode {
         MODE_0_HBLANK(0),
         MODE_1_VBLANK(1),
         MODE_2_OAM_SCAN(2),
@@ -897,7 +903,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             return this.value;
         }
 
-        private boolean matchesValue(int value) {
+        public boolean matchesValue(int value) {
             return value == this.value;
         }
 

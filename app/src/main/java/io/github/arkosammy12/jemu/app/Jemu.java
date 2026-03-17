@@ -33,7 +33,7 @@ public final class Jemu {
     public Jemu() {
         try {
             Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-                Logger.error("Uncaught exception in thread {}", thread.getName(), throwable);
+                Logger.error("Uncaught exception in thread {}: {}", thread.getName(), throwable, throwable.getStackTrace());
             });
 
             this.mainWindow = new MainWindow("jemu " + Main.VERSION_STRING, APP_DIR, Arrays.stream(System.values()).toList());

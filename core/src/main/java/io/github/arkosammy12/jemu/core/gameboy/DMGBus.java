@@ -7,7 +7,7 @@ import io.github.arkosammy12.jemu.core.common.BusView;
 import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.BANK_ADDR;
 import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.DMA_ADDR;
 
-public class DMGBus implements Bus, BusView {
+public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
 
     // Bootix boot-rom for the DMG. Courtesy of Ashiepaws https://github.com/Ashiepaws/Bootix
     protected static final int[] BOOTIX = {
@@ -70,19 +70,24 @@ public class DMGBus implements Bus, BusView {
 
     public static final int IE_REGISTER = 0xFFFF;
 
-    private final GameBoyEmulator emulator;
+    protected final E emulator;
 
-    private final int[] workRam = new int[0x2000];
+    protected final int[][] workRam;
 
     private int oamDmaControl;
     private int oamTransferDelay;
-    private boolean oamTransferInProgress;
+    protected boolean oamTransferInProgress;
     private int oamTransferredBytes;
 
     protected boolean enableBootRom = true;
 
-    public DMGBus(GameBoyEmulator emulator) {
+    public DMGBus(E emulator) {
         this.emulator = emulator;
+        this.workRam = this.createWorkRam();
+    }
+
+    protected int[][] createWorkRam() {
+        return new int[1][0x2000];
     }
 
     @Override
@@ -115,11 +120,11 @@ public class DMGBus implements Bus, BusView {
         } else if (address >= SRAM_START && address <= SRAM_END) {
             return this.emulator.getCartridge().readByte(address);
         } else if (address >= WRAM0_START && address <= WRAM0_END) {
-            return this.workRam[address - WRAM0_START];
+            return this.workRam[0][address - WRAM0_START];
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
-            return this.workRam[address - WRAM0_START];
+            return this.workRam[0][address - WRAM0_START];
         } else if (address >= ECHO_START && address <= ECHO_END) {
-            return this.workRam[address & 0x1FFF];
+            return this.workRam[0][address & 0x1FFF];
         } else if (address >= OAM_START && address <= OAM_END) {
             return this.emulator.getVideoGenerator().readByte(address);
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
@@ -130,12 +135,12 @@ public class DMGBus implements Bus, BusView {
             } else if (address == BANK_ADDR) {
                 return (this.enableBootRom ? 0 : 1) | 0b11111110;
             } else {
-                return this.emulator.getMMIOController().readByte(address);
+                return this.emulator.getMMIOBus().readByte(address);
             }
         } else if (address >= HRAM_START && address <= HRAM_END) {
             return this.emulator.getCpu().readHRam(address - HRAM_START);
         } else if (address == IE_REGISTER) {
-            return this.emulator.getMMIOController().readByte(address);
+            return this.emulator.getMMIOBus().readByte(address);
         } else {
             throw new EmulatorException("Invalid GameBoy memory address $%04X!".formatted(address));
         }
@@ -155,11 +160,11 @@ public class DMGBus implements Bus, BusView {
         } else if (address >= SRAM_START && address <= SRAM_END) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if (address >= WRAM0_START && address <= WRAM0_END) {
-            this.workRam[address - WRAM0_START] = value;
+            this.workRam[0][address - WRAM0_START] = value;
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
-            this.workRam[address - WRAM0_START] = value;
+            this.workRam[0][address - WRAM0_START] = value;
         } else if (address >= ECHO_START && address <= ECHO_END) {
-            this.workRam[address & 0x1FFF] = value;
+            this.workRam[0][address & 0x1FFF] = value;
         } else if (address >= OAM_START && address <= OAM_END) {
             this.emulator.getVideoGenerator().writeByte(address, value);
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
@@ -171,12 +176,12 @@ public class DMGBus implements Bus, BusView {
             } else if (address == BANK_ADDR) {
                 this.enableBootRom = false;
             } else {
-                this.emulator.getMMIOController().writeByte(address, value);
+                this.emulator.getMMIOBus().writeByte(address, value);
             }
         } else if (address >= HRAM_START && address <= HRAM_END) {
             this.emulator.getCpu().writeHRam(address - HRAM_START, value);
         } else if (address == IE_REGISTER) {
-            this.emulator.getMMIOController().writeByte(address, value);
+            this.emulator.getMMIOBus().writeByte(address, value);
         } else {
             throw new EmulatorException("Invalid GameBoy memory address $%04X!".formatted(address));
         }
@@ -214,13 +219,13 @@ public class DMGBus implements Bus, BusView {
         } else if (address >= SRAM_START && address <= SRAM_END) {
             return this.emulator.getCartridge().readByte(address);
         } else if (address >= WRAM0_START && address <= WRAM0_END) {
-            return this.workRam[address - WRAM0_START];
+            return this.workRam[0][address - WRAM0_START];
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
-            return this.workRam[address - WRAM0_START];
+            return this.workRam[0][address - WRAM0_START];
         } else if (address >= ECHO_START && address <= ECHO_END) {
-            return this.workRam[address & 0x1FFF];
+            return this.workRam[0][address & 0x1FFF];
         } else if (address >= 0xFE00 && address <= 0xFFFF) {
-            return this.workRam[address & 0x1FFF];
+            return this.workRam[0][address & 0x1FFF];
         } else {
             throw new EmulatorException("Invalid GameBoy memory address %04X!".formatted(address));
         }

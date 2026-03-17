@@ -1,49 +1,72 @@
 package io.github.arkosammy12.jemu.core.gameboy;
 
-import io.github.arkosammy12.jemu.core.common.SystemHost;
-import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.core.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import org.jetbrains.annotations.Nullable;
-
-import static io.github.arkosammy12.jemu.core.cpu.SM83.INSTRUCTION_FINISHED_FLAG;
 
 public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     private static final int FRAMERATE = 60;
     public static final int CLOCK_FREQUENCY = 4194304;
     public static final int T_CYCLES_PER_FRAME = 70224;
-    private static final int M_CYCLES_PER_FRAME = T_CYCLES_PER_FRAME / 4;
+    public static final int M_CYCLES_PER_FRAME = T_CYCLES_PER_FRAME / 4;
 
     private final GameBoyHost host;
-    private int currentInstructionsPerFrame;
 
     private final SM83 cpu;
-    private final DMGBus bus;
+    private final DMGBus<?> bus;
     private final DMGPPU<?> ppu;
     private final DMGAPU<?> apu;
     private final GameBoyJoypad<?> joypad;
 
+    private final DMGMMIOBus mmioBus;
+    private final DMGTimerController<?> timerController;
+    private final DMGSerialController<?> serialController;
+
     private final GameBoyCartridge cartridge;
-    private final DMGMMIOBus mmioController;
-    private final GameBoyTimerController<?> timerController;
-    private final DMGSerialController serialController;
 
     public GameBoyEmulator(GameBoyHost host) {
         this.host = host;
 
         this.joypad = new GameBoyJoypad<>(this);
-        this.cpu = new SM83(this);
-        this.bus = new DMGBus(this);
-        this.ppu = new DMGPPU<>(this);
-        this.apu = new DMGAPU<>(this);
+        this.cpu = this.createCpu();
+        this.bus = this.createBus();
+        this.ppu = this.createPpu();
+        this.apu = this.createApu();
+
+        this.mmioBus = this.createMmioBus();
+        this.timerController = this.createTimerController();
+        this.serialController = this.createSerialController();
 
         this.cartridge = GameBoyCartridge.getCartridge(this);
-        this.mmioController = new DMGMMIOBus(this);
-        this.timerController = new GameBoyTimerController<>(this);
-        this.serialController = new DMGSerialController<>(this);
+    }
+
+    protected SM83 createCpu() {
+        return new SM83(this);
+    }
+
+    protected DMGBus<?> createBus() {
+        return new DMGBus<>(this);
+    }
+
+    protected DMGPPU<?> createPpu() {
+        return new DMGPPU<>(this);
+    }
+
+    protected DMGAPU<?> createApu() {
+        return new DMGAPU<>(this);
+    }
+
+    protected DMGMMIOBus createMmioBus() {
+        return new DMGMMIOBus(this);
+    }
+
+    protected DMGTimerController<?> createTimerController() {
+        return new DMGTimerController<>(this);
+    }
+
+    protected DMGSerialController<?> createSerialController() {
+        return new DMGSerialController<>(this);
     }
 
     @Override
@@ -57,12 +80,12 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public DMGBus getBusView() {
+    public DMGBus<?> getBusView() {
         return this.bus;
     }
 
     @Override
-    public Bus getBus() {
+    public DMGBus<?> getBus() {
         return this.bus;
     }
 
@@ -85,30 +108,16 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.cartridge;
     }
 
-    public DMGMMIOBus getMMIOController() {
-        return this.mmioController;
+    public DMGMMIOBus getMMIOBus() {
+        return this.mmioBus;
     }
 
-    public GameBoyTimerController<?> getTimerController() {
+    public DMGTimerController<?> getTimerController() {
         return this.timerController;
     }
 
     public DMGSerialController<?> getSerialController() {
         return this.serialController;
-    }
-
-    /*
-    @Override
-    @Nullable
-    public DebuggerSchema getDebuggerSchema() {
-        return null;
-    }
-     */
-
-    @Override
-    @Nullable
-    public Disassembler getDisassembler() {
-        return null;
     }
 
     @Override
@@ -124,7 +133,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     private void runCycle() {
-        int flags = this.cpu.cycle();
+        this.cpu.cycle();
         boolean apuFrameSequencerTick = this.timerController.cycle();
         this.cpu.nextState();
         this.ppu.cycle();
@@ -132,17 +141,6 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.serialController.cycle();
         this.cartridge.cycle();
         this.bus.cycle();
-
-        if ((flags & INSTRUCTION_FINISHED_FLAG) != 0) {
-            this.currentInstructionsPerFrame++;
-        }
-    }
-
-    @Override
-    public int getCurrentInstructionsPerFrame() {
-        int ret = this.currentInstructionsPerFrame;
-        this.currentInstructionsPerFrame = 0;
-        return ret;
     }
 
     @Override
@@ -168,12 +166,12 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     @Override
     public int getIE() {
-        return this.mmioController.getIE();
+        return this.mmioBus.getIE();
     }
 
     @Override
     public void setIF(int value) {
-        this.mmioController.setIF(value);
+        this.mmioBus.setIF(value);
     }
 
     @Override
@@ -183,7 +181,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     @Override
     public int getIF() {
-        return this.mmioController.getIF();
+        return this.mmioBus.getIF();
     }
 
 

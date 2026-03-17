@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.core.cpu.SM83;
 
 import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.*;
 
-public class GameBoyTimerController<E extends GameBoyEmulator> implements Bus {
+public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
 
     private final E emulator;
 
@@ -32,7 +32,7 @@ public class GameBoyTimerController<E extends GameBoyEmulator> implements Bus {
 
     private boolean oldDivBit4 = false;
 
-    public GameBoyTimerController(E emulator) {
+    public DMGTimerController(E emulator) {
         this.emulator = emulator;
     }
 
@@ -128,7 +128,7 @@ public class GameBoyTimerController<E extends GameBoyEmulator> implements Bus {
     }
 
     private void triggerInterrupt() {
-        this.emulator.getMMIOController().setIF(this.emulator.getMMIOController().getIF() | SM83.TIMER_MASK);
+        this.emulator.getMMIOBus().setIF(this.emulator.getMMIOBus().getIF() | SM83.TIMER_MASK);
     }
 
     public void onAPUPowerOn() {

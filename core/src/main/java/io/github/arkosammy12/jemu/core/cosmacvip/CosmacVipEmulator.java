@@ -2,9 +2,7 @@ package io.github.arkosammy12.jemu.core.cosmacvip;
 
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.exceptions.InvalidInstructionException;
-import io.github.arkosammy12.jemu.core.disassembler.CosmacVipDisassembler;
 import io.github.arkosammy12.jemu.core.disassembler.Disassembler;
-import io.github.arkosammy12.jemu.core.disassembler.AbstractDisassembler;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +31,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     private final List<IODevice> ioDevices;
 
     private final int frameRate;
-    private int currentInstructionsPerFrame;
 
     public CosmacVipEmulator(CosmacVIPHost host) {
         try {
@@ -97,18 +94,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     @Override
     public SystemController<?> getSystemController() {
         return this.keypad;
-    }
-
-    /*
-    @Override
-    public DebuggerSchema getDebuggerSchema() {
-        return this.debuggerSchema;
-    }
-     */
-
-    @Override
-    public @Nullable Disassembler getDisassembler() {
-        return null;
     }
 
     public CosmacVIPHost.Chip8Interpreter getChip8Interpreter() {
@@ -209,15 +194,12 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     }
 
     private void runCycle() {
-        CDP1802.State currentState = this.cpu.getCurrentState();
+        this.cpu.getCurrentState();
         this.cycleCpu();
         this.cycleIoDevices();
         this.cpu.nextState();
 
-        CDP1802.State nextState = this.cpu.getCurrentState();
-        if (currentState.isS1Execute() && !nextState.isS1Execute()) {
-            this.currentInstructionsPerFrame++;
-        }
+        this.cpu.getCurrentState();
     }
 
     @Override
@@ -227,11 +209,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         this.cpu.nextState();
         //this.display.flush();
         //this.disassembler.disassembleRange(this.getActualCurrentInstructionAddress(), 30, true);
-    }
-
-    private int getActualCurrentInstructionAddress() {
-        int address = this.cpu.getCurrentInstructionAddress();
-        return this.bus.isAddressMsbLatched() ? address | 0x8000 : address;
     }
 
     private void cycleCpu() {
@@ -245,13 +222,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         for (IODevice ioDevice : this.ioDevices) {
             ioDevice.cycle();
         }
-    }
-
-    @Override
-    public int getCurrentInstructionsPerFrame() {
-        int ret = this.currentInstructionsPerFrame;
-        this.currentInstructionsPerFrame = 0;
-        return ret;
     }
 
     @Override

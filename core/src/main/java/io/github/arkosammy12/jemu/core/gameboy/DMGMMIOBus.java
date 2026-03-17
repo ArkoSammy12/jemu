@@ -62,7 +62,7 @@ public class DMGMMIOBus implements Bus {
 
     public static final int IE_ADDR = 0xFFFF;
 
-    private final GameBoyEmulator emulator;
+    protected final GameBoyEmulator emulator;
 
     private int interruptFlag;
     private int interruptEnable;

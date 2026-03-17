@@ -91,7 +91,7 @@ public class DMGSerialController<E extends GameBoyEmulator> implements Bus {
     }
 
     private void triggerSerialInterrupt() {
-        this.emulator.getMMIOController().setIF(this.emulator.getMMIOController().getIF() | SM83.SERIAL_MASK);
+        this.emulator.getMMIOBus().setIF(this.emulator.getMMIOBus().getIF() | SM83.SERIAL_MASK);
     }
 
 }
