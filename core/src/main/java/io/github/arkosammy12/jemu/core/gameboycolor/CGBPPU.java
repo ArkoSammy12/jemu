@@ -76,18 +76,18 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                 case VBK -> this.vramBank = (value & 1) != 0 ? VRAMBank.BANK_1 : VRAMBank.BANK_0;
                 case BGPI -> this.backgroundPaletteIndex = value & 0xFF;
                 case BGPD -> {
-                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode())) {
+                    //if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
                         this.bgPaletteRam[this.getBgPaletteAddress()] = value & 0xFF;
-                    }
+                    //}
                     if (this.getBgPaletteAddressAutoIncrement()) {
                         this.incrementBgPaletteAddress();
                     }
                 }
                 case OBPI -> this.objectPaletteIndex = value & 0xFF;
                 case OBPD -> {
-                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode())) {
+                    //if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
                         this.objPaletteRam[this.getObjPaletteAddress()] = value & 0xFF;
-                    }
+                    //}
                     if (this.getObjPaletteAddressAutoIncrement()) {
                         this.incrementObjPaletteAddress();
                     }

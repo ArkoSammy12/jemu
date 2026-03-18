@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.gameboy.DMGBus;
 import io.github.arkosammy12.jemu.core.gameboy.DMGPPU;
 import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.core.gameboycolor.CGBMMMIOBus.*;
 
@@ -207,17 +208,13 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                 0x20, 0xf9, 0x2e, 0x0f, 0x18, 0xf5, 0xf1, 0xc9, 0x00, 0x00, 0x00, 0x00
     };
 
-    private int hdmaSourceHigh;
-    private int hdmaSourceLow;
-    private int hdmaDestinationHigh;
-    private int hdmaDestinationLow;
+    private int hdmaSourceAddress;
+    private int hdmaDestinationAddress;
     private int hdmaControl;
 
     @Nullable
     private DMAType currentDmaType = null;
     private int hdmaTransferDelay;
-    private int hdmaCurrentSourceAddress;
-    private int hdmaCurrentDestinationAddress;
     private int hdmaCurrentSize;
     private boolean hdmaTransferInProgress;
     private boolean hdmaCopyingBlock;
@@ -271,14 +268,15 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START] = value & 0xFF;
         } else if (address >= IO_START && address <= IO_END) {
             switch (address) {
-                case HDMA_1 -> this.hdmaSourceHigh = value & 0xFF;
-                case HDMA_2 -> this.hdmaSourceLow = (value & (~0b1111)) & 0xFF;
-                case HDMA_3 -> this.hdmaDestinationHigh = value & 0xFF;
-                case HDMA_4 -> this.hdmaDestinationLow = (value & (~0b1111)) & 0xFF;
+                case HDMA_1 -> this.hdmaSourceAddress = (((value << 8) & 0xFF00) | (this.hdmaSourceAddress & 0xFF));
+                case HDMA_2 -> this.hdmaSourceAddress = ((this.hdmaSourceAddress & 0xFF00) | (value & 0xF0));
+                case HDMA_3 -> this.hdmaDestinationAddress = (((value << 8) & 0xFF00) | (this.hdmaDestinationAddress & 0xFF));
+                case HDMA_4 -> this.hdmaDestinationAddress = ((this.hdmaDestinationAddress & 0xFF00) | (value & 0xF0));
                 case HDMA_5 -> {
                     if (this.currentDmaType != null) {
                         if ((value & 0x80) != 0) {
-                            this.hdmaControl = value & 0x7F;
+                            this.hdmaControl = value & 0xFF;
+                            this.hdmaControl &= ~0x80;
                             this.currentDmaType = DMAType.HBLANK;
                             this.hdmaTransferDelay = 2; // TODO: Set to 1 if on double speed mode
                         } else {
@@ -288,7 +286,8 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                             this.hdmaCopyingBlock = false;
                         }
                     } else {
-                        this.hdmaControl = value & 0x7F;
+                        this.hdmaControl = value & 0xFF;
+                        this.hdmaControl &= ~0x80;
                         this.currentDmaType = (value & 0x80) != 0 ? DMAType.HBLANK : DMAType.GENERAL;
                         this.hdmaTransferDelay = 2; // TODO: Set to 1 if on double speed mode
                     }
@@ -313,30 +312,16 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             switch (this.currentDmaType) {
                 case GENERAL -> {
                     if (this.hdmaCopyingBlock) {
-                        int sourceAddress1 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int destinationAddress1 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int byte1 = this.readByteHDma(sourceAddress1);
-
-                        if (destinationAddress1 >= VRAM_START && destinationAddress1 <= VRAM_END) {
-                            this.writeByte(destinationAddress1, byte1);
+                        boolean destinationOverflowed = this.tickBlockTransfer();
+                        if (this.hdmaTransferredBytes % 16 == 0) {
+                            this.hdmaControl = (this.hdmaControl - 1) & 0xFF;
                         }
-                        this.hdmaTransferredBytes++;
-
-                        int sourceAddress2 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int destinationAddress2 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int byte2 = this.readByteHDma(sourceAddress2);
-
-                        if (destinationAddress2 >= VRAM_START && destinationAddress2 <= VRAM_END) {
-                            this.writeByte(destinationAddress2, byte2);
-                        }
-                        this.hdmaTransferredBytes++;
-                        if (this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) {
+                        if ((this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) || destinationOverflowed) {
                             this.hdmaTransferInProgress = false;
                             this.hdmaCopyingBlock = false;
                             this.currentDmaType = null;
-                            this.hdmaControl = 0xFF;
+                            this.hdmaControl |= 0x80;
                         }
-
                     }
                 }
                 case HBLANK -> {
@@ -344,35 +329,19 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
 
                         this.hdmaCopyingBlock = true;
 
-                        int sourceAddress1 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int destinationAddress1 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int byte1 = this.readByteHDma(sourceAddress1);
+                        boolean destinationOverflowed = this.tickBlockTransfer();
 
-                        if (destinationAddress1 >= VRAM_START && destinationAddress1 <= VRAM_END) {
-                            this.writeByte(destinationAddress1, byte1);
+                        if (this.hdmaTransferredBytes % 16 == 0) {
+                            this.hdmaBlockTransferFinished = true;
+                            this.hdmaCopyingBlock = false;
+                            this.hdmaControl = (this.hdmaControl - 1) & 0xFF;
                         }
-                        this.hdmaTransferredBytes++;
 
-                        int sourceAddress2 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int destinationAddress2 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
-                        int byte2 = this.readByteHDma(sourceAddress2);
-
-                        if (destinationAddress2 >= VRAM_START && destinationAddress2 <= VRAM_END) {
-                            this.writeByte(destinationAddress2, byte2);
-                        }
-                        this.hdmaTransferredBytes++;
-
-                        int newDestinationAddress = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
-
-                        if ((this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) || newDestinationAddress < destinationAddress1) {
+                        if ((this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) || destinationOverflowed) {
                             this.hdmaTransferInProgress = false;
                             this.hdmaCopyingBlock = false;
                             this.currentDmaType = null;
                             this.hdmaControl = 0xFF;
-                        } else if (this.hdmaTransferredBytes % 16 == 0) {
-                            this.hdmaBlockTransferFinished = true;
-                            this.hdmaCopyingBlock = false;
-                            this.hdmaControl = (this.hdmaControl - 1) & 0xFF;
                         }
 
                     }
@@ -388,8 +357,6 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                 this.hdmaTransferInProgress = true;
                 this.hdmaCopyingBlock = true;
                 this.hdmaTransferredBytes = 0;
-                this.hdmaCurrentSourceAddress = ((this.hdmaSourceHigh << 8) | this.hdmaSourceLow) & 0xFFFF;
-                this.hdmaCurrentDestinationAddress = ((this.hdmaDestinationHigh << 8) | this.hdmaDestinationLow) & 0xFFFF;
                 this.hdmaCurrentSize = this.hdmaControl & 0x7F;
                 this.hdmaBlockTransferFinished = false;
             }
@@ -399,6 +366,21 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             this.hdmaBlockTransferFinished = false;
         }
 
+    }
+
+    private boolean tickBlockTransfer() {
+        for (int i = 0; i < 2; i++) {
+            this.writeByte((this.hdmaDestinationAddress & 0x1FFF) | 0x8000, this.readByteHDma(this.hdmaSourceAddress));
+            this.hdmaTransferredBytes++;
+            this.hdmaSourceAddress = (this.hdmaSourceAddress + 1) & 0xFFFF;
+            this.hdmaDestinationAddress++;
+            if (this.hdmaDestinationAddress > 0xFFFF) {
+                this.hdmaDestinationAddress &= 0xFFFF;
+                return true;
+            }
+            this.hdmaDestinationAddress &= 0xFFFF;
+        }
+        return false;
     }
 
     private int readByteHDma(int address) {
@@ -423,7 +405,8 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
             return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START];
         } else if (address >= 0xE000 && address <= 0xFFFF) {
-            return this.emulator.getCartridge().readByte(0xA000 + (address - 0xE000));
+            return 0xFF;
+            //return this.emulator.getCartridge().readByte(0xA000 + (address - 0xE000));
         } else {
             throw new EmulatorException("Invalid GameBoy memory address %04X!".formatted(address));
         }
