@@ -653,14 +653,17 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                     if (spriteX + i < 8) {
                         continue;
                     }
+                    int bit = xFlip ? 1 << i : 1 << (7 - i);
+                    int low = (this.spriteFifoTileDataLow & bit) != 0 ? 1 : 0;
+                    int high = (this.spriteFifoTileDataHigh & bit) != 0 ? 1 : 0;
+                    int colorNumber = (low | (high << 1));
+                    if (colorNumber == 0) {
+                        continue;
+                    }
+
                     Integer currentQueuedPixel = this.spriteFifo.get(i);
                     if (currentQueuedPixel == null || getDmgColorNumberFromObjPixelEntry(currentQueuedPixel) == 0) {
-                        int bit = xFlip ? 1 << i : 1 << (7 - i);
-                        int low = (this.spriteFifoTileDataLow & bit) != 0 ? 1 : 0;
-                        int high = (this.spriteFifoTileDataHigh & bit) != 0 ? 1 : 0;
-                        int colorNumber = (low | (high << 1));
-                        int pixelEntry = createDmgObjPixelEntry(colorNumber, priority, palette);
-                        this.spriteFifo.set(i, pixelEntry);
+                        this.spriteFifo.set(i, createDmgObjPixelEntry(colorNumber, priority, palette));
                     }
                 }
 

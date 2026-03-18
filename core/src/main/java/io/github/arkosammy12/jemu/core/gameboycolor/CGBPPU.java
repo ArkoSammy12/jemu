@@ -273,14 +273,16 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                     if (spriteX + i < 8) {
                         continue;
                     }
+                    int bit = xFlip ? 1 << i : 1 << (7 - i);
+                    int low = (this.spriteFifoTileDataLow & bit) != 0 ? 1 : 0;
+                    int high = (this.spriteFifoTileDataHigh & bit) != 0 ? 1 : 0;
+                    int colorNumber = (low | (high << 1));
+                    if (colorNumber == 0) {
+                        continue;
+                    }
                     Integer currentQueuedPixel = this.spriteFifo.get(i);
-                    if (currentQueuedPixel == null || getDmgColorNumberFromObjPixelEntry(currentQueuedPixel) == 0 || (!this.objectPriorityMode && this.spriteFifoCurrentEntryIndex < getCgbOamIndexForObjPixelEntry(currentQueuedPixel))) {
-                        int bit = xFlip ? 1 << i : 1 << (7 - i);
-                        int low = (this.spriteFifoTileDataLow & bit) != 0 ? 1 : 0;
-                        int high = (this.spriteFifoTileDataHigh & bit) != 0 ? 1 : 0;
-                        int colorNumber = (low | (high << 1));
-                        int pixelEntry = createCgbObjPixelEntry(colorNumber, priority, palette, this.spriteFifoCurrentEntryIndex);
-                        this.spriteFifo.set(i, pixelEntry);
+                    if (currentQueuedPixel == null || getCgbColorNumberFromObjPixelEntry(currentQueuedPixel) == 0 || (!this.objectPriorityMode && this.spriteFifoCurrentEntryIndex < getCgbOamIndexForObjPixelEntry(currentQueuedPixel))) {
+                        this.spriteFifo.set(i, createCgbObjPixelEntry(colorNumber, priority, palette, this.spriteFifoCurrentEntryIndex));
                     }
                 }
 
