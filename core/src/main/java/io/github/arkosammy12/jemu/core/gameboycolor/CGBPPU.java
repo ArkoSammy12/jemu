@@ -31,6 +31,10 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         return 0xFFFFFFFF;
     }
 
+    public Mode getMode() {
+        return this.currentMode;
+    }
+
     @Override
     public int readByte(int address) {
         if (address >= VRAM_START && address <= VRAM_END) {

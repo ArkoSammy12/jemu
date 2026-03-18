@@ -132,7 +132,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.runCycle();
     }
 
-    private void runCycle() {
+    protected void runCycle() {
         this.cpu.cycle();
         boolean apuFrameSequencerTick = this.timerController.cycle();
         this.cpu.nextState();

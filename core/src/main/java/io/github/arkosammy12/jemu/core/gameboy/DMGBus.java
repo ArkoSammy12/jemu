@@ -134,13 +134,11 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
             return 0x00;
         } else if (address >= IO_START && address <= IO_END) {
-            if (address == DMA_ADDR) {
-                return this.oamDmaControl;
-            } else if (address == BANK_ADDR) {
-                return (this.enableBootRom ? 0 : 1) | 0b11111110;
-            } else {
-                return this.emulator.getMMIOBus().readByte(address);
-            }
+            return switch (address) {
+                case DMA_ADDR -> this.oamDmaControl;
+                case BANK_ADDR -> (this.enableBootRom ? 0 : 1) | 0b11111110;
+                default -> this.emulator.getMMIOBus().readByte(address);
+            };
         } else if (address >= HRAM_START && address <= HRAM_END) {
             return this.emulator.getCpu().readHRam(address - HRAM_START);
         } else if (address == IE_REGISTER) {
@@ -174,13 +172,13 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
         } else if (address >= UNUSED_START && address <= UNUSED_END) {
             // TODO: TRIGGER OAM BUG
         } else if (address >= IO_START && address <= IO_END) {
-            if (address == DMA_ADDR) {
-                this.oamDmaControl = value & 0xFF;
-                this.oamTransferDelay = 2;
-            } else if (address == BANK_ADDR) {
-                this.enableBootRom = false;
-            } else {
-                this.emulator.getMMIOBus().writeByte(address, value);
+            switch (address) {
+                case DMA_ADDR -> {
+                    this.oamDmaControl = value & 0xFF;
+                    this.oamTransferDelay = 2;
+                }
+                case BANK_ADDR -> this.enableBootRom = false;
+                default -> this.emulator.getMMIOBus().writeByte(address, value);
             }
         } else if (address >= HRAM_START && address <= HRAM_END) {
             this.emulator.getCpu().writeHRam(address - HRAM_START, value);

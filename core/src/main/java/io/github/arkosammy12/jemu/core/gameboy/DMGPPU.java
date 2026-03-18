@@ -46,7 +46,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
 
     protected final int[][] lcd;
 
-    private Mode currentMode = Mode.MODE_0_HBLANK;
+    protected Mode currentMode = Mode.MODE_0_HBLANK;
     private int scanlineCycle;
     private int dotCycleIndex;
     protected int scanlineNumber;
@@ -888,7 +888,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         return ((pixel >>> 16) & 1) != 0;
     }
 
-    protected enum Mode {
+    public enum Mode {
         MODE_0_HBLANK(0),
         MODE_1_VBLANK(1),
         MODE_2_OAM_SCAN(2),
@@ -900,7 +900,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             this.value = value;
         }
 
-        private int getValue() {
+        public int getValue() {
             return this.value;
         }
 

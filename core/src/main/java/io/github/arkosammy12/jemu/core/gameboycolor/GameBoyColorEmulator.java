@@ -24,7 +24,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
     }
 
     @Override
-    public DMGBus<?> getBus() {
+    public CGBBus<?> getBus() {
         return this.bus;
     }
 
@@ -47,6 +47,23 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
     @Override
     public CGBMMMIOBus getMMIOBus() {
         return this.mmioBus;
+    }
+
+    @Override
+    protected void runCycle() {
+        boolean haltCpu = this.getBus().isCopyingDma();
+        if (!haltCpu) {
+            this.getCpu().cycle();
+        }
+        boolean apuFrameSequencerTick = this.getTimerController().cycle();
+        if (!haltCpu) {
+            this.getCpu().nextState();
+        }
+        this.getVideoGenerator().cycle();
+        this.getAudioGenerator().cycle(apuFrameSequencerTick);
+        this.getSerialController().cycle();
+        this.getCartridge().cycle();
+        this.getBus().cycle();
     }
 
 }

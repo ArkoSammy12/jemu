@@ -1,6 +1,12 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
+import io.github.arkosammy12.jemu.core.cpu.SM83;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.gameboy.DMGBus;
+import io.github.arkosammy12.jemu.core.gameboy.DMGPPU;
+import org.jetbrains.annotations.Nullable;
+
+import static io.github.arkosammy12.jemu.core.gameboycolor.CGBMMMIOBus.*;
 
 public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
 
@@ -201,6 +207,23 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                 0x20, 0xf9, 0x2e, 0x0f, 0x18, 0xf5, 0xf1, 0xc9, 0x00, 0x00, 0x00, 0x00
     };
 
+    private int hdmaSourceHigh;
+    private int hdmaSourceLow;
+    private int hdmaDestinationHigh;
+    private int hdmaDestinationLow;
+    private int hdmaControl;
+
+    @Nullable
+    private DMAType currentDmaType = null;
+    private int hdmaTransferDelay;
+    private int hdmaCurrentSourceAddress;
+    private int hdmaCurrentDestinationAddress;
+    private int hdmaCurrentSize;
+    private boolean hdmaTransferInProgress;
+    private boolean hdmaCopyingBlock;
+    private int hdmaTransferredBytes;
+    private boolean hdmaBlockTransferFinished = false;
+
     public CGBBus(E emulator) {
         super(emulator);
     }
@@ -216,18 +239,22 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
     public int readByte(int address) {
         if (this.oamTransferInProgress) {
             return super.readByte(address);
-        } else if (this.enableBootRom) {
-            if (address >= 0x0000 && address <= 0x00FF) {
+        } else if (this.enableBootRom && address >= 0x0000 && address <= 0x08FF) {
+            if (address <= 0x00FF) {
                 return SAMEBOY_CGB_BOOT_ROM[address];
-            } else if (address >= 0x0100 && address <= 0x01FF) {
+            } else if (address <= 0x01FF) {
                 return super.readByte(address);
-            } else if (address >= 0x0200 && address <= 0x08FF) {
-                return SAMEBOY_CGB_BOOT_ROM[address];
             } else {
-                return super.readByte(address);
+                return SAMEBOY_CGB_BOOT_ROM[address];
             }
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
             return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START];
+        } else if (address >= IO_START && address <= IO_END) {
+            return switch (address) {
+                case HDMA_1, HDMA_2, HDMA_3, HDMA_4 -> 0xFF;
+                case HDMA_5 -> this.hdmaControl;
+                default -> super.readByte(address);
+            };
         } else {
             return super.readByte(address);
         }
@@ -242,8 +269,163 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         }
         if (address >= WRAMX_START && address <= WRAMX_END) {
             this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START] = value & 0xFF;
+        } else if (address >= IO_START && address <= IO_END) {
+            switch (address) {
+                case HDMA_1 -> this.hdmaSourceHigh = value & 0xFF;
+                case HDMA_2 -> this.hdmaSourceLow = (value & (~0b1111)) & 0xFF;
+                case HDMA_3 -> this.hdmaDestinationHigh = value & 0xFF;
+                case HDMA_4 -> this.hdmaDestinationLow = (value & (~0b1111)) & 0xFF;
+                case HDMA_5 -> {
+                    if (this.currentDmaType != null) {
+                        if ((value & 0x80) != 0) {
+                            this.hdmaControl = value & 0x7F;
+                            this.currentDmaType = DMAType.HBLANK;
+                            this.hdmaTransferDelay = 2; // TODO: Set to 1 if on double speed mode
+                        } else {
+                            this.hdmaControl = (0x80 | value) & 0xFF;
+                            this.currentDmaType = null;
+                            this.hdmaTransferInProgress = false;
+                            this.hdmaCopyingBlock = false;
+                        }
+                    } else {
+                        this.hdmaControl = value & 0x7F;
+                        this.currentDmaType = (value & 0x80) != 0 ? DMAType.HBLANK : DMAType.GENERAL;
+                        this.hdmaTransferDelay = 2; // TODO: Set to 1 if on double speed mode
+                    }
+                }
+                default -> super.writeByte(address, value);
+            }
         } else {
             super.writeByte(address, value);
+        }
+    }
+
+    public boolean isCopyingDma() {
+        return this.hdmaCopyingBlock;
+    }
+
+    @Override
+    public void cycle() {
+        super.cycle();
+
+
+        if (this.hdmaTransferInProgress) {
+            switch (this.currentDmaType) {
+                case GENERAL -> {
+                    if (this.hdmaCopyingBlock) {
+                        int sourceAddress1 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int destinationAddress1 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int byte1 = this.readByteHDma(sourceAddress1);
+
+                        if (destinationAddress1 >= VRAM_START && destinationAddress1 <= VRAM_END) {
+                            this.writeByte(destinationAddress1, byte1);
+                        }
+                        this.hdmaTransferredBytes++;
+
+                        int sourceAddress2 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int destinationAddress2 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int byte2 = this.readByteHDma(sourceAddress2);
+
+                        if (destinationAddress2 >= VRAM_START && destinationAddress2 <= VRAM_END) {
+                            this.writeByte(destinationAddress2, byte2);
+                        }
+                        this.hdmaTransferredBytes++;
+                        if (this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) {
+                            this.hdmaTransferInProgress = false;
+                            this.hdmaCopyingBlock = false;
+                            this.currentDmaType = null;
+                            this.hdmaControl = 0xFF;
+                        }
+
+                    }
+                }
+                case HBLANK -> {
+                    if ((this.emulator.getVideoGenerator().getMode() == DMGPPU.Mode.MODE_0_HBLANK && !this.hdmaBlockTransferFinished && this.emulator.getCpu().getMode() == SM83.Mode.EXECUTING) || this.hdmaCopyingBlock) {
+
+                        this.hdmaCopyingBlock = true;
+
+                        int sourceAddress1 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int destinationAddress1 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int byte1 = this.readByteHDma(sourceAddress1);
+
+                        if (destinationAddress1 >= VRAM_START && destinationAddress1 <= VRAM_END) {
+                            this.writeByte(destinationAddress1, byte1);
+                        }
+                        this.hdmaTransferredBytes++;
+
+                        int sourceAddress2 = (this.hdmaCurrentSourceAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int destinationAddress2 = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
+                        int byte2 = this.readByteHDma(sourceAddress2);
+
+                        if (destinationAddress2 >= VRAM_START && destinationAddress2 <= VRAM_END) {
+                            this.writeByte(destinationAddress2, byte2);
+                        }
+                        this.hdmaTransferredBytes++;
+
+                        int newDestinationAddress = (this.hdmaCurrentDestinationAddress + this.hdmaTransferredBytes) & 0xFFFF;
+
+                        if ((this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) || newDestinationAddress < destinationAddress1) {
+                            this.hdmaTransferInProgress = false;
+                            this.hdmaCopyingBlock = false;
+                            this.currentDmaType = null;
+                            this.hdmaControl = 0xFF;
+                        } else if (this.hdmaTransferredBytes % 16 == 0) {
+                            this.hdmaBlockTransferFinished = true;
+                            this.hdmaCopyingBlock = false;
+                            this.hdmaControl = (this.hdmaControl - 1) & 0xFF;
+                        }
+
+                    }
+
+                }
+                case null -> {}
+            }
+        }
+
+        if (this.hdmaTransferDelay > 0) {
+            this.hdmaTransferDelay--;
+            if (this.hdmaTransferDelay <= 0) {
+                this.hdmaTransferInProgress = true;
+                this.hdmaCopyingBlock = true;
+                this.hdmaTransferredBytes = 0;
+                this.hdmaCurrentSourceAddress = ((this.hdmaSourceHigh << 8) | this.hdmaSourceLow) & 0xFFFF;
+                this.hdmaCurrentDestinationAddress = ((this.hdmaDestinationHigh << 8) | this.hdmaDestinationLow) & 0xFFFF;
+                this.hdmaCurrentSize = this.hdmaControl & 0x7F;
+                this.hdmaBlockTransferFinished = false;
+            }
+        }
+
+        if (this.hdmaBlockTransferFinished && this.emulator.getVideoGenerator().getMode() != DMGPPU.Mode.MODE_0_HBLANK) {
+            this.hdmaBlockTransferFinished = false;
+        }
+
+    }
+
+    private int readByteHDma(int address) {
+        if (this.enableBootRom && address >= 0x0000 && address <= 0x08FF) {
+            if (address <= 0x00FF) {
+                return SAMEBOY_CGB_BOOT_ROM[address];
+            } else if (address <= 0x01FF) {
+                return super.readByteDma(address);
+            } else {
+                return SAMEBOY_CGB_BOOT_ROM[address];
+            }
+        } else if (address >= ROM0_START && address <= ROM0_END) {
+            return this.emulator.getCartridge().readByte(address);
+        } else if (address >= ROMX_START && address <= ROMX_END) {
+            return this.emulator.getCartridge().readByte(address);
+        } else if (address >= VRAM_START && address <= VRAM_END) {
+            return 0xFF;
+        } else if (address >= SRAM_START && address <= SRAM_END) {
+            return this.emulator.getCartridge().readByte(address);
+        } else if (address >= WRAM0_START && address <= WRAM0_END) {
+            return this.workRam[0][address - WRAM0_START];
+        } else if (address >= WRAMX_START && address <= WRAMX_END) {
+            return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START];
+        } else if (address >= 0xE000 && address <= 0xFFFF) {
+            return this.emulator.getCartridge().readByte(0xA000 + (address - 0xE000));
+        } else {
+            throw new EmulatorException("Invalid GameBoy memory address %04X!".formatted(address));
         }
     }
 
@@ -264,6 +446,12 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         } else {
             return super.readByteDma(address);
         }
+    }
+
+    private enum DMAType {
+        GENERAL,
+        HBLANK
+
     }
 
 }

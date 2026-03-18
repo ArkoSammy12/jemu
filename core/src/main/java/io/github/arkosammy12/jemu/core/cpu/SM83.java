@@ -51,6 +51,7 @@ public class SM83 implements Processor {
 
     private int WZ; // 16 bits
 
+    private Mode mode = Mode.EXECUTING;
     private boolean opcodeIsPrefixed = false;
     private boolean haltBug = false;
     private boolean servicingInterrupt = false;
@@ -58,6 +59,10 @@ public class SM83 implements Processor {
 
     public SM83(SystemBus systemBus) {
         this.systemBus = systemBus;
+    }
+
+    public Mode getMode() {
+        return this.mode;
     }
 
     public int readHRam(int address) {
@@ -822,11 +827,13 @@ public class SM83 implements Processor {
                                 this.haltBug = true;
                                 machineCycleIndex = TERMINATE_INSTRUCTION;
                             } else {
+                                this.mode = Mode.HALTED;
                                 machineCycleIndex = 1;
                             }
                         }
                         case 1 -> {
                             if (interruptsPending()) {
+                                this.mode = Mode.EXECUTING;
                                 machineCycleIndex = TERMINATE_INSTRUCTION;
                             } else {
                                 machineCycleIndex = 1;
@@ -2061,6 +2068,12 @@ public class SM83 implements Processor {
 
         void onStopInstruction();
 
+    }
+
+    public enum Mode {
+        EXECUTING,
+        STOPPED,
+        HALTED
     }
 
 
