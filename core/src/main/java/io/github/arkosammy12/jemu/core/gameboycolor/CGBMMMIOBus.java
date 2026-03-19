@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
 import io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus;
+import org.tinylog.Logger;
 
 public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
 
@@ -25,13 +26,13 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
 
     public static final int WBK = 0xFF70;
 
-    // Undocumented
     public static final int UNK_1 = 0xFF72;
     public static final int UNK_2 = 0xFF73;
     public static final int UNK_3 = 0xFF74;
     public static final int UNK_4 = 0xFF75;
 
     private boolean dmgCompatibilityMode;
+    private int key1;
     private int workRamBank = 1;
 
     private int infraredPort;
@@ -45,10 +46,26 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
         super(emulator);
     }
 
+    public boolean isSwitchSpeedArmed() {
+        return (this.key1 & 1) != 0;
+    }
+
+    public CPUSpeed getCpuSpeed() {
+        return (this.key1 & 0x80) != 0 ? CPUSpeed.DOUBLE_SPEED : CPUSpeed.SINGLE_SPEED;
+    }
+
+    public void switchCpuSpeed() {
+        this.key1 ^= 0x80;
+        this.key1 &= ~1;
+        this.key1 &= 0xFF;
+    }
+
     @Override
     public int readByte(int address) {
         if (address == KEY_0) {
             return this.dmgCompatibilityMode ? 0xFF : 0xFB;
+        } else if (address == KEY_1) {
+            return this.key1 | 0b01111110;
         } else if (address == WBK) {
             return this.workRamBank | 0b11111000;
         } else if (address >= BGPI && address <= OPRI || address == VBK) {
@@ -74,6 +91,8 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
             if (this.emulator.getBus().isBootRomEnabled()) {
                 this.dmgCompatibilityMode = (value & 0b100) != 0;
             }
+        } else if (address == KEY_1) {
+            this.key1 = value & 1;
         } else if (address == WBK) {
             this.workRamBank = value & 0b111;
             if (this.workRamBank == 0) {
@@ -82,7 +101,7 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
         } else if (address >= BGPI && address <= OPRI || address == VBK) {
             //if (address != OPRI || this.emulator.getBus().isBootRomEnabled()) {
             // TODO: Properly investigate when exactly this applies
-                this.emulator.getVideoGenerator().writeByte(address, value);
+            this.emulator.getVideoGenerator().writeByte(address, value);
             //}
         } else if (address == RP) {
             this.infraredPort = (this.infraredPort & 0b10) | (value & 0b11111101);
@@ -105,6 +124,11 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
 
     public int getWorkRamBank() {
         return this.workRamBank;
+    }
+
+    public enum CPUSpeed {
+        SINGLE_SPEED,
+        DOUBLE_SPEED
     }
 
 }

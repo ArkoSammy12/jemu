@@ -1,5 +1,6 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
+import io.github.arkosammy12.jemu.core.cpu.SM83;
 import io.github.arkosammy12.jemu.core.gameboy.*;
 
 public class GameBoyColorEmulator extends GameBoyEmulator {
@@ -51,19 +52,61 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
 
     @Override
     protected void runCycle() {
-        boolean haltCpu = this.getBus().isCopyingDma();
-        if (!haltCpu) {
-            this.getCpu().cycle();
+        if (this.getMMIOBus().getCpuSpeed() == CGBMMMIOBus.CPUSpeed.SINGLE_SPEED) {
+            boolean haltCpu = this.getBus().isCopyingDma();
+            if (!haltCpu) {
+                this.getCpu().cycle();
+            }
+            boolean apuFrameSequencerTick = false;
+            if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
+                apuFrameSequencerTick = this.getTimerController().cycle();
+            }
+            if (!haltCpu) {
+                this.getCpu().nextState();
+            }
+            this.getVideoGenerator().cycle();
+            this.getAudioGenerator().cycle(apuFrameSequencerTick);
+            this.getSerialController().cycle();
+            this.getCartridge().cycle();
+            this.getBus().cycleOamDMA();
+            this.getBus().cycleVDMA();
+        } else {
+            boolean haltCpu = this.getBus().isCopyingDma();
+            if (!haltCpu) {
+                this.getCpu().cycle();
+            }
+            boolean apuFrameSequencerTick = false;
+            if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
+                apuFrameSequencerTick = this.getTimerController().cycle();
+            }
+            if (!haltCpu) {
+                this.getCpu().nextState();
+            }
+
+            haltCpu = this.getBus().isCopyingDma();
+            if (!haltCpu) {
+                this.getCpu().cycle();
+            }
+            if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
+                apuFrameSequencerTick = this.getTimerController().cycle();
+            }
+            if (!haltCpu) {
+                this.getCpu().nextState();
+            }
+
+            this.getVideoGenerator().cycle();
+            this.getAudioGenerator().cycle(apuFrameSequencerTick);
+
+            this.getSerialController().cycle();
+            this.getSerialController().cycle();
+
+            this.getCartridge().cycle();
+
+            this.getBus().cycleOamDMA();
+            this.getBus().cycleOamDMA();
+
+            this.getBus().cycleVDMA();
         }
-        boolean apuFrameSequencerTick = this.getTimerController().cycle();
-        if (!haltCpu) {
-            this.getCpu().nextState();
-        }
-        this.getVideoGenerator().cycle();
-        this.getAudioGenerator().cycle(apuFrameSequencerTick);
-        this.getSerialController().cycle();
-        this.getCartridge().cycle();
-        this.getBus().cycle();
     }
 
 }

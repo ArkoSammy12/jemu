@@ -189,7 +189,7 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
         }
     }
 
-    public void cycle() {
+    public void cycleOamDMA() {
         if (this.oamTransferInProgress) {
             int sourceAddress = (this.oamDmaControl << 8) | (this.oamTransferredBytes);
             int oamByte = this.readByteDma(sourceAddress);

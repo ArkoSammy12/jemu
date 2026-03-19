@@ -31,6 +31,10 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
         super(emulator);
     }
 
+    public boolean isButtonHeld() {
+        return (this.readJoyP() & 0b1111) != 0b1111;
+    }
+
     @Override
     public void onActionPressed(Action action) {
         if (!(action instanceof Actions joypadAction)) {

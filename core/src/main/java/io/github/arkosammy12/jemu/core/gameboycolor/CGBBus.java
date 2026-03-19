@@ -303,9 +303,7 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         return this.hdmaCopyingBlock;
     }
 
-    @Override
-    public void cycle() {
-        super.cycle();
+    public void cycleVDMA() {
         if (this.hdmaTransferInProgress) {
             switch (this.currentDmaType) {
                 case GENERAL -> {

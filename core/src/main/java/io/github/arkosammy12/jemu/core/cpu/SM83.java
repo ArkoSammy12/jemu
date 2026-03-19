@@ -2066,6 +2066,8 @@ public class SM83 implements Processor {
 
         void setIF(int value);
 
+        boolean isButtonHeld();
+
         void onStopInstruction();
 
     }

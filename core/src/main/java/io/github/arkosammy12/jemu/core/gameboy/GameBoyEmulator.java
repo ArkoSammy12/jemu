@@ -140,7 +140,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.apu.cycle(apuFrameSequencerTick);
         this.serialController.cycle();
         this.cartridge.cycle();
-        this.bus.cycle();
+        this.bus.cycleOamDMA();
     }
 
     @Override
@@ -172,6 +172,11 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     @Override
     public void setIF(int value) {
         this.mmioBus.setIF(value);
+    }
+
+    @Override
+    public boolean isButtonHeld() {
+        return this.joypad.isButtonHeld();
     }
 
     @Override
