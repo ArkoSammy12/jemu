@@ -8,29 +8,29 @@ import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.*;
 
 public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
 
-    private final E emulator;
+    protected final E emulator;
 
-    private static final int FREQ_0 = 1 << 9;
-    private static final int FREQ_1 = 1 << 3;
-    private static final int FREQ_2 = 1 << 5;
-    private static final int FREQ_3 = 1 << 7;
+    protected static final int FREQ_0 = 1 << 9;
+    protected static final int FREQ_1 = 1 << 3;
+    protected static final int FREQ_2 = 1 << 5;
+    protected static final int FREQ_3 = 1 << 7;
 
-    private static final int TAC_CLOCK_SELECT_MASK = 0b11;
-    private static final int TAC_ENABLE_BIT = 1 << 2;
+    protected static final int TAC_CLOCK_SELECT_MASK = 0b11;
+    protected static final int TAC_ENABLE_BIT = 1 << 2;
 
-    private static final int DIV_BIT_4_MASK = 1 << 12;
+    protected static final int DIV_BIT_4_MASK = 1 << 12;
 
-    private int systemClock; // DIV (8 upper bits)
-    private int timerCounter; // TIMA
-    private int timerModulo; // TMA
-    private int timerControl; // TAC
+    protected int systemClock; // DIV (8 upper bits)
+    protected int timerCounter; // TIMA
+    protected int timerModulo; // TMA
+    protected int timerControl; // TAC
 
-    private boolean oldTimerInput = false;
-    private boolean reloadOccurred = false;
+    protected boolean oldTimerInput = false;
+    protected boolean reloadOccurred = false;
 
-    private int reloadDelay = -1;
+    protected int reloadDelay = -1;
 
-    private boolean oldDivBit4 = false;
+    protected boolean oldDivBit4 = false;
 
     public DMGTimerController(E emulator) {
         this.emulator = emulator;
@@ -84,7 +84,7 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
         return apuFrameSequencerTick;
     }
 
-    private boolean cycleSystemClock() {
+    protected boolean cycleSystemClock() {
 
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
         if (this.reloadDelay > 0) {
@@ -127,7 +127,11 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
 
     }
 
-    private void triggerInterrupt() {
+    public void resetDiv() {
+        this.systemClock = 0;
+    }
+
+    protected void triggerInterrupt() {
         this.emulator.getMMIOBus().setIF(this.emulator.getMMIOBus().getIF() | SM83.TIMER_MASK);
     }
 

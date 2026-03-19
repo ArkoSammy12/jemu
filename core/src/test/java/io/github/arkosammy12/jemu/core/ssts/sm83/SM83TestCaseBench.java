@@ -101,7 +101,12 @@ public class SM83TestCaseBench implements SM83.SystemBus {
     }
 
     @Override
-    public void onStopInstruction() {
+    public boolean isButtonHeld() {
+        return false;
+    }
+
+    @Override
+    public void onStopInstruction(boolean resetDiv) {
 
     }
 

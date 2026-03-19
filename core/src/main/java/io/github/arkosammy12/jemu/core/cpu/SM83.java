@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.core.cpu;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.common.Processor;
 
-public class SM83 implements Processor {
+public class SM83<S extends SM83.SystemBus> implements Processor {
 
     public static final int INSTRUCTION_FINISHED_FLAG = 1;
 
@@ -31,9 +31,9 @@ public class SM83 implements Processor {
     private static final int C_MASK = 1 << 4;
 
     public static final int PREFIX = 0xCB;
-    private static final int TERMINATE_INSTRUCTION = -1;
+    protected static final int TERMINATE_INSTRUCTION = -1;
 
-    private final SystemBus systemBus;
+    protected final S systemBus;
 
     private final int[] hram = new int[127];
 
@@ -51,13 +51,13 @@ public class SM83 implements Processor {
 
     private int WZ; // 16 bits
 
-    private Mode mode = Mode.EXECUTING;
+    protected Mode mode = Mode.EXECUTING;
     private boolean opcodeIsPrefixed = false;
     private boolean haltBug = false;
     private boolean servicingInterrupt = false;
-    private int machineCycleIndex = TERMINATE_INSTRUCTION;
+    protected int machineCycleIndex = TERMINATE_INSTRUCTION;
 
-    public SM83(SystemBus systemBus) {
+    public SM83(S systemBus) {
         this.systemBus = systemBus;
     }
 
@@ -347,7 +347,7 @@ public class SM83 implements Processor {
         return getIME() && interruptsPending();
     }
 
-    private boolean interruptsPending() {
+    protected boolean interruptsPending() {
         return (systemBus.getIE() & systemBus.getIF() & 0x1F) != 0;
     }
 
@@ -379,7 +379,7 @@ public class SM83 implements Processor {
         };
     }
 
-    private void execute() {
+    protected void execute() {
         int x = getX(getIR());
         int y = getY(getIR());
         int z = getZ(getIR());
@@ -421,9 +421,44 @@ public class SM83 implements Processor {
                                 }
                             }
                             case 2 -> { // STOP
-                                // TODO: =============== IMPLEMENT ===============
-                                systemBus.onStopInstruction();
-                                machineCycleIndex = TERMINATE_INSTRUCTION;
+                                switch (machineCycleIndex) {
+                                    case 0 -> {
+                                        if (this.systemBus.isButtonHeld()) {
+                                            if (this.interruptsPending()) {
+                                                this.systemBus.onStopInstruction(false);
+                                                machineCycleIndex = TERMINATE_INSTRUCTION;
+                                            } else {
+                                                setPC(getPC() + 1);
+                                                this.mode = Mode.HALTED;
+                                                this.systemBus.onStopInstruction(false);
+                                                machineCycleIndex = 1;
+                                            }
+                                        } else if (this.interruptsPending()) {
+                                            this.mode = Mode.STOPPED;
+                                            this.systemBus.onStopInstruction(true);
+                                            machineCycleIndex = 2;
+                                        } else {
+                                            setPC(getPC() + 1);
+                                            this.systemBus.onStopInstruction(true);
+                                            machineCycleIndex = 2;
+                                        }
+                                    } case 1 -> {
+                                        if (interruptsPending()) { // HALT mode
+                                            this.mode = Mode.EXECUTING;
+                                            machineCycleIndex = TERMINATE_INSTRUCTION;
+                                        } else {
+                                            machineCycleIndex = 1;
+                                        }
+                                    }
+                                    case 2 -> {
+                                        if (this.systemBus.isButtonHeld()) { // STOP mode
+                                            this.mode = Mode.EXECUTING;
+                                            machineCycleIndex = TERMINATE_INSTRUCTION;
+                                        } else {
+                                            machineCycleIndex = 2;
+                                        }
+                                    }
+                                }
                             }
                             case 3 -> { // JR d
                                 switch (machineCycleIndex) {
@@ -2068,7 +2103,7 @@ public class SM83 implements Processor {
 
         boolean isButtonHeld();
 
-        void onStopInstruction();
+        void onStopInstruction(boolean resetDiv);
 
     }
 

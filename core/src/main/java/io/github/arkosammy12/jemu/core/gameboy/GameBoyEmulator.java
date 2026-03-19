@@ -13,7 +13,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
     private final GameBoyHost host;
 
-    private final SM83 cpu;
+    private final SM83<?> cpu;
     private final DMGBus<?> bus;
     private final DMGPPU<?> ppu;
     private final DMGAPU<?> apu;
@@ -41,8 +41,8 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.cartridge = GameBoyCartridge.getCartridge(this);
     }
 
-    protected SM83 createCpu() {
-        return new SM83(this);
+    protected SM83<?> createCpu() {
+        return new SM83<>(this);
     }
 
     protected DMGBus<?> createBus() {
@@ -75,7 +75,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public SM83 getCpu() {
+    public SM83<?> getCpu() {
         return this.cpu;
     }
 
@@ -180,8 +180,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public void onStopInstruction() {
-
+    public void onStopInstruction(boolean resetDiv) {
+        if (resetDiv) {
+            this.timerController.resetDiv();
+        }
     }
 
     @Override

@@ -1,14 +1,18 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
+import io.github.arkosammy12.jemu.core.cpu.CGBSM83;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
 import io.github.arkosammy12.jemu.core.gameboy.*;
+import org.tinylog.Logger;
 
-public class GameBoyColorEmulator extends GameBoyEmulator {
+public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.SystemBus {
 
+    private CGBSM83<?> cpu;
     private CGBBus<?> bus;
     private CGBPPU<?> ppu;
 
     private CGBMMMIOBus<?> mmioBus;
+    private CGBTimerController<?> timerController;
 
     public GameBoyColorEmulator(GameBoyHost host) {
         super(host);
@@ -16,6 +20,15 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
 
     public boolean isDmgCompatibilityMode() {
         return this.getMMIOBus().isDmgCompatibilityMode();
+    }
+
+    protected CGBSM83<?> createCpu() {
+        this.cpu = new CGBSM83<>(this);
+        return this.cpu;
+    }
+
+    public CGBSM83<?> getCpu() {
+        return this.cpu;
     }
 
     @Override
@@ -50,6 +63,16 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
         return this.mmioBus;
     }
 
+
+    protected CGBTimerController<?> createTimerController() {
+        this.timerController = new CGBTimerController<>(this);
+        return this.timerController;
+    }
+
+    public CGBTimerController<?> getTimerController() {
+        return this.timerController;
+    }
+
     @Override
     protected void runCycle() {
         if (this.getMMIOBus().getCpuSpeed() == CGBMMMIOBus.CPUSpeed.SINGLE_SPEED) {
@@ -64,6 +87,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
             if (!haltCpu) {
                 this.getCpu().nextState();
             }
+
             this.getVideoGenerator().cycle();
             this.getAudioGenerator().cycle(apuFrameSequencerTick);
             this.getSerialController().cycle();
@@ -77,7 +101,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
             }
             boolean apuFrameSequencerTick = false;
             if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
-                apuFrameSequencerTick = this.getTimerController().cycle();
+                apuFrameSequencerTick |= this.getTimerController().cycle();
             }
             if (!haltCpu) {
                 this.getCpu().nextState();
@@ -88,7 +112,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
                 this.getCpu().cycle();
             }
             if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
-                apuFrameSequencerTick = this.getTimerController().cycle();
+                apuFrameSequencerTick |= this.getTimerController().cycle();
             }
             if (!haltCpu) {
                 this.getCpu().nextState();
@@ -109,4 +133,16 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
         }
     }
 
+    @Override
+    public boolean isSpeedSwitchRequested() {
+        return this.getMMIOBus().isSwitchSpeedArmed();
+    }
+
+    @Override
+    public void onStopInstructionWithSpeedSwitch(boolean resetDiv) {
+        this.onStopInstruction(resetDiv);
+        if (this.getMMIOBus().isSwitchSpeedArmed()) {
+            this.getMMIOBus().switchCpuSpeed();
+        }
+    }
 }
