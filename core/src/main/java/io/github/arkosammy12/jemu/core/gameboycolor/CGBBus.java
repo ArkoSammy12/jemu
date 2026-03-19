@@ -289,7 +289,10 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                             this.hdmaControl = value & 0xFF;
                             this.hdmaControl &= ~0x80;
                             this.currentDmaType = DMAType.HBLANK;
-                            this.hdmaTransferDelay = 2; // TODO: Set to 1 if on double speed mode
+                            this.hdmaTransferDelay = switch (this.emulator.getMMIOBus().getCpuSpeed()) {
+                                case DOUBLE_SPEED -> 1;
+                                case SINGLE_SPEED -> 2;
+                            };
                         } else {
                             this.hdmaControl = (0x80 | value) & 0xFF;
                             this.currentDmaType = null;
@@ -301,7 +304,10 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                         this.hdmaControl = value & 0xFF;
                         this.hdmaControl &= ~0x80;
                         this.currentDmaType = (value & 0x80) != 0 ? DMAType.HBLANK : DMAType.GENERAL;
-                        this.hdmaTransferDelay = 2; // TODO: Set to 1 if on double speed mode
+                        this.hdmaTransferDelay = switch (this.emulator.getMMIOBus().getCpuSpeed()) {
+                            case DOUBLE_SPEED -> 1;
+                            case SINGLE_SPEED -> 2;
+                        };
                     }
                 }
                 default -> super.writeByte(address, value);
