@@ -31,6 +31,7 @@ public class CGBSM83<S extends CGBSM83.SystemBus> extends SM83<S> {
                                 throw new EmulatorException("The SM83 CPU has non-deterministially glitched due to a STOP instruction!");
                             } else {
                                 this.systemBus.onStopInstructionWithSpeedSwitch(true);
+                                machineCycleIndex = TERMINATE_INSTRUCTION;
                             }
                         } else {
                             setPC(getPC() + 1);
@@ -45,6 +46,7 @@ public class CGBSM83<S extends CGBSM83.SystemBus> extends SM83<S> {
                         machineCycleIndex = 2;
                     } else {
                         setPC(getPC() + 1);
+                        this.mode = Mode.STOPPED;
                         this.systemBus.onStopInstruction(true);
                         machineCycleIndex = 2;
                     }

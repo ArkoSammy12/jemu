@@ -420,7 +420,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     }
                                 }
                             }
-                            case 2 -> { // STOP
+                            case 2 -> { //  STOP
                                 switch (machineCycleIndex) {
                                     case 0 -> {
                                         if (this.systemBus.isButtonHeld()) {
@@ -439,6 +439,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                             machineCycleIndex = 2;
                                         } else {
                                             setPC(getPC() + 1);
+                                            this.mode = Mode.STOPPED;
                                             this.systemBus.onStopInstruction(true);
                                             machineCycleIndex = 2;
                                         }
