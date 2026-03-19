@@ -3,7 +3,6 @@ package io.github.arkosammy12.jemu.core.gameboycolor;
 import io.github.arkosammy12.jemu.core.cpu.CGBSM83;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
 import io.github.arkosammy12.jemu.core.gameboy.*;
-import org.tinylog.Logger;
 
 public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.SystemBus {
 
