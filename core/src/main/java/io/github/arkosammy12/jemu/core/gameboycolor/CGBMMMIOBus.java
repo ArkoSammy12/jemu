@@ -85,7 +85,7 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
                 this.emulator.getVideoGenerator().writeByte(address, value);
             //}
         } else if (address == RP) {
-            this.infraredPort = value & 0b11111101;
+            this.infraredPort = (this.infraredPort & 0b10) | (value & 0b11111101);
         } else if (address == UNK_1) {
             this.unknownRegister1 = value & 0xFF;
         } else if (address == UNK_2) {
