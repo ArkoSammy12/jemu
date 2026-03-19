@@ -229,8 +229,6 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         return new int[8][0x1000];
     }
 
-    // TODO: Adapt echo RAM to reflect ram banks
-
     @Override
     public int readByte(int address) {
         if (this.oamTransferInProgress) {
@@ -245,6 +243,13 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             }
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
             return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START];
+        } else if (address >= ECHO_START && address <= ECHO_END) {
+            address &= 0x1FFF;
+            if (address < this.workRam[0].length) {
+                return this.workRam[0][address];
+            } else {
+                return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address & 0xFFF];
+            }
         } else if (address >= IO_START && address <= IO_END) {
             return switch (address) {
                 case HDMA_1, HDMA_2, HDMA_3, HDMA_4 -> 0xFF;
@@ -265,7 +270,14 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         }
         if (address >= WRAMX_START && address <= WRAMX_END) {
             this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START] = value & 0xFF;
-        } else if (address >= IO_START && address <= IO_END) {
+        } else if (address >= ECHO_START && address <= ECHO_END) {
+            address &= 0x1FFF;
+            if (address < this.workRam[0].length) {
+                this.workRam[0][address] = value & 0xFF;
+            } else {
+                this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address & 0xFFF] = value & 0xFF;
+            }
+        }  else if (address >= IO_START && address <= IO_END) {
             switch (address) {
                 case HDMA_1 -> this.hdmaSourceAddress = (((value << 8) & 0xFF00) | (this.hdmaSourceAddress & 0xFF));
                 case HDMA_2 -> this.hdmaSourceAddress = ((this.hdmaSourceAddress & 0xFF00) | (value & 0xF0));
@@ -423,6 +435,20 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             }
         } else if (address >= WRAMX_START && address <= WRAMX_END) {
             return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address - WRAMX_START];
+        } else if (address >= ECHO_START && address <= ECHO_END) {
+            address &= 0x1FFF;
+            if (address < this.workRam[0].length) {
+                return this.workRam[0][address];
+            } else {
+                return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address & 0xFFF];
+            }
+        } else if (address >= 0xFE00 && address <= 0xFFFF) {
+            address &= 0x1FFF;
+            if (address < this.workRam[0].length) {
+                return this.workRam[0][address];
+            } else {
+                return this.workRam[this.emulator.getMMIOBus().getWorkRamBank()][address & 0xFFF];
+            }
         } else {
             return super.readByteDma(address);
         }
