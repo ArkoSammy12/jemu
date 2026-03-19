@@ -34,6 +34,8 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
     private boolean dmgCompatibilityMode;
     private int workRamBank = 1;
 
+    private int infraredPort;
+
     private int unknownRegister1;
     private int unknownRegister2;
     private int unknownRegister3;
@@ -51,6 +53,8 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
             return this.workRamBank | 0b11111000;
         } else if (address >= BGPI && address <= OPRI || address == VBK) {
             return this.emulator.getVideoGenerator().readByte(address);
+        } else if (address == RP) {
+            return this.infraredPort | 0b00111100;
         } else if (address == UNK_1) {
             return this.unknownRegister1;
         } else if (address == UNK_2) {
@@ -80,6 +84,8 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
             // TODO: Properly investigate when exactly this applies
                 this.emulator.getVideoGenerator().writeByte(address, value);
             //}
+        } else if (address == RP) {
+            this.infraredPort = value & 0b11111101;
         } else if (address == UNK_1) {
             this.unknownRegister1 = value & 0xFF;
         } else if (address == UNK_2) {
