@@ -94,6 +94,8 @@ public class RTCMBC3 extends MBC3 {
                     }
                     default -> throw new EmulatorException("Invalid RTC register address $%04X for the GameBoy MBC3 cartridge type!");
                 }
+            } else {
+                super.writeByte(address, value);
             }
         } else if (address >= 0x6000 && address <= 0x7FFF) {
             if (this.latchControl == 0x00 && (value & 0xFF) == 0x01) {
