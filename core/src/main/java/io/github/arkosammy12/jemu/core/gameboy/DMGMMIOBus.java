@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 
-public class DMGMMIOBus implements Bus {
+public class DMGMMIOBus<E extends GameBoyEmulator> implements Bus {
 
     public static final int JOYP_ADDR = 0xFF00;
 
@@ -62,12 +62,12 @@ public class DMGMMIOBus implements Bus {
 
     public static final int IE_ADDR = 0xFFFF;
 
-    protected final GameBoyEmulator emulator;
+    protected final E emulator;
 
     private int interruptFlag;
     private int interruptEnable;
 
-    public DMGMMIOBus(GameBoyEmulator emulator) {
+    public DMGMMIOBus(E emulator) {
         this.emulator = emulator;
     }
 

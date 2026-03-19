@@ -1,9 +1,8 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
 import io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus;
-import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 
-public class CGBMMMIOBus extends DMGMMIOBus {
+public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
 
     public static final int KEY_0 = 0xFF4C;
     public static final int KEY_1 = 0xFF4D;
@@ -35,7 +34,12 @@ public class CGBMMMIOBus extends DMGMMIOBus {
     private boolean dmgCompatibilityMode;
     private int workRamBank = 1;
 
-    public CGBMMMIOBus(GameBoyEmulator emulator) {
+    private int unknownRegister1;
+    private int unknownRegister2;
+    private int unknownRegister3;
+    private int unknownRegister4;
+
+    public CGBMMMIOBus(E emulator) {
         super(emulator);
     }
 
@@ -47,6 +51,14 @@ public class CGBMMMIOBus extends DMGMMIOBus {
             return this.workRamBank | 0b11111000;
         } else if (address >= BGPI && address <= OPRI || address == VBK) {
             return this.emulator.getVideoGenerator().readByte(address);
+        } else if (address == UNK_1) {
+            return this.unknownRegister1;
+        } else if (address == UNK_2) {
+            return this.unknownRegister2;
+        } else if (address == UNK_3) {
+            return this.emulator.isDmgCompatibilityMode() ? 0xFF : this.unknownRegister3;
+        } else if (address == UNK_4) {
+            return this.unknownRegister4 | 0b10001111;
         } else {
             return super.readByte(address);
         }
@@ -68,6 +80,14 @@ public class CGBMMMIOBus extends DMGMMIOBus {
             // TODO: Properly investigate when exactly this applies
                 this.emulator.getVideoGenerator().writeByte(address, value);
             //}
+        } else if (address == UNK_1) {
+            this.unknownRegister1 = value & 0xFF;
+        } else if (address == UNK_2) {
+            this.unknownRegister2 = value & 0xFF;
+        } else if (address == UNK_3) {
+            this.unknownRegister3 = value & 0xFF;
+        } else if (address == UNK_4) {
+            this.unknownRegister4 = value & 0xFF;
         } else {
             super.writeByte(address, value);
         }

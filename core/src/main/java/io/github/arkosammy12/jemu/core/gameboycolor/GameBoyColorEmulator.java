@@ -7,7 +7,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
     private CGBBus<?> bus;
     private CGBPPU<?> ppu;
 
-    private CGBMMMIOBus mmioBus;
+    private CGBMMMIOBus<?> mmioBus;
 
     public GameBoyColorEmulator(GameBoyHost host) {
         super(host);
@@ -39,13 +39,13 @@ public class GameBoyColorEmulator extends GameBoyEmulator {
         return this.ppu;
     }
 
-    protected CGBMMMIOBus createMmioBus() {
-        this.mmioBus = new CGBMMMIOBus(this);
+    protected CGBMMMIOBus<?> createMmioBus() {
+        this.mmioBus = new CGBMMMIOBus<>(this);
         return this.mmioBus;
     }
 
     @Override
-    public CGBMMMIOBus getMMIOBus() {
+    public CGBMMMIOBus<?> getMMIOBus() {
         return this.mmioBus;
     }
 

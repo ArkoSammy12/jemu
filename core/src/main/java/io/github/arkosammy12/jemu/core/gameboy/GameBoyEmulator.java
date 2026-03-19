@@ -19,7 +19,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     private final DMGAPU<?> apu;
     private final GameBoyJoypad<?> joypad;
 
-    private final DMGMMIOBus mmioBus;
+    private final DMGMMIOBus<?> mmioBus;
     private final DMGTimerController<?> timerController;
     private final DMGSerialController<?> serialController;
 
@@ -57,8 +57,8 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return new DMGAPU<>(this);
     }
 
-    protected DMGMMIOBus createMmioBus() {
-        return new DMGMMIOBus(this);
+    protected DMGMMIOBus<?> createMmioBus() {
+        return new DMGMMIOBus<>(this);
     }
 
     protected DMGTimerController<?> createTimerController() {
@@ -108,7 +108,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.cartridge;
     }
 
-    public DMGMMIOBus getMMIOBus() {
+    public DMGMMIOBus<?> getMMIOBus() {
         return this.mmioBus;
     }
 
