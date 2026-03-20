@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
 import io.github.arkosammy12.jemu.core.gameboy.DMGAPU;
-import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.WAVERAM_START;
 
