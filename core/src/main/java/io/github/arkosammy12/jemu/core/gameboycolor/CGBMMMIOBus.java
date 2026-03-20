@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
 import io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus;
-import org.tinylog.Logger;
 
 public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
 
