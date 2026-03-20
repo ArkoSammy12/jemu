@@ -75,7 +75,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     @Override
     protected void runCycle() {
         if (this.getMMIOBus().getCpuSpeed() == CGBMMMIOBus.CPUSpeed.SINGLE_SPEED) {
-            boolean haltCpu = this.getBus().isCopyingDma();
+            boolean haltCpu = this.getBus().haltCpu();
             if (!haltCpu) {
                 this.getCpu().cycle();
             }
@@ -94,7 +94,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
             this.getBus().cycleOamDMA();
             this.getBus().cycleVDMA();
         } else {
-            boolean haltCpu = this.getBus().isCopyingDma();
+            boolean haltCpu = this.getBus().haltCpu();
             if (!haltCpu) {
                 this.getCpu().cycle();
             }
@@ -106,7 +106,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
                 this.getCpu().nextState();
             }
 
-            haltCpu = this.getBus().isCopyingDma();
+            haltCpu = this.getBus().haltCpu();
             if (!haltCpu) {
                 this.getCpu().cycle();
             }

@@ -218,6 +218,7 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
     private int hdmaCurrentSize;
     private boolean hdmaTransferInProgress;
     private boolean hdmaCopyingBlock;
+    private boolean haltCpu;
     private int hdmaTransferredBytes;
 
     public CGBBus(E emulator) {
@@ -317,8 +318,8 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         }
     }
 
-    public boolean isCopyingDma() {
-        return this.hdmaCopyingBlock;
+    public boolean haltCpu() {
+        return this.haltCpu;
     }
 
     public void cycleVDMA() {
@@ -334,23 +335,31 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                             this.hdmaTransferInProgress = false;
                             this.hdmaCopyingBlock = false;
                             this.currentDmaType = null;
+                            this.haltCpu = false;
                             this.hdmaControl |= 0x80;
                         }
                     }
                 }
                 case HBLANK -> {
-                    if (this.hdmaCopyingBlock && this.emulator.getCpu().getMode() == SM83.Mode.EXECUTING) {
-                        boolean destinationOverflowed = this.tickBlockTransfer();
-                        if (this.hdmaTransferredBytes % 16 == 0) {
-                            this.hdmaCopyingBlock = false;
-                            this.hdmaControl = (this.hdmaControl - 1) & 0xFF;
-                        }
-                        if ((this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) || destinationOverflowed) {
-                            this.hdmaTransferInProgress = false;
-                            this.hdmaCopyingBlock = false;
-                            this.currentDmaType = null;
-                            this.oldPpuMode = -1;
-                            this.hdmaControl |= 0x80;
+                    if (this.hdmaCopyingBlock) {
+                        if (this.emulator.getCpu().getMode() == SM83.Mode.EXECUTING) {
+                            this.haltCpu = true;
+                            boolean destinationOverflowed = this.tickBlockTransfer();
+                            if (this.hdmaTransferredBytes % 16 == 0) {
+                                this.hdmaCopyingBlock = false;
+                                this.haltCpu = false;
+                                this.hdmaControl = (this.hdmaControl - 1) & 0xFF;
+                            }
+                            if ((this.hdmaTransferredBytes >= ((this.hdmaCurrentSize + 1)) * 16) || destinationOverflowed) {
+                                this.hdmaTransferInProgress = false;
+                                this.hdmaCopyingBlock = false;
+                                this.haltCpu = false;
+                                this.currentDmaType = null;
+                                this.oldPpuMode = -1;
+                                this.hdmaControl |= 0x80;
+                            }
+                        } else {
+                            this.haltCpu = false;
                         }
                     }
                 }
@@ -369,11 +378,15 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
 
         if (this.hdmaTransferInProgress) {
             switch (this.currentDmaType) {
-                case GENERAL -> this.hdmaCopyingBlock = true;
+                case GENERAL -> {
+                    this.hdmaCopyingBlock = true;
+                    this.haltCpu = true;
+                }
                 case HBLANK -> {
                     int ppuMode = this.emulator.getVideoGenerator().getMode().getValue();
                     if (!DMGPPU.Mode.MODE_0_HBLANK.matchesValue(this.oldPpuMode) && DMGPPU.Mode.MODE_0_HBLANK.matchesValue(ppuMode)) {
                         this.hdmaCopyingBlock = true;
+                        this.haltCpu = true;
                     }
                     this.oldPpuMode = ppuMode;
                 }
