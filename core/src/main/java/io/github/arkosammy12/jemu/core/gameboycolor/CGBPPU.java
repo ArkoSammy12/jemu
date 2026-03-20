@@ -301,69 +301,60 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
             return;
         }
 
-        boolean dmgCompatibilityMode = this.emulator.isDmgCompatibilityMode();
-
         int bgPixel = this.backgroundFifo.dequeueInt();
-
-        int bgColor;
-        boolean bgPriority;
-        int bgPalette;
-
-        if (dmgCompatibilityMode) {
-            bgColor = (this.backgroundPalette >>> ((bgPixel & 0b11) * 2)) & 0b11;;
-            bgPriority = false;
-            bgPalette = 0;
-        } else {
-            bgColor = getCgbColorNumberFromBgPixelEntry(bgPixel);
-            bgPriority = getCgbPriorityFromBgPixelEntry(bgPixel);
-            bgPalette = getCgbPaletteFromBgPixelEntry(bgPixel);
-        }
-
-        if (!this.getBackgroundAndWindowEnable()) {
-            bgColor = 0;
-        }
-
-        Integer finalPixel = this.getARGBForBgPixelEntry(dmgCompatibilityMode ? bgColor : getCgbColorNumberFromBgPixelEntry(bgPixel), bgPalette);
-
-        int bgDiscardTarget = this.scrollX % 8;
-        if (!this.isRenderingWindow() && this.discardedPixels < bgDiscardTarget) {
-            this.discardedPixels++;
-            finalPixel = null;
-        }
-
         Integer objPixel = this.spriteFifo.poll();
         this.spriteFifo.offer(null);
 
-        if (objPixel != null) {
-            boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
-
-            int objColor;
-            int objPalette;
-            if (dmgCompatibilityMode) {
-                objColor = getDmgColorNumberFromObjPixelEntry(objPixel);
-                objPalette = getDmgPaletteForObjPixelEntry(objPixel) ? 1 : 0;
-            } else {
-                objColor = getCgbColorNumberFromObjPixelEntry(objPixel);
-                objPalette = getCgbPaletteFromObjPixelEntry(objPixel);
+        Integer finalPixel;
+        if (this.emulator.isDmgCompatibilityMode()) {
+            if (!this.getBackgroundAndWindowEnable()) {
+                bgPixel = 0;
             }
 
-            boolean drawObj = false;
-            if (objColor != 0) {
-                if (dmgCompatibilityMode) {
-                    drawObj = !(objPriority && bgColor != 0);
-                } else {
-                    drawObj = !this.getBackgroundAndWindowEnable() || bgColor == 0 || (!bgPriority && !objPriority);
+            int bgPaletteIndex = (this.backgroundPalette >>> ((bgPixel & 0b11) * 2)) & 0b11;
+            finalPixel = this.getARGBForBgPixelEntry(bgPaletteIndex, 0);
+
+            int bgDiscardTarget = this.scrollX % 8;
+            if (!this.isRenderingWindow() && this.discardedPixels < bgDiscardTarget) {
+                this.discardedPixels++;
+                finalPixel = null;
+            }
+
+            if (objPixel != null) {
+                int objColorNumber = getDmgColorNumberFromObjPixelEntry(objPixel);
+                boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
+                boolean objPalette = getDmgPaletteForObjPixelEntry(objPixel);
+                if (objColorNumber != 0 && !(objPriority && bgPixel != 0)) {
+                    int objPaletteReg = objPalette ? this.objectPalette1 : this.objectPalette0;
+                    int objPaletteIndex = (objPaletteReg >>> (objColorNumber * 2)) & 0b11;
+                    finalPixel = this.getARGBForObjPixelEntry(objPaletteIndex, objPalette ? 1 : 0);
                 }
             }
+        } else {
+            int bgColor = getCgbColorNumberFromBgPixelEntry(bgPixel);
+            boolean bgPriority = getCgbPriorityFromBgPixelEntry(bgPixel);
+            int bgPalette = getCgbPaletteFromBgPixelEntry(bgPixel);
 
-            if (drawObj) {
-                if (dmgCompatibilityMode) {
-                    int objPaletteReg = objPalette != 0 ? this.objectPalette1 : this.objectPalette0;
-                    objColor = (objPaletteReg >>> (objColor * 2)) & 0b11;
-                }
-                finalPixel = this.getARGBForObjPixelEntry(objColor, objPalette);
+            if (!this.getBackgroundAndWindowEnable()) {
+                bgColor = 0;
             }
 
+            finalPixel = this.getARGBForBgPixelEntry(getCgbColorNumberFromBgPixelEntry(bgPixel), bgPalette);
+
+            int bgDiscardTarget = this.scrollX % 8;
+            if (!this.isRenderingWindow() && this.discardedPixels < bgDiscardTarget) {
+                this.discardedPixels++;
+                finalPixel = null;
+            }
+
+            if (objPixel != null) {
+                boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
+                int objColor = getCgbColorNumberFromObjPixelEntry(objPixel);
+                int objPalette = getCgbPaletteFromObjPixelEntry(objPixel);
+                if (objColor != 0 && (!this.getBackgroundAndWindowEnable() || bgColor == 0 || (!bgPriority && !objPriority))) {
+                    finalPixel = this.getARGBForObjPixelEntry(objColor, objPalette);
+                }
+            }
         }
 
         if (finalPixel != null) {
@@ -372,6 +363,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
             }
             this.pixelX++;
         }
+
     }
 
     private int getARGBForBgPixelEntry(int colorNumber, int palette) {

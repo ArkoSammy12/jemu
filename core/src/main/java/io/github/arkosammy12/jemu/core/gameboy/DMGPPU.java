@@ -700,11 +700,11 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         this.spriteFifo.offer(null);
         if (objPixel != null) {
             int objColorNumber = getDmgColorNumberFromObjPixelEntry(objPixel);
-            boolean priority = getDmgPriorityForObjPixelEntry(objPixel);
-            boolean palette = getDmgPaletteForObjPixelEntry(objPixel);
-            if (objColorNumber != 0 && !(priority && bgPixel != 0)) {
-                int colorPaletteIndex = ((palette ? this.objectPalette1 : this.objectPalette0) >>> (objColorNumber * 2)) & 0b11;
-                finalPixel = DMG_PALETTE[colorPaletteIndex];
+            boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
+            boolean objPalette = getDmgPaletteForObjPixelEntry(objPixel);
+            if (objColorNumber != 0 && !(objPriority && bgPixel != 0)) {
+                int objPaletteIndex = ((objPalette ? this.objectPalette1 : this.objectPalette0) >>> (objColorNumber * 2)) & 0b11;
+                finalPixel = DMG_PALETTE[objPaletteIndex];
             }
         }
 
