@@ -9,6 +9,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     private CGBSM83<?> cpu;
     private CGBBus<?> bus;
     private CGBPPU<?> ppu;
+    private CGBAPU<?> apu;
 
     private CGBMMMIOBus<?> mmioBus;
     private CGBTimerController<?> timerController;
@@ -50,6 +51,15 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     @Override
     public CGBPPU<?> getVideoGenerator() {
         return this.ppu;
+    }
+
+    protected CGBAPU<?> createApu() {
+        this.apu = new CGBAPU<>(this);
+        return this.apu;
+    }
+
+    public CGBAPU<?> getAudioGenerator() {
+        return this.apu;
     }
 
     protected CGBMMMIOBus<?> createMmioBus() {

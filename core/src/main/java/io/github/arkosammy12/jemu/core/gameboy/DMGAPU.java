@@ -35,14 +35,14 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     private int frameSequencerStep;
 
-    private int nr50;
-    private int nr51;
+    protected int nr50;
+    protected int nr51;
     private int nr52;
 
-    private final Channel1 channel1 = new Channel1();
-    private final Channel2 channel2 = new Channel2();
-    private final Channel3 channel3 = new Channel3();
-    private final Channel4 channel4 = new Channel4();
+    protected final Channel1 channel1 = new Channel1();
+    protected final Channel2 channel2 = new Channel2();
+    protected final Channel3 channel3 = new Channel3();
+    protected final Channel4 channel4 = new Channel4();
 
     public DMGAPU(E emulator) {
         super(emulator);
@@ -118,7 +118,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         }
     }
 
-    private void onApuOn() {
+    protected void onApuOn() {
         this.emulator.getTimerController().onAPUPowerOn();
         this.frameSequencerStep = 0;
         this.channel1.waveDutyIndex = 0;
@@ -129,7 +129,8 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         this.channel3.firstFetchConsumed = false;
     }
 
-    private void onApuOff() {
+    @SuppressWarnings("DuplicatedCode")
+    protected void onApuOff() {
         this.channel1.nr10 = 0;
         this.channel1.nrx1 = 0;
         this.channel1.setNRX2(0);
@@ -305,14 +306,14 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         return this.nr50 & 0b111;
     }
 
-    private abstract class AudioChannel {
+    protected abstract class AudioChannel {
 
-        protected int nrx1;
-        protected int nrx2;
-        protected int nrx3;
-        protected int nrx4;
+        public int nrx1;
+        public int nrx2;
+        public int nrx3;
+        public int nrx4;
 
-        protected int lengthTimer;
+        public int lengthTimer;
 
         abstract protected void setEnabled(boolean enable);
 
@@ -411,7 +412,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     }
 
-    private class Channel2 extends AudioChannel {
+    protected class Channel2 extends AudioChannel {
 
         int waveDutyIndex;
         protected int wavePeriodTimer;
@@ -454,7 +455,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.lengthTimer = 64 - (value & 0x3F);
         }
 
-        protected void setNRX2(int value) {
+        public void setNRX2(int value) {
 
             int oldEnvelopeSweepPace = this.getEnvelopeSweepPace();
             boolean oldEnvelopeDirection = this.getEnvelopeDirection();
@@ -558,9 +559,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     }
 
-    private class Channel1 extends Channel2 {
+    protected class Channel1 extends Channel2 {
 
-        private int nr10;
+        public int nr10;
 
         private boolean sweepEnable;
         private int sweepShadow;
@@ -674,7 +675,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         }
     }
 
-    private class Channel3 extends AudioChannel {
+    protected class Channel3 extends AudioChannel {
 
         private final int[] waveRam = {
                 0xE2, 0xB7, 0x10, 0x95,
@@ -724,7 +725,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.lengthTimer = 256 - value;
         }
 
-        private void setNR30(int value) {
+        public void setNR30(int value) {
             this.nr30 = value & 0xFF;
             if (!this.getDacEnable()) {
                 this.setEnabled(false);
@@ -847,7 +848,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     }
 
-    private class Channel4 extends AudioChannel {
+    protected class Channel4 extends AudioChannel {
 
         private int envelopePeriodTimer;
         private int envelopeCurrentVolume;
@@ -885,13 +886,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         }
 
         @Override
-        protected void setNRX1(int value) {
+        public void setNRX1(int value) {
             super.setNRX1(value);
             this.lengthTimer = 64 - (value & 0x3F);
         }
 
         @Override
-        protected void setNRX2(int value) {
+        public void setNRX2(int value) {
 
             int oldPeriod = this.getEnvelopeSweepPace();
             boolean oldIncrease = this.getEnvelopeDirection();
