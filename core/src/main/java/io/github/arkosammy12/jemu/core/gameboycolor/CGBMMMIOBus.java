@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
 import io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus;
+import org.tinylog.Logger;
 
 public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
 
@@ -91,7 +92,7 @@ public class CGBMMMIOBus<E extends GameBoyColorEmulator> extends DMGMMIOBus<E> {
                 this.dmgCompatibilityMode = (value & 0b100) != 0;
             }
         } else if (address == KEY_1) {
-            this.key1 = value & 1;
+            this.key1 = (this.key1 & 0x80) | (value & 1);
         } else if (address == WBK) {
             this.workRamBank = value & 0b111;
             if (this.workRamBank == 0) {
