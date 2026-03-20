@@ -41,11 +41,16 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     protected final Channel1 channel1 = new Channel1();
     protected final Channel2 channel2 = new Channel2();
-    protected final Channel3 channel3 = new Channel3();
+    protected final DMGAPU<?>.Channel3 channel3;
     protected final Channel4 channel4 = new Channel4();
 
     public DMGAPU(E emulator) {
         super(emulator);
+        this.channel3 = this.createChannel3();
+    }
+
+    protected DMGAPU<?>.Channel3 createChannel3() {
+        return new Channel3();
     }
 
     @Override
@@ -677,7 +682,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
     protected class Channel3 extends AudioChannel {
 
-        private final int[] waveRam = {
+        protected final int[] waveRam = {
                 0xE2, 0xB7, 0x10, 0x95,
                 0xC8, 0x6B, 0x0A, 0xF7,
                 0x02, 0xF6, 0x63, 0xCB,
@@ -687,13 +692,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         private int nr30;
 
         private int waveSampleBuffer;
-        private int waveRamIndex;
-        private int wavePeriodTimer;
-        private int currentOutputLevel;
-        private double dcOffset;
+        protected int waveRamIndex;
+        protected int wavePeriodTimer;
+        protected int currentOutputLevel;
+        protected double dcOffset;
 
-        private boolean fetchedFirstByte;
-        private boolean firstFetchConsumed;
+        protected boolean fetchedFirstByte;
+        protected boolean firstFetchConsumed;
 
         @Override
         protected void setEnabled(boolean enable) {
@@ -745,7 +750,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return 256;
         }
 
-        private int getOutputLevel() {
+        protected int getOutputLevel() {
             return (this.nrx2 >>> 5) & 0b11;
         }
 
@@ -753,11 +758,11 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return this.nrx4 & 0b111;
         }
 
-        int getPeriodFull() {
+        protected int getPeriodFull() {
             return (this.getPeriodHigh() << 8) | this.nrx3;
         }
 
-        private int readWaveRam(int address) {
+        protected int readWaveRam(int address) {
             boolean originalFirstFetchConsumed = this.firstFetchConsumed;
             this.firstFetchConsumed = this.fetchedFirstByte;
             if (this.getEnabled()) {
@@ -771,7 +776,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             }
         }
 
-        private void writeWaveRam(int address, int value) {
+        protected void writeWaveRam(int address, int value) {
             boolean originalFirstFetchConsumed = this.firstFetchConsumed;
             this.firstFetchConsumed = this.fetchedFirstByte;
             if (this.getEnabled()) {
