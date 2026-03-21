@@ -22,6 +22,7 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
@@ -312,6 +313,9 @@ public class MainWindow implements Closeable {
         Runnable closer = () -> {
             if (this.appFrame != null) {
                 try (FileOutputStream output = new FileOutputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
+                    if (!Files.exists(this.dataDirectory)) {
+                        Files.createDirectory(this.dataDirectory);
+                    }
                     Properties stateProperties = new Properties();
                     for (PropertyEntry entry : this.stateProperties) {
                         stateProperties.setProperty(entry.key(), entry.serializer().get());
@@ -322,6 +326,9 @@ public class MainWindow implements Closeable {
                 }
 
                 try (FileOutputStream output = new FileOutputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
+                    if (!Files.exists(this.dataDirectory)) {
+                        Files.createDirectory(this.dataDirectory);
+                    }
                     Properties settingProperties = new Properties();
                     for (PropertyEntry entry : this.settingProperties) {
                         settingProperties.setProperty(entry.key(), entry.serializer().get());
