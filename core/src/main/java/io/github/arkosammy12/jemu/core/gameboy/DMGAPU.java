@@ -511,7 +511,11 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         @Override
         protected int tick() {
             if (!this.getEnabled()) {
-                return 0;
+                if (this.getDacEnable()) {
+                    return 0xF;
+                } else {
+                    return 0;
+                }
             }
             this.wavePeriodTimer--;
             if (this.wavePeriodTimer <= 0) {
@@ -791,7 +795,11 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         @Override
         protected int tick() {
             if (!this.getEnabled()) {
-                return 0;
+                if (this.getDacEnable()) {
+                    return 0xF;
+                } else {
+                    return 0;
+                }
             }
 
             this.wavePeriodTimer--;
@@ -948,8 +956,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         @Override
         protected int tick() {
             if (!this.getEnabled()) {
-                return 0;
+                if (this.getDacEnable()) {
+                    return 0xF;
+                } else {
+                    return 0;
+                }
             }
+
             this.wavePeriodTimer--;
             if (this.wavePeriodTimer <= 0) {
                 this.wavePeriodTimer = (this.getClockDivider() > 0 ? (this.getClockDivider() << 4) : 8) << this.getClockShift();
