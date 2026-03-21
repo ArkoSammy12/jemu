@@ -313,35 +313,45 @@ public class MainWindow implements Closeable {
         Runnable closer = () -> {
             if (this.appFrame != null) {
                 Path statePropertiesFile = this.dataDirectory.resolve("swing-ui-state.properties");
-                try (FileOutputStream output = new FileOutputStream(statePropertiesFile.toFile())) {
+                try {
                     if (!Files.exists(this.dataDirectory)) {
                         Files.createDirectory(this.dataDirectory);
                     }
                     if (!Files.exists(statePropertiesFile)) {
                         Files.createFile(statePropertiesFile);
                     }
-                    Properties stateProperties = new Properties();
-                    for (PropertyEntry entry : this.stateProperties) {
-                        stateProperties.setProperty(entry.key(), entry.serializer().get());
+                    try (FileOutputStream output = new FileOutputStream(statePropertiesFile.toFile())) {
+                        if (!Files.exists(this.dataDirectory)) {
+                            Files.createDirectory(this.dataDirectory);
+                        }
+                        if (!Files.exists(statePropertiesFile)) {
+                            Files.createFile(statePropertiesFile);
+                        }
+                        Properties stateProperties = new Properties();
+                        for (PropertyEntry entry : this.stateProperties) {
+                            stateProperties.setProperty(entry.key(), entry.serializer().get());
+                        }
+                        stateProperties.store(output, "Swing GUI state properties");
                     }
-                    stateProperties.store(output, "Swing GUI state properties");
                 } catch (IOException e) {
                     Logger.error("Error storing swing ui state to properties file: {}", e);
                 }
 
                 Path settingsPropertiesFile = this.dataDirectory.resolve("swing-ui-settings.properties");
-                try (FileOutputStream output = new FileOutputStream(settingsPropertiesFile.toFile())) {
+                try {
                     if (!Files.exists(this.dataDirectory)) {
                         Files.createDirectory(this.dataDirectory);
                     }
                     if (!Files.exists(settingsPropertiesFile)) {
                         Files.createFile(settingsPropertiesFile);
                     }
-                    Properties settingProperties = new Properties();
-                    for (PropertyEntry entry : this.settingProperties) {
-                        settingProperties.setProperty(entry.key(), entry.serializer().get());
+                    try (FileOutputStream output = new FileOutputStream(settingsPropertiesFile.toFile())) {
+                        Properties settingProperties = new Properties();
+                        for (PropertyEntry entry : this.settingProperties) {
+                            settingProperties.setProperty(entry.key(), entry.serializer().get());
+                        }
+                        settingProperties.store(output, "Swing GUI setting properties");
                     }
-                    settingProperties.store(output, "Swing GUI setting properties");
                 } catch (IOException e) {
                     Logger.error("Error storing swing ui settings to properties file: {}", e);
                 }
