@@ -57,32 +57,8 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
         }
 
         @Override
-        protected void trigger() {
-            /*
-            if (this.getEnabled() && this.wavePeriodTimer == 4) {
-                int coarseReadByteIndex = ((this.waveRamIndex - 1) & 31) / 2;
-                if (coarseReadByteIndex <= 3) {
-                    this.waveRam[0] = this.waveRam[coarseReadByteIndex];
-                } else {
-                    int beginIndex = coarseReadByteIndex & ~0b11;
-                    for (int i = beginIndex, j = 0; i <= beginIndex + 3; i++, j++) {
-                        this.waveRam[j] = this.waveRam[i];
-                    }
-                }
-            }
-             */
-
-            super.trigger();
-            this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 2;
-            this.currentOutputLevel = this.getOutputLevel();
-            this.waveRamIndex = 0;
-
-            double sum = 0;
-            for (int element : this.waveRam) {
-                sum += (element >>> 4) & 0xF;
-                sum += element & 0xF;
-            }
-            this.dcOffset = sum / (this.waveRam.length * 2);
+        protected void checkWaveRamCorruption() {
+            // No wave ram corruption on CGB
         }
 
     }
