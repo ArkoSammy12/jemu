@@ -226,8 +226,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         ch1 = (float) ((ch1 - (this.channel1.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
         ch2 = (float) ((ch2 - (this.channel2.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
 
-        int scale = this.channel3.getShiftAmount() == 4 ? 1 : 1 << this.channel3.getShiftAmount();
-        ch3 = (float) ((ch3 - (this.channel3.dcOffset / scale)) / MAX_VOLUME);
+        ch3 /= MAX_VOLUME;
         ch4 = (float) ((ch4 - (this.channel4.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
 
         double left = 0;
