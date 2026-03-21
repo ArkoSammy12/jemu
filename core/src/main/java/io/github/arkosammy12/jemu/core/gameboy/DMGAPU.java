@@ -522,7 +522,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
                 this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 4;
                 this.waveDutyIndex = (this.waveDutyIndex + 1) % 8;
             }
-            if (this.getPeriodFull() > 2043) {
+            if (this.getPeriodFull() > 2046) {
                 return 0;
             }
             int amplitude = DUTY_CYCLES[this.getWaveDuty()][this.waveDutyIndex];
