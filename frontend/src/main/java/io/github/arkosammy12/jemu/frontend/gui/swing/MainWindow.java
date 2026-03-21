@@ -312,9 +312,13 @@ public class MainWindow implements Closeable {
     public void close() {
         Runnable closer = () -> {
             if (this.appFrame != null) {
-                try (FileOutputStream output = new FileOutputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
+                Path statePropertiesFile = this.dataDirectory.resolve("swing-ui-state.properties");
+                try (FileOutputStream output = new FileOutputStream(statePropertiesFile.toFile())) {
                     if (!Files.exists(this.dataDirectory)) {
                         Files.createDirectory(this.dataDirectory);
+                    }
+                    if (!Files.exists(statePropertiesFile)) {
+                        Files.createFile(statePropertiesFile);
                     }
                     Properties stateProperties = new Properties();
                     for (PropertyEntry entry : this.stateProperties) {
@@ -325,9 +329,13 @@ public class MainWindow implements Closeable {
                     Logger.error("Error storing swing ui state to properties file: {}", e);
                 }
 
-                try (FileOutputStream output = new FileOutputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
+                Path settingsPropertiesFile = this.dataDirectory.resolve("swing-ui-settings.properties");
+                try (FileOutputStream output = new FileOutputStream(settingsPropertiesFile.toFile())) {
                     if (!Files.exists(this.dataDirectory)) {
                         Files.createDirectory(this.dataDirectory);
+                    }
+                    if (!Files.exists(settingsPropertiesFile)) {
+                        Files.createFile(settingsPropertiesFile);
                     }
                     Properties settingProperties = new Properties();
                     for (PropertyEntry entry : this.settingProperties) {
