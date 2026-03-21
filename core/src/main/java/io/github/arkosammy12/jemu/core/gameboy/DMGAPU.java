@@ -44,6 +44,9 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     protected final DMGAPU<?>.Channel3 channel3;
     protected final Channel4 channel4 = new Channel4();
 
+    private double leftCapacitor = 0;
+    private double rightCapacitor = 0;
+
     public DMGAPU(E emulator) {
         super(emulator);
         this.channel3 = this.createChannel3();
@@ -262,9 +265,29 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         left /= 4.0f;
         right /= 4.0f;
 
-        this.leftChannelSamples[this.currentSampleIndex] = (byte) (left * SAMPLE_SCALE);
-        this.rightChannelSamples[this.currentSampleIndex] = (byte) (right * SAMPLE_SCALE);
+        boolean dacEnable = this.channel1.getDacEnable() || this.channel2.getDacEnable() || this.channel3.getDacEnable() || this.channel4.getDacEnable();
+
+        this.leftChannelSamples[this.currentSampleIndex] = (byte) (this.highPassFilterLeft(left, dacEnable) * SAMPLE_SCALE);
+        this.rightChannelSamples[this.currentSampleIndex] = (byte) (this.highPassFilterRight(right, dacEnable) * SAMPLE_SCALE);
         this.currentSampleIndex = (this.currentSampleIndex + 1) % GameBoyEmulator.T_CYCLES_PER_FRAME;
+    }
+
+    private double highPassFilterLeft(double in, boolean dacEnable) {
+        double out = 0;
+        if (dacEnable) {
+            out = in - this.leftCapacitor;
+            this.leftCapacitor = in - out * 0.999958;
+        }
+        return out;
+    }
+
+    private double highPassFilterRight(double in, boolean dacEnable) {
+        double out = 0;
+        if (dacEnable) {
+            out = in - this.rightCapacitor;
+            this.rightCapacitor = in - out * 0.999958;
+        }
+        return out;
     }
 
     private void tickFrameSequencer() {
@@ -795,11 +818,14 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         @Override
         protected int tick() {
             if (!this.getEnabled()) {
-                if (this.getDacEnable()) {
-                    return 0xF;
+                int amplitude;
+                if (this.waveRamIndex % 2 == 0) {
+                    amplitude = (this.waveSampleBuffer >>> 4) & 0xF;
                 } else {
-                    return 0;
+                    amplitude = this.waveSampleBuffer & 0xF;
                 }
+
+                return amplitude >>> this.getShiftAmount();
             }
 
             this.wavePeriodTimer--;
