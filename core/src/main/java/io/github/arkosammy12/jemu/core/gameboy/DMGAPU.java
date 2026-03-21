@@ -259,8 +259,8 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             right += ch4;
         }
 
-        left *= (float) (this.getLeftVolume() + 1) / 8.0f;
-        right *= (float) (this.getRightVolume() + 1) / 8.0f;
+        left *= (float) -1 * (this.getLeftVolume() + 1) / 8.0f;
+        right *= (float) -1 * (this.getRightVolume() + 1) / 8.0f;
 
         left /= 4.0f;
         right /= 4.0f;
