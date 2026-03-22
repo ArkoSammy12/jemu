@@ -181,7 +181,7 @@ public class EmulatorMenu extends MenuBarMenu {
         }
 
         if (systemDescriptor == null) {
-            this.mainWindow.showDialog("Error attempting to restart", "File extensiono of selected ROM path does not match of system descriptors!", MainWindow.DialogType.ERROR);
+            this.mainWindow.showDialog("Error attempting to restart", "File extension of selected ROM path does not match of system descriptors!", MainWindow.DialogType.ERROR);
             return;
         }
 
