@@ -31,6 +31,8 @@ mvnw clean package
 
 An execute `.jar` file should have then been generated in `/target/jemu-x.y.z.jar`.
 
+Run with the `-DskipTests` flag to omit running the automated unit tests.
+
 ## License
 
 This project is licensed under the [MIT License](LICENSE).
