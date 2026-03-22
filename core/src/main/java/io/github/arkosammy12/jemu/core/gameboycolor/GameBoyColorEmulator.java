@@ -84,61 +84,70 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
 
     @Override
     protected void runCycle() {
-        if (this.getMMIOBus().getCpuSpeed() == CGBMMMIOBus.CPUSpeed.SINGLE_SPEED) {
-            boolean haltCpu = this.getBus().haltCpu();
+        CGBSM83<?> cpu = this.getCpu();
+        CGBPPU<?> ppu = this.getVideoGenerator();
+        CGBAPU<?> apu = this.getAudioGenerator();
+        GameBoyCartridge cartridge = this.getCartridge();
+        CGBBus<?> bus = this.getBus();
+        CGBTimerController<?> timerController = this.getTimerController();
+        CGBMMMIOBus<?> mmio = this.getMMIOBus();
+        DMGSerialController<?> serialController = this.getSerialController();
+
+        if (mmio.getCpuSpeed() == CGBMMMIOBus.CPUSpeed.SINGLE_SPEED) {
+            boolean haltCpu = bus.haltCpu();
             if (!haltCpu) {
-                this.getCpu().cycle();
+                cpu.cycle();
             }
             boolean apuFrameSequencerTick = false;
-            if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
-                apuFrameSequencerTick = this.getTimerController().cycle();
+            if (cpu.getMode() != SM83.Mode.STOPPED) {
+                apuFrameSequencerTick = timerController.cycle();
             }
             if (!haltCpu) {
-                this.getCpu().nextState();
+                cpu.nextState();
             }
 
-            this.getVideoGenerator().cycle();
-            this.getAudioGenerator().cycle(apuFrameSequencerTick);
-            this.getSerialController().cycle();
-            this.getCartridge().cycle();
-            this.getBus().cycleOamDMA();
-            this.getBus().cycleVDMA();
+            ppu.cycle();
+            apu.cycle(apuFrameSequencerTick);
+            serialController.cycle();
+            cartridge.cycle();
+            bus.cycleOamDMA();
+            bus.cycleVDMA();
         } else {
-            boolean haltCpu = this.getBus().haltCpu();
+            boolean haltCpu = bus.haltCpu();
             if (!haltCpu) {
-                this.getCpu().cycle();
+                cpu.cycle();
             }
             boolean apuFrameSequencerTick = false;
-            if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
+            if (cpu.getMode() != SM83.Mode.STOPPED) {
+                apuFrameSequencerTick |= timerController.cycle();
+            }
+            if (!haltCpu) {
+                cpu.nextState();
+            }
+
+            haltCpu = bus.haltCpu();
+            if (!haltCpu) {
+                cpu.cycle();
+            }
+            if (cpu.getMode() != SM83.Mode.STOPPED) {
                 apuFrameSequencerTick |= this.getTimerController().cycle();
             }
             if (!haltCpu) {
-                this.getCpu().nextState();
+                cpu.nextState();
             }
 
-            haltCpu = this.getBus().haltCpu();
-            if (!haltCpu) {
-                this.getCpu().cycle();
-            }
-            if (this.getCpu().getMode() != SM83.Mode.STOPPED) {
-                apuFrameSequencerTick |= this.getTimerController().cycle();
-            }
-            if (!haltCpu) {
-                this.getCpu().nextState();
-            }
+            ppu.cycle();
+            apu.cycle(apuFrameSequencerTick);
 
-            this.getVideoGenerator().cycle();
-            this.getAudioGenerator().cycle(apuFrameSequencerTick);
+            serialController.cycle();
+            serialController.cycle();
 
-            this.getSerialController().cycle();
-            this.getSerialController().cycle();
+            cartridge.cycle();
 
-            this.getCartridge().cycle();
+            bus.cycleOamDMA();
+            bus.cycleOamDMA();
 
-            this.getBus().cycleOamDMA();
-            this.getBus().cycleOamDMA();
-
-            this.getBus().cycleVDMA();
+            bus.cycleVDMA();
         }
     }
 
