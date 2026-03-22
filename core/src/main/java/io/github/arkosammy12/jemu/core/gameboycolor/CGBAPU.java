@@ -26,6 +26,8 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
 
     protected class Channel3 extends DMGAPU<?>.Channel3 {
 
+        private boolean triggeredThisCycle = false;
+
         @Override
         protected int readWaveRam(int address) {
             //boolean originalFirstFetchConsumed = this.firstFetchConsumed;
@@ -59,6 +61,27 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
         @Override
         protected void checkWaveRamCorruption() {
             // No wave ram corruption on CGB
+        }
+
+        @Override
+        protected int tick() {
+            if (!this.getEnabled() || this.triggeredThisCycle) {
+                this.triggeredThisCycle = false;
+                int amplitude;
+                if (this.waveRamIndex % 2 == 0) {
+                    amplitude = (this.waveSampleBuffer >>> 4) & 0xF;
+                } else {
+                    amplitude = this.waveSampleBuffer & 0xF;
+                }
+                return amplitude >>> this.getShiftAmount();
+            }
+            return super.tick();
+        }
+
+        @Override
+        protected void trigger() {
+            this.triggeredThisCycle = true;
+            super.trigger();
         }
 
     }

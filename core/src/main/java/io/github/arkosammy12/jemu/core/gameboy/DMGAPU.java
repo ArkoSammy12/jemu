@@ -717,7 +717,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
 
         private int nr30;
 
-        private int waveSampleBuffer;
+        protected int waveSampleBuffer;
         protected int waveRamIndex;
         protected int wavePeriodTimer;
         protected int currentOutputLevel;
@@ -845,7 +845,7 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             return amplitude >>> this.getShiftAmount();
         }
 
-        int getShiftAmount() {
+        protected int getShiftAmount() {
             return switch (this.currentOutputLevel) {
                 case 0 -> 4;
                 case 1 -> 0;
