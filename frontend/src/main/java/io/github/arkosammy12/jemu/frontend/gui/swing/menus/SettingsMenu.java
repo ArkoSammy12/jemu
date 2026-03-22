@@ -15,6 +15,7 @@ public class SettingsMenu extends MenuBarMenu {
 
     private volatile int volume = 50;
     private volatile boolean muted = false;
+    private volatile boolean resetOnFileSelect = true;
 
     public SettingsMenu(MainWindow mainWindow) {
         this.getJMenu().setText("Settings");
@@ -41,14 +42,20 @@ public class SettingsMenu extends MenuBarMenu {
         showInfoBarButton.setSelected(true);
         showInfoBarButton.addChangeListener(_ -> mainWindow.setStatusBarEnabled(showInfoBarButton.isSelected()));
 
+        JRadioButtonMenuItem resetOnFileSelect = new JRadioButtonMenuItem("Reset on file select");
+        resetOnFileSelect.setSelected(true);
+        resetOnFileSelect.addChangeListener(_ -> this.resetOnFileSelect = resetOnFileSelect.isSelected());
+
         this.getJMenu().add(volumeMenu);
         this.getJMenu().add(muteButton);
         this.getJMenu().addSeparator();
         this.getJMenu().add(showInfoBarButton);
+        this.getJMenu().add(resetOnFileSelect);
 
         mainWindow.registerSettingProperty("settings.volume", () -> String.valueOf(this.volumeSlider.getValue()), s -> tryParseInt(s).ifPresent(this.volumeSlider::setValue));
         mainWindow.registerSettingProperty("settings.muted", () -> String.valueOf(this.muteButton.isSelected()), s -> this.muteButton.setSelected(Boolean.parseBoolean(s)));
         mainWindow.registerSettingProperty("settings.show_status_bar", () -> String.valueOf(showInfoBarButton.isSelected()), s -> showInfoBarButton.setSelected(Boolean.parseBoolean(s)));
+        mainWindow.registerSettingProperty("settings.reset_on_file_select", () -> String.valueOf(resetOnFileSelect.isSelected()), s -> resetOnFileSelect.setSelected(Boolean.parseBoolean(s)));
 
     }
 
@@ -58,6 +65,10 @@ public class SettingsMenu extends MenuBarMenu {
 
     public boolean getMuted() {
         return this.muted;
+    }
+
+    boolean resetOnFileSelect() {
+        return this.resetOnFileSelect;
     }
 
 }

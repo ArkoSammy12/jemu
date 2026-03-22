@@ -17,6 +17,8 @@ import java.util.Optional;
 
 public class EmulatorMenu extends MenuBarMenu {
 
+    private final MainWindow mainWindow;
+
     private final JRadioButtonMenuItem pauseButton = new JRadioButtonMenuItem("Pause");
     private final JMenuItem stopButton = new JMenuItem("Stop");
     private final JMenuItem stepFrameButton = new JMenuItem("Step Frame");
@@ -27,6 +29,8 @@ public class EmulatorMenu extends MenuBarMenu {
     private volatile boolean emulatorStopped = true;
 
     public EmulatorMenu(MainWindow mainWindow) {
+
+        this.mainWindow = mainWindow;
 
         this.jMenu.setText("Emulator");
         this.jMenu.setMnemonic(KeyEvent.VK_E);
@@ -53,46 +57,7 @@ public class EmulatorMenu extends MenuBarMenu {
         JMenuItem resetButton = new JMenuItem("Reset");
         resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
         resetButton.setEnabled(true);
-        resetButton.addActionListener(_ -> {
-            SystemDescriptor systemDescriptor = this.currentSystemDescriptor;
-            if (systemDescriptor != null) {
-                mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
-                return;
-            }
-
-            Optional<Path> optionalRomPath = mainWindow.getMainMenuBar().getFileMenu().getSelectedRomPath();
-            if (optionalRomPath.isEmpty()) {
-                mainWindow.showDialog("Error attempting to restart", "No selected ROM path to determine system from!", MainWindow.DialogType.ERROR);
-                return;
-            }
-            String fileExtension = FilenameUtils.getExtension(optionalRomPath.get().toString());
-            if (fileExtension.isBlank()) {
-                mainWindow.showDialog("Error attempting to restart", "The file extension of the selected ROM path is blank!", MainWindow.DialogType.ERROR);
-                return;
-            }
-
-            outer: for (SystemDescriptor descriptor : mainWindow.getSystemDescriptors()) {
-                Optional<String[]> optionalFileExtensions = descriptor.getFileExtensions();
-                if (optionalFileExtensions.isEmpty()) {
-                    break;
-                }
-                String[] fileExtensions = optionalFileExtensions.get();
-                for (String extension : fileExtensions) {
-                    if (fileExtension.equals(extension)) {
-                        systemDescriptor = descriptor;
-                        break outer;
-                    }
-                }
-            }
-
-            if (systemDescriptor == null) {
-                mainWindow.showDialog("Error attempting to restart", "File extensiono of selected ROM path does not match of system descriptors!", MainWindow.DialogType.ERROR);
-                return;
-            }
-
-            mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
-
-        });
+        resetButton.addActionListener(_ -> this.submitReset());
 
         this.pauseButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK, true));
         this.pauseButton.setEnabled(true);
@@ -181,6 +146,46 @@ public class EmulatorMenu extends MenuBarMenu {
             mainWindow.getSystemViewport().setSystemDisplayPanel(null);
             emulatorStopped = true;
         }));
+    }
+
+    void submitReset() {
+        SystemDescriptor systemDescriptor = this.currentSystemDescriptor;
+        if (systemDescriptor != null) {
+            this.mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
+            return;
+        }
+
+        Optional<Path> optionalRomPath = this.mainWindow.getMainMenuBar().getFileMenu().getSelectedRomPath();
+        if (optionalRomPath.isEmpty()) {
+            this.mainWindow.showDialog("Error attempting to restart", "No selected ROM path to determine system from!", MainWindow.DialogType.ERROR);
+            return;
+        }
+        String fileExtension = FilenameUtils.getExtension(optionalRomPath.get().toString());
+        if (fileExtension.isBlank()) {
+            this.mainWindow.showDialog("Error attempting to restart", "The file extension of the selected ROM path is blank!", MainWindow.DialogType.ERROR);
+            return;
+        }
+
+        outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemDescriptors()) {
+            Optional<String[]> optionalFileExtensions = descriptor.getFileExtensions();
+            if (optionalFileExtensions.isEmpty()) {
+                break;
+            }
+            String[] fileExtensions = optionalFileExtensions.get();
+            for (String extension : fileExtensions) {
+                if (fileExtension.equals(extension)) {
+                    systemDescriptor = descriptor;
+                    break outer;
+                }
+            }
+        }
+
+        if (systemDescriptor == null) {
+            this.mainWindow.showDialog("Error attempting to restart", "File extensiono of selected ROM path does not match of system descriptors!", MainWindow.DialogType.ERROR);
+            return;
+        }
+
+        this.mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
     }
 
 }

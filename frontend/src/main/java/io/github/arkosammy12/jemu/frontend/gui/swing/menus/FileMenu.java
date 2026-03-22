@@ -4,6 +4,7 @@ import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.ResetEmulatorCommand;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
@@ -23,6 +24,8 @@ public class FileMenu extends MenuBarMenu {
 
     private static final int RECENT_FILES_SIZE = 10;
 
+    private final MainWindow mainWindow;
+
     @Nullable
     private volatile Path currentRomPath;
 
@@ -36,6 +39,8 @@ public class FileMenu extends MenuBarMenu {
 
     public FileMenu(MainWindow mainWindow, JFrame jFrame) {
         super();
+
+        this.mainWindow = mainWindow;
 
         this.jMenu.setText("File");
         this.jMenu.setMnemonic(KeyEvent.VK_F);
@@ -51,6 +56,9 @@ public class FileMenu extends MenuBarMenu {
         this.fileExtensions = fileExtensions.toArray(String[]::new);
 
         JMenuItem openItem = new JMenuItem("Open");
+        openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK, true));
+        openItem.setIcon(new FlatFileViewFileIcon());
+        openItem.setToolTipText("Load binary ROM data from a file.");
         openItem.addActionListener(_ -> {
             SystemFileChooser chooser = new SystemFileChooser();
             chooser.setFileFilter(new SystemFileChooser.FileNameExtensionFilter("ROMs", this.fileExtensions));
@@ -63,9 +71,6 @@ public class FileMenu extends MenuBarMenu {
                 this.addRecentFilePath(selectedRomPath);
                 this.currentDirectory = selectedRomPath.getParent();
             }
-            openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK, true));
-            openItem.setIcon(new FlatFileViewFileIcon());
-            openItem.setToolTipText("Load binary ROM data from a file.");
         });
 
         jFrame.setTransferHandler(new TransferHandler() {
@@ -129,6 +134,9 @@ public class FileMenu extends MenuBarMenu {
 
     private void loadFile(Path filePath) {
         this.currentRomPath = filePath;
+        if (this.mainWindow.getMainMenuBar().getSettingsMenu().resetOnFileSelect()) {
+            mainWindow.getMainMenuBar().getEmulatorMenu().submitReset();
+        }
         //this.mainWindow.setTitleSection(1, filePath.getFileName().toString());
     }
 
