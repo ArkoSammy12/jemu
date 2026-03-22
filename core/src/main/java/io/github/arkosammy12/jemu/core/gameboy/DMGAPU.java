@@ -721,7 +721,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
         protected int waveRamIndex;
         protected int wavePeriodTimer;
         protected int currentOutputLevel;
-        protected double dcOffset;
 
         protected boolean fetchedFirstByte;
         protected boolean firstFetchConsumed;
@@ -864,13 +863,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
             this.wavePeriodTimer = (2048 - this.getPeriodFull()) * 2;
             this.currentOutputLevel = this.getOutputLevel();
             this.waveRamIndex = 0;
-
-            double sum = 0;
-            for (int element : this.waveRam) {
-                sum += (element >>> 4) & 0xF;
-                sum += element & 0xF;
-            }
-            this.dcOffset = sum / (this.waveRam.length * 2);
         }
 
         protected void checkWaveRamCorruption() {
