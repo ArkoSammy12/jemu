@@ -29,7 +29,7 @@ Clone the repository and run the following command on the top level directory:
 mvnw clean package
 ```
 
-An execute `.jar` file should have then been generated in `/target/jemu-x.y.z.jar`.
+An executable `.jar` file should have then been generated in `/target/jemu-x.y.z.jar`.
 
 Run with the `-DskipTests` flag to omit running the automated unit tests.
 
