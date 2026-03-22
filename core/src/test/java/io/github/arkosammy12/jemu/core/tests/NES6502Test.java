@@ -22,6 +22,7 @@ public class NES6502Test {
             return;
         }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
+            Logger.info("Running SSTs for NES6502 CPU");
             testFilePaths.forEach(path -> {
                 try {
                     NES6502TestBench testBench = new NES6502TestBench(path);

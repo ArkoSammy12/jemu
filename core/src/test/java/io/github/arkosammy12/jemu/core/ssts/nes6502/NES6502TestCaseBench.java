@@ -29,7 +29,6 @@ public class NES6502TestCaseBench implements NMOS6502.SystemBus {
 
     public void runTest() {
         List<List<Object>> cycles = this.testCase.getCycles();
-        Logger.info("Running test case: " + this.testCase.getName());
 
         this.cpu.cycle();
         this.cpu.cycle();
@@ -42,18 +41,18 @@ public class NES6502TestCaseBench implements NMOS6502.SystemBus {
 
         NES6502TestState finalState = this.testCase.getFinalState();
 
-        assertEquals(finalState.getPC(), this.cpu.getPC());
-        assertEquals(finalState.getSP(), this.cpu.getSP());
-        assertEquals(finalState.getA(), this.cpu.getA());
-        assertEquals(finalState.getX(), this.cpu.getX());
-        assertEquals(finalState.getY(), this.cpu.getY());
-        assertEquals(finalState.getP(), this.cpu.getP());
+        assertEquals(finalState.getPC(), this.cpu.getPC(), () -> "Test name: %s. Field: PC".formatted(testCase.getName()));
+        assertEquals(finalState.getSP(), this.cpu.getSP(), () -> "Test name: %s. Field: SP".formatted(testCase.getName()));
+        assertEquals(finalState.getA(), this.cpu.getA(), () -> "Test name: %s. Field: A".formatted(testCase.getName()));
+        assertEquals(finalState.getX(), this.cpu.getX(), () -> "Test name: %s. Field: X".formatted(testCase.getName()));
+        assertEquals(finalState.getY(), this.cpu.getY(), () -> "Test name: %s. Field: Y".formatted(testCase.getName()));
+        assertEquals(finalState.getP(), this.cpu.getP(), () -> "Test name: %s. Field: P".formatted(testCase.getName()));
 
         List<List<Integer>> finalRam = finalState.getRam();
         for (List<Integer> ramElement : finalRam) {
             int address = ramElement.get(0);
             int value = ramElement.get(1);
-            assertEquals(value, this.bus.readByte(address), "Address: $%04X (%d)".formatted(address, address));
+            assertEquals(value, this.bus.readByte(address), "Test name: %s. Address: $%04X (%d)".formatted(testCase.getName(), address, address));
         }
 
     }

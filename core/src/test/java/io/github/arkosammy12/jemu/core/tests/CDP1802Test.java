@@ -22,6 +22,7 @@ public class CDP1802Test {
             return;
         }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
+            Logger.info("Running SSTs for CDP1802 CPU");
             testFilePaths.forEach(path -> {
                 try {
                     CDP1802TestBench testBench = new CDP1802TestBench(path);

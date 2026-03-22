@@ -64,7 +64,7 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
 
     public void runTest() {
         List<List<Object>> cycles = this.testCase.getCycles();
-        Logger.info("Running test case: " + this.testCase.getName());
+
         this.cpu.cycle();
         this.cpu.nextState();
 
@@ -81,26 +81,26 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
 
         CDP1802TestState finalState = this.testCase.getFinalState();
 
-        assertEquals(finalState.getP(), this.cpu.getP());
-        assertEquals(finalState.getX(), this.cpu.getX());
-        assertEquals(finalState.getN(), this.cpu.getN());
-        assertEquals(finalState.getI(), this.cpu.getI());
-        assertEquals(finalState.getT(), this.cpu.getT());
-        assertEquals(finalState.getD(), this.cpu.getD());
-        assertEquals(finalState.getDF() != 0, this.cpu.getDF());
-        assertEquals(finalState.getIE() != 0, this.cpu.getIE());
-        assertEquals(finalState.getQ() != 0, this.cpu.getQ());
+        assertEquals(finalState.getP(), this.cpu.getP(), () -> "Test name: %s. Field: P".formatted(testCase.getName()));
+        assertEquals(finalState.getX(), this.cpu.getX(), () -> "Test name: %s. Field: X".formatted(testCase.getName()));
+        assertEquals(finalState.getN(), this.cpu.getN(), () -> "Test name: %s. Field: N".formatted(testCase.getName()));
+        assertEquals(finalState.getI(), this.cpu.getI(), () -> "Test name: %s. Field: I".formatted(testCase.getName()));
+        assertEquals(finalState.getT(), this.cpu.getT(), () -> "Test name: %s. Field: T".formatted(testCase.getName()));
+        assertEquals(finalState.getD(), this.cpu.getD(), () -> "Test name: %s. Field: D".formatted(testCase.getName()));
+        assertEquals(finalState.getDF() != 0, this.cpu.getDF(), () -> "Test name: %s. Field: DF".formatted(testCase.getName()));
+        assertEquals(finalState.getIE() != 0, this.cpu.getIE(), () -> "Test name: %s. Field: IE".formatted(testCase.getName()));
+        assertEquals(finalState.getQ() != 0, this.cpu.getQ(), () -> "Test name: %s. Field: Q".formatted(testCase.getName()));
 
         for (int i = 0; i < 16; i++) {
             int finalI = i;
-            assertEquals(finalState.getR(i), this.cpu.getR(i), () -> "R(" + finalI + ")");
+            assertEquals(finalState.getR(i), this.cpu.getR(i), () -> "Test name: %s. Field: R(%d)".formatted(testCase.getName(), finalI));
         }
 
         List<List<Integer>> finalRam = finalState.getRam();
         for (List<Integer> ramElement : finalRam) {
             int address = ramElement.get(0);
             int value = ramElement.get(1);
-            assertEquals(value, this.bus.readByte(address), "Address: $%04X (%d)".formatted(address, address));
+            assertEquals(value, this.bus.readByte(address), "Test name: %s. Address: $%04X (%d)".formatted(testCase.getName(), address, address));
         }
 
     }

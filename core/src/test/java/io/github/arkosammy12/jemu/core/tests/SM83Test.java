@@ -22,6 +22,7 @@ public class SM83Test {
             return;
         }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
+            Logger.info("Running SSTs for SM83 CPU");
             testFilePaths.forEach(path -> {
                 try {
                     SM83TestBench testBench = new SM83TestBench(path);

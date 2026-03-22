@@ -34,7 +34,6 @@ public class SM83TestCaseBench implements SM83.SystemBus {
 
     public void runTest() {
         List<List<Object>> cycles = this.testCase.getCycles();
-        Logger.info("Running test case: " + this.testCase.getName());
 
         // Skip the tests for the HALT and STOP instructions for now
         // TODO: Implement proper instruction handling and re-add these tests
@@ -56,17 +55,17 @@ public class SM83TestCaseBench implements SM83.SystemBus {
         }
         SM83TestState finalState = this.testCase.getFinalState();
 
-        assertEquals(finalState.getPC(), (this.cpu.getPC() - (prefixed ? 2 : 1)) & 0xFFFF);
-        assertEquals(finalState.getSP(), this.cpu.getSP());
+        assertEquals(finalState.getPC(), (this.cpu.getPC() - (prefixed ? 2 : 1)) & 0xFFFF, () -> "Test name: %s. Field: PC".formatted(testCase.getName()));
+        assertEquals(finalState.getSP(), this.cpu.getSP(), () -> "Test name: %s. Field: SP".formatted(testCase.getName()));
 
-        assertEquals(finalState.getA(), this.cpu.getA());
-        assertEquals(finalState.getF(), this.cpu.getAF() & 0xFF);
-        assertEquals(finalState.getB(), this.cpu.getB());
-        assertEquals(finalState.getC(), this.cpu.getC());
-        assertEquals(finalState.getD(), this.cpu.getD());
-        assertEquals(finalState.getE(), this.cpu.getE());
-        assertEquals(finalState.getH(), this.cpu.getH());
-        assertEquals(finalState.getL(), this.cpu.getL());
+        assertEquals(finalState.getA(), this.cpu.getA(), () -> "Test name: %s. Field: A".formatted(testCase.getName()));
+        assertEquals(finalState.getF(), this.cpu.getAF() & 0xFF, () -> "Test name: %s. Field: AF".formatted(testCase.getName()));
+        assertEquals(finalState.getB(), this.cpu.getB(), () -> "Test name: %s. Field: B".formatted(testCase.getName()));
+        assertEquals(finalState.getC(), this.cpu.getC(), () -> "Test name: %s. Field: C".formatted(testCase.getName()));
+        assertEquals(finalState.getD(), this.cpu.getD(), () -> "Test name: %s. Field: D".formatted(testCase.getName()));
+        assertEquals(finalState.getE(), this.cpu.getE(), () -> "Test name: %s. Field: E".formatted(testCase.getName()));
+        assertEquals(finalState.getH(), this.cpu.getH(), () -> "Test name: %s. Field: H".formatted(testCase.getName()));
+        assertEquals(finalState.getL(), this.cpu.getL(), () -> "Test name: %s. Field: L".formatted(testCase.getName()));
 
         // Test repo says to ignore the IME and IE registers for now
 
@@ -79,7 +78,7 @@ public class SM83TestCaseBench implements SM83.SystemBus {
         for (List<Integer> ramElement : finalRam) {
             int address = ramElement.get(0);
             int value = ramElement.get(1);
-            assertEquals(value, this.bus.readByte(address), "Address: $%04X (%d)".formatted(address, address));
+            assertEquals(value, this.bus.readByte(address), "Test name: %s. Address: $%04X (%d)".formatted(testCase.getName(), address, address));
         }
 
     }
