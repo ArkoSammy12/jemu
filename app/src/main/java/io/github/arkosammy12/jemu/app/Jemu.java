@@ -4,7 +4,7 @@ import io.github.arkosammy12.jemu.app.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
 import io.github.arkosammy12.jemu.frontend.gui.swing.menus.HelpMenu;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
@@ -13,7 +13,6 @@ import net.harawata.appdirs.AppDirsFactory;
 import org.tinylog.Logger;
 
 import javax.swing.*;
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;

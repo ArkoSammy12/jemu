@@ -1,8 +1,13 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PauseCommandCallback;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.ResetCommandCallback;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -10,7 +15,6 @@ import javax.swing.*;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -96,16 +100,16 @@ public class EmulatorMenu extends MenuBarMenu {
 
         this.jMenu.add(systemMenu);
 
-        mainWindow.registerSettingProperty("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
+        mainWindow.registerSettingProperty(new SerializedEntry("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
             for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : buttonMap.entrySet()) {
                 if (button.getKey().getId().equals(s)) {
                     button.getValue().doClick();
                     break;
                 }
             }
-        });
+        }));
 
-        mainWindow.<PauseEmulatorCommand.Callback>addEmulatorCommandCallback(pauseCommand -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<PauseCommandCallback>addEmulatorCommandCallback(pauseCommand -> SwingUtilities.invokeLater(() -> {
             if (pauseCommand.pause()) {
                 if (emulatorStopped) {
                     this.stepFrameButton.setEnabled(false);
@@ -130,7 +134,7 @@ public class EmulatorMenu extends MenuBarMenu {
             }
         }));
 
-        mainWindow.<ResetEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<ResetCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
             boolean paused = this.pauseButton.isSelected();
             stopButton.setEnabled(true);
             stepFrameButton.setEnabled(paused);
@@ -138,7 +142,7 @@ public class EmulatorMenu extends MenuBarMenu {
             emulatorStopped = false;
         }));
 
-        mainWindow.<StopEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<StopCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
             stopButton.setEnabled(false);
             pauseButton.setSelected(false);
             stepFrameButton.setEnabled(false);

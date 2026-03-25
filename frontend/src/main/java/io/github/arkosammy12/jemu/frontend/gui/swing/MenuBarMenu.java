@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
+package io.github.arkosammy12.jemu.frontend.gui.swing;
 
 import org.jetbrains.annotations.ApiStatus;
 
@@ -13,7 +13,7 @@ public abstract class MenuBarMenu {
     }
 
     @ApiStatus.Internal
-    public JMenu getJMenu() {
+    protected JMenu getJMenu() {
         return this.jMenu;
     }
 

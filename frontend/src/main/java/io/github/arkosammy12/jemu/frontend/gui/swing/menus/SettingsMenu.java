@@ -1,6 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
+import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 
 import javax.swing.*;
 import java.awt.event.InputEvent;
@@ -52,10 +54,10 @@ public class SettingsMenu extends MenuBarMenu {
         this.getJMenu().add(showInfoBarButton);
         this.getJMenu().add(resetOnFileSelect);
 
-        mainWindow.registerSettingProperty("settings.volume", () -> String.valueOf(this.volumeSlider.getValue()), s -> tryParseInt(s).ifPresent(this.volumeSlider::setValue));
-        mainWindow.registerSettingProperty("settings.muted", () -> String.valueOf(this.muteButton.isSelected()), s -> this.muteButton.setSelected(Boolean.parseBoolean(s)));
-        mainWindow.registerSettingProperty("settings.show_status_bar", () -> String.valueOf(showInfoBarButton.isSelected()), s -> showInfoBarButton.setSelected(Boolean.parseBoolean(s)));
-        mainWindow.registerSettingProperty("settings.reset_on_file_select", () -> String.valueOf(resetOnFileSelect.isSelected()), s -> resetOnFileSelect.setSelected(Boolean.parseBoolean(s)));
+        mainWindow.registerSettingProperty(new SerializedEntry("settings.volume", () -> String.valueOf(this.volumeSlider.getValue()), s -> tryParseInt(s).ifPresent(this.volumeSlider::setValue)));
+        mainWindow.registerSettingProperty(new SerializedEntry("settings.muted", () -> String.valueOf(this.muteButton.isSelected()), s -> this.muteButton.setSelected(Boolean.parseBoolean(s))));
+        mainWindow.registerSettingProperty(new SerializedEntry("settings.show_status_bar", () -> String.valueOf(showInfoBarButton.isSelected()), s -> showInfoBarButton.setSelected(Boolean.parseBoolean(s))));
+        mainWindow.registerSettingProperty(new SerializedEntry("settings.reset_on_file_select", () -> String.valueOf(resetOnFileSelect.isSelected()), s -> resetOnFileSelect.setSelected(Boolean.parseBoolean(s))));
 
     }
 

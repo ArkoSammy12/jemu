@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing;
 
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.StopEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
+import io.github.arkosammy12.jemu.frontend.gui.swing.commands.StopEmulatorCommand;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -31,7 +32,7 @@ public class StatusBar {
         this.jPanel.add(createPanel(romTitleField, "The name or file name of the currently running ROM.", true), new CC().growX());
         this.jPanel.add(createPanel(fpsField, "The emulation framerate and frame time of the currently running system.", false), new CC().growX());
 
-        mainWindow.<StopEmulatorCommand.Callback>addEmulatorCommandCallback(_ -> {
+        mainWindow.<StopCommandCallback>addEmulatorCommandCallback(_ -> {
             this.lastWindowTitleUpdate = 0;
             this.lastFrameTime = System.nanoTime();
             this.framesSinceLastUpdate = 0;

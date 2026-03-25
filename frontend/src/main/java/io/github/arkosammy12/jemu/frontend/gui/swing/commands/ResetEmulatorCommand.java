@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.gui.swing.events;
+package io.github.arkosammy12.jemu.frontend.gui.swing.commands;
 
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
 import org.jetbrains.annotations.Nullable;
@@ -9,12 +9,6 @@ public record ResetEmulatorCommand(@Nullable SystemDescriptor systemDescriptor, 
 
     public Optional<SystemDescriptor> getSystemDescriptor() {
         return Optional.ofNullable(this.systemDescriptor);
-    }
-
-    public non-sealed interface Callback extends EmulatorCommand.Callback {
-
-        void onReset(ResetEmulatorCommand resetEmulatorCommand);
-
     }
 
 }

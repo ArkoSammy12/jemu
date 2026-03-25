@@ -3,8 +3,9 @@ package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.ResetEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
@@ -117,15 +118,15 @@ public class FileMenu extends MenuBarMenu {
 
         for (int i = 0; i < RECENT_FILES_SIZE; i++) {
             int finalI = i;
-            mainWindow.registerStateProperty("file.recent_file_" + i, () -> finalI < this.recentFilePaths.size() ? this.recentFilePaths.get(finalI).toString() : "", s -> {
+            mainWindow.registerStateProperty(new SerializedEntry("file.recent_file_" + i, () -> finalI < this.recentFilePaths.size() ? this.recentFilePaths.get(finalI).toString() : "", s -> {
                 Path path = Path.of(s);
                 if (!this.recentFilePaths.contains(path) && !s.isBlank()) {
                     this.addRecentFilePath(path);
                 }
-            });
+            }));
         }
 
-        mainWindow.registerStateProperty("file.current_directory", () -> this.currentDirectory == null ? "" : this.currentDirectory.toString(), s -> this.currentDirectory = Path.of(s));
+        mainWindow.registerStateProperty(new SerializedEntry("file.current_directory", () -> this.currentDirectory == null ? "" : this.currentDirectory.toString(), s -> this.currentDirectory = Path.of(s)));
     }
 
     public Optional<Path> getSelectedRomPath() {

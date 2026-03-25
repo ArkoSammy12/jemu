@@ -3,7 +3,10 @@ package io.github.arkosammy12.jemu.frontend.gui.swing;
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.*;
+import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.Event;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -49,11 +52,9 @@ public class MainWindow implements Closeable {
     private final CC infoBarConstraints = new CC().grow().pushX().dockSouth().height("18!");
 
     private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
-    private final Collection<PauseEmulatorCommand.Callback> pauseCallbacks = new CopyOnWriteArrayList<>();
-    private final Collection<ResetEmulatorCommand.Callback> resetCallbacks = new CopyOnWriteArrayList<>();
-    private final Collection<StepCycleEmulatorCommand.Callback> stepCycleCallbacks = new CopyOnWriteArrayList<>();
-    private final Collection<StepFrameEmulatorCommand.Callback> stepFrameCallbacks = new CopyOnWriteArrayList<>();
-    private final Collection<StopEmulatorCommand.Callback> stopCallbacks = new CopyOnWriteArrayList<>();
+
+    private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<Event> eventCallbacks = new CopyOnWriteArrayList<>();
 
     private final Collection<SystemDescriptor> systemDescriptors;
 
@@ -166,11 +167,11 @@ public class MainWindow implements Closeable {
                 }
             });
 
-            this.registerStateProperty("frame.x", () -> Integer.toString(unmaximizedBounds.x), s -> tryParseInt(s).ifPresent(x -> appFrame.setLocation(x, appFrame.getY())));
-            this.registerStateProperty("frame.y", () -> Integer.toString(unmaximizedBounds.y), s -> tryParseInt(s).ifPresent(y -> appFrame.setLocation(appFrame.getX(), y)));
-            this.registerStateProperty("frame.width", () -> Integer.toString(unmaximizedBounds.width), s -> tryParseInt(s).ifPresent(width -> appFrame.setSize(new Dimension(width, appFrame.getHeight()))));
-            this.registerStateProperty("frame.height", () -> Integer.toString(unmaximizedBounds.height), s -> tryParseInt(s).ifPresent(height -> appFrame.setSize(new Dimension(appFrame.getWidth(), height))));
-            this.registerStateProperty("frame.extended_state", () -> Integer.toString(appFrame.getExtendedState()), s -> tryParseInt(s).ifPresent(extendedState -> appFrame.setExtendedState(extendedState)));
+            this.registerStateProperty(new SerializedEntry("frame.x", () -> Integer.toString(unmaximizedBounds.x), s -> tryParseInt(s).ifPresent(x -> appFrame.setLocation(x, appFrame.getY()))));
+            this.registerStateProperty(new SerializedEntry("frame.y", () -> Integer.toString(unmaximizedBounds.y), s -> tryParseInt(s).ifPresent(y -> appFrame.setLocation(appFrame.getX(), y))));
+            this.registerStateProperty(new SerializedEntry("frame.width", () -> Integer.toString(unmaximizedBounds.width), s -> tryParseInt(s).ifPresent(width -> appFrame.setSize(new Dimension(width, appFrame.getHeight())))));
+            this.registerStateProperty(new SerializedEntry("frame.height", () -> Integer.toString(unmaximizedBounds.height), s -> tryParseInt(s).ifPresent(height -> appFrame.setSize(new Dimension(appFrame.getWidth(), height)))));
+            this.registerStateProperty(new SerializedEntry("frame.extended_state", () -> Integer.toString(appFrame.getExtendedState()), s -> tryParseInt(s).ifPresent(extendedState -> appFrame.setExtendedState(extendedState))));
 
             try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
                 Properties stateProperties = new Properties();
@@ -272,11 +273,31 @@ public class MainWindow implements Closeable {
         EmulatorCommand emulatorCommand = wait ? this.emulatorCommandQueue.take() : this.emulatorCommandQueue.poll();
         switch (emulatorCommand) {
             case null -> {}
-            case PauseEmulatorCommand command -> this.pauseCallbacks.forEach(c -> c.onPause(command));
-            case ResetEmulatorCommand command -> this.resetCallbacks.forEach(c -> c.onReset(command));
-            case StepCycleEmulatorCommand command -> this.stepCycleCallbacks.forEach(c -> c.onStepCycle(command));
-            case StepFrameEmulatorCommand command -> this.stepFrameCallbacks.forEach(c -> c.onStepFrame(command));
-            case StopEmulatorCommand command -> this.stopCallbacks.forEach(c -> c.onStop(command));
+            case PauseEmulatorCommand command -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof PauseCommandCallback pauseCallback) {
+                    pauseCallback.onPause(command);
+                }
+            });
+            case ResetEmulatorCommand command -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof ResetCommandCallback resetCallback) {
+                    resetCallback.onReset(command);
+                }
+            });
+            case StepCycleEmulatorCommand command -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof StepCycleCommandCallback stepCycleCallback) {
+                    stepCycleCallback.onStepCycle(command);
+                }
+            });
+            case StepFrameEmulatorCommand command -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof StepFrameCommandCallback stepFrameCallback) {
+                    stepFrameCallback.onStepFrame(command);
+                }
+            });
+            case StopEmulatorCommand command -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof StopCommandCallback stopCallback) {
+                    stopCallback.onStop(command);
+                }
+            });
         }
         return emulatorCommand;
     }
@@ -288,24 +309,18 @@ public class MainWindow implements Closeable {
     }
 
     @ApiStatus.Internal
-    public <T extends EmulatorCommand.Callback> void addEmulatorCommandCallback(T callback) {
-        switch (callback) {
-            case PauseEmulatorCommand.Callback c -> this.pauseCallbacks.add(c);
-            case ResetEmulatorCommand.Callback c -> this.resetCallbacks.add(c);
-            case StepCycleEmulatorCommand.Callback c -> this.stepCycleCallbacks.add(c);
-            case StepFrameEmulatorCommand.Callback c -> this.stepFrameCallbacks.add(c);
-            case StopEmulatorCommand.Callback c -> this.stopCallbacks.add(c);
-        }
+    public <T extends EmulatorCommandCallback> void addEmulatorCommandCallback(T callback) {
+        this.emulatorCommandCallbacks.add(callback);
     }
 
     @ApiStatus.Internal
-    public void registerStateProperty(String key, Supplier<String> serializer, Consumer<String> deserializer) {
-        this.stateProperties.add(new PropertyEntry(key, serializer, deserializer));
+    public void registerStateProperty(SerializedEntry serializedEntry) {
+        this.stateProperties.add(new PropertyEntry(serializedEntry.key(), serializedEntry.serializer(), serializedEntry.deserializer()));
     }
 
     @ApiStatus.Internal
-    public void registerSettingProperty(String key, Supplier<String> serializer, Consumer<String> deserializer) {
-        this.settingProperties.add(new PropertyEntry(key, serializer, deserializer));
+    public void registerSettingProperty(SerializedEntry serializedEntry) {
+        this.settingProperties.add(new PropertyEntry(serializedEntry.key(), serializedEntry.serializer(), serializedEntry.deserializer()));
     }
 
     @Override
