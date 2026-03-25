@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.core.tests;
+package io.github.arkosammy12.jemu.core.test.tests;
 
-import io.github.arkosammy12.jemu.core.ssts.cdp1802.CDP1802TestBench;
+import io.github.arkosammy12.jemu.core.test.ssts.nes6502.NES6502TestBench;
 import org.junit.jupiter.api.Test;
 import org.tinylog.Logger;
 
@@ -12,27 +12,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-public class CDP1802Test {
+public class NES6502Test {
 
     @Test
-    public void cdp1802_ssts() {
-        URL url = SM83Test.class.getClassLoader().getResource("ssts/cdp1802/v1");
+    public void nes6502_ssts() {
+        URL url = NES6502Test.class.getClassLoader().getResource("submodules/tests/65x02-ssts/nes6502/v1");
         if (url == null) {
-            Logger.warn("SST files for CDP1802 CPU not found!");
+            Logger.warn("SST files for NES6502 CPU not found!");
             return;
         }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
-            Logger.info("Running SSTs for CDP1802 CPU");
+            Logger.info("Running SSTs for NES6502 CPU");
             testFilePaths.forEach(path -> {
                 try {
-                    CDP1802TestBench testBench = new CDP1802TestBench(path);
+                    NES6502TestBench testBench = new NES6502TestBench(path);
                     testBench.runTest();
                 } catch (IOException e) {
-                    Logger.error("Exception running CDP1802 SSTs: {}", e);
+                    Logger.error("Exception running NES6502 SSTs: {}", e);
                 }
             });
         } catch (IOException | URISyntaxException e) {
-            Logger.error("Exception running CDP1802 SSTs: {}", e);
+            Logger.error("Exception running NES6502 SSTs: {}", e);
         }
     }
 

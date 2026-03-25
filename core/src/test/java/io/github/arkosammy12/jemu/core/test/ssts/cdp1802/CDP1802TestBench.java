@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.core.ssts.cdp1802;
+package io.github.arkosammy12.jemu.core.test.ssts.cdp1802;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;

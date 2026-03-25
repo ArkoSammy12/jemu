@@ -1,11 +1,10 @@
-package io.github.arkosammy12.jemu.core.ssts.cdp1802;
+package io.github.arkosammy12.jemu.core.test.ssts.cdp1802;
 
-import io.github.arkosammy12.jemu.core.cpu.TestCDP1802;
+import io.github.arkosammy12.jemu.core.test.cpu.TestCDP1802;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 import io.github.arkosammy12.jemu.core.cosmacvip.IODevice;
-import io.github.arkosammy12.jemu.core.util.FlatTestBus;
-import org.tinylog.Logger;
+import io.github.arkosammy12.jemu.core.test.util.FlatTestBus;
 
 import java.util.List;
 

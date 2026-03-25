@@ -1,19 +1,19 @@
-package io.github.arkosammy12.jemu.core.ssts.nes6502;
+package io.github.arkosammy12.jemu.core.test.ssts.cdp1802;
 
 import com.google.gson.annotations.SerializedName;
 
 import java.util.List;
 
-public class NES6502TestCase {
+public class CDP1802TestCase {
 
     @SerializedName("name")
     private String name;
 
     @SerializedName("initial")
-    private NES6502TestState initialState;
+    private CDP1802TestState initialState;
 
     @SerializedName("final")
-    private NES6502TestState finalState;
+    private CDP1802TestState finalState;
 
     @SerializedName("cycles")
     private List<List<Object>> cycles;
@@ -22,11 +22,11 @@ public class NES6502TestCase {
         return this.name;
     }
 
-    public NES6502TestState getInitialState() {
+    public CDP1802TestState getInitialState() {
         return this.initialState;
     }
 
-    public NES6502TestState getFinalState() {
+    public CDP1802TestState getFinalState() {
         return this.finalState;
     }
 

@@ -1,10 +1,10 @@
-package io.github.arkosammy12.jemu.core.ssts.sm83;
+package io.github.arkosammy12.jemu.core.test.ssts.sm83;
 
-import io.github.arkosammy12.jemu.core.cpu.TestSM83;
+import io.github.arkosammy12.jemu.core.test.cpu.TestSM83;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
-import io.github.arkosammy12.jemu.core.util.FlatTestBus;
-import org.tinylog.Logger;
+import io.github.arkosammy12.jemu.core.test.util.FlatTestBus;
+
 import java.util.List;
 
 import static io.github.arkosammy12.jemu.core.cpu.SM83.PREFIX;

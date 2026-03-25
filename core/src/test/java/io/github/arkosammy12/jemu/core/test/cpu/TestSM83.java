@@ -1,7 +1,8 @@
-package io.github.arkosammy12.jemu.core.cpu;
+package io.github.arkosammy12.jemu.core.test.cpu;
 
-import io.github.arkosammy12.jemu.core.ssts.sm83.SM83TestCase;
-import io.github.arkosammy12.jemu.core.ssts.sm83.SM83TestState;
+import io.github.arkosammy12.jemu.core.cpu.SM83;
+import io.github.arkosammy12.jemu.core.test.ssts.sm83.SM83TestCase;
+import io.github.arkosammy12.jemu.core.test.ssts.sm83.SM83TestState;
 
 public class TestSM83 extends SM83 {
 

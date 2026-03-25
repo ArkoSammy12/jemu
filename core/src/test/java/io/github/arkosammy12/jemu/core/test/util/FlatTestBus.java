@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.core.util;
+package io.github.arkosammy12.jemu.core.test.util;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 

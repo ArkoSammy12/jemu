@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.core.tests;
+package io.github.arkosammy12.jemu.core.test.tests;
 
-import io.github.arkosammy12.jemu.core.ssts.nes6502.NES6502TestBench;
+import io.github.arkosammy12.jemu.core.test.ssts.sm83.SM83TestBench;
 import org.junit.jupiter.api.Test;
 import org.tinylog.Logger;
 
@@ -12,27 +12,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-public class NES6502Test {
+public class SM83Test {
 
     @Test
-    public void nes6502_ssts() {
-        URL url = NES6502Test.class.getClassLoader().getResource("submodules/tests/65x02-ssts/nes6502/v1");
+    public void sm83_ssts() {
+        URL url = SM83Test.class.getClassLoader().getResource("submodules/tests/sm83-ssts/v1");
         if (url == null) {
-            Logger.warn("SST files for NES6502 CPU not found!");
+            Logger.warn("SST files for SM83 CPU not found!");
             return;
         }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
-            Logger.info("Running SSTs for NES6502 CPU");
+            Logger.info("Running SSTs for SM83 CPU");
             testFilePaths.forEach(path -> {
                 try {
-                    NES6502TestBench testBench = new NES6502TestBench(path);
+                    SM83TestBench testBench = new SM83TestBench(path);
                     testBench.runTest();
                 } catch (IOException e) {
-                    Logger.error("Exception running NES6502 SSTs: {}", e);
+                    Logger.error("Exception running SM83 SSTs: {}", e);
                 }
             });
         } catch (IOException | URISyntaxException e) {
-            Logger.error("Exception running NES6502 SSTs: {}", e);
+            Logger.error("Exception running SM83 SSTs: {}", e);
         }
     }
 

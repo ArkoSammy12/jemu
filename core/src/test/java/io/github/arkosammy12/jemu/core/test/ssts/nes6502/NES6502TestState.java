@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.core.ssts.nes6502;
+package io.github.arkosammy12.jemu.core.test.ssts.nes6502;
 
 import com.google.gson.annotations.SerializedName;
 

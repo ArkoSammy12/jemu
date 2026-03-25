@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.core.tests;
+package io.github.arkosammy12.jemu.core.test.tests;
 
-import io.github.arkosammy12.jemu.core.ssts.sm83.SM83TestBench;
+import io.github.arkosammy12.jemu.core.test.ssts.cdp1802.CDP1802TestBench;
 import org.junit.jupiter.api.Test;
 import org.tinylog.Logger;
 
@@ -12,27 +12,27 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.stream.Stream;
 
-public class SM83Test {
+public class CDP1802Test {
 
     @Test
-    public void sm83_ssts() {
-        URL url = SM83Test.class.getClassLoader().getResource("submodules/tests/sm83-ssts/v1");
+    public void cdp1802_ssts() {
+        URL url = SM83Test.class.getClassLoader().getResource("ssts/cdp1802/v1");
         if (url == null) {
-            Logger.warn("SST files for SM83 CPU not found!");
+            Logger.warn("SST files for CDP1802 CPU not found!");
             return;
         }
         try (Stream<Path> testFilePaths = Files.list(Paths.get(url.toURI()))) {
-            Logger.info("Running SSTs for SM83 CPU");
+            Logger.info("Running SSTs for CDP1802 CPU");
             testFilePaths.forEach(path -> {
                 try {
-                    SM83TestBench testBench = new SM83TestBench(path);
+                    CDP1802TestBench testBench = new CDP1802TestBench(path);
                     testBench.runTest();
                 } catch (IOException e) {
-                    Logger.error("Exception running SM83 SSTs: {}", e);
+                    Logger.error("Exception running CDP1802 SSTs: {}", e);
                 }
             });
         } catch (IOException | URISyntaxException e) {
-            Logger.error("Exception running SM83 SSTs: {}", e);
+            Logger.error("Exception running CDP1802 SSTs: {}", e);
         }
     }
 

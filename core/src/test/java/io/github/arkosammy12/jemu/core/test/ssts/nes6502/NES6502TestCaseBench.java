@@ -1,10 +1,9 @@
-package io.github.arkosammy12.jemu.core.ssts.nes6502;
+package io.github.arkosammy12.jemu.core.test.ssts.nes6502;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
-import io.github.arkosammy12.jemu.core.cpu.TestNES6502;
-import io.github.arkosammy12.jemu.core.util.FlatTestBus;
-import org.tinylog.Logger;
+import io.github.arkosammy12.jemu.core.test.cpu.TestNES6502;
+import io.github.arkosammy12.jemu.core.test.util.FlatTestBus;
 
 import java.util.List;
 

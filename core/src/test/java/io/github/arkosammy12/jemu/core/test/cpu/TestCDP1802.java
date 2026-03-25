@@ -1,7 +1,8 @@
-package io.github.arkosammy12.jemu.core.cpu;
+package io.github.arkosammy12.jemu.core.test.cpu;
 
-import io.github.arkosammy12.jemu.core.ssts.cdp1802.CDP1802TestCase;
-import io.github.arkosammy12.jemu.core.ssts.cdp1802.CDP1802TestState;
+import io.github.arkosammy12.jemu.core.cpu.CDP1802;
+import io.github.arkosammy12.jemu.core.test.ssts.cdp1802.CDP1802TestCase;
+import io.github.arkosammy12.jemu.core.test.ssts.cdp1802.CDP1802TestState;
 
 public class TestCDP1802 extends CDP1802 {
 
