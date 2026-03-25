@@ -31,7 +31,7 @@ jemu [-hV] -r=<romPath> [-s=<system>]
 
 | Argument                                                                   | Description                                                                      | Default |
 |----------------------------------------------------------------------------|----------------------------------------------------------------------------------|---------|
-| `-r, --rom <path>`                                                         | **Required.** Path to the ROM file (absolute or relative to the JAR).            | –       |
+| `-r, --rom <path>`                                                         | **Required.** Path to the ROM file (absolute or relative to the JAR).            | -       |
 | `-s, --system <cosmac-vip\|vip-chip8\|vip-chip8x\|gameboy\|gameboy-color>` | Launch with desired system selected or leave unspecified to use current setting. | -       |
 | `-h, --help`                                                               | Show the help message and exit.                                                  | -       |
 | `V, --version`                                                             | Print version information and exit.                                              | -       |
