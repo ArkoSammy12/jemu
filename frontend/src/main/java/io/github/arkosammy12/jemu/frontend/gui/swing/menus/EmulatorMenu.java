@@ -28,6 +28,9 @@ public class EmulatorMenu extends MenuBarMenu {
     private final JMenuItem stepFrameButton = new JMenuItem("Step Frame");
     private final JMenuItem stepCycleButton = new JMenuItem("Step Cycle");
 
+    private final JRadioButtonMenuItem automaticItem;
+    private final Map<SystemDescriptor, JRadioButtonMenuItem> systemDescriptorButtonMap;
+
     @Nullable
     private volatile SystemDescriptor currentSystemDescriptor;
     private volatile boolean emulatorStopped = true;
@@ -42,20 +45,20 @@ public class EmulatorMenu extends MenuBarMenu {
         JMenu systemMenu = new JMenu("System");
 
         ButtonGroup buttonGroup = new ButtonGroup();
-        JRadioButtonMenuItem automaticItem = new JRadioButtonMenuItem("Automatic");
-        automaticItem.addActionListener(_ -> currentSystemDescriptor = null);
-        automaticItem.setSelected(true);
-        buttonGroup.add(automaticItem);
-        systemMenu.add(automaticItem);
+        this.automaticItem = new JRadioButtonMenuItem("Automatic");
+        this.automaticItem.addChangeListener(_ -> currentSystemDescriptor = null);
+        this.automaticItem.setSelected(true);
+        buttonGroup.add(this.automaticItem);
+        systemMenu.add(this.automaticItem);
 
-        Map<SystemDescriptor, JRadioButtonMenuItem> buttonMap = new HashMap<>();
+        this.systemDescriptorButtonMap = new HashMap<>();
 
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
-            item.addActionListener(_ -> this.currentSystemDescriptor = systemDescriptor);
+            item.addChangeListener(_ -> this.currentSystemDescriptor = systemDescriptor);
             buttonGroup.add(item);
             systemMenu.add(item);
-            buttonMap.put(systemDescriptor, item);
+            this.systemDescriptorButtonMap.put(systemDescriptor, item);
         }
 
         JMenuItem resetButton = new JMenuItem("Reset");
@@ -101,7 +104,7 @@ public class EmulatorMenu extends MenuBarMenu {
         this.jMenu.add(systemMenu);
 
         mainWindow.registerSettingProperty(new SerializedEntry("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
-            for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : buttonMap.entrySet()) {
+            for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : this.systemDescriptorButtonMap.entrySet()) {
                 if (button.getKey().getId().equals(s)) {
                     button.getValue().doClick();
                     break;
@@ -150,6 +153,21 @@ public class EmulatorMenu extends MenuBarMenu {
             mainWindow.getSystemViewport().setSystemDisplayPanel(null);
             emulatorStopped = true;
         }));
+    }
+
+    public void setCurrentSystemDescriptor(@Nullable SystemDescriptor systemDescriptor) {
+        SwingUtilities.invokeLater(() -> {
+            if (systemDescriptor == null) {
+                this.automaticItem.doClick();
+                return;
+            }
+            for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : this.systemDescriptorButtonMap.entrySet()) {
+                if (button.getKey().equals(systemDescriptor)) {
+                    button.getValue().doClick();
+                    break;
+                }
+            }
+        });
     }
 
     void submitReset() {

@@ -1,8 +1,6 @@
 package io.github.arkosammy12.jemu.app.io;
 
 import io.github.arkosammy12.jemu.app.Main;
-import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
-import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import picocli.CommandLine;
 
@@ -13,30 +11,9 @@ import java.util.Optional;
         name = "jemu",
         mixinStandardHelpOptions = true,
         version = Main.VERSION_STRING,
-        description = "Initializes jemu with the desired configurations and starts emulation."
+        description = "Initializes jemu with the desired settings and starts emulation."
 )
-public class CLIArgs implements EmulatorInitializer {
-
-    private final int quickExitCode;
-
-    public CLIArgs(String[] args) {
-        CommandLine cli = new CommandLine(this);
-        CommandLine.ParseResult parseResult = cli.parseArgs(args);
-        Integer executeHelpResult = CommandLine.executeHelpRequest(parseResult);
-        int exitCodeOnUsageHelp = cli.getCommandSpec().exitCodeOnUsageHelp();
-        int exitCodeOnVersionHelp = cli.getCommandSpec().exitCodeOnVersionHelp();
-        if (executeHelpResult != null) {
-            if (executeHelpResult == exitCodeOnUsageHelp) {
-                this.quickExitCode = exitCodeOnUsageHelp;
-            } else if (executeHelpResult == exitCodeOnVersionHelp) {
-                this.quickExitCode = exitCodeOnVersionHelp;
-            } else {
-                this.quickExitCode = -1;
-            }
-        } else {
-            this.quickExitCode = -1;
-        }
-    }
+public final class CLIArgs {
 
     @CommandLine.Option(
             names = {"--rom", "-r"},
@@ -46,31 +23,37 @@ public class CLIArgs implements EmulatorInitializer {
     private Path romPath;
 
     @CommandLine.Option(
-            names = {"--system", "-v"},
-            converter = System.Converter.class,
+            names = {"--system", "-s"},
+            converter = io.github.arkosammy12.jemu.app.util.System.Converter.class,
             defaultValue = CommandLine.Option.NULL_VALUE,
-            description = "Select the desired system or leave unspecified."
+            description = "Launch with desired system selected or leave unspecified to use current setting."
     )
-    private Optional<System> system;
+    private io.github.arkosammy12.jemu.app.util.System system;
 
+    private final boolean exitImmediately;
 
-    @Override
-    public Optional<byte[]> getRawRom() {
-        return Optional.of(SystemAdapter.readRawRom(romPath.toAbsolutePath()));
+    public CLIArgs(String[] args) {
+        if (args.length == 0) {
+            throw new IllegalArgumentException("Args array cannot be empty!");
+        }
+        CommandLine cli = new CommandLine(this);
+        CommandLine.ParseResult parseResult = cli.parseArgs(args);
+        Integer executeHelpResult = CommandLine.executeHelpRequest(parseResult);
+        int exitCodeOnUsageHelp = cli.getCommandSpec().exitCodeOnUsageHelp();
+        int exitCodeOnVersionHelp = cli.getCommandSpec().exitCodeOnVersionHelp();
+        this.exitImmediately = executeHelpResult != null && (executeHelpResult == exitCodeOnUsageHelp || executeHelpResult == exitCodeOnVersionHelp);
     }
 
-    @Override
-    public Optional<Path> getRomPath() {
-        return Optional.of(romPath.toAbsolutePath());
+    public Path getRomPath() {
+        return this.romPath;
     }
 
-    @Override
     public Optional<System> getSystem() {
-        return this.system;
+        return Optional.ofNullable(this.system);
     }
 
-    public int getExitCode() {
-        return this.quickExitCode;
+    public boolean exitImmediately() {
+        return this.exitImmediately;
     }
 
 }

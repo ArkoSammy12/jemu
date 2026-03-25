@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.app;
 
 import io.github.arkosammy12.jemu.app.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.io.CLIArgs;
 import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
@@ -13,6 +14,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import net.harawata.appdirs.AppDirsFactory;
+import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.swing.*;
@@ -27,14 +29,29 @@ public final class Jemu {
     private volatile DefaultSystemAdapter currentSystem = null;
     private volatile State currentState = State.STOPPED;
 
+    @Nullable
     private final Thread emulatorThread;
+
+    @Nullable
     private final Thread uiEventListenerThread;
 
     private MainWindow mainWindow;
     private boolean running = true;
 
-    public Jemu() {
+    public Jemu(String[] args) {
         try {
+
+            CLIArgs cliArgs = null;
+            if (args.length > 0) {
+                cliArgs = new CLIArgs(args);
+                if (cliArgs.exitImmediately()) {
+                    this.running = false;
+                    this.emulatorThread = null;
+                    this.uiEventListenerThread = null;
+                    return;
+                }
+            }
+
             Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
                 Logger.error("Uncaught exception in thread {}: {}", thread.getName(), throwable, throwable.getStackTrace());
             });
@@ -60,6 +77,12 @@ public final class Jemu {
             this.uiEventListenerThread = new Thread(this::eventListenerLoop, "jemu-event-listener-thread");
 
             this.mainWindow.show();
+
+            if (cliArgs != null) {
+                Optional<System> system = cliArgs.getSystem();
+                this.mainWindow.getMainMenuBar().getFileMenu().loadFile(cliArgs.getRomPath(), system.isPresent());
+                system.ifPresent(s -> this.mainWindow.getMainMenuBar().getEmulatorMenu().setCurrentSystemDescriptor(s));
+            }
         } catch (Exception e) {
             if (this.mainWindow != null) {
                 this.mainWindow.close();
@@ -73,8 +96,14 @@ public final class Jemu {
     }
 
     public void start() {
-        this.uiEventListenerThread.start();
-        this.emulatorThread.start();
+        if (this.running) {
+            if (this.uiEventListenerThread != null) {
+                this.uiEventListenerThread.start();
+            }
+            if (this.emulatorThread != null) {
+                this.emulatorThread.start();
+            }
+        }
     }
 
     private void eventListenerLoop() {
@@ -246,13 +275,17 @@ public final class Jemu {
 
     void onShutdown() throws Exception {
         try {
-            this.emulatorThread.interrupt();
-            this.emulatorThread.join();
+            if (this.emulatorThread != null) {
+                this.emulatorThread.interrupt();
+                this.emulatorThread.join();
+            }
         } catch (InterruptedException _) {}
 
         try {
-            this.uiEventListenerThread.interrupt();
-            this.uiEventListenerThread.join();
+            if (this.uiEventListenerThread != null) {
+                this.uiEventListenerThread.interrupt();
+                this.uiEventListenerThread.join();
+            }
         } catch (InterruptedException _) {}
 
         if (this.currentSystem != null) {

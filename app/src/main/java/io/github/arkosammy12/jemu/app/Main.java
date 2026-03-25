@@ -7,10 +7,10 @@ public class Main {
     // Increment this here, in pom.xml and in the version tag in the README.
     public static final String VERSION_STRING = "v0.0.1";
 
-    static void main() throws Exception {
+    static void main(String[] args) throws Exception {
         Jemu jemu = null;
         try {
-            jemu = new Jemu();
+            jemu = new Jemu(args);
             jemu.start();
         } catch (Throwable t) {
             Logger.error("jemu has crashed! {}", t);

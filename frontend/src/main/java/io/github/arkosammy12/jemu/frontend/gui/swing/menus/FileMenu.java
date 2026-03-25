@@ -133,12 +133,18 @@ public class FileMenu extends MenuBarMenu {
         return Optional.ofNullable(this.currentRomPath);
     }
 
-    private void loadFile(Path filePath) {
-        this.currentRomPath = filePath;
-        if (this.mainWindow.getMainMenuBar().getSettingsMenu().resetOnFileSelect()) {
-            mainWindow.getMainMenuBar().getEmulatorMenu().submitReset();
-        }
+    public void loadFile(Path filePath) {
+        this.loadFile(filePath, false);
         //this.mainWindow.setTitleSection(1, filePath.getFileName().toString());
+    }
+
+    public void loadFile(Path filePath, boolean forceReset) {
+        SwingUtilities.invokeLater(() -> {
+            this.currentRomPath = filePath;
+            if (this.mainWindow.getMainMenuBar().getSettingsMenu().resetOnFileSelect() || forceReset) {
+                mainWindow.getMainMenuBar().getEmulatorMenu().submitReset();
+            }
+        });
     }
 
     private void addRecentFilePath(Path filePath) {
