@@ -19,6 +19,25 @@ Multi-system emulator written in Java.
 - [ ] ZX Spectrum (planned).
 - [ ] Sega Genesis (planned).
 
+## Command-line Usage
+
+If you launch **jemu** from the CLI, you can optionally pass arguments.
+
+Usage:
+
+```
+jemu [-hV] -r=<romPath> [-s=<system>]
+```
+
+| Argument                                                                   | Description                                                                      | Default |
+|----------------------------------------------------------------------------|----------------------------------------------------------------------------------|---------|
+| `-r, --rom <path>`                                                         | **Required.** Path to the ROM file (absolute or relative to the JAR).            | –       |
+| `-s, --system <cosmac-vip\|vip-chip8\|vip-chip8x\|gameboy\|gameboy-color>` | Launch with desired system selected or leave unspecified to use current setting. | -       |
+| `-h, --help`                                                               | Show the help message and exit.                                                  | -       |
+| `V, --version`                                                             | Print version information and exit.                                              | -       |
+
+
+
 ## Building
 
 A Java Development Kit targeting Java version 25 or later is required to build this project.
