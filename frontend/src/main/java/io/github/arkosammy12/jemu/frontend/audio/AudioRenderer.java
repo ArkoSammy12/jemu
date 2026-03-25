@@ -29,7 +29,6 @@ public abstract class AudioRenderer implements Closeable {
             audioLine = AudioSystem.getSourceDataLine(format);
             audioLine.open(format);
 
-
             this.volumeControl = (FloatControl) audioLine.getControl(FloatControl.Type.MASTER_GAIN);
             this.muteControl = (BooleanControl) audioLine.getControl(BooleanControl.Type.MUTE);
             this.samplesPerFrame = SAMPLE_RATE / framerate;
