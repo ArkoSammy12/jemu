@@ -5,6 +5,7 @@ import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.*;
+import io.github.arkosammy12.jemu.frontend.gui.internal.events.InternalEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
 import io.github.arkosammy12.jemu.frontend.gui.swing.events.Event;
 import net.miginfocom.layout.AC;
@@ -52,9 +53,9 @@ public class MainWindow implements Closeable {
     private final CC infoBarConstraints = new CC().grow().pushX().dockSouth().height("18!");
 
     private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
 
     private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
-    private final Collection<Event> eventCallbacks = new CopyOnWriteArrayList<>();
 
     private final Collection<SystemDescriptor> systemDescriptors;
 
@@ -268,6 +269,10 @@ public class MainWindow implements Closeable {
         return this.getEmulatorCommand(true);
     }
 
+    public Event waitEvent() throws InterruptedException {
+        return this.eventQueue.take();
+    }
+
     @Nullable
     private EmulatorCommand getEmulatorCommand(boolean wait) throws InterruptedException {
         EmulatorCommand emulatorCommand = wait ? this.emulatorCommandQueue.take() : this.emulatorCommandQueue.poll();
@@ -311,6 +316,11 @@ public class MainWindow implements Closeable {
     @ApiStatus.Internal
     public <T extends EmulatorCommandCallback> void addEmulatorCommandCallback(T callback) {
         this.emulatorCommandCallbacks.add(callback);
+    }
+
+    @ApiStatus.Internal
+    public void pushEvent(InternalEvent internalEvent) {
+        this.eventQueue.offer(internalEvent.getEvent());
     }
 
     @ApiStatus.Internal

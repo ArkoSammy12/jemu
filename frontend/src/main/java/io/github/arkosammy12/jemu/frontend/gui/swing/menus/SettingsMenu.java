@@ -1,6 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing.menus;
 
 import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.gui.internal.events.InternalMuteEvent;
+import io.github.arkosammy12.jemu.frontend.gui.internal.events.InternalVolumeChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 
@@ -30,13 +32,19 @@ public class SettingsMenu extends MenuBarMenu {
         this.volumeSlider.setPaintLabels(true);
         this.volumeSlider.setMajorTickSpacing(25);
         this.volumeSlider.setMinorTickSpacing(5);
-        this.volumeSlider.addChangeListener(_ -> this.volume = this.volumeSlider.getValue());
+        this.volumeSlider.addChangeListener(_ -> {
+            this.volume = Math.clamp(this.volumeSlider.getValue(), 0, 100);
+            mainWindow.pushEvent(new InternalVolumeChangedEvent(this.volume));
+        });
         JPanel volumePanel = new JPanel();
         volumePanel.add(this.volumeSlider);
         volumeMenu.add(volumePanel);
 
         this.muteButton = new JRadioButtonMenuItem("Mute");
-        this.muteButton.addChangeListener(_ -> this.muted = this.muteButton.isSelected());
+        this.muteButton.addChangeListener(_ -> {
+            this.muted = this.muteButton.isSelected();
+            mainWindow.pushEvent(new InternalMuteEvent(this.muted));
+        });
         this.muteButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK, true));
         this.muteButton.setSelected(this.muted);
 

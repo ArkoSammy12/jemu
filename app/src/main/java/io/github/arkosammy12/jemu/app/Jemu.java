@@ -5,6 +5,9 @@ import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.initializers.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.Event;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.MuteEvent;
+import io.github.arkosammy12.jemu.frontend.gui.swing.events.VolumeChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.menus.HelpMenu;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
@@ -25,6 +28,7 @@ public final class Jemu {
     private volatile State currentState = State.STOPPED;
 
     private final Thread emulatorThread;
+    private final Thread uiEventListenerThread;
 
     private MainWindow mainWindow;
     private boolean running = true;
@@ -53,6 +57,8 @@ public final class Jemu {
             helpMenu.setProjectBugReportLink("https://github.com/ArkoSammy12/jemu/issues");
 
             this.emulatorThread = new Thread(this::emulatorLoop, "jemu-emulator-thread");
+            this.uiEventListenerThread = new Thread(this::eventListenerLoop, "jemu-event-listener-thread");
+
             this.mainWindow.show();
         } catch (Exception e) {
             if (this.mainWindow != null) {
@@ -67,10 +73,24 @@ public final class Jemu {
     }
 
     public void start() {
+        this.uiEventListenerThread.start();
         this.emulatorThread.start();
     }
 
-    public void emulatorLoop() {
+    private void eventListenerLoop() {
+        while (this.running) {
+            try {
+                Event uiEvent = this.mainWindow.waitEvent();
+                switch (uiEvent) {
+                    case MuteEvent(boolean mute) -> this.getCurrentAudioRenderer().ifPresent(audioRenderer -> audioRenderer.setMuted(mute));
+                    case VolumeChangedEvent(int newVolume) -> this.getCurrentAudioRenderer().ifPresent(audioRenderer -> audioRenderer.setVolume(newVolume));
+                    case null, default -> {}
+                }
+            } catch (InterruptedException _) {}
+        }
+    }
+
+    private void emulatorLoop() {
         while (this.running) {
             try {
                 while (this.currentSystem == null) {
@@ -90,8 +110,6 @@ public final class Jemu {
                 this.updateState(false);
                 this.processState(this.currentState);
                 if (this.currentSystem != null) {
-                    this.currentSystem.getAudioRenderer().setMuted(this.mainWindow.getMainMenuBar().getSettingsMenu().getMuted());
-                    this.currentSystem.getAudioRenderer().setVolume(this.mainWindow.getMainMenuBar().getSettingsMenu().getVolume());
                     this.currentSystem.onFrame();
                 }
 
@@ -220,6 +238,10 @@ public final class Jemu {
 
     private void initializeEmulator(EmulatorInitializer initializer) {
         this.currentSystem = System.getSystemAdapter(this, initializer);
+        this.getCurrentAudioRenderer().ifPresent(audioRenderer -> {
+            audioRenderer.setMuted(this.mainWindow.getMainMenuBar().getSettingsMenu().getMuted());
+            audioRenderer.setVolume(this.mainWindow.getMainMenuBar().getSettingsMenu().getVolume());
+        });
     }
 
     void onShutdown() throws Exception {
@@ -227,10 +249,17 @@ public final class Jemu {
             this.emulatorThread.interrupt();
             this.emulatorThread.join();
         } catch (InterruptedException _) {}
+
+        try {
+            this.uiEventListenerThread.interrupt();
+            this.uiEventListenerThread.join();
+        } catch (InterruptedException _) {}
+
         if (this.currentSystem != null) {
             this.currentSystem.close();
             this.currentSystem = null;
         }
+
         if (this.mainWindow != null) {
             this.mainWindow.close();
         }

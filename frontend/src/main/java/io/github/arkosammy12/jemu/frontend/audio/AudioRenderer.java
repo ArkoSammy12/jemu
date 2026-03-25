@@ -2,10 +2,7 @@ package io.github.arkosammy12.jemu.frontend.audio;
 
 import org.jetbrains.annotations.Nullable;
 
-import javax.sound.sampled.AudioFormat;
-import javax.sound.sampled.AudioSystem;
-import javax.sound.sampled.FloatControl;
-import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.*;
 import java.io.Closeable;
 
 public abstract class AudioRenderer implements Closeable {
@@ -21,8 +18,8 @@ public abstract class AudioRenderer implements Closeable {
     protected final SourceDataLine audioLine;
     protected final int framerate;
     protected final FloatControl volumeControl;
+    private final BooleanControl muteControl;
     protected boolean paused = true;
-    protected boolean muted = false;
     protected boolean started = false;
 
     public AudioRenderer(int framerate) {
@@ -31,17 +28,17 @@ public abstract class AudioRenderer implements Closeable {
             AudioFormat format = this.getAudioFormat();
             audioLine = AudioSystem.getSourceDataLine(format);
             audioLine.open(format);
-            FloatControl control = null;
-            if (audioLine.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
-                control = (FloatControl) audioLine.getControl(FloatControl.Type.MASTER_GAIN);
-                control.setValue(20.0f * (float) Math.log10(50 / 100.0));
-            }
 
-            this.volumeControl = control;
+
+            this.volumeControl = (FloatControl) audioLine.getControl(FloatControl.Type.MASTER_GAIN);
+            this.muteControl = (BooleanControl) audioLine.getControl(BooleanControl.Type.MUTE);
             this.samplesPerFrame = SAMPLE_RATE / framerate;
             this.bytesPerFrame = this.samplesPerFrame * this.getBytesPerOutputSample();
             this.targetByteLatency = this.bytesPerFrame * TARGET_FRAME_LATENCY;
             this.emptySamples = new byte[this.bytesPerFrame];
+
+            this.volumeControl.setValue(20.0f * (float) Math.log10(50 / 100.0));
+            this.muteControl.setValue(false);
         } catch (Exception e) {
             throw new RuntimeException("Failed to create Source Data Line for audio", e);
         }
@@ -60,7 +57,7 @@ public abstract class AudioRenderer implements Closeable {
     }
 
     public void setMuted(boolean muted) {
-        this.muted = muted;
+        this.muteControl.setValue(muted);
     }
 
     public int getSamplesPerFrame() {
@@ -72,9 +69,7 @@ public abstract class AudioRenderer implements Closeable {
     }
 
     public void setVolume(int volume) {
-        if (this.volumeControl != null) {
-            this.volumeControl.setValue(20.0f * (float) Math.log10(Math.clamp(volume, 0, 100) / 100.0));
-        }
+        this.volumeControl.setValue(20.0f * (float) Math.log10(Math.clamp(volume, 0, 100) / 100.0));
     }
 
     abstract protected AudioFormat getAudioFormat();
@@ -91,7 +86,7 @@ public abstract class AudioRenderer implements Closeable {
             //return;
         }
 
-        if (this.muted || this.paused) {
+        if (this.paused) {
             this.audioLine.write(this.emptySamples, 0, this.emptySamples.length);
             return;
         }
