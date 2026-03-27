@@ -37,6 +37,10 @@
             <artifactId>appdirs</artifactId>
             <version>1.5.0</version>
         </dependency>
+        <dependency>
+            <groupId>org.tinylog</groupId>
+            <artifactId>tinylog-impl</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
