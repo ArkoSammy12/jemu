@@ -12,7 +12,7 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
 
     @Override
     protected CGBAPU<?>.Channel3 createChannel3() {
-        return new CGBAPU<?>.Channel3();
+        return this.new Channel3();
     }
 
     @Override
