@@ -8,8 +8,14 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
-        java: [25]
+        include:
+          - os: ubuntu-latest
+            name: linux
+          - os: windows-latest
+            name: windows
+          - os: macos-latest
+            name: macos
+        java: [ 25 ]
 
     steps:
       - name: Checkout code
@@ -35,7 +41,7 @@ jobs:
       - name: Build and package with Maven
         run: |
           mvn -B clean package
-          mvn -B org.panteleyev:jpackage-maven-plugin:1.7.1:jpackage -pl app
+          mvn -B org.panteleyev:jpackage-maven-plugin:1.7.4:jpackage -pl app
 
       - name: Upload APP_IMAGE artifact
         uses: actions/upload-artifact@v5.0.0
