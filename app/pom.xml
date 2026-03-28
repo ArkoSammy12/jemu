@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.arkosammy12</groupId>
         <artifactId>jemu</artifactId>
-        <version>0.0.1</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>app</artifactId>
@@ -15,12 +15,12 @@
         <dependency>
             <groupId>io.github.arkosammy12</groupId>
             <artifactId>frontend</artifactId>
-            <version>0.0.1</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.arkosammy12</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.1</version>
+            <version>1.0.0</version>
         </dependency>
         <dependency>
             <groupId>io.github.wasabithumb</groupId>

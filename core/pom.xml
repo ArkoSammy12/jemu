@@ -6,7 +6,7 @@
     <parent>
         <groupId>io.github.arkosammy12</groupId>
         <artifactId>jemu</artifactId>
-        <version>0.0.1</version>
+        <version>1.0.0</version>
     </parent>
 
     <artifactId>core</artifactId>

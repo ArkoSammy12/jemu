@@ -5,7 +5,7 @@ import org.tinylog.Logger;
 public class Main {
 
     // Increment this here, in pom.xml and in the version tag in the README.
-    public static final String VERSION_STRING = "v0.0.1";
+    public static final String VERSION_STRING = "v1.0.0";
 
     static void main(String[] args) throws Exception {
         Jemu jemu = null;
