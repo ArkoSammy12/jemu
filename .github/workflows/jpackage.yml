@@ -38,6 +38,6 @@ jobs:
       - name: Upload APP_IMAGE artifact
         uses: actions/upload-artifact@v5.0.0
         with:
-          name: jemu-app-image-${{ matrix.os }}
+          name: jemu-${{ matrix.os }}
           path: target/dist/
 
