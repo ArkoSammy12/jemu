@@ -15,17 +15,16 @@ jobs:
             name: windows
           - os: macos-latest
             name: macos
-        java: [ 25 ]
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6.0.1
+        uses: actions/checkout@v4
 
       - name: Set up JDK
-        uses: actions/setup-java@v5.1.0
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ matrix.java }}
+          java-version: 25
 
       - name: Verify Java version
         run: java -version
@@ -43,9 +42,8 @@ jobs:
           mvn -B clean package
           mvn -B org.panteleyev:jpackage-maven-plugin:1.7.4:jpackage -pl app
 
-      - name: Upload APP_IMAGE artifact
-        uses: actions/upload-artifact@v5.0.0
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          name: jemu-${{ matrix.os }}
-          path: target/dist/
-
+          name: jemu-${{ matrix.name }}
+          path: app/target/dist/
