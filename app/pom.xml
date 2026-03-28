@@ -68,6 +68,27 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.panteleyev</groupId>
+                <artifactId>jpackage-maven-plugin</artifactId>
+                <version>1.7.1</version>
+                <configuration>
+                    <name>jemu</name>
+                    <type>APP_IMAGE</type>
+                    <mainJar>${project.parent.build.finalName}.jar</mainJar>
+                    <input>${project.parent.build.directory}</input>
+                    <mainClass>io.github.arkosammy12.jemu.app.Main</mainClass>
+                    <runtimeImage>${java.home}</runtimeImage>
+                    <destination>${project.parent.build.directory}/dist</destination>
+                    <removeDestination>true</removeDestination>
+                    <javaOptions>
+                        <option>-Dfile.encoding=UTF-8</option>
+                        <option>--enable-native-access=ALL-UNNAMED</option>
+                        <option>-XX:+UseZGC</option>
+                        <option>-XX:+UseCompactObjectHeaders</option>
+                    </javaOptions>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
