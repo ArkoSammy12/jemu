@@ -1,11 +1,13 @@
 package io.github.arkosammy12.jemu.core.cosmacvip;
 
+import io.github.arkosammy12.jemu.core.cpu.CDP1802;
+
 public interface IODevice {
 
     default void cycle() { }
 
-    default DmaStatus getDmaStatus() {
-        return DmaStatus.NONE;
+    default CDP1802.DmaStatus getDmaStatus() {
+        return CDP1802.DmaStatus.NONE;
     }
 
     default boolean isInterrupting() {
@@ -32,13 +34,6 @@ public interface IODevice {
     default int onInput(int port) {
         // Data bus lines are pulled up on the VIP
         return 0xFF;
-    }
-
-    enum DmaStatus {
-        NONE,
-        IN,
-        OUT
-
     }
 
 }

@@ -2,16 +2,14 @@ package io.github.arkosammy12.jemu.core.cosmacvip;
 
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.exceptions.InvalidInstructionException;
-import io.github.arkosammy12.jemu.core.disassembler.Disassembler;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+import static io.github.arkosammy12.jemu.core.cpu.CDP1802.DmaStatus.IN;
+import static io.github.arkosammy12.jemu.core.cpu.CDP1802.DmaStatus.OUT;
 import static io.github.arkosammy12.jemu.core.cpu.CDP1802.isHandled;
-import static io.github.arkosammy12.jemu.core.cosmacvip.IODevice.DmaStatus.IN;
-import static io.github.arkosammy12.jemu.core.cosmacvip.IODevice.DmaStatus.OUT;
 
 public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
@@ -121,13 +119,13 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         }
     }
 
-    public IODevice.DmaStatus getDmaStatus() {
-        IODevice.DmaStatus highestStatus = IODevice.DmaStatus.NONE;
+    public CDP1802.DmaStatus getDmaStatus() {
+        CDP1802.DmaStatus highestStatus = CDP1802.DmaStatus.NONE;
         for (IODevice ioDevice : this.ioDevices) {
             switch (ioDevice.getDmaStatus()) {
                 case IN -> highestStatus = IN;
                 case OUT -> {
-                    if (highestStatus == IODevice.DmaStatus.NONE) {
+                    if (highestStatus == CDP1802.DmaStatus.NONE) {
                         highestStatus = OUT;
                     }
                 }
@@ -138,7 +136,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     public void dispatchDmaOut(int dmaOutAddress, int value) {
         for (IODevice ioDevice : this.ioDevices) {
-            if (ioDevice.getDmaStatus() == IODevice.DmaStatus.OUT) {
+            if (ioDevice.getDmaStatus() == CDP1802.DmaStatus.OUT) {
                 ioDevice.doDmaOut(dmaOutAddress, value);
                 return;
             }
@@ -147,7 +145,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     public int dispatchDmaIn(int dmaInAddress) {
         for (IODevice ioDevice : this.ioDevices) {
-            if (ioDevice.getDmaStatus() == IODevice.DmaStatus.IN) {
+            if (ioDevice.getDmaStatus() == CDP1802.DmaStatus.IN) {
                 return ioDevice.doDmaIn(dmaInAddress);
             }
         }

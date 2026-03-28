@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.core.cpu;
 
 import io.github.arkosammy12.jemu.core.common.Processor;
-import io.github.arkosammy12.jemu.core.cosmacvip.IODevice;
 
 import static io.github.arkosammy12.jemu.core.cpu.CDP1802.State.*;
 
@@ -184,7 +183,7 @@ public class CDP1802 implements Processor {
         this.currentState = switch (currentState) {
             case S1_RESET -> S1_INIT;
             case S1_INIT, S3_INTERRUPT -> switch (this.systemBus.getDmaStatus()) {
-                case IODevice.DmaStatus.NONE ->  S0_FETCH;
+                case CDP1802.DmaStatus.NONE ->  S0_FETCH;
                 case IN -> S2_DMA_IN;
                 case OUT -> S2_DMA_OUT;
             };
@@ -898,7 +897,7 @@ public class CDP1802 implements Processor {
 
     public interface SystemBus extends io.github.arkosammy12.jemu.core.common.SystemBus {
 
-        IODevice.DmaStatus getDmaStatus();
+        DmaStatus getDmaStatus();
 
         boolean anyInterrupting();
 
@@ -910,6 +909,12 @@ public class CDP1802 implements Processor {
 
         void dispatchOutput(int port, int value);
 
+    }
+
+    public enum DmaStatus {
+        NONE,
+        IN,
+        OUT
     }
 
 }

@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.cosmacvip;
 
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
+import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 
 public class CDP1861<E extends CosmacVipEmulator> extends VideoGenerator<E> implements IODevice {
 
@@ -26,7 +27,7 @@ public class CDP1861<E extends CosmacVipEmulator> extends VideoGenerator<E> impl
     protected long cycles;
     protected int scanlineIndex;
 
-    private DmaStatus dmaStatus = DmaStatus.NONE;
+    private CDP1802.DmaStatus dmaStatus = CDP1802.DmaStatus.NONE;
     private boolean interrupting = false;
     private boolean enabled = false;
     private boolean displayEnableLatch;
@@ -47,7 +48,7 @@ public class CDP1861<E extends CosmacVipEmulator> extends VideoGenerator<E> impl
     }
 
     @Override
-    public DmaStatus getDmaStatus() {
+    public CDP1802.DmaStatus getDmaStatus() {
         return this.dmaStatus;
     }
 
@@ -67,14 +68,14 @@ public class CDP1861<E extends CosmacVipEmulator> extends VideoGenerator<E> impl
             if (this.scanlineIndex >= DISPLAY_AREA_BEGIN && this.scanlineIndex < DISPLAY_AREA_END) {
                 long scanLineCycles = this.cycles % MACHINE_CYCLES_PER_SCANLINE;
                 if (scanLineCycles >= (DMAO_BEGIN - 1) && scanLineCycles < (DMAO_END - 1)) {
-                    this.dmaStatus = DmaStatus.OUT;
+                    this.dmaStatus = CDP1802.DmaStatus.OUT;
                 } else {
-                    this.dmaStatus = DmaStatus.NONE;
+                    this.dmaStatus = CDP1802.DmaStatus.NONE;
                 }
             }
         } else {
             this.interrupting = false;
-            this.dmaStatus = DmaStatus.NONE;
+            this.dmaStatus = CDP1802.DmaStatus.NONE;
             this.emulator.getCpu().setEF(0, false);
         }
         if (this.cycles != 0 && (this.cycles % MACHINE_CYCLES_PER_SCANLINE == 0)) {
