@@ -232,14 +232,6 @@ public class NMOS6502 implements Processor {
         this.target = value & 0xFFFF;
     }
 
-    private void setTargetLow(int value) {
-        setTarget((getTargetHigh() << 8) | (value & 0xFF));
-    }
-
-    private void setTargetHigh(int value) {
-        setTarget(((value & 0xFF) << 8) | (getTargetLow()));
-    }
-
     private int getTargetHigh() {
         return (this.target >>> 8) & 0xFF;
     }
@@ -274,18 +266,6 @@ public class NMOS6502 implements Processor {
 
     private void setFinal(int value) {
         this.finalVar = value & 0xFFFF;
-    }
-
-    private void setFinalLow(int value) {
-        setFinal((getFinalHigh() << 8) | (value & 0xFF));
-    }
-
-    private void setFinalHigh(int value) {
-        setFinal(((value & 0xFF) << 8) | getFinalLow());
-    }
-
-    private int getFinal() {
-        return this.finalVar;
     }
 
     private int getFinalHigh() {
