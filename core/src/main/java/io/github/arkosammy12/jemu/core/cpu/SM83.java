@@ -911,12 +911,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(add8(getA(), getZ()));
+                                    setA(add(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // ADD A, r[z]
-                            setA(add8(getA(), getR(z)));
+                            setA(add(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -928,12 +928,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(adc8(getA(), getZ()));
+                                    setA(adc(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // ADC A, r[z]
-                            setA(adc8(getA(), getR(z)));
+                            setA(adc(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -945,12 +945,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(sub8(getA(), getZ()));
+                                    setA(sub(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // SUB r[z]
-                            setA(sub8(getA(), getR(z)));
+                            setA(sub(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -962,12 +962,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(sbc8(getA(), getZ()));
+                                    setA(sbc(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // SBC A, r[z]
-                            setA(sbc8(getA(), getR(z)));
+                            setA(sbc(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -979,12 +979,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(and8(getA(), getZ()));
+                                    setA(and(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // AND r[z]
-                            setA(and8(getA(), getR(z)));
+                            setA(and(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -996,12 +996,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(xor8(getA(), getZ()));
+                                    setA(xor(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // XOR r[z]
-                            setA(xor8(getA(), getR(z)));
+                            setA(xor(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1013,12 +1013,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    setA(or8(getA(), getZ()));
+                                    setA(or(getA(), getZ()));
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // OR r[z]
-                            setA(or8(getA(), getR(z)));
+                            setA(or(getA(), getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1030,12 +1030,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    sub8(getA(), getZ());
+                                    sub(getA(), getZ());
                                     machineCycleIndex = TERMINATE_INSTRUCTION;
                                 }
                             }
                         } else { // CP r[z]
-                            sub8(getA(), getR(z));
+                            sub(getA(), getR(z));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1485,7 +1485,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(add8(getA(), getZ()));
+                                        setA(add(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1498,7 +1498,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(adc8(getA(), getZ()));
+                                        setA(adc(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1511,7 +1511,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(sub8(getA(), getZ()));
+                                        setA(sub(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1524,7 +1524,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(sbc8(getA(), getZ()));
+                                        setA(sbc(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1537,7 +1537,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(and8(getA(), getZ()));
+                                        setA(and(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1550,7 +1550,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(xor8(getA(), getZ()));
+                                        setA(xor(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1563,7 +1563,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        setA(or8(getA(), getZ()));
+                                        setA(or(getA(), getZ()));
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1576,7 +1576,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         machineCycleIndex = 1;
                                     }
                                     case 1 -> {
-                                        sub8(getA(), getZ());
+                                        sub(getA(), getZ());
                                         machineCycleIndex = TERMINATE_INSTRUCTION;
                                     }
                                 }
@@ -1625,7 +1625,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), rlc8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), rlc(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1633,7 +1633,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // RLC r[z]
-                            setR(z, rlc8(getR(z)));
+                            setR(z, rlc(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1645,7 +1645,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), rrc8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), rrc(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1653,7 +1653,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // RRC r[z]
-                            setR(z, rrc8(getR(z)));
+                            setR(z, rrc(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1665,7 +1665,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), rl8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), rl(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1673,7 +1673,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // RL r[z]
-                            setR(z, rl8(getR(z)));
+                            setR(z, rl(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1685,7 +1685,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), rr8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), rr(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1693,7 +1693,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // RR r[z]
-                            setR(z, rr8(getR(z)));
+                            setR(z, rr(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1705,7 +1705,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), sla8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), sla(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1713,7 +1713,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // SLA r[z]
-                            setR(z, sla8(getR(z)));
+                            setR(z, sla(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1761,7 +1761,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), swap8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), swap(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1769,7 +1769,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // SWAP r[z]
-                            setR(z, swap8(getR(z)));
+                            setR(z, swap(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1781,7 +1781,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     machineCycleIndex = 1;
                                 }
                                 case 1 -> {
-                                    systemBus.getBus().writeByte(getHL(), srl8(getZ()));
+                                    systemBus.getBus().writeByte(getHL(), srl(getZ()));
                                     machineCycleIndex = 2;
                                 }
                                 case 2 -> {
@@ -1789,7 +1789,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                 }
                             }
                         } else { // SRL r[z]
-                            setR(z, srl8(getR(z)));
+                            setR(z, srl(getR(z)));
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
@@ -1803,12 +1803,12 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                             machineCycleIndex = 1;
                         }
                         case 1 -> {
-                            bit8(y, getZ());
+                            bit(y, getZ());
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
                     }
                 } else { // BIT y, r[z]
-                    bit8(y, getR(z));
+                    bit(y, getR(z));
                     machineCycleIndex = TERMINATE_INSTRUCTION;
                 }
             }
@@ -1933,7 +1933,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         };
     }
 
-    private int add8(int left, int right) {
+    private int add(int left, int right) {
         int result = left + right;
         setFZ((result & 0xFF) == 0);
         setFN(false);
@@ -1942,7 +1942,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int adc8(int left, int right) {
+    private int adc(int left, int right) {
         int result = left + right + (getFC() ? 1 : 0);
         setFZ((result & 0xFF) == 0);
         setFN(false);
@@ -1951,7 +1951,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int sub8(int left, int right) {
+    private int sub(int left, int right) {
         int result = left - right;
         setFZ((result & 0xFF) == 0);
         setFN(true);
@@ -1961,7 +1961,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
     }
 
 
-    private int sbc8(int left, int right) {
+    private int sbc(int left, int right) {
         int result = left - right - (getFC() ? 1 : 0);
         setFZ((result & 0xFF) == 0);
         setFN(true);
@@ -1970,7 +1970,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int and8(int left, int right) {
+    private int and(int left, int right) {
         int result = left & right;
         setFZ((result & 0xFF) == 0);
         setFN(false);
@@ -1979,7 +1979,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int or8(int left, int right) {
+    private int or(int left, int right) {
         int result = left | right;
         setFZ((result & 0xFF) == 0);
         setFN(false);
@@ -1988,7 +1988,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int xor8(int left, int right) {
+    private int xor(int left, int right) {
         int result = left ^ right;
         setFZ((result & 0xFF) == 0);
         setFN(false);
@@ -1997,7 +1997,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int rlc8(int operand) {
+    private int rlc(int operand) {
         boolean shiftedOut = (operand & 0x80) != 0;
         int result = (operand << 1) | (shiftedOut ? 1 : 0);
         setFZ((result & 0xFF) == 0);
@@ -2007,7 +2007,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int rrc8(int operand) {
+    private int rrc(int operand) {
         boolean shiftedOut = (operand & 1) != 0;
         int result = (shiftedOut ? 0x80 : 0x00) | (operand >>> 1);
         setFZ((result & 0xFF) == 0);
@@ -2017,7 +2017,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int rl8(int operand) {
+    private int rl(int operand) {
         boolean shiftedOut = (operand & 0x80) != 0;
         int result = (operand << 1) | (getFC() ? 1 : 0);
         setFZ((result & 0xFF) == 0);
@@ -2027,7 +2027,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int rr8(int operand) {
+    private int rr(int operand) {
         boolean shiftedOut = (operand & 1) != 0;
         int result = (getFC() ? 0x80 : 0x00) | (operand >>> 1);
         setFZ((result & 0xFF) == 0);
@@ -2037,7 +2037,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int sla8(int operand) {
+    private int sla(int operand) {
         boolean shiftedOut = (operand & 0x80) != 0;
         int result = operand << 1;
         setFZ((result & 0xFF) == 0);
@@ -2047,7 +2047,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int swap8(int operand) {
+    private int swap(int operand) {
         int lsb = operand & 0xF;
         int msb = (operand & 0xF0) >>> 4;
         int result = (lsb << 4) | msb;
@@ -2058,7 +2058,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private int srl8(int operand) {
+    private int srl(int operand) {
         boolean shiftedOut = (operand & 1) != 0;
         int result = operand >>> 1;
         setFZ((result & 0xFF) == 0);
@@ -2068,7 +2068,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
         return result;
     }
 
-    private void bit8(int index, int operand) {
+    private void bit(int index, int operand) {
         setFZ(Processor.getBit(index, operand) == 0);
         setFN(false);
         setFH(true);

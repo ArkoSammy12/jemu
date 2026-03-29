@@ -9884,7 +9884,6 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            // opcode switch scope
         }
     }
 
