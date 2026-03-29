@@ -13,5 +13,6 @@ module core {
     exports io.github.arkosammy12.jemu.core.exceptions;
     exports io.github.arkosammy12.jemu.core.gameboy;
     exports io.github.arkosammy12.jemu.core.gameboycolor;
+    exports io.github.arkosammy12.jemu.core.nes;
 
 }

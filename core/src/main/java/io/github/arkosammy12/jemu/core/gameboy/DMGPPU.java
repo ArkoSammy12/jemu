@@ -16,8 +16,8 @@ import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.*;
 
 public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> implements Bus {
 
-    public static final int WIDTH = 160;
-    public static final int HEIGHT = 144;
+    private static final int WIDTH = 160;
+    private static final int HEIGHT = 144;
 
     private static final int CYCLES_PER_SCANLINE = 456;
     private static final int SCANLINES_PER_FRAME = 154;

@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.app.util;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.adapters.DefaultCosmacVIPAdapter;
 import io.github.arkosammy12.jemu.app.adapters.DefaultGameBoyAdapter;
+import io.github.arkosammy12.jemu.app.adapters.DefaultNESAdapter;
 import io.github.arkosammy12.jemu.app.adapters.DefaultSystemAdapter;
 import io.github.arkosammy12.jemu.app.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
@@ -19,7 +20,8 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     VIP_CHIP_8("vip-chip8", "VIP CHIP-8", new String[] {"ch8", "hc8"}, args -> new DefaultCosmacVIPAdapter(args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
     VIP_CHIP_8X("vip-chip8x", "VIP CHIP-8X", new String[] {"ch8", "c8x"}, args -> new DefaultCosmacVIPAdapter(args.coreInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
     GAME_BOY("gameboy", "Game Boy", new String[] {"gb"}, args -> new DefaultGameBoyAdapter(args.coreInitializer(), GameBoyHost.Model.DMG)),
-    GAME_BOY_COLOR("gameboy-color", "Game Boy Color", new String[] {"gbc"}, args -> new DefaultGameBoyAdapter(args.coreInitializer(), GameBoyHost.Model.CGB));
+    GAME_BOY_COLOR("gameboy-color", "Game Boy Color", new String[] {"gbc"}, args -> new DefaultGameBoyAdapter(args.coreInitializer(), GameBoyHost.Model.CGB)),
+    NES("nes", "Nintendo Entertainment System", new String[] {"nes"}, args -> new DefaultNESAdapter(args.coreInitializer()));
 
     private final String identifier;
     private final String displayName;

@@ -15,9 +15,9 @@ public abstract class DefaultSystemAdapter implements SystemAdapter {
     private final byte[] rom;
     private final Path path;
 
-    public DefaultSystemAdapter(CoreInitializer coreInitializer) {
-        Optional<byte[]> rawRomOptional = coreInitializer.getRawRom();
-        Optional<Path> romPathOptional = coreInitializer.getRomPath();
+    public DefaultSystemAdapter(CoreInitializer initializer) {
+        Optional<byte[]> rawRomOptional = initializer.getRawRom();
+        Optional<Path> romPathOptional = initializer.getRomPath();
         if (rawRomOptional.isEmpty() || romPathOptional.isEmpty()) {
             throw new EmulatorException("Must select a ROM file before starting emulation!");
         }
