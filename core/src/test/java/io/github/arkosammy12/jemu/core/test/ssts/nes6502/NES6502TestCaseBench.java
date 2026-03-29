@@ -41,7 +41,7 @@ public class NES6502TestCaseBench implements NMOS6502.SystemBus {
         NES6502TestState finalState = this.testCase.getFinalState();
 
         assertEquals(finalState.getPC(), this.cpu.getPC(), () -> "Test name: %s. Field: PC".formatted(testCase.getName()));
-        assertEquals(finalState.getSP(), this.cpu.getSP(), () -> "Test name: %s. Field: SP".formatted(testCase.getName()));
+        assertEquals(finalState.getSP(), this.cpu.getS(), () -> "Test name: %s. Field: SP".formatted(testCase.getName()));
         assertEquals(finalState.getA(), this.cpu.getA(), () -> "Test name: %s. Field: A".formatted(testCase.getName()));
         assertEquals(finalState.getX(), this.cpu.getX(), () -> "Test name: %s. Field: X".formatted(testCase.getName()));
         assertEquals(finalState.getY(), this.cpu.getY(), () -> "Test name: %s. Field: Y".formatted(testCase.getName()));

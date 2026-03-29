@@ -16,7 +16,7 @@ public class TestNES6502 extends NES6502 {
 
         this.setPC(initialState.getPC());
         this.setA(initialState.getA());
-        this.setSP(initialState.getSP());
+        this.setS(initialState.getSP());
         this.setX(initialState.getX());
         this.setY(initialState.getY());
         this.setP(initialState.getP());
