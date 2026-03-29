@@ -214,6 +214,8 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         this.bgFifoFetcherX++;
     }
 
+    // TODO: From @numma_cway on gbdev discord: On DMG, disabling background disables fetching whereas CGB still fetches but reads color ID 0.
+
     @Override
     @SuppressWarnings("DuplicatedCode")
     protected void tickSpriteFifo() {
