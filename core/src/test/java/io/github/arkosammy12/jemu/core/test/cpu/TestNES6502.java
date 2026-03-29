@@ -24,9 +24,9 @@ public class TestNES6502 extends NES6502 {
     }
 
     @Override
-    protected void execute() {
-        switch (getIR()) {
-            case 0xAB -> { // LXA, immediate
+    protected void executeAX(int digit) {
+        switch (digit) {
+            case 0xB -> { // LXA, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -50,7 +50,7 @@ public class TestNES6502 extends NES6502 {
                     }
                 }
             }
-            default -> super.execute();
+            default -> super.executeAX(digit);
         }
     }
 

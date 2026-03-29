@@ -367,9 +367,31 @@ public class NMOS6502 implements Processor {
         this.phase = this.phase.getOpposite();
     }
 
-    protected void execute() {
-        switch (getIR()) {
-            case 0x00 -> { // BRK, implied
+    private void execute() {
+        int IR = getIR();
+        switch (IR & 0xF0) {
+            case 0x00 -> execute0X(IR & 0xF);
+            case 0x10 -> execute1X(IR & 0xF);
+            case 0x20 -> execute2X(IR & 0xF);
+            case 0x30 -> execute3X(IR & 0xF);
+            case 0x40 -> execute4X(IR & 0xF);
+            case 0x50 -> execute5X(IR & 0xF);
+            case 0x60 -> execute6X(IR & 0xF);
+            case 0x70 -> execute7X(IR & 0xF);
+            case 0x80 -> execute8X(IR & 0xF);
+            case 0x90 -> execute9X(IR & 0xF);
+            case 0xA0 -> executeAX(IR & 0xF);
+            case 0xB0 -> executeBX(IR & 0xF);
+            case 0xC0 -> executeCX(IR & 0xF);
+            case 0xD0 -> executeDX(IR & 0xF);
+            case 0xE0 -> executeEX(IR & 0xF);
+            case 0xF0 -> executeFX(IR & 0xF);
+        }
+    }
+
+    private void execute0X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // BRK, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         if (this.brkSource == BRKSource.SOFTWARE) {
@@ -456,7 +478,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x01 -> { // ORA, indirect X
+            case 0x1 -> { // ORA, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -508,47 +530,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x02, 0x12, 0x22, 0x32, 0x42, 0x52, 0x62, 0x72, 0x92, 0xB2, 0xD2, 0xF2 -> { // JAM, implied
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(0xFFFF);
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        subCycleIndex = 5;
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(0xFFFE);
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        systemBus.getBus().readByte(0xFFFE);
-                        subCycleIndex = 8;
-                    }
-                    case 8 -> {
-                        subCycleIndex = 9;
-                    }
-                    case 9 -> {
-                        systemBus.getBus().readByte(0xFFFF);
-                        subCycleIndex = 8;
-                    }
-                }
+            case 0x2 -> { // JAM, implied
+                jam();
             }
-            case 0x03 -> { // SLO, indirect X
+            case 0x3 -> { // SLO, indirect X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -616,33 +601,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x04, 0x44, 0x64 -> { // NOP, zero page
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setAddress(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        setOperand(systemBus.getBus().readByte(getAddress()));
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        subCycleIndex = 5;
-                    }
-                    case 5 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+            case 0x4 -> { // NOP, zero page (read)
+                nopZeroPageRead();
             }
-            case 0x05 -> { // ORA, zero page
+            case 0x5 -> { // ORA, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -672,7 +634,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x06 -> { // ASL, zero page
+            case 0x6 -> { // ASL, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -716,7 +678,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x07 -> { // SLO, zero page
+            case 0x7 -> { // SLO, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -762,7 +724,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x08 -> { // PHP, implied
+            case 0x8 -> { // PHP, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -788,7 +750,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x09 -> { // ORA, immediate
+            case 0x9 -> { // ORA, immediate (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -811,7 +773,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x0A -> { // ASL, implied
+            case 0xA -> { // ASL, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -834,31 +796,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x0B, 0x2B -> { // ANC, immediate
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        int result = (getA() & getOperand()) & 0xFF;
-                        setA(result);
-                        setFC((result & 0x80) != 0);
-                        setFN((result & 0x80) != 0);
-                        setFZ(result == 0);
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+            case 0xB -> { // ANC, immediate (read)
+                ancImmediateRead();
             }
-            case 0x0C -> { // NOP, absolute
+            case 0xC -> { // NOP, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -892,7 +833,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x0D -> { // ORA, absolute
+            case 0xD -> { // ORA, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -930,7 +871,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x0E -> { // ASL, absolute
+            case 0xE -> { // ASL, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -982,7 +923,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x0F -> { // SLO, absolute
+            case 0xF -> { // SLO, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1036,59 +977,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x10 -> { // BPL, branch relative
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (!getFN()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void execute1X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // BPL, relative (jump)
+                branchRelative(!getFN());
             }
-            case 0x11 -> { // ORA, indirect Y
+            case 0x1 -> { // ORA, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1146,7 +1043,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x13 -> { // SLO, indirect Y
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // SLO, indirect Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1216,41 +1116,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> { // NOP, zero page X
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setPointer(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        setOperand(systemBus.getBus().readByte(getPointer()));
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        setAddress((getPointer() + getX()) & 0xFF);
-                        subCycleIndex = 5;
-                    }
-                    case 5 -> {
-                        setOperand(systemBus.getBus().readByte(getAddress()));
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+            case 0x4 -> { // NOP, zero page X (read)
+                nopZeroPageXRead();
             }
-            case 0x15 -> { // ORA, zero page X
+            case 0x5 -> { // ORA, zero page X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1288,7 +1157,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x16 -> { // ASL, zero page X
+            case 0x6 -> { // ASL, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1340,7 +1209,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x17 -> { // SLO, zero page X
+            case 0x7 -> { // SLO, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1394,7 +1263,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x18 -> { // CLC, implied
+            case 0x8 -> { // CLC, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1413,7 +1282,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x19 -> { // ORA, absolute Y
+            case 0x9 -> { // ORA, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1465,25 +1334,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> { // NOP, implied
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+            case 0xA -> { // NOP, implied
+                nopImplied();
             }
-            case 0x1B -> { // SLO, absolute Y
+            case 0xB -> { // SLO, absolute Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1547,55 +1401,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC -> { // NOP, absolute X (read)
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setAddressLow(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        setAddressHigh(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        setPC(getPC() + 1);
-                        setFinal(getAddress() + getX());
-                        setAddressLow(getFinalLow());
-                        subCycleIndex = 5;
-                    }
-                    case 5 -> {
-                        setOperand(systemBus.getBus().readByte(getAddress()));
-                        if (getAddressHigh() == getFinalHigh()) {
-                            subCycleIndex = 8;
-                        } else {
-                            subCycleIndex = 6;
-                        }
-                    }
-                    case 6 -> {
-                        setAddressHigh(getFinalHigh());
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        setOperand(systemBus.getBus().readByte(getAddress()));
-                        subCycleIndex = 8;
-                    }
-                    case 8 -> {
-                        subCycleIndex = 9;
-                    }
-                    case 9 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+            case 0xC -> { // NOP, absolute X (read)
+                nopAbsoluteXRead();
             }
-            case 0x1D -> { // ORA, absolute X
+            case 0xD -> { // ORA, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1647,7 +1456,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x1E -> { // ASL, absolute X
+            case 0xE -> { // ASL, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1709,7 +1518,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x1F -> { // SLO, absolute X (read/modify/write)
+            case 0xF -> { // SLO, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1773,7 +1582,12 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x20 -> { // JSR, absolute
+        }
+    }
+
+    private void execute2X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // JSR, absolute
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1822,7 +1636,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x21 -> { // AND, indirect X
+            case 0x1 -> { // AND, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1874,7 +1688,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x23 -> { // RLA, indirect X
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // RLA, indirect X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1943,7 +1760,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x24 -> { // BIT, zero page
+            case 0x4 -> { // BIT, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1972,7 +1789,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x25 -> { // AND, zero page
+            case 0x5 -> { // AND, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2002,7 +1819,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x26 -> { // ROL, zero page
+            case 0x6 -> { // ROL, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2047,7 +1864,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x27 -> { // RLA, zero page
+            case 0x7 -> { // RLA, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2094,7 +1911,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x28 -> { // PLP, implied
+            case 0x8 -> { // PLP, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2130,7 +1947,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x29 -> { // AND, immediate
+            case 0x9 -> { // AND, immediate (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2153,7 +1970,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x2A -> { // ROL, implied
+            case 0xA -> { // ROL, implied (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2177,7 +1994,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x2C -> { // BIT, absolute
+            case 0xB -> { // ANC, immediate (read)
+                ancImmediateRead();
+            }
+            case 0xC -> { // BIT, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2214,7 +2034,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x2D -> { // AND, absolute
+            case 0xD -> { // AND, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2252,7 +2072,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x2E -> { // ROL, absolute
+            case 0xE -> { // ROL, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2305,7 +2125,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x2F -> { // RLA, absolute
+            case 0xF -> { // RLA, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2360,59 +2180,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x30 -> { // BMI, branch relative
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (getFN()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void execute3X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // BMI, relative (jump)
+                branchRelative(getFN());
             }
-            case 0x31 -> { // AND, indirect Y
+            case 0x1 -> { // AND, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2470,7 +2246,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x33 ->  { // RLA, indirect Y
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // RLA, indirect Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2541,7 +2320,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x35 -> { // AND, zero page X
+            case 0x4 -> { // NOP, zero page X (read)
+                nopZeroPageXRead();
+            }
+            case 0x5 -> { // AND, zero page X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2579,7 +2361,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x36 -> { // ROL, zero page X
+            case 0x6 -> { // ROL, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2632,7 +2414,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x37 -> { // RLA, zero page X
+            case 0x7 -> { // RLA, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2687,7 +2469,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x38 -> { // SEC, implied
+            case 0x8 -> { // SEC, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2706,7 +2488,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x39 -> { // AND, absolute Y
+            case 0x9 -> { // AND, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2758,7 +2540,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x3B -> { // RLA, absolute Y (read/modify/write)
+            case 0xA -> { // NOP, implied
+                nopImplied();
+            }
+            case 0xB -> { // RLA, absolute Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2823,7 +2608,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x3D -> { // AND, absolute X
+            case 0xC -> { // NOP, absolute X (read)
+                nopAbsoluteXRead();
+            }
+            case 0xD -> { // AND, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2875,7 +2663,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x3E -> { // ROL, absolute X
+            case 0xE -> { // ROL, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -2938,7 +2726,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x3F -> { // RLA, absolute X
+            case 0xF -> { // RLA, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3003,7 +2791,12 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x40 -> { // RTI, implied
+        }
+    }
+
+    private void execute4X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // RTI, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3057,7 +2850,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x41 -> { // EOR, indirect X
+            case 0x1 -> { // EOR, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3109,7 +2902,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x43 -> { // SRE, indirect X
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // SRE, indirect X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3177,7 +2973,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x45 -> { // EOR, zero page
+            case 0x4 -> { // NOP, zero page (read)
+                nopZeroPageRead();
+            }
+            case 0x5 -> { // EOR, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3207,7 +3006,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x46 -> { // LSR, zero page
+            case 0x6 -> { // LSR, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3251,7 +3050,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x47 -> { // SRE, zero page
+            case 0x7 -> { // SRE, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3297,7 +3096,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x48 -> { // PHA
+            case 0x8 -> { // PHA, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3323,7 +3122,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x49 -> { // EOR, immediate
+            case 0x9 -> { // EOR, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3346,7 +3145,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x4A -> { // LSR, immediate
+            case 0xA -> { // LSR, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3369,7 +3168,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x4B -> { // ASR, immediate
+            case 0xB -> { // ASR, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3394,7 +3193,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x4C -> { // JMP, absolute
+            case 0xC -> { // JMP, absolute
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3421,7 +3220,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x4D -> { // EOR, absolute
+            case 0xD -> { // EOR, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3459,7 +3258,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x4E -> { // LSR, absolute
+            case 0xE -> { // LSR, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3511,7 +3310,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x4F -> { // SRE, absolute
+            case 0xF -> { // SRE, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3565,59 +3364,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x50 -> { // BVC, branch relative
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (!getFV()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void execute5X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // BVC, relative (jump)
+                branchRelative(!getFV());
             }
-            case 0x51 -> { // EOR, indirect Y
+            case 0x1 -> { // EOR, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3675,7 +3430,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x53 -> { // SRE, indirect Y
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // SRE, indirect Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3745,7 +3503,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x55 -> { // EOR, zero page X
+            case 0x4 -> { // NOP, zero page X (read)
+                nopZeroPageXRead();
+            }
+            case 0x5 -> { // EOR, zero page X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3783,7 +3544,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x56 -> { // LSR, zero page X
+            case 0x6 -> { // LSR, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3835,7 +3596,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x57 -> { // SRE, zero page X
+            case 0x7 -> { // SRE, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3889,7 +3650,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x58 -> { // CLI, implied
+            case 0x8 -> { // CLI, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3908,7 +3669,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x59 -> { // EOR, absolute Y (read)
+            case 0x9 -> { // EOR, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -3960,7 +3721,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x5B -> {
+            case 0xA -> { // NOP, implied
+                nopImplied();
+            }
+            case 0xB -> { // SRE, absolute Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4024,7 +3788,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x5D -> { // EOR, absolute X
+            case 0xC -> { // NOP, absolute X (read)
+                nopAbsoluteXRead();
+            }
+            case 0xD -> { // EOR, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4076,7 +3843,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x5E -> { // LSR, absolute X
+            case 0xE -> { // LSR, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4138,7 +3905,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x5F -> { // SRE, absolute X
+            case 0xF -> { // SRE, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4202,7 +3969,12 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x60 -> { // RTS, implied
+        }
+    }
+
+    private void execute6X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // RTS, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4252,7 +4024,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x61 -> { // ADC, indirect X
+            case 0x1 -> { // ADC, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4301,7 +4073,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x63 -> { // RRA, indirect X
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // RRA, indirect X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4367,7 +4142,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x65 -> { // ADC, zero page
+            case 0x4 -> { // NOP, zero page (read)
+                nopZeroPageRead();
+            }
+            case 0x5 -> { // ADC, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4394,7 +4172,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x66 -> { // ROR, zero page
+            case 0x6 -> { // ROR, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4439,7 +4217,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x67 -> { // RRA, zero page
+            case 0x7 -> { // RRA, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4483,7 +4261,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x68 -> { // PLA, implied
+            case 0x8 -> { // PLA, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4519,7 +4297,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x69 -> { // ADC, immediate
+            case 0x9 -> { // ADC, immediate (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4539,7 +4317,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x6A -> { // ROR, implied
+            case 0xA -> { // ROR, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4563,7 +4341,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x6B -> { // ARR, immediate
+            case 0xB -> { // ARR, immediate (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4589,7 +4367,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x6C -> { // JMP, indirect
+            case 0xC -> { // JMP, indirect
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4631,7 +4409,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x6D -> { // ADC, absolute
+            case 0xD -> { // ADC, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4666,7 +4444,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x6E -> { // ROR
+            case 0xE -> { // ROR, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4719,7 +4497,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x6F -> { // RRA, absolute
+            case 0xF -> { // RRA, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4771,59 +4549,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x70 -> { // BVS, branch relative
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (getFV()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void execute7X(int digit) {
+        switch (digit) { // BVS, relative (jump)
+            case 0x0 -> {
+                branchRelative(getFV());
             }
-            case 0x71 -> { // ADC, indirect Y
+            case 0x1 -> { // ADC, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4878,7 +4612,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x73 -> { // RRA, indirect Y
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // RRA, indirect Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4946,7 +4683,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x75 -> { // ADC, zero page X
+            case 0x4 -> { // NOP, zero page X (read)
+                nopZeroPageXRead();
+            }
+            case 0x5 -> { // ADC, zero page X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -4981,7 +4721,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x76 -> { // ROR, zero page X (read/modify/write)
+            case 0x6 -> { // ROR, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5034,7 +4774,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x77 ->  { // RRA, zero page X (read/modify/write)
+            case 0x7 -> { // RRA, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5086,7 +4826,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x78 -> { // SEI, implied
+            case 0x8 -> { // SEI, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5105,7 +4845,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x79 -> { // ADC, absolute Y (read)
+            case 0x9 -> { // ADC, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5154,7 +4894,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x7B -> { // RRA, absolute Y (read/modify/write)
+            case 0xA -> { // NOP, implied
+                nopImplied();
+            }
+            case 0xB -> { // RRA, absolute Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5216,7 +4959,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x7D -> { // ADC, absolute X (read)
+            case 0xC -> { // NOP, absolute X (read)
+                nopAbsoluteXRead();
+            }
+            case 0xD -> { // ADC, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5265,7 +5011,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x7E -> { // ROR, absolute X (read/modify/write)
+            case 0xE -> { // ROR, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5328,7 +5074,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x7F -> { // RRA, absolute X (read/modify/write)
+            case 0xF -> { // RRA, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5390,33 +5136,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            default -> execute2();
         }
-
     }
 
-    private void execute2() {
-        switch (getIR()) {
-            case 0x80, 0x82, 0x89, 0xC2, 0xE2 -> { // NOP, immediate (read)
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void execute8X(int digit) {
+        switch (digit) {
+            case 0x0, 0x9, 0x2 -> { // NOP, immediate (read)
+                nopImmediate();
             }
-            case 0x81 -> { // STA, indirect X (write)
+            case 0x1 -> { // STA, indirect X (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5464,7 +5192,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x83 -> { // SAX, indirect X (write)
+            case 0x3 -> { // SAX, indirect X (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5512,7 +5240,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x84 -> { // STY, zero page (write)
+            case 0x4 -> { // STY, zero page (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5538,7 +5266,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x85 -> { // STA, zero page (write)
+            case 0x5 -> { // STA, zero page (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5564,7 +5292,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x86 -> { // STX, zero page (write)
+            case 0x6 -> { // STX, zero page (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5590,7 +5318,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x87 -> { // SAX, zero page (write)
+            case 0x7 -> { // SAX, zero page (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5616,7 +5344,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x88 -> { // DEY, implied
+            case 0x8 -> { // DEY, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5637,7 +5365,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x8A -> { // TXA, implied
+            case 0xA -> { // TXA, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5658,7 +5386,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x8B -> { // ANE, immediate
+            case 0xB -> { // ANE, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5683,7 +5411,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x8C -> { // STY, absolute (write)
+            case 0xC -> { // STY, absolute (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5717,7 +5445,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x8D -> { // STA, absolute (write)
+            case 0xD -> { // STA, absolute (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5751,7 +5479,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x8E -> { // STX, absolute (write)
+            case 0xE -> { // STX, absolute (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5785,7 +5513,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x8F -> { // SAX, absolute (write)
+            case 0xF -> { // SAX, absolute (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5819,59 +5547,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x90 -> { // BCC, branch relative
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (!getFC()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void execute9X(int digit) {
+        switch (digit) {
+            case 0x0 -> { // BCC, relative (jump)
+                branchRelative(!getFC());
             }
-            case 0x91 -> { // STA, indirect Y (write)
+            case 0x1 -> { // STA, indirect Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5921,7 +5605,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x93 -> { // SHA, indirect Y (write)
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // SHA, indirect Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -5988,7 +5675,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x94 -> { // zero page, X (write)
+            case 0x4 -> { // STY, zero page, X (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6022,7 +5709,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x95 -> { // STA, zero page (write)
+            case 0x5 -> { // STA, zero page (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6056,7 +5743,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x96 -> { // STX, zero page Y (write)
+            case 0x6 -> { // STX, zero page Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6090,7 +5777,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x97 -> { // SAX, zero page Y (write)
+            case 0x7 -> { // SAX, zero page Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6124,7 +5811,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x98 -> { // TYA, implied
+            case 0x8 -> { // TYA, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6145,7 +5832,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x99 -> { // STA, absolute Y (write)
+            case 0x9 ->  { // STA, absolute Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6190,7 +5877,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x9A -> { // TXS, implied
+            case 0xA -> { // TXS, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6209,7 +5896,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x9B ->  { // TAS, absolute Y (write)
+            case 0xB ->  { // TAS, absolute Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6262,7 +5949,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x9C -> { // SHY, absolute X
+            case 0xC -> { // SHY, absolute X
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6314,7 +6001,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x9D -> { // STA, absolute X (write)
+            case 0xD -> { // STA, absolute X (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6360,7 +6047,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x9E -> { // SHX, absolute Y (write)
+            case 0xE -> { // SHX, absolute Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6412,7 +6099,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x9F -> { // SHA, absolute Y (write)
+            case 0xF -> { // SHA, absolute Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6468,7 +6155,12 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA0 -> { // LDY, immediate
+        }
+    }
+
+    protected void executeAX(int digit) {
+        switch (digit) {
+            case 0x0 -> { // LDY, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6490,7 +6182,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA1 -> { // LDA, indirect X (read)
+            case 0x1 -> { // LDA, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6541,7 +6233,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA2 -> { // LDX, immediate
+            case 0x2 -> { // LDX, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6563,7 +6255,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA3 -> { // LAX, indirect X (read)
+            case 0x3 -> { // LAX, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6615,7 +6307,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA4 -> { // LDY, zero page (read)
+            case 0x4 -> { // LDY, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6644,7 +6336,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA5 -> { // LDA, zero page (read)
+            case 0x5 -> { // LDA, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6673,7 +6365,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA6 -> { // LDX, zero page (read)
+            case 0x6 -> { // LDX, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6702,7 +6394,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA7 -> { // LAX, zero page (read)
+            case 0x7 -> { // LAX, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6732,7 +6424,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA8 -> { // TAY, implied
+            case 0x8 -> { // TAY, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6753,7 +6445,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xA9 -> { // LDA, immediate
+            case 0x9 -> { // LDA, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6775,7 +6467,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xAA -> { // TAX, implied
+            case 0xA -> { // TAX, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6796,7 +6488,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xAB -> { // LXA, immediate
+            case 0xB -> { // LXA, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6820,7 +6512,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xAC -> { // LDY, absolute (read)
+            case 0xC -> { // LDY, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6857,7 +6549,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xAD -> { // LDA, absolute (read)
+            case 0xD -> { // LDA, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6894,7 +6586,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xAE -> { // LDX, absolute (read)
+            case 0xE -> { // LDX, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6931,7 +6623,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xAF -> { // LAX, absolute (read)
+            case 0xF -> { // LAX, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6969,59 +6661,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB0 -> { // BCS, relative
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (getFC()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void executeBX(int digit) {
+        switch (digit) {
+            case 0x0 -> {
+                branchRelative(getFC());
             }
-            case 0xB1 -> { // LDA, indirect Y (read)
+            case 0x1 -> { // LDA, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7080,7 +6728,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB3 -> { // LAX, indirect Y
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // LAX, indirect Y
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7140,7 +6791,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB4 -> { // LDY, zero page X
+            case 0x4 -> { // LDY, zero page X
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7177,7 +6828,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB5 -> { // LDA, zero page X
+            case 0x5 -> { // LDA, zero page X
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7214,7 +6865,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB6 -> { // LDX, zero page Y (read)
+            case 0x6 -> { // LDX, zero page Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7254,7 +6905,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB7 -> { // LAX, zero page Y (read)
+            case 0x7 -> { // LAX, zero page Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7295,7 +6946,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB8 -> { // CLV, implied
+            case 0x8 -> { // CLV, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7314,7 +6965,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xB9 -> { // LDA, absolute Y (read)
+            case 0x9 -> { // LDA, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7367,7 +7018,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xBA -> { // TSX, implied
+            case 0xA -> { // TSX, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7388,7 +7039,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xBB -> { // LAS, absolute Y (read)
+            case 0xB -> { // LAS, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7444,7 +7095,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xBC -> { // LDY, absolute X (read)
+            case 0xC -> { // LDY, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7497,7 +7148,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xBD -> { // LDA, absolute X (read)
+            case 0xD -> { // LDA, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7550,7 +7201,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xBE -> { // LDX, absolute Y (read)
+            case 0xE -> { // LDX, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7603,7 +7254,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xBF -> { // LAX, absolute Y (read)
+            case 0xF -> { // LAX, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7657,7 +7308,12 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC0 -> { // CPY, immediate
+        }
+    }
+
+    private void executeCX(int digit) {
+        switch (digit) {
+            case 0x0 -> { // CPY, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7679,7 +7335,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC1 -> { // CMP, indirect X (read)
+            case 0x1 -> { // CMP, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7730,7 +7386,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC3 -> { // DCP, indirect X (read/modify/write)
+            case 0x2 -> { // NOP, immediate (read)
+                nopImmediate();
+            }
+            case 0x3 -> { // DCP, indirect X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7796,7 +7455,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC4 -> { // CPY, zero page (read)
+            case 0x4 -> { // CPY, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7825,7 +7484,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC5 -> { // CMP, zero page (read)
+            case 0x5 -> { // CMP, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7854,7 +7513,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC6 -> { // DEC, zero page (read/modify/write)
+            case 0x6 -> { // DEC, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7897,7 +7556,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC7 -> { // DCP, zero page (read/modify/write)
+            case 0x7 -> { // DCP, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7941,7 +7600,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC8 -> { // INY, implied
+            case 0x8 -> { // INY, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7962,7 +7621,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xC9 -> { // CMP, immediate
+            case 0x9 -> { // CMP, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -7984,7 +7643,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xCA -> { // DEX, implied
+            case 0xA -> { // DEX, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8005,7 +7664,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xCB -> { // SBX, immediate
+            case 0xB -> { // SBX, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8029,7 +7688,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xCC -> { // CPY, absolute (read)
+            case 0xC -> { // CPY, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8066,7 +7725,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xCD -> { // CMP, absolute (read)
+            case 0xD -> { // CMP, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8103,7 +7762,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xCE -> { // DEC, absolute (read/modify/write)
+            case 0xE -> { // DEC, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8154,7 +7813,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xCF -> { // DCP, absolute (read/modify/write)
+            case 0xF -> { // DCP, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8206,59 +7865,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD0 -> { // BNE, relative (jump)
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        if (!getFZ()) {
-                            subCycleIndex = 3;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                    }
-                    case 3 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 4;
-                    }
-                    case 4 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-                        int originalPC = getPC();
-                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                        if (signedOffsetHigh != getPCH()) {
-                            subCycleIndex = 5;
-                        } else {
-                            subCycleIndex = 7;
-                        }
-                        setPCL(getPCL() + signedOperand);
+        }
+    }
 
-                        // Save original PC
-                        setAddress(originalPC);
-                    }
-                    case 5 -> {
-                        systemBus.getBus().readByte(getPC());
-                        subCycleIndex = 6;
-                    }
-                    case 6 -> {
-                        short signedOperand = (short) ((byte) getOperand());
-
-                        // Original PC value stored in address
-                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
-                        subCycleIndex = 7;
-                    }
-                    case 7 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+    private void executeDX(int digit) {
+        switch (digit) {
+            case 0x0 -> { // BNE, relative (jump)
+                branchRelative(!getFZ());
             }
-            case 0xD1 -> { // CMP, indirect Y (read)
+            case 0x1 -> { // CMP, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8317,7 +7932,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD3 -> { // DCP, indirect Y (read/modify/write)
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // DCP, indirect Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8387,7 +8005,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD5 -> { // CMP, zero page X (read)
+            case 0x4 -> { // NOP, zero page X (read)
+                nopZeroPageXRead();
+            }
+            case 0x5 -> { // CMP, zero page X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8424,7 +8045,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD6 -> { // DEC, zero page X (read/modify/write)
+            case 0x6 -> { // DEC, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8475,7 +8096,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD7 -> { // DCP, zero page X (read/modify/write)
+            case 0x7 -> { // DCP, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8527,7 +8148,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD8 -> { // CLD, implied
+            case 0x8 -> { // CLD, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8546,7 +8167,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xD9 -> { // CMP, absolute Y (read)
+            case 0x9 -> { // CMP, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8599,7 +8220,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xDB -> { // DCP, absolute Y (read/modify/write)
+            case 0xA -> { // NOP, implied
+                nopImplied();
+            }
+            case 0xB -> { // DCP, absolute Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8663,7 +8287,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xDD -> { // CMP, absolute X (read)
+            case 0xC -> { // NOP, absolute X (read)
+                nopAbsoluteXRead();
+            }
+            case 0xD -> { // CMP, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8716,7 +8343,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xDE -> { // DEC, absolute X (read/modify/write)
+            case 0xE -> { // DEC, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8779,7 +8406,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xDF -> { // DCP, absolute X (read/modify/write)
+            case 0xF -> { // DCP, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8843,7 +8470,12 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE0 -> { // CPX, immediate
+        }
+    }
+
+    private void executeEX(int digit) {
+        switch (digit) {
+            case 0x0 -> { // CPX, immediate
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8863,7 +8495,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE1 -> { // SBC, indirect X (read)
+            case 0x1 -> { // SBC, indirect X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8912,7 +8544,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE3 -> { // ISC, indirect X (read/modify/write)
+            case 0x2 -> { // NOP, immediate (read)
+                nopImmediate();
+            }
+            case 0x3 -> { // ISC, indirect X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -8975,7 +8610,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE4 -> { // CPX, zero page (read)
+            case 0x4 -> { // CPX, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9002,7 +8637,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE5 -> { // SBC, zero page (read)
+            case 0x5 -> { // SBC, zero page (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9029,7 +8664,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE6 -> { // INC, zero page (read/modify/write)
+            case 0x6 -> { // INC, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9070,7 +8705,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE7 -> { // ISC, zero page (read/modify/write)
+            case 0x7 -> { // ISC, zero page (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9111,7 +8746,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE8 -> { // INX, implied
+            case 0x8 -> { // INX, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9132,27 +8767,13 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xE9, 0xEB -> { // SBC, immediate
-                switch (subCycleIndex) {
-                    case 0 -> {
-                        setPC(getPC() + 1);
-                        subCycleIndex = 1;
-                    }
-                    case 1 -> {
-                        setOperand(systemBus.getBus().readByte(getPC()));
-                        subCycleIndex = 2;
-                    }
-                    case 2 -> {
-                        setPC(getPC() + 1);
-                        sbc();
-                        subCycleIndex = 3;
-                    }
-                    case 3 -> {
-                        subCycleIndex = TERMINATE_INSTRUCTION;
-                    }
-                }
+            case 0x9, 0xB -> { // SBC, immediate
+                sbcImmediate();
             }
-            case 0xEC -> { // CPX, absolute (read)
+            case 0xA -> { // NOP, implied
+                nopImplied();
+            }
+            case 0xC -> { // CPX, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9187,7 +8808,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xED -> { // SBC, absolute (read)
+            case 0xD -> { // SBC, absolute (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9222,7 +8843,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xEE -> { // INC, absolute (read/modify/write)
+            case 0xE -> { // INC, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9271,7 +8892,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xEF -> { // ISC, absolute (read/modify/write)
+            case 0xF -> { // ISC, absolute (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9320,10 +8941,15 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF0 -> { // BEQ, relative (jump)
+        }
+    }
+
+    private void executeFX(int digit) {
+        switch (digit) {
+            case 0x0 -> {
                 branchRelative(getFZ());
             }
-            case 0xF1 -> { // SBC, indirect Y (read)
+            case 0x1 -> { // SBC, indirect Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9380,7 +9006,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF3 -> { // ISC, indirect Y (read/modify/write)
+            case 0x2 -> { // JAM, implied
+                jam();
+            }
+            case 0x3 -> { // ISC, indirect Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9447,7 +9076,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF5 -> { // SBC, zero page X (read)
+            case 0x4 -> { // NOP, zero page X (read)
+                nopZeroPageXRead();
+            }
+            case 0x5 -> { // SBC, zero page X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9482,7 +9114,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF6 -> { // INC, zero page X (read/modify/write)
+            case 0x6 -> { // INC, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9531,7 +9163,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF7 -> { // ISC, zero page X (read/modify/write)
+            case 0x7 -> { // ISC, zero page X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9580,7 +9212,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF8 -> { // SED, implied
+            case 0x8 -> { // SED, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9599,7 +9231,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xF9 -> { // SBC, absolute Y (read)
+            case 0x9 -> { // SBC, absolute Y (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9650,7 +9282,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xFB -> { // ISC, absolute Y (read/modify/write)
+            case 0xA -> { // NOP, implied
+                nopImplied();
+            }
+            case 0xB -> { // ISC, absolute Y (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9711,7 +9346,10 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xFD -> { // SBC, absolute X (read)
+            case 0xC -> { // NOP, absolute X (read)
+                nopAbsoluteXRead();
+            }
+            case 0xD -> { // SBC, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9762,7 +9400,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xFE -> { // INC, absolute X (read/modify/write)
+            case 0xE -> { // INC, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9823,7 +9461,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0xFF -> { // ISC, absolute X (read/modify/write)
+            case 0xF -> { // ISC, absolute X (read/modify/write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -9998,6 +9636,243 @@ public class NMOS6502 implements Processor {
         setA(result);
         setFZ(result == 0);
         setFN((result & 0x80) != 0);
+    }
+
+    private void jam() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                systemBus.getBus().readByte(getPC());
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                systemBus.getBus().readByte(0xFFFF);
+                subCycleIndex = 4;
+            }
+            case 4 -> {
+                subCycleIndex = 5;
+            }
+            case 5 -> {
+                systemBus.getBus().readByte(0xFFFE);
+                subCycleIndex = 6;
+            }
+            case 6 -> {
+                subCycleIndex = 7;
+            }
+            case 7 -> {
+                systemBus.getBus().readByte(0xFFFE);
+                subCycleIndex = 8;
+            }
+            case 8 -> {
+                subCycleIndex = 9;
+            }
+            case 9 -> {
+                systemBus.getBus().readByte(0xFFFF);
+                subCycleIndex = 8;
+            }
+        }
+    }
+
+    private void nopZeroPageRead() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setAddress(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                setOperand(systemBus.getBus().readByte(getAddress()));
+                subCycleIndex = 4;
+            }
+            case 4 -> {
+                subCycleIndex = 5;
+            }
+            case 5 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void ancImmediateRead() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setOperand(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                int result = (getA() & getOperand()) & 0xFF;
+                setA(result);
+                setFC((result & 0x80) != 0);
+                setFN((result & 0x80) != 0);
+                setFZ(result == 0);
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void nopZeroPageXRead() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setPointer(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                setOperand(systemBus.getBus().readByte(getPointer()));
+                subCycleIndex = 4;
+            }
+            case 4 -> {
+                setAddress((getPointer() + getX()) & 0xFF);
+                subCycleIndex = 5;
+            }
+            case 5 -> {
+                setOperand(systemBus.getBus().readByte(getAddress()));
+                subCycleIndex = 6;
+            }
+            case 6 -> {
+                subCycleIndex = 7;
+            }
+            case 7 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void nopImplied() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                systemBus.getBus().readByte(getPC());
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void nopAbsoluteXRead() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setAddressLow(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                setAddressHigh(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 4;
+            }
+            case 4 -> {
+                setPC(getPC() + 1);
+                setFinal(getAddress() + getX());
+                setAddressLow(getFinalLow());
+                subCycleIndex = 5;
+            }
+            case 5 -> {
+                setOperand(systemBus.getBus().readByte(getAddress()));
+                if (getAddressHigh() == getFinalHigh()) {
+                    subCycleIndex = 8;
+                } else {
+                    subCycleIndex = 6;
+                }
+            }
+            case 6 -> {
+                setAddressHigh(getFinalHigh());
+                subCycleIndex = 7;
+            }
+            case 7 -> {
+                setOperand(systemBus.getBus().readByte(getAddress()));
+                subCycleIndex = 8;
+            }
+            case 8 -> {
+                subCycleIndex = 9;
+            }
+            case 9 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void nopImmediate() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setOperand(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void sbcImmediate() {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setOperand(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                sbc();
+                subCycleIndex = 3;
+            }
+            case 3 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
     }
 
     public interface SystemBus extends io.github.arkosammy12.jemu.core.common.SystemBus {
