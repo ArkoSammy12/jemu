@@ -23,4 +23,35 @@ public class TestNES6502 extends NES6502 {
 
     }
 
+    @Override
+    protected void execute() {
+        switch (getIR()) {
+            case 0xAB -> { // LXA, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        int value = ((getA() | 0xEE) & getOperand()) & 0xFF;
+                        setA(value);
+                        setX(value);
+                        setFN((value & 0x80) != 0);
+                        setFZ(value == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            default -> super.execute();
+        }
+    }
+
 }

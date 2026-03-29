@@ -17,7 +17,7 @@ public class NMOS6502 implements Processor {
     private static final int Z_MASK = 1 << 1;
     private static final int C_MASK = 1;
 
-    private final SystemBus systemBus;
+    protected final SystemBus systemBus;
 
     private int programCounter; // PC, 16 bits
     private int accumulator; // A, 8 bits
@@ -28,15 +28,17 @@ public class NMOS6502 implements Processor {
 
     private int instructionRegister; // 8 bits
 
-    private static final int TERMINATE_INSTRUCTION = -1;
+    protected static final int TERMINATE_INSTRUCTION = -1;
 
-    private int subCycleIndex = TERMINATE_INSTRUCTION;
+    protected int subCycleIndex = TERMINATE_INSTRUCTION;
     private boolean firstCycle = true;
     private int operand;
     private int address;
     private int pointer;
+    private int target;
     private int finalVar;
     private int temp;
+    private boolean boundaryCrossed;
 
     private Phase phase = Phase.PHI_1;
     private boolean oldNMI;
@@ -122,7 +124,7 @@ public class NMOS6502 implements Processor {
         return this.processorStatus;
     }
 
-    private void setFN(boolean value) {
+    protected void setFN(boolean value) {
         setP(value ? Processor.setBit(getP(), N_MASK) : Processor.clearBit(getP(), N_MASK));
     }
 
@@ -170,7 +172,7 @@ public class NMOS6502 implements Processor {
         return Processor.testBit(getP(), I_MASK);
     }
 
-    private void setFZ(boolean value) {
+    protected void setFZ(boolean value) {
         setP(value ? Processor.setBit(getP(), Z_MASK) : Processor.clearBit(getP(), Z_MASK));
     }
 
@@ -190,15 +192,15 @@ public class NMOS6502 implements Processor {
         this.instructionRegister = value & 0xFF;
     }
 
-    private int getIR() {
+    protected int getIR() {
         return this.instructionRegister;
     }
 
-    private void storeOperand(int value) {
+    protected void setOperand(int value) {
         this.operand = value & 0xFF;
     }
 
-    private int getOperand() {
+    protected int getOperand() {
         return this.operand;
     }
 
@@ -226,15 +228,35 @@ public class NMOS6502 implements Processor {
         return (this.pointer >>> 8) & 0xFF;
     }
 
-    private void storeAddressLow(int value) {
-        storeAddress((getAddress() & 0xFF00) | (value & 0xFF));
+    private void setTarget(int value) {
+        this.target = value & 0xFFFF;
     }
 
-    private void storeAddressHigh(int value) {
-        storeAddress(((value & 0xFF) << 8) | (this.address & 0xFF));
+    private void setTargetLow(int value) {
+        setTarget((getTargetHigh() << 8) | (value & 0xFF));
     }
 
-    private void storeAddress(int value) {
+    private void setTargetHigh(int value) {
+        setTarget(((value & 0xFF) << 8) | (getTargetLow()));
+    }
+
+    private int getTargetHigh() {
+        return (this.target >>> 8) & 0xFF;
+    }
+
+    private int getTargetLow() {
+        return this.target & 0xFF;
+    }
+
+    private void setAddressLow(int value) {
+        setAddress((getAddress() & 0xFF00) | (value & 0xFF));
+    }
+
+    private void setAddressHigh(int value) {
+        setAddress(((value & 0xFF) << 8) | (this.address & 0xFF));
+    }
+
+    private void setAddress(int value) {
         this.address = value & 0xFFFF;
     }
 
@@ -277,8 +299,17 @@ public class NMOS6502 implements Processor {
     private void setTemp(int value) {
         this.temp = value & 0xFF;
     }
+
     private int getTemp() {
         return this.temp;
+    }
+
+    private void setBoundaryCrossed(boolean crossed) {
+        this.boundaryCrossed = crossed;
+    }
+
+    private boolean getBoundaryCrossed() {
+        return this.boundaryCrossed;
     }
 
     @Override
@@ -336,8 +367,7 @@ public class NMOS6502 implements Processor {
         this.phase = this.phase.getOpposite();
     }
 
-    private void execute() {
-
+    protected void execute() {
         switch (getIR()) {
             case 0x00 -> { // BRK, implied
                 switch (subCycleIndex) {
@@ -404,7 +434,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getBrkVector()));
+                        setAddressLow(systemBus.getBus().readByte(getBrkVector()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -413,7 +443,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 11;
                     }
                     case 11 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getBrkVector() + 1) & 0xFFFF));
+                        setAddressHigh(systemBus.getBus().readByte((getBrkVector() + 1) & 0xFFFF));
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -433,7 +463,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -449,21 +479,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -478,7 +508,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x02, 0x12, 0x22, 0x32, 0x42, 0x52, 0x62, 0x72, 0x92 -> { // JAM, implied
+            case 0x02, 0x12, 0x22, 0x32, 0x42, 0x52, 0x62, 0x72, 0x92, 0xB2, 0xD2, 0xF2 -> { // JAM, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -525,7 +555,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -541,21 +571,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -567,7 +597,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 12 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -593,7 +623,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -601,7 +631,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -619,7 +649,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -627,7 +657,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -649,7 +679,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -657,7 +687,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -669,7 +699,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 6 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 7;
@@ -693,7 +723,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -701,7 +731,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -713,7 +743,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 6 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -765,7 +795,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -811,7 +841,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -835,7 +865,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -843,7 +873,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -851,7 +881,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -869,7 +899,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -877,7 +907,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -885,7 +915,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -907,7 +937,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -915,7 +945,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -923,7 +953,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -935,7 +965,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 9;
@@ -959,7 +989,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -967,7 +997,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -975,7 +1005,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -987,7 +1017,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -1013,7 +1043,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1040,7 +1070,7 @@ public class NMOS6502 implements Processor {
                         setPCL(getPCL() + signedOperand);
 
                         // Save original PC
-                        storeAddress(originalPC);
+                        setAddress(originalPC);
                     }
                     case 5 -> {
                         systemBus.getBus().readByte(getPC());
@@ -1073,23 +1103,23 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 10;
                         } else {
@@ -1097,11 +1127,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1131,31 +1161,31 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1167,7 +1197,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 12 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -1186,7 +1216,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x14, 0x34, 0x54, 0x74 -> { // NOP, zero page X
+            case 0x14, 0x34, 0x54, 0x74, 0xD4, 0xF4 -> { // NOP, zero page X
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1201,15 +1231,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -1235,15 +1265,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -1273,15 +1303,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -1293,7 +1323,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 9;
@@ -1325,15 +1355,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -1345,7 +1375,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -1390,7 +1420,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1398,17 +1428,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -1416,11 +1446,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1435,7 +1465,7 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x1A, 0x3A, 0x5A, 0x7A -> { // NOP, implied
+            case 0x1A, 0x3A, 0x5A, 0x7A, 0xDA, 0xEA, 0xFA -> { // NOP, implied
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -1460,7 +1490,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1468,25 +1498,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1498,7 +1528,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 10 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -1517,14 +1547,14 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x1C, 0x3C, 0x5C, 0x7C -> { // NOP, absolute X (read)
+            case 0x1C, 0x3C, 0x5C, 0x7C, 0xDC, 0xFC -> { // NOP, absolute X (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1532,17 +1562,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -1550,11 +1580,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1572,7 +1602,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1580,17 +1610,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -1598,11 +1628,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1624,7 +1654,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1632,25 +1662,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1662,7 +1692,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 10 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 11;
@@ -1686,7 +1716,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1694,25 +1724,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1724,7 +1754,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 10 -> {
                         setFC((getOperand() & 0x80) != 0);
-                        storeOperand(getOperand() << 1);
+                        setOperand(getOperand() << 1);
                         int result = (getA() | getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -1750,7 +1780,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1779,7 +1809,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1799,7 +1829,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1815,21 +1845,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1851,7 +1881,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1867,21 +1897,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1893,7 +1923,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 12 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFC(originalHighBit);
@@ -1920,7 +1950,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1928,7 +1958,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -1949,7 +1979,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1957,7 +1987,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -1979,7 +2009,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1987,7 +2017,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -1999,7 +2029,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 6 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         setFC(originalHighBit);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
@@ -2024,7 +2054,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2032,7 +2062,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -2044,7 +2074,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 6 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -2086,7 +2116,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getSP() | 0x0100));
+                        setOperand(systemBus.getBus().readByte(getSP() | 0x0100));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2107,7 +2137,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2154,7 +2184,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2162,7 +2192,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -2170,7 +2200,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 ->  {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2191,7 +2221,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2199,7 +2229,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -2207,7 +2237,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2229,7 +2259,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2237,7 +2267,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -2245,7 +2275,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2257,7 +2287,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         setFC(originalHighBit);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
@@ -2282,7 +2312,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2290,7 +2320,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -2298,7 +2328,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2310,7 +2340,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -2337,7 +2367,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2364,7 +2394,7 @@ public class NMOS6502 implements Processor {
                         setPCL(getPCL() + signedOperand);
 
                         // Save original PC
-                        storeAddress(originalPC);
+                        setAddress(originalPC);
                     }
                     case 5 -> {
                         systemBus.getBus().readByte(getPC());
@@ -2397,23 +2427,23 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 10;
                         } else {
@@ -2421,11 +2451,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2455,31 +2485,31 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2491,7 +2521,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 12 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -2526,15 +2556,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2564,15 +2594,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2584,7 +2614,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         setFC(originalHighBit);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
@@ -2617,15 +2647,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2637,7 +2667,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 8 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -2683,7 +2713,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2691,17 +2721,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -2709,11 +2739,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2735,7 +2765,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2743,25 +2773,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2773,7 +2803,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 10 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -2800,7 +2830,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2808,17 +2838,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -2826,11 +2856,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2852,7 +2882,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2860,25 +2890,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2890,7 +2920,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 10 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         setFC(originalHighBit);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
@@ -2915,7 +2945,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2923,25 +2953,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2953,7 +2983,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 10 -> {
                         boolean originalHighBit = (getOperand() & 0x80) != 0;
-                        storeOperand((getOperand() << 1) | (getFC() ? 1 : 0));
+                        setOperand((getOperand() << 1) | (getFC() ? 1 : 0));
                         int result = (getA() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -2980,7 +3010,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3007,7 +3037,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressLow(systemBus.getBus().readByte(((getSP() + 2) & 0xFF) | 0x0100));
+                        setAddressLow(systemBus.getBus().readByte(((getSP() + 2) & 0xFF) | 0x0100));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3015,7 +3045,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getSP() | 0x0100));
+                        setAddressHigh(systemBus.getBus().readByte(getSP() | 0x0100));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3034,7 +3064,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3050,21 +3080,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3086,7 +3116,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3102,21 +3132,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3128,7 +3158,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 12;
                     }
                     case 12 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -3154,7 +3184,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3162,7 +3192,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3184,7 +3214,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3192,7 +3222,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3204,7 +3234,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 7;
@@ -3228,7 +3258,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3236,7 +3266,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3248,7 +3278,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -3300,7 +3330,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3346,7 +3376,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3371,7 +3401,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3379,7 +3409,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3398,7 +3428,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3406,7 +3436,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3414,7 +3444,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3436,7 +3466,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3444,7 +3474,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3452,7 +3482,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3464,7 +3494,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 9;
@@ -3488,7 +3518,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3496,7 +3526,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3504,7 +3534,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3516,7 +3546,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -3542,7 +3572,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3569,7 +3599,7 @@ public class NMOS6502 implements Processor {
                         setPCL(getPCL() + signedOperand);
 
                         // Save original PC
-                        storeAddress(originalPC);
+                        setAddress(originalPC);
                     }
                     case 5 -> {
                         systemBus.getBus().readByte(getPC());
@@ -3602,23 +3632,23 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 10;
                         } else {
@@ -3626,11 +3656,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3660,31 +3690,31 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3696,7 +3726,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 12;
                     }
                     case 12 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -3730,15 +3760,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3768,15 +3798,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3788,7 +3818,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 9;
@@ -3820,15 +3850,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3840,7 +3870,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -3885,7 +3915,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3893,17 +3923,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -3911,11 +3941,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3937,7 +3967,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3945,25 +3975,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3975,7 +4005,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 10;
                     }
                     case 10 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -4001,7 +4031,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4009,17 +4039,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -4027,11 +4057,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4053,7 +4083,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4061,25 +4091,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4091,7 +4121,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 10;
                     }
                     case 10 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 11;
@@ -4115,7 +4145,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4123,25 +4153,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4153,7 +4183,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 10;
                     }
                     case 10 -> {
-                        storeOperand(getOperand() >>> 1);
+                        setOperand(getOperand() >>> 1);
                         int result = (getA() ^ getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
@@ -4194,7 +4224,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(((getSP() + 1) & 0xFF) | 0x0100));
+                        setAddressLow(systemBus.getBus().readByte(((getSP() + 1) & 0xFF) | 0x0100));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4202,7 +4232,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getSP() | 0x0100));
+                        setAddressHigh(systemBus.getBus().readByte(getSP() | 0x0100));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4229,7 +4259,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4245,21 +4275,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4278,7 +4308,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4294,21 +4324,21 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4321,7 +4351,7 @@ public class NMOS6502 implements Processor {
                     case 12 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 13;
                     }
@@ -4344,7 +4374,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4352,7 +4382,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4371,7 +4401,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4379,7 +4409,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4392,7 +4422,7 @@ public class NMOS6502 implements Processor {
                     case 6 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 7;
@@ -4416,7 +4446,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4424,7 +4454,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4437,7 +4467,7 @@ public class NMOS6502 implements Processor {
                     case 6 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 7;
                     }
@@ -4475,7 +4505,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getSP() | 0x0100));
+                        setOperand(systemBus.getBus().readByte(getSP() | 0x0100));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4496,7 +4526,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4540,7 +4570,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4582,14 +4612,14 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointerHigh() << 8) | ((getPointerLow() + 1) & 0xFF)));
+                        setAddressHigh(systemBus.getBus().readByte((getPointerHigh() << 8) | ((getPointerLow() + 1) & 0xFF)));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4608,7 +4638,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4616,7 +4646,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4624,7 +4654,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4643,7 +4673,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4651,7 +4681,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4659,7 +4689,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4672,7 +4702,7 @@ public class NMOS6502 implements Processor {
                     case 8 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 9;
@@ -4696,7 +4726,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4704,7 +4734,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4712,7 +4742,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4725,7 +4755,7 @@ public class NMOS6502 implements Processor {
                     case 8 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 9;
                     }
@@ -4748,7 +4778,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4775,7 +4805,7 @@ public class NMOS6502 implements Processor {
                         setPCL(getPCL() + signedOperand);
 
                         // Save original PC
-                        storeAddress(originalPC);
+                        setAddress(originalPC);
                     }
                     case 5 -> {
                         systemBus.getBus().readByte(getPC());
@@ -4808,23 +4838,23 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 10;
                         } else {
@@ -4832,11 +4862,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4863,31 +4893,31 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4900,7 +4930,7 @@ public class NMOS6502 implements Processor {
                     case 12 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 13;
                     }
@@ -4931,15 +4961,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4966,15 +4996,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4987,7 +5017,7 @@ public class NMOS6502 implements Processor {
                     case 8 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 9;
@@ -5019,15 +5049,15 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeOperand(systemBus.getBus().readByte(getPointer()));
+                        setOperand(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5040,7 +5070,7 @@ public class NMOS6502 implements Processor {
                     case 8 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 9;
                     }
@@ -5082,7 +5112,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5090,17 +5120,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -5108,11 +5138,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5131,7 +5161,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5139,25 +5169,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5170,7 +5200,7 @@ public class NMOS6502 implements Processor {
                     case 10 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 11;
                     }
@@ -5193,7 +5223,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5201,17 +5231,17 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
                             subCycleIndex = 8;
                         } else {
@@ -5219,11 +5249,11 @@ public class NMOS6502 implements Processor {
                         }
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5242,7 +5272,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5250,25 +5280,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5281,7 +5311,7 @@ public class NMOS6502 implements Processor {
                     case 10 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         setFN((getOperand() & 0x80) != 0);
                         setFZ(getOperand() == 0);
                         subCycleIndex = 11;
@@ -5305,7 +5335,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5313,25 +5343,25 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         setPC(getPC() + 1);
                         setFinal(getAddress() + getX());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5344,7 +5374,7 @@ public class NMOS6502 implements Processor {
                     case 10 -> {
                         int temp = getFC() ? 0x80 : 0x00;
                         setFC((getOperand() & 1) != 0);
-                        storeOperand((getOperand() >>> 1) | temp);
+                        setOperand((getOperand() >>> 1) | temp);
                         adc();
                         subCycleIndex = 11;
                     }
@@ -5360,14 +5390,21 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
-            case 0x80, 0x82, 0x89 -> { // NOP, immediate (read)
+            default -> execute2();
+        }
+
+    }
+
+    private void execute2() {
+        switch (getIR()) {
+            case 0x80, 0x82, 0x89, 0xC2, 0xE2 -> { // NOP, immediate (read)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5386,7 +5423,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5402,14 +5439,14 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5434,7 +5471,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5450,14 +5487,14 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5482,7 +5519,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5508,7 +5545,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5534,7 +5571,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5560,7 +5597,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddress(systemBus.getBus().readByte(getPC()));
+                        setAddress(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5628,7 +5665,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5653,7 +5690,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5661,7 +5698,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5687,7 +5724,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5695,7 +5732,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5721,7 +5758,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5729,7 +5766,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5755,7 +5792,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPC()));
+                        setAddressLow(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5763,7 +5800,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressHigh(systemBus.getBus().readByte(getPC()));
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5789,7 +5826,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 1;
                     }
                     case 1 -> {
-                        storeOperand(systemBus.getBus().readByte(getPC()));
+                        setOperand(systemBus.getBus().readByte(getPC()));
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5816,7 +5853,7 @@ public class NMOS6502 implements Processor {
                         setPCL(getPCL() + signedOperand);
 
                         // Save original PC
-                        storeAddress(originalPC);
+                        setAddress(originalPC);
                     }
                     case 5 -> {
                         systemBus.getBus().readByte(getPC());
@@ -5849,27 +5886,27 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                         subCycleIndex = 9;
                     }
                     case 9 -> {
@@ -5899,23 +5936,23 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 3;
                     }
                     case 3 -> {
-                        storeAddressLow(systemBus.getBus().readByte(getPointer()));
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
                         subCycleIndex = 4;
                     }
                     case 4 -> {
                         subCycleIndex = 5;
                     }
                     case 5 -> {
-                        storeAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
                         subCycleIndex = 6;
                     }
                     case 6 -> {
                         setFinal(getAddress() + getY());
-                        storeAddressLow(getFinalLow());
+                        setAddressLow(getFinalLow());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
-                        storeOperand(systemBus.getBus().readByte(getAddress()));
+                        setOperand(systemBus.getBus().readByte(getAddress()));
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5924,7 +5961,7 @@ public class NMOS6502 implements Processor {
                         } else {
                             subCycleIndex = 10;
                         }
-                        storeAddressHigh(getFinalHigh());
+                        setAddressHigh(getFinalHigh());
                     }
                     case 9 -> { // PAGE BOUNDARY NOT CROSSED BRANCH
                         int high = getAddressHigh() & 0xFFFF;
@@ -5970,7 +6007,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6004,7 +6041,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getX()) & 0xFF);
+                        setAddress((getPointer() + getX()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6038,7 +6075,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getY()) & 0xFF);
+                        setAddress((getPointer() + getY()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6072,7 +6109,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 4;
                     }
                     case 4 -> {
-                        storeAddress((getPointer() + getY()) & 0xFF);
+                        setAddress((getPointer() + getY()) & 0xFF);
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6108,14 +6145,3830 @@ public class NMOS6502 implements Processor {
                     }
                 }
             }
+            case 0x99 -> { // STA, absolute Y (write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex= 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getA());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0x9A -> { // TXS, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setSP(getX());
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0x9B ->  { // TAS, absolute Y (write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setSP(getA() & getX());
+                        if (getBoundaryCrossed()) {
+                            int val = (getAddressHigh() & getA() & getX()) & 0xFF;
+                            systemBus.getBus().writeByte(getAddressLow() | (val << 8), val);
+                        } else {
+                            int val = ((getAddressHigh() + 1) & getA() & getX()) & 0xFF;
+                            systemBus.getBus().writeByte(getAddress(), val);
+                        }
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0x9C -> { // SHY, absolute X
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        if (getBoundaryCrossed()) {
+                            int val = getAddressHigh() & getY();
+                            systemBus.getBus().writeByte(getAddressLow() | (val << 8), val);
+                        } else {
+                            int val = ((getAddressHigh() + 1) & getY()) & 0xFF;
+                            systemBus.getBus().writeByte(getAddress(), val);
+                        }
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0x9D -> { // STA, absolute X (write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getA());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0x9E -> { // SHX, absolute Y (write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        if (getBoundaryCrossed()) {
+                            int val = getAddressHigh() & getX();
+                            systemBus.getBus().writeByte(getAddressLow() | (val << 8), val);
+                        } else {
+                            int val = ((getAddressHigh() + 1) & getX()) & 0xFF;
+                            systemBus.getBus().writeByte(getAddress(), val);
+                        }
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0x9F -> { // SHA, absolute Y (write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        int high = getAddressHigh();
+                        if (!getBoundaryCrossed()) {
+                            high++;
+                        }
+                        // TODO: IF RDY WENT LOW 4 CYCLES AGO, HIGH = $FFFF
+                        int val = (high & getA() & getX()) & 0xFF;
+                        if (getBoundaryCrossed()) {
+                            systemBus.getBus().writeByte(getAddressLow() | (val << 8), val);
+                        } else {
+                            systemBus.getBus().writeByte(getAddress(), val);
+                        }
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA0 -> { // LDY, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        setY(getOperand());
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA1 -> { // LDA, indirect X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getOperand());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPointer((getOperand() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA2 -> { // LDX, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        setX(getOperand());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA3 -> { // LAX, indirect X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getOperand());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPointer((getOperand() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setA(getOperand());
+                        setX(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA4 -> { // LDY, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setY(getOperand());
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA5 -> { // LDA, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA6 -> { // LDX, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setX(getOperand());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA7 -> { // LAX, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setA(getOperand());
+                        setX(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA8 -> { // TAY, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setY(getA());
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xA9 -> { // LDA, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xAA -> { // TAX, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setX(getA());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xAB -> { // LXA, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        int value = ((getA() | 0xFF) & getOperand()) & 0xFF;
+                        setA(value);
+                        setX(value);
+                        setFN((value & 0x80) != 0);
+                        setFZ(value == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xAC -> { // LDY, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setY(getOperand());
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xAD -> { // LDA, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xAE -> { // LDX, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setX(getOperand());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xAF -> { // LAX, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setA(getOperand());
+                        setX(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB0 -> { // BCS, relative
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        if (getFC()) {
+                            subCycleIndex = 3;
+                        } else {
+                            subCycleIndex = 7;
+                        }
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        short signedOperand = (short) ((byte) getOperand());
+                        int originalPC = getPC();
+                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
+                        if (signedOffsetHigh != getPCH()) {
+                            subCycleIndex = 5;
+                        } else {
+                            subCycleIndex = 7;
+                        }
+                        setPCL(getPCL() + signedOperand);
+
+                        // Save original PC
+                        setAddress(originalPC);
+                    }
+                    case 5 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        short signedOperand = (short) ((byte) getOperand());
+
+                        // Original PC value stored in address
+                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB1 -> { // LDA, indirect Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setTarget(getAddress() + getY());
+                        setPointerLow(getTargetLow());
+                        setPointerHigh(getAddressHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 10;
+                        } else {
+                            subCycleIndex = 8;
+                        }
+                    }
+                    case 8 -> {
+                        setPointerHigh(getTargetHigh());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB3 -> { // LAX, indirect Y
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setTarget(getAddress() + getY());
+                        setPointerLow(getTargetLow());
+                        setPointerHigh(getAddressHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 10;
+                        } else {
+                            subCycleIndex = 8;
+                        }
+                    }
+                    case 8 -> {
+                        setPointerHigh(getTargetHigh());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setA(getOperand());
+                        setX(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB4 -> { // LDY, zero page X
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setY(getOperand());
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB5 -> { // LDA, zero page X
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB6 -> { // LDX, zero page Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setX(getOperand());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB7 -> { // LAX, zero page Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setA(getOperand());
+                        setX(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB8 -> { // CLV, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setFV(false);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xB9 -> { // LDA, absolute Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xBA -> { // TSX, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setX(getSP());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xBB -> { // LAS, absolute Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        int value = (getOperand() & getSP());
+                        setA(value);
+                        setX(value);
+                        setSP(value);
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xBC -> { // LDY, absolute X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setY(getOperand());
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xBD -> { // LDA, absolute X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setA(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xBE -> { // LDX, absolute Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setX(getOperand());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xBF -> { // LAX, absolute Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setA(getOperand());
+                        setX(getOperand());
+                        setFN((getA() & 0x80) != 0);
+                        setFZ(getA() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC0 -> { // CPY, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        setFC(getY() >= getOperand());
+                        setFN(((getY() - getOperand()) & 0x80) != 0);
+                        setFZ(getY() == getOperand());
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC1 -> { // CMP, indirect X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getOperand());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPointer((getOperand() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC3 -> { // DCP, indirect X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getOperand());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPointer((getOperand() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 14;
+                    }
+                    case 14 -> {
+                        subCycleIndex = 15;
+                    }
+                    case 15 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC4 -> { // CPY, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setFC(getY() >= getOperand());
+                        setFN(((getY() - getOperand()) & 0x80) != 0);
+                        setFZ(getY() == getOperand());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC5 -> { // CMP, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC6 -> { // DEC, zero page (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setOperand(getOperand() - 1);
+                        setFN((getOperand() & 0x80) != 0);
+                        setFZ(getOperand() == 0);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC7 -> { // DCP, zero page (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC8 -> { // INY, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setY(getY() + 1);
+                        setFN((getY() & 0x80) != 0);
+                        setFZ(getY() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xC9 -> { // CMP, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xCA -> { // DEX, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setX(getX() - 1);
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xCB -> { // SBX, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        int anx = getA() & getX();
+                        setFC(anx >= getOperand());
+                        setX(anx - getOperand());
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xCC -> { // CPY, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setFC(getY() >= getOperand());
+                        setFN(((getY() - getOperand()) & 0x80) != 0);
+                        setFZ(getY() == getOperand());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xCD -> { // CMP, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xCE -> { // DEC, absolute (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setOperand(getOperand() - 1);
+                        setFN((getOperand() & 0x80) != 0);
+                        setFZ(getOperand() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xCF -> { // DCP, absolute (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD0 -> { // BNE, relative (jump)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        if (!getFZ()) {
+                            subCycleIndex = 3;
+                        } else {
+                            subCycleIndex = 7;
+                        }
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        short signedOperand = (short) ((byte) getOperand());
+                        int originalPC = getPC();
+                        int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
+                        if (signedOffsetHigh != getPCH()) {
+                            subCycleIndex = 5;
+                        } else {
+                            subCycleIndex = 7;
+                        }
+                        setPCL(getPCL() + signedOperand);
+
+                        // Save original PC
+                        setAddress(originalPC);
+                    }
+                    case 5 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        short signedOperand = (short) ((byte) getOperand());
+
+                        // Original PC value stored in address
+                        setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD1 -> { // CMP, indirect Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setTarget(getAddress() + getY());
+                        setPointerLow(getTargetLow());
+                        setPointerHigh(getAddressHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 10;
+                        } else {
+                            subCycleIndex = 8;
+                        }
+                    }
+                    case 8 -> {
+                        setPointerHigh(getTargetHigh());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD3 -> { // DCP, indirect Y (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setTarget(getAddress() + getY());
+                        setPointerLow(getTargetLow());
+                        setPointerHigh(getAddressHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setPointerHigh(getTargetHigh());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getPointer(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        systemBus.getBus().writeByte(getPointer(), getOperand());
+                        subCycleIndex = 14;
+                    }
+                    case 14 -> {
+                        subCycleIndex = 15;
+                    }
+                    case 15 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD5 -> { // CMP, zero page X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD6 -> { // DEC, zero page X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setOperand(getOperand() - 1);
+                        setFN((getOperand() & 0x80) != 0);
+                        setFZ(getOperand() == 0);
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD7 -> { // DCP, zero page X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD8 -> { // CLD, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setFD(false);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xD9 -> { // CMP, absolute Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xDB -> { // DCP, absolute Y (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xDD -> { // CMP, absolute X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xDE -> { // DEC, absolute X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setOperand(getOperand() - 1);
+                        setFN((getOperand() & 0x80) != 0);
+                        setFZ(getOperand() == 0);
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xDF -> { // DCP, absolute X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        setOperand(getOperand() - 1);
+                        setFC(getA() >= getOperand());
+                        setFN(((getA() - getOperand()) & 0x80) != 0);
+                        setFZ(getA() == getOperand());
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE0 -> { // CPX, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        cpx();
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE1 -> { // SBC, indirect X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getOperand());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPointer((getOperand() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressLow(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        sbc();
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE3 -> { // ISC, indirect X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        systemBus.getBus().readByte(getOperand());
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPointer((getOperand() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        isc();
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 14;
+                    }
+                    case 14 -> {
+                        subCycleIndex = 15;
+                    }
+                    case 15 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE4 -> { // CPX, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        cpx();
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE5 -> { // SBC, zero page (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        sbc();
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE6 -> { // INC, zero page (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        inc();
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE7 -> { // ISC, zero page (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        isc();
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE8 -> { // INX, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setX(getX() + 1);
+                        setFN((getX() & 0x80) != 0);
+                        setFZ(getX() == 0);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xE9, 0xEB -> { // SBC, immediate
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setOperand(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        sbc();
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xEC -> { // CPX, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        cpx();
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xED -> { // SBC, absolute (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 ->  {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        sbc();
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xEE -> { // INC, absolute (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        inc();
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xEF -> { // ISC, absolute (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setAddress(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddressHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        isc();
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF0 -> { // BEQ, relative (jump)
+                branchRelative(getFZ());
+            }
+            case 0xF1 -> { // SBC, indirect Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setTarget(getAddress() + getY());
+                        setPointerLow(getTargetLow());
+                        setPointerHigh(getAddressHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 10;
+                        } else {
+                            subCycleIndex = 8;
+                        }
+                    }
+                    case 8 -> {
+                        setPointerHigh(getTargetHigh());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        sbc();
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF3 -> { // ISC, indirect Y (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setAddress(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setAddressHigh(systemBus.getBus().readByte((getPointer() + 1) & 0xFF));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setTarget(getAddress() + getY());
+                        setPointerLow(getTargetLow());
+                        setPointerHigh(getAddressHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        setPointerHigh(getTargetHigh());
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getPointer(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        isc();
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        systemBus.getBus().writeByte(getPointer(), getOperand());
+                        subCycleIndex = 14;
+                    }
+                    case 14 -> {
+                        subCycleIndex = 15;
+                    }
+                    case 15 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF5 -> { // SBC, zero page X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        sbc();
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF6 -> { // INC, zero page X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        inc();
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF7 -> { // ISC, zero page X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setOperand(systemBus.getBus().readByte(getPointer()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setAddress((getPointer() + getX()) & 0xFF);
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        isc();
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF8 -> { // SED, implied
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        systemBus.getBus().readByte(getPC());
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setFD(true);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xF9 -> { // SBC, absolute Y (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        sbc();
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xFB -> { // ISC, absolute Y (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getY());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        isc();
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xFD -> { // SBC, absolute X (read)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        if (!getBoundaryCrossed()) {
+                            subCycleIndex = 8;
+                        } else {
+                            subCycleIndex = 6;
+                        }
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        sbc();
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xFE -> { // INC, absolute X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        inc();
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
+            case 0xFF -> { // ISC, absolute X (read/modify/write)
+                switch (subCycleIndex) {
+                    case 0 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 1;
+                    }
+                    case 1 -> {
+                        setPointer(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 2;
+                    }
+                    case 2 -> {
+                        setPC(getPC() + 1);
+                        subCycleIndex = 3;
+                    }
+                    case 3 -> {
+                        setPointerHigh(systemBus.getBus().readByte(getPC()));
+                        subCycleIndex = 4;
+                    }
+                    case 4 -> {
+                        setPC(getPC() + 1);
+                        setTarget(getPointer() + getX());
+                        setAddressLow(getTargetLow());
+                        setAddressHigh(getPointerHigh());
+                        setBoundaryCrossed(getPointerHigh() != getTargetHigh());
+                        subCycleIndex = 5;
+                    }
+                    case 5 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 6;
+                    }
+                    case 6 -> {
+                        setAddressHigh(getTargetHigh());
+                        subCycleIndex = 7;
+                    }
+                    case 7 -> {
+                        setOperand(systemBus.getBus().readByte(getAddress()));
+                        subCycleIndex = 8;
+                    }
+                    case 8 -> {
+                        subCycleIndex = 9;
+                    }
+                    case 9 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 10;
+                    }
+                    case 10 -> {
+                        isc();
+                        subCycleIndex = 11;
+                    }
+                    case 11 -> {
+                        systemBus.getBus().writeByte(getAddress(), getOperand());
+                        subCycleIndex = 12;
+                    }
+                    case 12 -> {
+                        subCycleIndex = 13;
+                    }
+                    case 13 -> {
+                        subCycleIndex = TERMINATE_INSTRUCTION;
+                    }
+                }
+            }
             // opcode switch scope
         }
+    }
 
+    private void branchRelative(boolean condition) {
+        switch (subCycleIndex) {
+            case 0 -> {
+                setPC(getPC() + 1);
+                subCycleIndex = 1;
+            }
+            case 1 -> {
+                setOperand(systemBus.getBus().readByte(getPC()));
+                subCycleIndex = 2;
+            }
+            case 2 -> {
+                setPC(getPC() + 1);
+                if (condition) {
+                    subCycleIndex = 3;
+                } else {
+                    subCycleIndex = 7;
+                }
+            }
+            case 3 -> {
+                systemBus.getBus().readByte(getPC());
+                subCycleIndex = 4;
+            }
+            case 4 -> {
+                short signedOperand = (short) ((byte) getOperand());
+                int originalPC = getPC();
+                int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
+                if (signedOffsetHigh != getPCH()) {
+                    subCycleIndex = 5;
+                } else {
+                    subCycleIndex = 7;
+                }
+                setPCL(getPCL() + signedOperand);
+
+                // Save original PC
+                setAddress(originalPC);
+            }
+            case 5 -> {
+                systemBus.getBus().readByte(getPC());
+                subCycleIndex = 6;
+            }
+            case 6 -> {
+                short signedOperand = (short) ((byte) getOperand());
+
+                // Original PC value stored in address
+                setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
+                subCycleIndex = 7;
+            }
+            case 7 -> {
+                subCycleIndex = TERMINATE_INSTRUCTION;
+            }
+        }
+    }
+
+    private void cpx() {
+        setFC(getX() >= getOperand());
+        setFN(((getX() - getOperand()) & 0x80) != 0);
+        setFZ(getX() == getOperand());
+    }
+
+    private void isc() {
+        setOperand(getOperand() + 1);
+        sbc();
+    }
+
+    private void inc() {
+        setOperand(getOperand() + 1);
+        setFN((getOperand() & 0x80) != 0);
+        setFZ(getOperand() == 0);
     }
 
     private void adc() {
+        addOrSubCarry(false);
+    }
+
+    private void sbc() {
+        addOrSubCarry(true);
+    }
+
+    private void addOrSubCarry(boolean subtract) {
         int a = getA();
-        int m = getOperand();
+        int m = subtract ? getOperand() ^ 0xFF : getOperand();
         int c = getFC() ? 1 : 0;
 
         int binarySum = a + m + c;
@@ -6146,11 +9999,6 @@ public class NMOS6502 implements Processor {
         setA(result);
         setFZ(result == 0);
         setFN((result & 0x80) != 0);
-    }
-
-    private void sbc() {
-        storeOperand(getOperand() ^ 0xFF);
-        adc();
     }
 
     public interface SystemBus extends io.github.arkosammy12.jemu.core.common.SystemBus {
