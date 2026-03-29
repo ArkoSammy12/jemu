@@ -9,10 +9,16 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private final SystemHost systemHost;
 
     private final NES6502 cpu;
+    private final NESPPU<?> ppu;
+    private final NESAPU<?> apu;
+    private final NESController<?> controller;
 
     public NESEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
         this.cpu = new NES6502(this);
+        this.ppu = new NESPPU<>(this);
+        this.apu = new NESAPU<>(this);
+        this.controller = new NESController<>(this);
     }
 
     @Override
@@ -27,17 +33,17 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public VideoGenerator<?> getVideoGenerator() {
-        return null;
+        return this.ppu;
     }
 
     @Override
     public AudioGenerator<?> getAudioGenerator() {
-        return null;
+        return apu;
     }
 
     @Override
     public SystemController<?> getSystemController() {
-        return null;
+        return this.controller;
     }
 
     @Override
