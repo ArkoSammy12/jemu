@@ -2,12 +2,11 @@ package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.common.BusView;
 
 import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.BANK_ADDR;
 import static io.github.arkosammy12.jemu.core.gameboy.DMGMMIOBus.DMA_ADDR;
 
-public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
+public class DMGBus<E extends GameBoyEmulator> implements Bus {
 
     // Bootix boot-rom for the DMG. Courtesy of Ashiepaws https://github.com/Ashiepaws/Bootix
     protected static final int[] BOOTIX = {
@@ -88,21 +87,6 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus, BusView {
 
     protected int[][] createWorkRam() {
         return new int[1][0x2000];
-    }
-
-    @Override
-    public int getMemorySize() {
-        return 0;
-    }
-
-    @Override
-    public int getMemoryBoundsMask() {
-        return 0;
-    }
-
-    @Override
-    public int getByte(int address) {
-        return 0;
     }
 
     public boolean isBootRomEnabled() {

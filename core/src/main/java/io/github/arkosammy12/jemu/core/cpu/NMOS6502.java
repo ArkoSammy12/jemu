@@ -31,7 +31,7 @@ public class NMOS6502 implements Processor {
     protected static final int TERMINATE_INSTRUCTION = -1;
 
     protected int subCycleIndex = TERMINATE_INSTRUCTION;
-    private boolean firstCycle = true;
+    private boolean firstSubCycle = true;
     private int operand;
     private int address;
     private int pointer;
@@ -47,6 +47,7 @@ public class NMOS6502 implements Processor {
     private boolean signalIRQ;
     private BRKSource brkSource = BRKSource.SOFTWARE;
     private int brkVector = IRQ_BRK_VECTOR;
+    private boolean pushB;
 
     public NMOS6502(SystemBus systemBus) {
         this.systemBus = systemBus;
@@ -132,7 +133,7 @@ public class NMOS6502 implements Processor {
         return Processor.testBit(getP(), N_MASK);
     }
 
-    private void setFV(boolean value) {
+    protected void setFV(boolean value) {
         setP(value ? Processor.setBit(getP(), V_MASK) : Processor.clearBit(getP(), V_MASK));
     }
 
@@ -156,7 +157,7 @@ public class NMOS6502 implements Processor {
         return Processor.testBit(getP(), B_MASK);
     }
 
-    private void setFD(boolean value) {
+    protected void setFD(boolean value) {
         setP(value ? Processor.setBit(getP(), D_MASK) : Processor.clearBit(getP(), D_MASK));
     }
 
@@ -164,7 +165,7 @@ public class NMOS6502 implements Processor {
         return Processor.testBit(getP(), D_MASK);
     }
 
-    private void setFI(boolean value) {
+    protected void setFI(boolean value) {
         setP(value ? Processor.setBit(getP(), I_MASK) : Processor.clearBit(getP(), I_MASK));
     }
 
@@ -180,7 +181,7 @@ public class NMOS6502 implements Processor {
         return Processor.testBit(getP(), Z_MASK);
     }
 
-    private void setFC(boolean value) {
+    protected void setFC(boolean value) {
         setP(value ? Processor.setBit(getP(), C_MASK) : Processor.clearBit(getP(), C_MASK));
     }
 
@@ -294,10 +295,10 @@ public class NMOS6502 implements Processor {
 
     @Override
     public int cycle() {
-        if (this.firstCycle) {
-            this.firstCycle = false;
-            this.updateInterruptSignals();
-            this.onCycleEnd();
+
+        if (this.firstSubCycle) {
+            this.firstSubCycle = false;
+            this.onSubCycleEnd();
             return 0;
         }
 
@@ -307,43 +308,43 @@ public class NMOS6502 implements Processor {
 
         if (this.subCycleIndex < 0) {
             setIR(systemBus.getBus().readByte(getPC()));
-            if (this.signalReset || this.signalNMI || this.signalIRQ) {
-                setIR(0x00);
-                if (this.signalReset) {
-                    brkSource = BRKSource.RESET;
-                    this.signalReset = false;
-                } else if (this.signalNMI) {
-                    brkSource = BRKSource.NMI;
-                    this.signalNMI = false;
-                } else if (this.signalIRQ) {
-                    brkSource = BRKSource.IRQ;
-                }
+
+            if (this.signalReset) {
+                this.brkSource = BRKSource.RESET;
+            } else if (this.signalNMI) {
+                this.brkSource = BRKSource.NMI;
+            } else if (this.signalIRQ) {
+                this.brkSource = BRKSource.IRQ;
+            } else {
+                this.brkSource = BRKSource.SOFTWARE;
             }
+
+            if (this.brkSource != BRKSource.SOFTWARE) {
+                setIR(0x00);
+            }
+
             subCycleIndex = 0;
         }
 
-        this.updateInterruptSignals();
-        this.onCycleEnd();
+        this.onSubCycleEnd();
         return 0;
     }
 
-    private void updateInterruptSignals() {
-        switch (this.phase) {
-            case PHI_1 -> {
-
+    private void onSubCycleEnd() {
+        if (this.phase == Phase.PHI_2) {
+            boolean nmiNow = systemBus.getNMI();
+            if (!oldNMI && nmiNow) {
+                this.signalNMI = true;
             }
-            case PHI_2 -> {
-                if (!oldNMI && this.systemBus.getNMI()) {
-                    this.signalNMI = true;
-                }
-                this.oldNMI = this.systemBus.getNMI();
-                this.signalReset = this.systemBus.getRes();
-                this.signalIRQ = this.systemBus.getIRQ() && !getFI();
+            oldNMI = nmiNow;
+
+            if (systemBus.getRes()) {
+                this.signalReset = true;
+            }
+            if (systemBus.getIRQ() && !getFI()) {
+                this.signalIRQ = true;
             }
         }
-    }
-
-    private void onCycleEnd() {
         this.phase = this.phase.getOpposite();
     }
 
@@ -412,13 +413,26 @@ public class NMOS6502 implements Processor {
                     }
                     case 6 -> {
                         int brkVector = IRQ_BRK_VECTOR;
-                        if (systemBus.getRes()) {
+                        this.pushB = true;
+
+                        if (this.signalReset) {
                             brkVector = RESET_VECTOR;
-                        } else if (signalNMI) {
+                            this.pushB = false;
+                        } else if (this.signalNMI) {
                             brkVector = NMI_VECTOR;
-                        } else if (signalIRQ) {
-                            brkVector = IRQ_BRK_VECTOR;
+                            this.pushB = false;
                         }
+
+                        if (this.signalReset) {
+                            this.signalReset = false;
+                        }
+                        if (this.signalNMI) {
+                            this.signalNMI = false;
+                        }
+                        if (this.signalIRQ) {
+                            this.signalIRQ = false;
+                        }
+
                         setBrkVector(brkVector);
                         subCycleIndex = 7;
                     }
@@ -427,7 +441,11 @@ public class NMOS6502 implements Processor {
                             // TODO: Populate data bus
                             systemBus.getBus().readByte(((getS() - 2) & 0xFF) | 0x0100);
                         } else {
-                            systemBus.getBus().writeByte(((getS() - 2) & 0xFF) | 0x0100, getP() | (brkSource == BRKSource.SOFTWARE ? B_MASK : 0));
+                            int P = getP();
+                            if (!this.pushB) {
+                                P &= ~B_MASK;
+                            }
+                            systemBus.getBus().writeByte(((getS() - 2) & 0xFF) | 0x0100, P);
                         }
                         subCycleIndex = 8;
                     }

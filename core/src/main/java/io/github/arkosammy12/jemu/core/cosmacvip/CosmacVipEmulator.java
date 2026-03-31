@@ -14,12 +14,9 @@ import static io.github.arkosammy12.jemu.core.cpu.CDP1802.isHandled;
 public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     public static final int CYCLES_PER_FRAME = 3668;
-    //public static final String REGISTERS_ENTRY_KEY = "cosmacvip.processor.registers";
 
     private final CosmacVIPHost host;
     private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
-    //private final DebuggerSchema debuggerSchema;
-    //private final AbstractDisassembler<?> disassembler;
 
     private final CDP1802 cpu;
     private final CosmacVipBus bus;
@@ -50,10 +47,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
                 this.ioDevices = List.of(this.vdp, this.keypad);
                 this.frameRate = 60;
             }
-            //this.debuggerSchema = this.createDebuggerSchema();
-            //this.disassembler = new CosmacVipDisassembler<>(this);
-            //this.disassembler.setProgramCounterSupplier(this::getActualCurrentInstructionAddress);
-            //this.cpu.restoreRegisters(this.getEmulatorSettings());
         } catch (Exception e) {
             throw new EmulatorException(e);
         }
@@ -64,12 +57,10 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         return this.host;
     }
 
-    @Override
     public CDP1802 getCpu() {
         return this.cpu;
     }
 
-    @Override
     public CosmacVipBus getBusView() {
         return this.bus;
     }
@@ -176,21 +167,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         }
     }
 
-    private void runCyclesDebug() {
-        for (int i = 0; i < CYCLES_PER_FRAME; i++) {
-            //CDP1802.State currentState = this.cpu.getCurrentState();
-            this.runCycle();
-            //this.disassembler.disassemble(this.getActualCurrentInstructionAddress());
-
-            // TODO: Handle breakpoints
-            /*
-            if (currentState == CDP1802.State.S0_FETCH && this.disassembler.checkBreakpoint(this.getActualCurrentInstructionAddress())) {
-                //this.jemu.onBreakpoint();
-                break;
-             */
-        }
-    }
-
     private void runCycle() {
         this.cpu.getCurrentState();
         this.cycleCpu();
@@ -205,8 +181,6 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         this.cycleCpu();
         this.cycleIoDevices();
         this.cpu.nextState();
-        //this.display.flush();
-        //this.disassembler.disassembleRange(this.getActualCurrentInstructionAddress(), 30, true);
     }
 
     private void cycleCpu() {
@@ -229,95 +203,7 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
 
     @Override
     public void close() {
-        try {
-            // TODO: Handle backend persistent data
-            /*
-            if (this.cpu != null) {
-                this.cpu.saveRegisters(this.getEmulatorSettings());
-            }
 
-            if (this.disassembler != null) {
-                this.disassembler.close();
-            }
-
-             */
-        } catch (Exception e) {
-            throw new EmulatorException("Error releasing emulator resources: ", e);
-        }
     }
-
-    /*
-    protected DebuggerSchema createDebuggerSchema() {
-        DebuggerSchema debuggerSchema = new DebuggerSchema();
-        debuggerSchema.setTextSectionName("Cosmac VIP");
-        debuggerSchema.setMemoryPointerSupplier(() -> this.cpu.getR(this.cpu.getX()));
-
-        Function<Integer, String> byteFormatter = val -> String.format("%02X", val);
-        Function<Integer, String> nibbleFormatter = val -> String.format("%01X", val);
-        Function<Boolean, String> booleanFormatter = val -> val ? "1" : "0";
-
-        debuggerSchema.<Integer>createCpuRegisterEntry()
-                .withName("I")
-                .withStateUpdater(this.cpu::getI)
-                .withToStringFunction(nibbleFormatter);
-
-        debuggerSchema.<Integer>createCpuRegisterEntry()
-                .withName("N")
-                .withStateUpdater(this.cpu::getN)
-                .withToStringFunction(nibbleFormatter);
-
-        debuggerSchema.<Integer>createCpuRegisterEntry()
-                .withName("P")
-                .withStateUpdater(this.cpu::getP)
-                .withToStringFunction(nibbleFormatter);
-
-        debuggerSchema.<Integer>createCpuRegisterEntry()
-                .withName("X")
-                .withStateUpdater(this.cpu::getX)
-                .withToStringFunction(nibbleFormatter);
-
-        debuggerSchema.<Integer>createCpuRegisterEntry()
-                .withName("D")
-                .withStateUpdater(this.cpu::getD)
-                .withToStringFunction(byteFormatter);
-
-        debuggerSchema.<Integer>createCpuRegisterEntry()
-                .withName("T")
-                .withStateUpdater(this.cpu::getT)
-                .withToStringFunction(byteFormatter);
-
-        debuggerSchema.<Boolean>createCpuRegisterEntry()
-                .withName("DF")
-                .withStateUpdater(this.cpu::getDF)
-                .withToStringFunction(booleanFormatter);
-
-        debuggerSchema.<Boolean>createCpuRegisterEntry()
-                .withName("IE")
-                .withStateUpdater(this.cpu::getIE)
-                .withToStringFunction(booleanFormatter);
-
-        debuggerSchema.<Boolean>createCpuRegisterEntry()
-                .withName("Q")
-                .withStateUpdater(this.cpu::getQ)
-                .withToStringFunction(booleanFormatter);
-
-        debuggerSchema.setStackSectionName("X Data");
-
-        for (int i = 0; i < 16; i++) {
-            int finalI = i;
-            debuggerSchema.<Integer>createGeneralPurposeRegisterEntry()
-                    .withName(String.format("R%01X", i))
-                    .withStateUpdater(() -> this.getCpu().getR(finalI))
-                    .withToStringFunction(val -> String.format("%04X", val));
-
-            debuggerSchema.<Integer>createStackEntry()
-                    .withName(String.format("%01X", i))
-                    .withStateUpdater(() -> this.getBusView().getByte(this.cpu.getR(finalI)))
-                    .withToStringFunction(val -> String.format("%02X", val));
-
-        }
-        return debuggerSchema;
-    }
-     */
 
 }

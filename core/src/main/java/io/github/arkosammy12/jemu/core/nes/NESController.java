@@ -18,6 +18,18 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
 
     }
 
+    public void writeJoy1(int value) {
+
+    }
+
+    public int readJoy1() {
+        return 0xFF;
+    }
+
+    public int readJoy2() {
+        return 0xFF;
+    }
+
     public enum Actions implements Action {
         UP("Up"),
         DOWN("Down"),

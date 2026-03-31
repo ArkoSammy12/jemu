@@ -3,9 +3,8 @@ package io.github.arkosammy12.jemu.core.cosmacvip;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.common.BusView;
 
-public class CosmacVipBus implements Bus, BusView {
+public class CosmacVipBus implements Bus {
 
     private static final int[] MONITOR_ROM = {
             0xF8, 0x80, 0xB2, 0xF8, 0x08, 0xA2, 0xE2, 0xD2,
@@ -147,7 +146,7 @@ public class CosmacVipBus implements Bus, BusView {
 
     public CosmacVipBus(CosmacVipEmulator emulator) {
         int[] rom = SystemHost.byteToIntArray(emulator.getHost().getRom());
-        this.bytes = new int[this.getMemorySize()];
+        this.bytes = new int[0x1000];
         try {
             this.initializeRam(emulator, rom);
         } catch (ArrayIndexOutOfBoundsException e) {
@@ -163,25 +162,6 @@ public class CosmacVipBus implements Bus, BusView {
             System.arraycopy(rom, 0, this.bytes, CHIP_8_INTERPRETER.length, rom.length);
         } else {
             System.arraycopy(rom, 0, this.bytes, 0, rom.length);
-        }
-    }
-
-    @Override
-    public int getMemorySize() {
-        return 4096;
-    }
-
-    @Override
-    public int getMemoryBoundsMask() {
-        return 0xFFF;
-    }
-
-    @Override
-    public int getByte(int address) {
-        if (address >= 0x8000) {
-            return MONITOR_ROM[address & 0x1FF];
-        } else {
-            return this.bytes[address & 0xFFF];
         }
     }
 
@@ -210,10 +190,6 @@ public class CosmacVipBus implements Bus, BusView {
 
     public void unlatchAddressMsb() {
         this.addressMsbLatched = false;
-    }
-
-    public boolean isAddressMsbLatched() {
-        return this.addressMsbLatched;
     }
 
 }

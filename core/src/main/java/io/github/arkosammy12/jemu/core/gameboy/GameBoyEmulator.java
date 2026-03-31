@@ -74,14 +74,8 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.host;
     }
 
-    @Override
     public SM83<?> getCpu() {
         return this.cpu;
-    }
-
-    @Override
-    public DMGBus<?> getBusView() {
-        return this.bus;
     }
 
     @Override
