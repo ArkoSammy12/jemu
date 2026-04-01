@@ -4,7 +4,7 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 
 import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.*;
 
-public class NESMMIOBus<E extends NESEmulator> implements Bus {
+public class NESCPUMMIOBus<E extends NESEmulator> implements Bus {
 
     public static final int PPUCTRL_ADDR = 0x2000;
     public static final int PPUMASK_ADDR = 0x2001;
@@ -36,17 +36,14 @@ public class NESMMIOBus<E extends NESEmulator> implements Bus {
     public static final int DMC_START_ADDR = 0x4012;
     public static final int DMC_LEN_ADDR = 0x4013;
 
-    public static final int OAMDMA = 0x4014;
-
-    public static final int SND_CHN = 0x4015;
-
-    public static final int JOY1 = 0x4016;
-
-    public static final int JOY2 = 0x4017;
+    public static final int OAMDMA_ADDR = 0x4014;
+    public static final int SND_CHN_ADDR = 0x4015;
+    public static final int JOY1_ADDR = 0x4016;
+    public static final int JOY2_ADDR = 0x4017;
 
     private final E emulator;
 
-    public NESMMIOBus(E emulator) {
+    public NESCPUMMIOBus(E emulator) {
         this.emulator = emulator;
     }
 
@@ -55,13 +52,13 @@ public class NESMMIOBus<E extends NESEmulator> implements Bus {
         if (address >= PPU_START && address <= PPU_END) {
             address = 0x2000 + (address & 7);
             return this.emulator.getVideoGenerator().readByte(address);
-        } else if ((address >= SQ1_VOL_ADDR && address <= 0x4008) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN) {
+        } else if ((address >= SQ1_VOL_ADDR && address <= 0x4008) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR) {
             return this.emulator.getAudioGenerator().readByte(address);
-        } else if (address == OAMDMA) {
+        } else if (address == OAMDMA_ADDR) {
             return 0xFF;
-        } else if (address == JOY1) {
+        } else if (address == JOY1_ADDR) {
             return this.emulator.getSystemController().readJoy1();
-        } else if (address == JOY2) {
+        } else if (address == JOY2_ADDR) {
             return this.emulator.getSystemController().readJoy2();
         } else {
             return 0xFF;
@@ -73,11 +70,11 @@ public class NESMMIOBus<E extends NESEmulator> implements Bus {
         if (address >= PPU_START && address <= PPU_END) {
             address = 0x2000 + (address & 7);
             this.emulator.getVideoGenerator().writeByte(address, value);
-        } else if ((address >= SQ1_VOL_ADDR && address <= 0x4008) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN || address == JOY2) {
+        } else if ((address >= SQ1_VOL_ADDR && address <= 0x4008) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR || address == JOY2_ADDR) {
             this.emulator.getAudioGenerator().writeByte(address, value);
-        } else if (address == OAMDMA) {
+        } else if (address == OAMDMA_ADDR) {
 
-        } else if (address == JOY1) {
+        } else if (address == JOY1_ADDR) {
             this.emulator.getSystemController().writeJoy1(value);
         }
     }

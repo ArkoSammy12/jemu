@@ -4,7 +4,7 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 
-import static io.github.arkosammy12.jemu.core.nes.NESMMIOBus.*;
+import static io.github.arkosammy12.jemu.core.nes.NESCPUMMIOBus.*;
 
 public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
 

@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.core.nes.NESMMIOBus.*;
+import static io.github.arkosammy12.jemu.core.nes.NESCPUMMIOBus.*;
 
 public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements Bus {
 
@@ -51,7 +51,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             case DMC_RAW_ADDR -> 0xFF;
             case DMC_START_ADDR -> 0xFF;
             case DMC_LEN_ADDR -> 0xFF;
-            case SND_CHN -> 0xFF; // This channel does not return open bus on reads!
+            case SND_CHN_ADDR -> 0xFF; // This channel does not return open bus on reads!
             default -> throw new EmulatorException("Invalid read address $%04X for NES APU!".formatted(address));
         };
     }
@@ -77,8 +77,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             case DMC_RAW_ADDR -> {}
             case DMC_START_ADDR -> {}
             case DMC_LEN_ADDR -> {}
-            case SND_CHN -> {}
-            case JOY2 -> {} // Frame counter control
+            case SND_CHN_ADDR -> {}
+            case JOY2_ADDR -> {} // Frame counter control
             default -> throw new EmulatorException("Invalid write address $%04X for NES APU!".formatted(address));
         }
     }
