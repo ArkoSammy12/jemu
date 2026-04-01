@@ -109,7 +109,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
         this.ppuDivisorCounter--;
         if (this.ppuDivisorCounter <= 0) {
-            // this.ppu.cycle()
+            this.ppu.subCycle();
             this.ppuDivisorCounter = this.ppuDivisor;
         }
     }

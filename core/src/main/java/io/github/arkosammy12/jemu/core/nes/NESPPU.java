@@ -55,4 +55,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         };
     }
 
+    public void subCycle() {
+
+    }
+
 }
