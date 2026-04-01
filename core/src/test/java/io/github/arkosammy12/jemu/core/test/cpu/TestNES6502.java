@@ -21,6 +21,9 @@ public class TestNES6502 extends NES6502 {
         this.setY(initialState.getY());
         this.setP(initialState.getP());
 
+        // Prevent the initial reset from being triggered
+        this.signalReset = false;
+
     }
 
     @Override
