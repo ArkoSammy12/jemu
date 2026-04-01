@@ -8,10 +8,10 @@ import java.util.Optional;
 
 public class INESFile {
 
-    protected static final int KB_8 = 0x2000;
-    protected static final int KB_16 = 0x4000;
+    public static final int KB_8 = 0x2000;
+    public static final int KB_16 = 0x4000;
 
-    private final NametableMirroring nametableMirroring;
+    private final NametableArrangement nametableArrangement;
     private final boolean hasBattery;
     private final boolean hasAlternativeNametableLayout;
     private final int[] programRomData;
@@ -29,7 +29,7 @@ public class INESFile {
         this.characterRamSizeBytes = this.getCharacterRamSize(file);
 
         int flags6 = file[6] & 0xFF;
-        this.nametableMirroring = (flags6 & 1) != 0 ? NametableMirroring.VERTICAL : NametableMirroring.HORIZONTAL;
+        this.nametableArrangement = (flags6 & 1) != 0 ? NametableArrangement.HORIZONTAL : NametableArrangement.VERTICAL;
         this.hasBattery = (flags6 & (1 << 1)) != 0;
         this.hasAlternativeNametableLayout = (flags6 & (1 << 3)) != 0;
 
@@ -110,8 +110,8 @@ public class INESFile {
         return this.characterRamSizeBytes;
     }
 
-    public NametableMirroring getNametableMirroring() {
-        return this.nametableMirroring;
+    public NametableArrangement getNametableMirroring() {
+        return this.nametableArrangement;
     }
 
     public boolean hasBattery() {
@@ -133,7 +133,19 @@ public class INESFile {
                 }
             }
 
-            if (maskedByte7 == 0x08) {
+            boolean hasByeTrainer = (file[6] & (1 << 2)) != 0;
+            int programRomSizeBytes = INES20.parseNes20ProgramRomSizeBytes(file);
+            int characterRomSizeBytes = INES20.parseNes20CharacterRomSizeBytes(file);
+
+            int finalIndex = 16;
+            if (hasByeTrainer) {
+                finalIndex += 512;
+            }
+
+            finalIndex += programRomSizeBytes;
+            finalIndex += characterRomSizeBytes;
+
+            if (maskedByte7 == 0x08 && finalIndex < file.length) {
                 return new INES20(file);
             } else if (maskedByte7 == 0x04) {
                 return new INESFile(file);
@@ -148,7 +160,7 @@ public class INESFile {
         }
     }
 
-    public enum NametableMirroring {
+    public enum NametableArrangement {
         HORIZONTAL,
         VERTICAL
     }

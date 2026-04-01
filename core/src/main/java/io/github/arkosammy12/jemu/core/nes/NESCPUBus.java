@@ -57,7 +57,7 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
         } else if (address >= CPU_TEST_MODE_START && address <= CPU_TEST_MODE_END) {
 
         } else if (address >= CARTRIDGE_START && address <= CARTRIDGE_END) {
-            this.emulator.getBus().writeByte(address, value);
+            this.emulator.getCartridge().writeByte(address, value);
         } else {
             throw new EmulatorException("Invalid NES memory address $%04X!".formatted(address));
         }

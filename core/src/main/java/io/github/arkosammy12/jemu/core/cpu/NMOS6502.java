@@ -23,7 +23,7 @@ public class NMOS6502 implements Processor {
     private int accumulator; // A, 8 bits
     private int X; // 8 bits
     private int Y; // 8 bits
-    private int processorStatus; // P, 8 bit
+    private int processorStatus = M_MASK; // P, 8 bit
     private int stackPointer; // S, 8 bits
 
     private int instructionRegister; // 8 bits
@@ -42,7 +42,7 @@ public class NMOS6502 implements Processor {
 
     private Phase phase = Phase.PHI_1;
     private boolean oldNMI;
-    private boolean signalReset;
+    protected boolean signalReset;
     private boolean signalNMI;
     private boolean signalIRQ;
     private BRKSource brkSource = BRKSource.SOFTWARE;
@@ -119,6 +119,7 @@ public class NMOS6502 implements Processor {
 
     protected void setP(int value) {
         this.processorStatus = value & 0xFF;
+        this.processorStatus |= M_MASK;
     }
 
     public int getP() {
@@ -442,8 +443,8 @@ public class NMOS6502 implements Processor {
                             systemBus.getBus().readByte(((getS() - 2) & 0xFF) | 0x0100);
                         } else {
                             int P = getP();
-                            if (!this.pushB) {
-                                P &= ~B_MASK;
+                            if (this.pushB) {
+                                P |= B_MASK;
                             }
                             systemBus.getBus().writeByte(((getS() - 2) & 0xFF) | 0x0100, P);
                         }
@@ -472,7 +473,7 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 13;
                     }
                     case 13 -> {
-                        subCycleIndex = 14;
+                        subCycleIndex = TERMINATE_INSTRUCTION;
                     }
                 }
             }

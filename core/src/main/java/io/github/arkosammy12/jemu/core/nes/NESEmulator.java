@@ -9,12 +9,15 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     private static final int FRAMERATE = 60;
 
-    private static final int CPU_CLOCK_SPEED_HZ = 1789773;
-    private static final int CPU_CYCLES_PER_FRAME = CPU_CLOCK_SPEED_HZ / FRAMERATE;
-    private static final int CPU_SUB_CYCLES_PER_FRAME = CPU_CYCLES_PER_FRAME * 2;
+    private static final int NTSC_MASTER_CLOCK_FREQUENCY_HZ = 236_250_000 / 11;
+    private static final int NTSC_CPU_CLOCK_DIVISOR = 12;
+    private static final int NTSC_PPU_CLOCK_DIVISOR = 4;
+
+    private static final int PAL_MASTER_CLOCK_FREQUENCY_HZ = (int) Math.round(26_601_712.5);
+    private static final int PAL_CPU_CLOCK_DIVISOR = 16;
+    private static final int PAL_PPU_CLOCK_DIVISOR = 5;
 
     private final SystemHost systemHost;
-    private final INESFile iNESFile;
 
     private final NES6502 cpu;
     private final NESPPU<?> ppu;
@@ -22,11 +25,14 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private final NESController<?> controller;
     private final NESCPUBus<?> cpuBus;
     private final NESMMIOBus<?> mmioBus;
-    private final NESCartridge cartridge;
+    private final NESCartridge<?> cartridge;
 
-    private boolean initialReset = true;
-    private boolean initialResetUnset = false;
-    private int initialResetUnsetCountdown = 10;
+    private final int iterationsPerFrame;
+    private final int cpuDivisor;
+    private final int ppuDivisor;
+
+    private int cpuDivisorCounter;
+    private int ppuDivisorCounter;
 
     public NESEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
@@ -38,17 +44,16 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
         this.cpuBus = new NESCPUBus<>(this);
         this.mmioBus = new NESMMIOBus<>(this);
 
-        this.iNESFile = INESFile.getINESFile(SystemHost.byteToIntArray(this.getHost().getRom()));
-        this.cartridge = NESCartridge.getCartridge(this);
+        this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(SystemHost.byteToIntArray(this.getHost().getRom())));
+
+        this.iterationsPerFrame = (NTSC_MASTER_CLOCK_FREQUENCY_HZ / FRAMERATE);
+        this.cpuDivisor = NTSC_CPU_CLOCK_DIVISOR / 2;
+        this.ppuDivisor = NTSC_PPU_CLOCK_DIVISOR / 2;
     }
 
     @Override
     public SystemHost getHost() {
         return this.systemHost;
-    }
-
-    public INESFile getiNESFile() {
-        return this.iNESFile;
     }
 
     public Processor getCpu() {
@@ -79,40 +84,34 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
         return this.mmioBus;
     }
 
-    public NESCartridge getCartridge() {
+    public NESCartridge<?> getCartridge() {
         return this.cartridge;
     }
 
     @Override
     public void executeFrame() {
-        if (this.initialResetUnset) {
-            for (int i = 0; i < CPU_SUB_CYCLES_PER_FRAME; i++) {
-                this.runCycle();
-            }
-        } else {
-            for (int i = 0; i < CPU_SUB_CYCLES_PER_FRAME; i++) {
-                this.runCycle();
-                this.autoUnsetInitialResetIfNecessary();
-            }
+        for (int i = 0; i < this.iterationsPerFrame; i++) {
+            this.runCycle();
         }
     }
 
     @Override
     public void executeCycle() {
         this.runCycle();
-        this.autoUnsetInitialResetIfNecessary();
-    }
-
-    private void autoUnsetInitialResetIfNecessary() {
-        this.initialResetUnsetCountdown--;
-        if (!this.initialResetUnset && this.initialResetUnsetCountdown <= 0) {
-            this.initialReset = false;
-            this.initialResetUnset = true;
-        }
     }
 
     private void runCycle() {
-        this.cpu.cycle();
+        this.cpuDivisorCounter--;
+        if (this.cpuDivisorCounter <= 0) {
+            this.cpu.cycle();
+            this.cpuDivisorCounter = this.cpuDivisor;
+        }
+
+        this.ppuDivisorCounter--;
+        if (this.ppuDivisorCounter <= 0) {
+            // this.ppu.cycle()
+            this.ppuDivisorCounter = this.ppuDivisor;
+        }
     }
 
     @Override
@@ -132,7 +131,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public boolean getRes() {
-        return this.initialReset;
+        return false;
     }
 
     @Override

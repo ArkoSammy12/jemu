@@ -12,8 +12,7 @@ public class INES20 extends INES10 {
         this.nonVolatileCharacterRamSize = this.getNonVolatileCharacterRamSize(file);
     }
 
-    @Override
-    protected int getProgramRomSizeBytes(int[] file) {
+    public static int parseNes20ProgramRomSizeBytes(int[] file) {
         int programRomLsb = file[4] & 0xFF;
         int programRomMsb = file[9] & 0x0F;
         if (programRomMsb == 0xF) {
@@ -25,8 +24,7 @@ public class INES20 extends INES10 {
         }
     }
 
-    @Override
-    protected int getCharacterRomSizeBytes(int[] file) {
+    public static int parseNes20CharacterRomSizeBytes(int[] file) {
         int characterRomLsb = file[5] & 0xFF;
         int characterRomMsb = file[9] & 0x0F;
         if (characterRomMsb == 0xF) {
@@ -36,6 +34,16 @@ public class INES20 extends INES10 {
         } else {
             return ((characterRomMsb << 8) | characterRomLsb) * KB_8;
         }
+    }
+
+    @Override
+    protected int getProgramRomSizeBytes(int[] file) {
+        return parseNes20ProgramRomSizeBytes(file);
+    }
+
+    @Override
+    protected int getCharacterRomSizeBytes(int[] file) {
+        return parseNes20CharacterRomSizeBytes(file);
     }
 
     @Override

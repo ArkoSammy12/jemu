@@ -1,15 +1,28 @@
 package io.github.arkosammy12.jemu.core.nes;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 
-public abstract class NESCartridge implements Bus {
+public abstract class NESCartridge<E extends NESEmulator> implements Bus {
 
-    public NESCartridge() {
+    private final E emulator;
+    private final INESFile iNESFile;
 
+    public NESCartridge(E emulator, INESFile iNESFile) {
+        this.emulator = emulator;
+        this.iNESFile = iNESFile;
     }
 
-    public static NESCartridge getCartridge(NESEmulator emulator) {
-        return null;
+    public static <E extends NESEmulator> NESCartridge<E> getCartridge(E emulator, INESFile iNESFile) {
+        return new NROMCartridge<>(emulator, iNESFile);
     }
+
+    public INESFile getINESFile() {
+        return this.iNESFile;
+    }
+
+    abstract public int readBytePPU(int address);
+
+    abstract public void writeBytePPU(int address, int value);
 
 }
