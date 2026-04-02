@@ -25,4 +25,6 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
 
     abstract public void writeBytePPU(int address, int value);
 
+    abstract public boolean mapsCIRAM();
+
 }

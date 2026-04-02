@@ -67,12 +67,12 @@ public class NES6502TestCaseBench implements NMOS6502.SystemBus {
     }
 
     @Override
-    public boolean getRes() {
+    public boolean getRES() {
         return false;
     }
 
     @Override
-    public boolean getRdy() {
+    public boolean getRDY() {
         return false;
     }
 

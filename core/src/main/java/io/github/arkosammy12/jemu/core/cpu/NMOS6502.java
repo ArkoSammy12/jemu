@@ -339,7 +339,7 @@ public class NMOS6502 implements Processor {
             }
             oldNMI = nmiNow;
 
-            if (systemBus.getRes()) {
+            if (systemBus.getRES()) {
                 this.signalReset = true;
             }
             if (systemBus.getIRQ() && !getFI()) {
@@ -9880,9 +9880,9 @@ public class NMOS6502 implements Processor {
 
         boolean getNMI();
 
-        boolean getRes();
+        boolean getRES();
 
-        boolean getRdy();
+        boolean getRDY();
 
     }
 

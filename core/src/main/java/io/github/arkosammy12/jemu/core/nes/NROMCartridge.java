@@ -60,6 +60,11 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     }
 
     @Override
+    public boolean mapsCIRAM() {
+        return false;
+    }
+
+    @Override
     public int readByte(int address) {
         if (address >= 0x6000 && address <= 0x7FFF) {
             return this.programRam[(address - 0x6000) % this.programRam.length];
