@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 
 import java.util.Optional;
 
+import static io.github.arkosammy12.jemu.core.nes.NESPPUBus.*;
 import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_16;
 import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
 
@@ -39,29 +40,32 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     @Override
     public int readBytePPU(int address) {
-        if (address >= 0x0000 && address <= 0x1FFF) {
+        if (address >= CHR_ROM_START && address <= CHR_ROM_END) {
             if (this.characterRom == null) {
                 return 0xFF;
             } else {
                 return this.characterRom[address % this.characterRom.length];
             }
-        } else {
-            throw new EmulatorException("Invalid NES MMC0 cartridge PPU read address $%04X!".formatted(address));
-        }
-    }
-
-    @Override
-    public void writeBytePPU(int address, int value) {
-        if (address >= 0x0000 && address <= 0x1FFF) {
-
+        } else if (address >= CIRAM_START && address <= CIRAM_END) {
+            return this.emulator.getPpuBus().readByteVRAM(address);
+        } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
+            return address & 0xFF;
         } else {
             throw new EmulatorException("Invalid NES MMC0 cartridge PPU write address $%04X!".formatted(address));
         }
     }
 
     @Override
-    public boolean mapsCIRAM() {
-        return false;
+    public void writeBytePPU(int address, int value) {
+        if (address >= CHR_ROM_START && address <= CHR_ROM_END) {
+
+        } else if (address >= CIRAM_START && address <= CIRAM_END) {
+            this.emulator.getPpuBus().writeByteVRAM(address, value);
+        } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
+
+        } else {
+            throw new EmulatorException("Invalid NES MMC0 cartridge PPU write address $%04X!".formatted(address));
+        }
     }
 
     @Override

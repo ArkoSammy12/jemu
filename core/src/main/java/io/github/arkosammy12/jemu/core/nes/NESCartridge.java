@@ -5,8 +5,8 @@ import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 
 public abstract class NESCartridge<E extends NESEmulator> implements Bus {
 
-    private final E emulator;
-    private final INESFile iNESFile;
+    protected final E emulator;
+    protected final INESFile iNESFile;
 
     public NESCartridge(E emulator, INESFile iNESFile) {
         this.emulator = emulator;
@@ -24,7 +24,5 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
     abstract public int readBytePPU(int address);
 
     abstract public void writeBytePPU(int address, int value);
-
-    abstract public boolean mapsCIRAM();
 
 }
