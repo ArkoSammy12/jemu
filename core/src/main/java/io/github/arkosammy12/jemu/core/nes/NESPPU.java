@@ -131,7 +131,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case PPUCTRL_ADDR -> {
                 this.ppuControl = value & 0xFC;
                 setT((getT() &  ~0xC00) | ((value & 0b11) << 10));
-                this.nmiSignal = this.getVBlankFlag();
+                this.setNMISignal(this.getVBlankFlag());
             }
             case PPUMASK_ADDR -> this.ppuMask = value & 0xFF;
             case PPUSTATUS_ADDR -> {}
