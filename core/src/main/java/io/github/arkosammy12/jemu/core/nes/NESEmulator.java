@@ -24,7 +24,6 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private final NESAPU<?> apu;
     private final NESController<?> controller;
     private final NESCPUBus<?> cpuBus;
-    private final NESPPUBus<?> ppuBus;
     private final NESCPUMMIOBus<?> mmioBus;
     private final NESCartridge<?> cartridge;
 
@@ -43,7 +42,6 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
         this.controller = new NESController<>(this);
 
         this.cpuBus = new NESCPUBus<>(this);
-        this.ppuBus = new NESPPUBus<>(this);
         this.mmioBus = new NESCPUMMIOBus<>(this);
 
         this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(SystemHost.byteToIntArray(this.getHost().getRom())));
@@ -82,10 +80,6 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
         return this.cpuBus;
     }
 
-    public NESPPUBus<?> getPpuBus() {
-        return this.ppuBus;
-    }
-
     public NESCPUMMIOBus<?> getMMIOBus() {
         return this.mmioBus;
     }
@@ -115,7 +109,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
         this.ppuDivisorCounter--;
         if (this.ppuDivisorCounter <= 0) {
-            this.ppu.subCycle();
+            this.ppu.cycleHalfDot();
             this.ppuDivisorCounter = this.ppuDivisor;
         }
     }
@@ -132,7 +126,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public boolean getNMI() {
-        return false;
+        return this.ppu.getNMISignal();
     }
 
     @Override

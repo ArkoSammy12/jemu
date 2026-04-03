@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.core.nes.NESPPUBus.*;
+import static io.github.arkosammy12.jemu.core.nes.NESPPU.*;
 import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_16;
 import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
 
@@ -47,11 +47,16 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
                 return this.characterRom[address % this.characterRom.length];
             }
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
-            return this.emulator.getPpuBus().readByteVRAM(address);
+            return this.readByteVRAM(address);
+        } else if (address >= CIRAM_MIRROR_START && address <= CIRAM_MIRROR_END) {
+            address = CIRAM_START + (address - CIRAM_MIRROR_START);
+            return this.readByteVRAM(address);
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
             return address & 0xFF;
+        } else if (address >= PALETTE_RAM_MIRROR_START && address <= PALETTE_RAM_MIRROR_END) {
+            return address & 0xFF;
         } else {
-            throw new EmulatorException("Invalid NES MMC0 cartridge PPU write address $%04X!".formatted(address));
+            throw new EmulatorException("Invalid NES MMC0 cartridge PPU read address $%04X!".formatted(address));
         }
     }
 
@@ -60,8 +65,13 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         if (address >= CHR_ROM_START && address <= CHR_ROM_END) {
 
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
-            this.emulator.getPpuBus().writeByteVRAM(address, value);
+            this.writeByteVRAM(address, value);
+        } else if (address >= CIRAM_MIRROR_START && address <= CIRAM_MIRROR_END) {
+            address = CIRAM_START + (address - CIRAM_MIRROR_START);
+            this.writeByteVRAM(address, value);
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
+
+        } else if (address >= PALETTE_RAM_MIRROR_START && address <= PALETTE_RAM_MIRROR_END) {
 
         } else {
             throw new EmulatorException("Invalid NES MMC0 cartridge PPU write address $%04X!".formatted(address));
