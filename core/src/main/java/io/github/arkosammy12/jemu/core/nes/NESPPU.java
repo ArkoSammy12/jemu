@@ -3,7 +3,6 @@ package io.github.arkosammy12.jemu.core.nes;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import org.tinylog.Logger;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -259,12 +258,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 } else if (readAddress <= CIRAM_MIRROR_END) {
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
-                } else if (readAddress <= PALETTE_RAM_END) {
-                    this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
-                    ret = this.paletteRam[readAddress - PALETTE_RAM_START];
                 } else {
-                    this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
-                    ret = this.paletteRam[readAddress - PALETTE_RAM_MIRROR_START];
+                    this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress);
+                    int paletteAddr = readAddress & 0x1F;
+                    if ((paletteAddr & 0x13) == 0x10) {
+                        paletteAddr &= ~0x10;
+                    }
+                    ret = this.paletteRam[paletteAddr];
                 }
 
                 // TODO: If the $2007 access happens to coincide with a standard VRAM address increment (either horizontal or vertical), it will presumably not double-increment the relevant counter.
