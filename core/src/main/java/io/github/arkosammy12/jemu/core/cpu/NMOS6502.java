@@ -8967,7 +8967,7 @@ public class NMOS6502 implements Processor {
 
     private void executeFX(int digit) {
         switch (digit) {
-            case 0x0 -> {
+            case 0x0 -> { // BEQ, relative (jump)
                 branchRelative(getFZ());
             }
             case 0x1 -> { // SBC, indirect Y (read)

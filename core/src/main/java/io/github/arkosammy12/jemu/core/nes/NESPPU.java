@@ -194,10 +194,12 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int scanlineNumber;
     private boolean nmiSignal;
     private boolean ppuInit = true;
+    private boolean isRendering;
 
     private boolean oddFrame;
     private int ppuDataReadBuffer;
     private int copyTtoVCountdown;
+    private int toggleRenderingCountdown;
 
     private final LinkedList<Integer> backgroundShiftRegister = new LinkedList<>();
     private final LinkedList<Integer> attributeShiftRegister = new LinkedList<>();
@@ -294,7 +296,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 setT((getT() &  ~0xC00) | ((value & 0b11) << 10));
                 this.setNMISignal(this.getVBlankNMIEnable());
             }
-            case PPUMASK_ADDR -> this.ppuMask = value & 0xFF;
+            case PPUMASK_ADDR -> {
+                boolean originalEnableRendering = this.enableBackgroundRendering() || this.enableSpriteRendering();
+                this.ppuMask = value & 0xFF;
+                if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
+                    this.toggleRenderingCountdown = 3;
+                }
+            }
             case PPUSTATUS_ADDR -> {}
             case OAMADDR_ADDR -> this.currentOamAddress = value & 0xFF;
             case OAMDATA_ADDR -> {
@@ -306,7 +314,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 if (this.getW()) {
                     this.setT((this.getT() & ~0x73E0) | ((value & 0b00000111) << 12) | ((value & 0b00111000) << 2) | ((value & 0b11000000) << 2));
                 } else {
-                    this.setT((this.getT() & ~0xF) | ((value >>> 3) & 0xF));
+                    this.setT((this.getT() & ~0x1F) | ((value >>> 3) & 0x1F));
                     this.setX(value & 0b111);
                 }
                 this.toggleW();
@@ -317,7 +325,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     // (wait 1 to 1.5 dots after the write completes as per nesdev)
                     this.copyTtoVCountdown = 3;
                 } else {
-                    this.setT((this.getT() & ~0x7F00) | ((value & 0b00111111) << 8));
+                    this.setT((this.getT() & ~0x3F00) | ((value & 0b00111111) << 8));
+                    this.setT(this.getT() & ~(1 << 14));
                 }
                 this.toggleW();
             }
@@ -344,9 +353,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         return this.nmiSignal && this.getVBlankFlag();
     }
 
-    // TODO: Toggling rendering takes effect approximately 3-4 dots after the write. This delay is required by Battletoads to avoid a crash.
     private boolean isRenderingEnabled() {
-        return this.enableBackgroundRendering() || this.enableSpriteRendering();
+        return this.isRendering;
     }
 
     private boolean isPreRenderScanline() {
@@ -404,7 +412,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     // During dots 280 to 304 of the pre-render scanline (end of vblank)
     private void copyVerticalPositionBitsToV() {
-        this.setV((this.getV() & ~0x7BFF) | (this.getT() & 0x7BFF));
+        this.setV((this.getV() & ~0x7BE0) | (this.getT() & 0x7BE0));
     }
 
     private void setV(int value) {
@@ -449,6 +457,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.copyTtoVCountdown--;
             if (this.copyTtoVCountdown <= 0) {
                 this.setV(this.getT());
+            }
+        }
+
+        if (this.toggleRenderingCountdown > 0) {
+            this.toggleRenderingCountdown--;
+            if (this.toggleRenderingCountdown <= 0) {
+                this.isRendering = !this.isRendering;
             }
         }
 
