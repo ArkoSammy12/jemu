@@ -53,4 +53,8 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         return (ciRamA10 << 10) | (vRamAddr & 0x03FF);
     }
 
+    public boolean getIRQSignal() {
+        return false;
+    }
+
 }

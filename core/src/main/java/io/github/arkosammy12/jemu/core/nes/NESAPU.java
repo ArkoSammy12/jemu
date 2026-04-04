@@ -82,4 +82,9 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             default -> throw new EmulatorException("Invalid write address $%04X for NES APU!".formatted(address));
         }
     }
+
+    public boolean getIRQSignal() {
+        return false;
+    }
+
 }

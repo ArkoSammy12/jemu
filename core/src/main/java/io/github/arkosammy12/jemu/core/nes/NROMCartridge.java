@@ -95,16 +95,6 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     public void writeByte(int address, int value) {
         if (address >= 0x6000 && address <= 0x7FFF) {
             this.programRam[(address - 0x6000) % this.programRam.length] = value & 0xFF;
-            // TODO: Remove Blargg test rom string printout when PPU is sufficiently implemented to read test results on-screen
-            if (address == 0x6000 && value >= 0x00 && value <= 0x07) {
-                int i = 0x6004;
-                int ascii = this.programRam[(i - 0x6000) % this.programRam.length];
-                while (ascii != 0) {
-                    System.out.print((char) ascii);
-                    i++;
-                    ascii = this.programRam[(i - 0x6000) % this.programRam.length];
-                }
-            }
         } else if (address >= 0x8000 && address <= 0xBFFF) {
 
         } else if (address >= 0xC000 && address <= 0xFFFF) {

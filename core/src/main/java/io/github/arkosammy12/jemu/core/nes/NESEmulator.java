@@ -121,7 +121,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public boolean getIRQ() {
-        return false;
+        return this.apu.getIRQSignal() || this.cartridge.getIRQSignal();
     }
 
     @Override
