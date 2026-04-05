@@ -7,8 +7,6 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import java.util.Arrays;
 import java.util.LinkedList;
 
-import static io.github.arkosammy12.jemu.core.nes.NESCPUMMIOBus.*;
-
 public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
 
     public static final int[] PALETTE_2C02G_WIKI_PAL = {
@@ -142,6 +140,14 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 0x7e, 0xab, 0xad, 0x81, 0x81, 0x81, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
     };
 
+    private static final int PPUCTRL_ADDR = 0x2000;
+    private static final int PPUMASK_ADDR = 0x2001;
+    private static final int PPUSTATUS_ADDR = 0x2002;
+    private static final int OAMADDR_ADDR = 0x2003;
+    public static final int OAMDATA_ADDR = 0x2004;
+    private static final int PPUSCROLL_ADDR = 0x2005;
+    private static final int PPUADDR_ADDR = 0x2006;
+    private static final int PPUDATA_ADDR = 0x2007;
 
     public static final int CHR_ROM_START = 0x0000;
     public static final int CHR_ROM_END = 0x1FFF;

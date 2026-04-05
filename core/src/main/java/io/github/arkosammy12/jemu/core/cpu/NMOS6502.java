@@ -42,7 +42,7 @@ public class NMOS6502 implements Processor {
 
     private Phase phase = Phase.PHI_1;
     private ReadWriteCycle readWriteCycle = ReadWriteCycle.READ;
-    private boolean cpuHalted;
+    protected boolean cpuHalted;
     private int lastAddress;
 
     private boolean oldNMI;
@@ -315,7 +315,7 @@ public class NMOS6502 implements Processor {
 
         if (halted) {
             if (this.phase == Phase.PHI_2) {
-                readByte(this.lastAddress);
+                //readByte(this.lastAddress);
             }
             this.onSubCycleEnd();
             return 0;

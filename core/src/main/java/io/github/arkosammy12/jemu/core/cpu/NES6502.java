@@ -14,4 +14,8 @@ public class NES6502 extends NMOS6502 {
         return false;
     }
 
+    public boolean isHalted() {
+        return this.cpuHalted;
+    }
+
 }

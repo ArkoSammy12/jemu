@@ -7,7 +7,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.core.nes.NESCPUMMIOBus.*;
+import static io.github.arkosammy12.jemu.core.nes.RP2A03.*;
 
 public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements Bus {
 

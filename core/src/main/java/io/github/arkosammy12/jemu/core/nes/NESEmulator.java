@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.core.nes;
 
 import io.github.arkosammy12.jemu.core.common.*;
-import io.github.arkosammy12.jemu.core.cpu.NES6502;
 import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 
@@ -19,36 +18,26 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     private final SystemHost systemHost;
 
-    private final NES6502 cpu;
+    private final RP2A03<?> ricohCore;
     private final NESPPU<?> ppu;
-    private final NESAPU<?> apu;
-    private final NESController<?> controller;
     private final NESCPUBus<?> cpuBus;
-    private final NESCPUMMIOBus<?> mmioBus;
     private final NESCartridge<?> cartridge;
 
     private final int iterationsPerFrame;
-    private final int cpuDivisor;
     private final int ppuDivisor;
 
-    private int cpuDivisorCounter;
     private int ppuDivisorCounter;
 
     public NESEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
-        this.cpu = new NES6502(this);
+
+        this.ricohCore = new RP2A03<>(this, 0.5);
         this.ppu = new NESPPU<>(this);
-        this.apu = new NESAPU<>(this);
-        this.controller = new NESController<>(this);
-
         this.cpuBus = new NESCPUBus<>(this);
-        this.mmioBus = new NESCPUMMIOBus<>(this);
-
         this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(SystemHost.byteToIntArray(this.getHost().getRom())));
 
         // TODO: PAL support
         this.iterationsPerFrame = (NTSC_MASTER_CLOCK_FREQUENCY_HZ / FRAMERATE);
-        this.cpuDivisor = NTSC_CPU_CLOCK_DIVISOR / 2;
         this.ppuDivisor = NTSC_PPU_CLOCK_DIVISOR / 2;
     }
 
@@ -57,8 +46,12 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
         return this.systemHost;
     }
 
+    public RP2A03<?> getRicohCore() {
+        return this.ricohCore;
+    }
+
     public Processor getCpu() {
-        return this.cpu;
+        return this.ricohCore.getCpu();
     }
 
     @Override
@@ -68,21 +61,17 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public NESAPU<?> getAudioGenerator() {
-        return apu;
+        return this.ricohCore.getApu();
     }
 
     @Override
     public NESController<?> getSystemController() {
-        return this.controller;
+        return this.ricohCore.getController();
     }
 
     @Override
     public NESCPUBus<?> getBus() {
         return this.cpuBus;
-    }
-
-    public NESCPUMMIOBus<?> getMMIOBus() {
-        return this.mmioBus;
     }
 
     public NESCartridge<?> getCartridge() {
@@ -102,11 +91,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     }
 
     private void runCycle() {
-        this.cpuDivisorCounter--;
-        if (this.cpuDivisorCounter <= 0) {
-            this.cpu.cycle();
-            this.cpuDivisorCounter = this.cpuDivisor;
-        }
+        this.ricohCore.onMasterClock();
 
         this.ppuDivisorCounter--;
         if (this.ppuDivisorCounter <= 0) {
@@ -122,7 +107,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public boolean getIRQ() {
-        return this.apu.getIRQSignal() || this.cartridge.getIRQSignal();
+        return this.ricohCore.getIRQSignal() || this.cartridge.getIRQSignal();
     }
 
     @Override
@@ -137,7 +122,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public boolean getRDY() {
-        return false;
+        return this.ricohCore.getRDYSignal();
     }
 
     @Override

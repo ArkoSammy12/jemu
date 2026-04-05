@@ -20,6 +20,8 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
     public static final int CARTRIDGE_START = 0x4020;
     public static final int CARTRIDGE_END = 0xFFFF;
 
+
+
     private final E emulator;
 
     private final int[] ram = new int[0x800];
@@ -33,9 +35,9 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
         if (address >= RAM_START && address <= RAM_END) {
             return this.ram[address & 0x7FF];
         } else if (address >= PPU_START && address <= PPU_END) {
-            return this.emulator.getMMIOBus().readByte(address);
+            return this.emulator.getVideoGenerator().readByte(0x2000 + (address & 7));
         } else if (address >= APU_IO_START && address <= APU_IO_END) {
-            return this.emulator.getMMIOBus().readByte(address);
+            return this.emulator.getRicohCore().readByte(address);
         } else if (address >= CPU_TEST_MODE_START && address <= CPU_TEST_MODE_END) {
             return 0xFF;
         } else if (address >= CARTRIDGE_START && address <= CARTRIDGE_END) {
@@ -51,9 +53,9 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
         if (address >= RAM_START && address <= RAM_END) {
             this.ram[address & 0x7FF] = value;
         } else if (address >= PPU_START && address <= PPU_END) {
-            this.emulator.getMMIOBus().writeByte(address, value);
+            this.emulator.getVideoGenerator().writeByte(0x2000 + (address & 7), value);
         } else if (address >= APU_IO_START && address <= APU_IO_END) {
-            this.emulator.getMMIOBus().writeByte(address, value);
+            this.emulator.getRicohCore().writeByte(address, value);
         } else if (address >= CPU_TEST_MODE_START && address <= CPU_TEST_MODE_END) {
 
         } else if (address >= CARTRIDGE_START && address <= CARTRIDGE_END) {
