@@ -213,9 +213,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     public NESPPU(E emulator) {
         super(emulator);
+        // TODO: PAL support
         this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
         this.visibleScanlines = NTSC_VISIBLE_SCANLINES;
         this.oddFrameDotSkip = true;
+
         this.video = new int[WIDTH][this.visibleScanlines];
         for (int[] ints : this.video) {
             Arrays.fill(ints, 0xFF000000);
@@ -253,7 +255,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 int readAddress = this.getV() & 0x3FFF;
 
                 int ret = this.ppuDataReadBuffer;
-
                 if (readAddress <= CHR_ROM_END) {
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 } else if (readAddress <= CIRAM_END) {
@@ -274,8 +275,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.incrementHorizontalPosition();
                     this.incrementVerticalPosition();
                 } else {
-                    this.incrementV();
+                    setV(getV() + this.getVRAMAddressIncrement());
                 }
+
                 yield ret;
             }
             default -> throw new EmulatorException("Invalid address $%04X for NES PPU!".formatted(address));
@@ -338,11 +340,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.incrementHorizontalPosition();
                     this.incrementVerticalPosition();
                 } else {
-                    this.incrementV();
+                    setV(getV() + this.getVRAMAddressIncrement());
                 }
             }
             default -> throw new EmulatorException("Invalid address $%04X for NES PPU!".formatted(address));
-        };
+        }
     }
 
     private void setNMISignal(boolean value) {
@@ -365,54 +367,12 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         return this.scanlineNumber < this.visibleScanlines;
     }
 
+    private boolean isRenderScanline() {
+        return this.isPreRenderScanline() || this.isVisibleScanline();
+    }
+
     private boolean isVisibleDot() {
         return this.dotNumber >= FIRST_VISIBLE_DOT && this.dotNumber <= LAST_VISIBLE_DOT;
-    }
-
-    private void incrementV() {
-        setV(getV() + switch (this.getVramAddressIncrement()) {
-            case VRAMAddressIncrement.ADD_1_ACROSS -> 1;
-            case ADD_32_DOWN -> 32;
-        });
-    }
-
-    // Dot 256 of each scanline if rendering is enabled
-    private void incrementVerticalPosition() {
-        if ((this.getV() & 0x7000) != 0x7000) {
-            this.setV(this.getV() + 0x1000);
-        } else {
-            this.setV(this.getV() & ~0x7000);
-            int y = (this.getV() & 0x03E0) >>> 5;
-            if (y == 29) {
-                y = 0;
-                this.setV(this.getV() ^ 0x0800);
-            } else if (y == 31) {
-                y = 0;
-            } else {
-                y++;
-            }
-            this.setV((this.getV() & ~0x03E0) | ((y & 0x1F) << 5));
-        }
-    }
-
-    // Between dot 328 of a scanline, and 256 of the next scanline
-    private void incrementHorizontalPosition() {
-        if ((this.getV() & 0x001F) == 31) {
-            this.setV(this.getV() & ~0x001F);
-            this.setV(this.getV() ^ 0x0400);
-        } else {
-            this.setV(getV() + 1);
-        }
-    }
-
-    // Dot 257 of each scanline if rendering is enabled
-    private void copyHorizontalPositionBitsToV() {
-        this.setV((this.getV() & ~0x41F) | (this.getT() & 0x41F));
-    }
-
-    // During dots 280 to 304 of the pre-render scanline (end of vblank)
-    private void copyVerticalPositionBitsToV() {
-        this.setV((this.getV() & ~0x7BE0) | (this.getT() & 0x7BE0));
     }
 
     private void setV(int value) {
@@ -472,41 +432,59 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
             }
             case SECOND -> {
-
-                if (this.isVisibleScanline()) {
+                if (this.isRenderScanline()) {
                     if (this.isVisibleDot()) {
                         this.tickPixelShifter();
                         this.tickBgFetcher();
                     }
 
-                    this.onRenderScanlineHBlank();
+                    if (this.isPreRenderScanline()) {
+                        if (this.dotNumber == 1) {
+                            this.setVBlankFlag(false);
+                            this.setSprite0HitFlag(false);
+                            this.setSpriteOverflowFlag(false);
+                            if (this.ppuInit) {
+                                this.ppuInit = false;
+                            }
+                        }
+
+                        if (this.dotNumber >= 280 && this.dotNumber <= 304) {
+                            if (this.isRenderingEnabled()) {
+                                this.copyVerticalPositionBitsToV();
+                            }
+                        }
+                    }
+
+                    if (this.dotNumber == 256) {
+                        if (this.isRenderingEnabled()) {
+                            this.incrementVerticalPosition();
+                        }
+                    } else if (this.dotNumber == 257) {
+                        if (this.isRenderingEnabled()) {
+                            this.copyHorizontalPositionBitsToV();
+                        }
+                    } else if (this.dotNumber == 258) {
+                        this.readBytePPU(this.getNametableFetchAddress());
+                    } else if (this.dotNumber == 260) {
+                        this.readBytePPU(this.getNametableFetchAddress());
+                    } else if (this.dotNumber == 266) {
+                        this.readBytePPU(this.getNametableFetchAddress());
+                    } else if (this.dotNumber == 306) {
+                        this.readBytePPU(this.getNametableFetchAddress());
+                    } else if (this.dotNumber >= 321 && this.dotNumber <= 336) {
+                        this.tickPixelShifter();
+                        this.tickBgFetcher();
+                    } else if (this.dotNumber == 338) {
+                        this.readBytePPU(this.getNametableFetchAddress());
+                    } else if (dotNumber == 340) {
+                        this.readBytePPU(this.getNametableFetchAddress());
+                    }
 
                 } else if (this.scanlineNumber == this.visibleScanlines + 1) {
                     if (this.dotNumber == 1) {
                         this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.video));
                         this.setVBlankFlag(true);
                     }
-                } else if (this.isPreRenderScanline()) {
-                    if (this.isVisibleDot()) {
-                        this.tickPixelShifter();
-                        this.tickBgFetcher();
-                    }
-                    if (this.dotNumber == 1) {
-                        this.setVBlankFlag(false);
-                        this.setSprite0HitFlag(false);
-                        this.setSpriteOverflowFlag(false);
-                        if (this.ppuInit) {
-                            this.ppuInit = false;
-                        }
-                    }
-
-                    if (this.dotNumber >= 280 && this.dotNumber <= 304) {
-                        if (this.isRenderingEnabled()) {
-                            this.copyVerticalPositionBitsToV();
-                        }
-                    }
-
-                    this.onRenderScanlineHBlank();
                 }
 
                 this.dotNumber++;
@@ -526,15 +504,50 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.currentDotHalf = this.currentDotHalf.getOpposite();
     }
 
+    private void incrementVerticalPosition() {
+        if ((this.getV() & 0x7000) != 0x7000) {
+            this.setV(this.getV() + 0x1000);
+        } else {
+            this.setV(this.getV() & ~0x7000);
+            int y = (this.getV() & 0x03E0) >>> 5;
+            if (y == 29) {
+                y = 0;
+                this.setV(this.getV() ^ 0x0800);
+            } else if (y == 31) {
+                y = 0;
+            } else {
+                y++;
+            }
+            this.setV((this.getV() & ~0x03E0) | ((y & 0x1F) << 5));
+        }
+    }
+
+    private void incrementHorizontalPosition() {
+        if ((this.getV() & 0x001F) == 31) {
+            this.setV(this.getV() & ~0x001F);
+            this.setV(this.getV() ^ 0x0400);
+        } else {
+            this.setV(getV() + 1);
+        }
+    }
+
+    private void copyHorizontalPositionBitsToV() {
+        this.setV((this.getV() & ~0x41F) | (this.getT() & 0x41F));
+    }
+
+    private void copyVerticalPositionBitsToV() {
+        this.setV((this.getV() & ~0x7BE0) | (this.getT() & 0x7BE0));
+    }
+
     private void tickPixelShifter() {
-        int bgPixel = this.shiftBackgroundRegister(this.getX()) & 0b11;
+        int bgPixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
         int bgPaletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
 
         int paletteRamIndex;
-        if (bgPixel == 0) {
+        if (bgPixelColor == 0) {
             paletteRamIndex = 0;
         } else {
-            paletteRamIndex = (bgPaletteNumber << 2) | bgPixel;
+            paletteRamIndex = (bgPaletteNumber << 2) | bgPixelColor;
         }
 
         int paletteByte = this.paletteRam[paletteRamIndex];
@@ -562,33 +575,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.attributeShiftRegister.poll();
         this.attributeShiftRegister.offer(this.attributeRegisterLatch);
         return this.attributeShiftRegister.get(select);
-    }
-
-    private void onRenderScanlineHBlank() {
-        if (this.dotNumber == 256) {
-            if (this.isRenderingEnabled()) {
-                this.incrementVerticalPosition();
-            }
-        } else if (this.dotNumber == 257) {
-            if (this.isRenderingEnabled()) {
-                this.copyHorizontalPositionBitsToV();
-            }
-        } else if (this.dotNumber == 258) {
-            this.readBytePPU(this.getNametableFetchAddress());
-        } else if (this.dotNumber == 260) {
-            this.readBytePPU(this.getNametableFetchAddress());
-        } else if (this.dotNumber == 266) {
-            this.readBytePPU(this.getNametableFetchAddress());
-        } else if (this.dotNumber == 306) {
-            this.readBytePPU(this.getNametableFetchAddress());
-        } else if (this.dotNumber >= 321 && this.dotNumber <= 336) {
-            this.tickPixelShifter();
-            this.tickBgFetcher();
-        } else if (this.dotNumber == 338) {
-            this.readBytePPU(this.getNametableFetchAddress());
-        } else if (dotNumber == 340) {
-            this.readBytePPU(this.getNametableFetchAddress());
-        }
     }
 
     private void tickBgFetcher() {
@@ -649,8 +635,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         return ((this.getV() >>> 12) & 0b111) | (highBitPlane ? (1 << 3) : 0) | ((this.bgFetcherTileNumber & 0xFF) << 4) | this.getBackgroundPatternTableAddress();
     }
 
-    private VRAMAddressIncrement getVramAddressIncrement() {
-        return (this.ppuControl & (1 << 2)) != 0 ? VRAMAddressIncrement.ADD_32_DOWN : VRAMAddressIncrement.ADD_1_ACROSS;
+    private int getVRAMAddressIncrement() {
+        return (this.ppuControl & (1 << 2)) != 0 ? 32 : 1;
     }
 
     private int get8x8SpritePatternTableAddress() {
@@ -767,11 +753,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             }
             this.paletteRam[paletteAddr] = value & 0xFF;
         }
-    }
-
-    private enum VRAMAddressIncrement {
-        ADD_1_ACROSS,
-        ADD_32_DOWN
     }
 
     private enum SpriteSize {

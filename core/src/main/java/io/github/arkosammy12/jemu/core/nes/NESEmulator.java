@@ -46,6 +46,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
         this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(SystemHost.byteToIntArray(this.getHost().getRom())));
 
+        // TODO: PAL support
         this.iterationsPerFrame = (NTSC_MASTER_CLOCK_FREQUENCY_HZ / FRAMERATE);
         this.cpuDivisor = NTSC_CPU_CLOCK_DIVISOR / 2;
         this.ppuDivisor = NTSC_PPU_CLOCK_DIVISOR / 2;
