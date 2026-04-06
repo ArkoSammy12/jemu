@@ -140,6 +140,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
             this.apu.writeByte(address, value);
         } else if (address == OAMDMA_ADDR) {
             this.oamDmaSourceAddressHighByte = value & 0xFF;
+            this.oamDmaTransferredBytes = 0;
             this.rdySignal = true;
         } else if (address == JOY1_ADDR) {
             this.controller.writeJoy1(value);
