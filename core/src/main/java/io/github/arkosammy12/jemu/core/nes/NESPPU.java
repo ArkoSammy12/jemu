@@ -206,6 +206,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     private boolean oddFrame;
     private int ppuDataReadBuffer;
+    private boolean sprite0OnNextScanline;
+    private boolean sprite0OnThisScanline;
     private int copyTtoVCountdown;
     private int toggleRenderingCountdown;
 
@@ -237,9 +239,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int spriteFetcherTileNumber;
     private int spriteFetcherAttributeByte;
     private int spriteFetcherPatternTableLow;
-
-    private boolean sprite0OnNextScanline;
-    private boolean sprite0OnThisScanline;
 
     public NESPPU(E emulator) {
         super(emulator);
@@ -542,7 +541,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         this.tickBgFetcher();
                     } else if (this.dotNumber == 338) {
                         this.readBytePPU(this.getNametableFetchAddress());
-                    } else if (dotNumber == 340) {
+                    } else if (this.dotNumber == 340) {
                         this.readBytePPU(this.getNametableFetchAddress());
                     }
 
@@ -1146,14 +1145,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             if (this.xPosition > 0) {
                 this.xPosition--;
             }
-        }
-
-        private void clear() {
-            for (int i = 0; i < 8; i++) {
-                this.shiftRegister.set(i, 0b00);
-            }
-            this.xPosition = 0xFF;
-            this.attributes = 0xFF;
         }
 
         private int getXPosition() {
