@@ -194,7 +194,7 @@ public class NMOS6502 implements Processor {
         setP(value ? Processor.setBit(getP(), C_MASK) : Processor.clearBit(getP(), C_MASK));
     }
 
-    private boolean getFC() {
+    protected boolean getFC() {
         return Processor.testBit(getP(), C_MASK);
     }
 
@@ -9624,7 +9624,7 @@ public class NMOS6502 implements Processor {
         addOrSubCarry(true);
     }
 
-    private void addOrSubCarry(boolean subtract) {
+    protected void addOrSubCarry(boolean subtract) {
         int a = getA();
         int m = subtract ? getOperand() ^ 0xFF : getOperand();
         int c = getFC() ? 1 : 0;

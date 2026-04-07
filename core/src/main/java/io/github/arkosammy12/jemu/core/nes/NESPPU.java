@@ -555,10 +555,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
                 if (this.dotNumber == 257) {
                     this.spriteShifterInitIndex = 0;
-
-                    for (SpriteShifter s : this.spriteShifters) {
-                        s.clear();
-                    }
                 }
 
                 this.dotNumber++;
@@ -632,7 +628,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             }
 
 
-            if (this.enableSpriteRendering() && this.isVisibleDot()) {
+            if (this.enableSpriteRendering() && this.isVisibleDot() && this.isVisibleScanline()) {
 
                 boolean foundSprite = false;
 
