@@ -620,19 +620,17 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             paletteRamIndex = 0;
         } else {
 
-            int bgPixelColor = 0;
-            int bgPaletteNumber;
-
             int pixelColor = 0;
             int paletteNumber = 0;
 
-            if ((this.showBackgroundInLeftmost8Pixels() || this.dotNumber - 1 >= 8)) {
-                bgPixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
-                bgPaletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
+            int bgPixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
+            int bgPaletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
 
+            if (this.showBackgroundInLeftmost8Pixels() || this.dotNumber - 1 >= 8) {
                 pixelColor = bgPixelColor;
                 paletteNumber = bgPaletteNumber;
             }
+
 
             if (this.enableSpriteRendering() && this.isVisibleDot()) {
 
@@ -659,7 +657,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                                 && spriteColor != 0
                                 && bgAllowed
                                 && spriteAllowed
-                                && this.dotNumber != 255) {
+                                && this.dotNumber != 254) {
                             this.setSprite0HitFlag(true);
                         }
 
