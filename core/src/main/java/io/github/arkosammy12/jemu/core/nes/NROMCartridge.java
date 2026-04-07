@@ -47,10 +47,9 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
                 return this.characterRom[address % this.characterRom.length];
             }
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
-            return this.readByteVRAM(address);
+            return this.readByteVRAM(this.mapNametableAddress(address));
         } else if (address >= CIRAM_MIRROR_START && address <= CIRAM_MIRROR_END) {
-            address = CIRAM_START + (address - CIRAM_MIRROR_START);
-            return this.readByteVRAM(address);
+            return this.readByteVRAM(this.mapNametableAddress(address));
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
             return address & 0xFF;
         } else if (address >= PALETTE_RAM_MIRROR_START && address <= PALETTE_RAM_MIRROR_END) {
@@ -65,10 +64,9 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         if (address >= CHR_ROM_START && address <= CHR_ROM_END) {
 
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
-            this.writeByteVRAM(address, value);
+            this.writeByteVRAM(this.mapNametableAddress(address), value);
         } else if (address >= CIRAM_MIRROR_START && address <= CIRAM_MIRROR_END) {
-            address = CIRAM_START + (address - CIRAM_MIRROR_START);
-            this.writeByteVRAM(address, value);
+            this.writeByteVRAM(this.mapNametableAddress(address), value);
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
 
         } else if (address >= PALETTE_RAM_MIRROR_START && address <= PALETTE_RAM_MIRROR_END) {

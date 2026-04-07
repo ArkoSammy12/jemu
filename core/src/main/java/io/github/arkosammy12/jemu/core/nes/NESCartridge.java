@@ -30,25 +30,24 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
     abstract public void writeBytePPU(int address, int value);
 
     protected int readByteVRAM(int address) {
-        return this.vRam[this.mapNametableAddress(address)];
+        return this.vRam[address];
     }
 
     protected void writeByteVRAM(int address, int value) {
-        this.vRam[this.mapNametableAddress(address)] = value & 0xFF;
+        this.vRam[address] = value & 0xFF;
     }
 
-    private int mapNametableAddress(int address) {
+    protected int mapNametableAddress(int address) {
         int vRamAddr = (address - CIRAM_START) & 0x0FFF;
 
         int ppuA10 = (vRamAddr >> 10) & 1;
         int ppuA11 = (vRamAddr >> 11) & 1;
 
-        int ciRamA10;
-        if (this.getINESFile().getNametableMirroring() == INESFile.NametableArrangement.VERTICAL) {
-            ciRamA10 = ppuA11;
-        } else {
-            ciRamA10 = ppuA10;
-        }
+        int ciRamA10 = switch (this.getINESFile().getNametableMirroring()) {
+            case VERTICAL -> ppuA11;
+            case HORIZONTAL -> ppuA10;
+        };
+
 
         return (ciRamA10 << 10) | (vRamAddr & 0x03FF);
     }

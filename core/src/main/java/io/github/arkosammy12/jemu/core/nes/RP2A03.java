@@ -100,7 +100,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     public boolean getIRQSignal() {
-        return false;
+        return this.apu.getIRQSignal();
     }
 
     public boolean getRDYSignal() {

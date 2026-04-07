@@ -293,7 +293,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 } else if (readAddress <= CIRAM_MIRROR_END) {
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 } else {
-                    this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress);
+                    this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress & ~(1 << 12));
                     int paletteAddr = readAddress & 0x1F;
                     if ((paletteAddr & 0x13) == 0x10) {
                         paletteAddr &= ~0x10;
@@ -619,39 +619,52 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         if (!this.isRenderingEnabled()) {
             paletteRamIndex = 0;
         } else {
+
+            int bgPixelColor = 0;
+            int bgPaletteNumber;
+
             int pixelColor = 0;
             int paletteNumber = 0;
 
-            if (this.enableBackgroundRendering() && (this.showBackgroundInLeftmost8Pixels() || this.dotNumber - 1 >= 8)) {
-                pixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
-                paletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
+            if ((this.showBackgroundInLeftmost8Pixels() || this.dotNumber - 1 >= 8)) {
+                bgPixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
+                bgPaletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
+
+                pixelColor = bgPixelColor;
+                paletteNumber = bgPaletteNumber;
             }
 
-            if (this.enableSpriteRendering()) {
+            if (this.enableSpriteRendering() && this.isVisibleDot()) {
 
                 boolean foundSprite = false;
 
                 for (int i = 0; i < 8; i++) {
                     SpriteShifter shifter = this.spriteShifters[i];
-                    int xPosition = shifter.getXPosition() + 1;
-                    if (this.dotNumber + 1 >= xPosition && this.dotNumber + 1 <= xPosition + 7) {
+                    int xPosition = shifter.getXPosition();
+
+                    if (xPosition > 0) {
+                        shifter.decrementX();
+                    } else {
                         int spriteColor = shifter.shiftOutPixel();
                         int spritePaletteNumber = shifter.getPaletteNumber() | 0b100;
+
+                        boolean bgAllowed = this.showBackgroundInLeftmost8Pixels() || this.dotNumber > 8;
+                        boolean spriteAllowed = this.showSpritesInLeftmost8Pixels() || this.dotNumber > 8;
 
                         if (i == 0
                                 && this.sprite0OnThisScanline
                                 && this.enableBackgroundRendering()
                                 && this.enableSpriteRendering()
-                                && pixelColor != 0
+                                && bgPixelColor != 0
                                 && spriteColor != 0
-                                && !(this.dotNumber - 1 >= 0 && this.dotNumber - 1 <= 7 && (!this.showBackgroundInLeftmost8Pixels() || !this.showSpritesInLeftmost8Pixels()))
-                                && this.dotNumber - 1 != 255) {
+                                && bgAllowed
+                                && spriteAllowed
+                                && this.dotNumber != 255) {
                             this.setSprite0HitFlag(true);
                         }
 
-                        if (!this.showSpritesInLeftmost8Pixels() && this.dotNumber - 1 >= 0 && this.dotNumber - 1 <= 7) {
+                        if (!this.showSpritesInLeftmost8Pixels() && this.dotNumber <= 8) {
                             spriteColor = 0;
-                            spritePaletteNumber = 0;
                         }
 
                         boolean priority = shifter.getPriority();
@@ -662,6 +675,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                             paletteNumber = spritePaletteNumber;
                         }
                     }
+
                 }
             }
 
@@ -688,15 +702,17 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     }
 
     private int shiftBackgroundRegister(int select) {
+        int ret = this.backgroundShiftRegister.get(select);
         this.backgroundShiftRegister.poll();
         this.backgroundShiftRegister.offer(0b10);
-        return this.backgroundShiftRegister.get(select);
+        return ret;
     }
 
     private int shiftAttributeRegister(int select) {
+        int ret = this.attributeShiftRegister.get(select);
         this.attributeShiftRegister.poll();
         this.attributeShiftRegister.offer(this.attributeRegisterLatch);
-        return this.attributeShiftRegister.get(select);
+        return ret;
     }
 
     private void tickBgFetcher() {
@@ -826,6 +842,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                                     this.spriteEvaluationAlgorithmStep = 0;
                                 }
                             } else {
+                                if (firstDot && this.isRenderingEnabled()) {
+                                    this.sprite0OnNextScanline = false;
+                                }
                                 this.incrementSecondaryOamAddress = false;
                                 boolean overflowedN = this.incrementN();
                                 if (overflowedN) {
@@ -1127,6 +1146,12 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.shiftRegister.set(i, (hi << 1) | lo);
             }
 
+        }
+
+        private void decrementX() {
+            if (this.xPosition > 0) {
+                this.xPosition--;
+            }
         }
 
         private void clear() {
