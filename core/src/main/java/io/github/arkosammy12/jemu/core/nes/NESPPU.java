@@ -293,11 +293,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 } else {
                     this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress & ~(1 << 12));
-                    int paletteAddr = readAddress & 0x1F;
-                    if ((paletteAddr & 0x13) == 0x10) {
-                        paletteAddr &= ~0x10;
-                    }
-                    ret = this.paletteRam[paletteAddr];
+                    ret = this.paletteRam[this.mapPaletteRamAddress(address)];
                 }
 
                 // TODO: If the $2007 access happens to coincide with a standard VRAM address increment (either horizontal or vertical), it will presumably not double-increment the relevant counter.
@@ -614,10 +610,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         if (!this.isRenderingEnabled()) {
             int currentVRAMAddress = this.getV() & 0x3FFF;
             if (currentVRAMAddress >= 0x3F00) {
-                paletteRamIndex = currentVRAMAddress & 0x1F;
-                if ((paletteRamIndex & 0x13) == 0x10) {
-                    paletteRamIndex &= ~0x10;
-                }
+                paletteRamIndex = this.mapPaletteRamAddress(currentVRAMAddress);
             } else {
                 paletteRamIndex = 0;
             }
@@ -632,7 +625,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 pixelColor = bgPixelColor;
                 paletteNumber = bgPaletteNumber;
             }
-
 
             if (this.enableSpriteRendering() && this.isVisibleDot() && this.isVisibleScanline()) {
 
@@ -1082,11 +1074,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             return this.emulator.getCartridge().readBytePPU(address);
         } else {
             this.emulator.getCartridge().readBytePPU(address);
-            int paletteAddr = address & 0x1F;
-            if ((paletteAddr & 0x13) == 0x10) {
-                paletteAddr &= ~0x10;
-            }
-            return this.paletteRam[paletteAddr];
+            return this.paletteRam[this.mapPaletteRamAddress(address)];
         }
     }
 
@@ -1100,12 +1088,16 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.emulator.getCartridge().writeBytePPU(address, value);
         } else {
             this.emulator.getCartridge().writeBytePPU(address, value);
-            int paletteAddr = address & 0x1F;
-            if ((paletteAddr & 0x13) == 0x10) {
-                paletteAddr &= ~0x10;
-            }
-            this.paletteRam[paletteAddr] = value & 0xFF;
+            this.paletteRam[this.mapPaletteRamAddress(address)] = value & 0xFF;
         }
+    }
+
+    private int mapPaletteRamAddress(int address) {
+        int paletteAddr = address & 0x1F;
+        if ((paletteAddr & 0x13) == 0x10) {
+            paletteAddr &= ~0x10;
+        }
+        return paletteAddr;
     }
 
     private enum DotHalf {
