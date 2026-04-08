@@ -612,9 +612,16 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
         int paletteRamIndex;
         if (!this.isRenderingEnabled()) {
-            paletteRamIndex = 0;
+            int currentVRAMAddress = this.getV() & 0x3FFF;
+            if (currentVRAMAddress >= 0x3F00) {
+                paletteRamIndex = currentVRAMAddress & 0x1F;
+                if ((paletteRamIndex & 0x13) == 0x10) {
+                    paletteRamIndex &= ~0x10;
+                }
+            } else {
+                paletteRamIndex = 0;
+            }
         } else {
-
             int pixelColor = 0;
             int paletteNumber = 0;
 
