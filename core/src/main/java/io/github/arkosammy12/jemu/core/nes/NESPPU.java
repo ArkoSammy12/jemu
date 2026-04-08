@@ -293,7 +293,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 } else {
                     this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress & ~(1 << 12));
-                    ret = this.paletteRam[this.mapPaletteRamAddress(address)];
+                    ret = this.paletteRam[this.mapPaletteRamAddress(readAddress)];
                 }
 
                 // TODO: If the $2007 access happens to coincide with a standard VRAM address increment (either horizontal or vertical), it will presumably not double-increment the relevant counter.
