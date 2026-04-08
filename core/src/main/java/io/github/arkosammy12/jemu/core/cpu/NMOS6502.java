@@ -339,6 +339,11 @@ public class NMOS6502 implements Processor {
                 this.pushB = true;
             }
 
+            this.disablePCWrites = switch (this.brkSource) {
+                case IRQ, NMI, RESET -> true;
+                case null, default -> false;
+            };
+
             subCycleIndex = 0;
         }
 
@@ -361,13 +366,10 @@ public class NMOS6502 implements Processor {
     protected void pollInterrupts() {
         if (systemBus.getRES()) {
             this.brkSource = BRKSource.RESET;
-            this.disablePCWrites = true;
         } else if (this.nmiEdgeLatch) {
             this.brkSource = BRKSource.NMI;
-            this.disablePCWrites = true;
         } else if (systemBus.getIRQ() && !getFI()) {
             this.brkSource = BRKSource.IRQ;
-            this.disablePCWrites = true;
         }
     }
 
@@ -9774,7 +9776,17 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 setOperand(readByte(getPC()));
-                pollInterrupts();
+                if (!condition) {
+                    pollInterrupts();
+                } else {
+                    int base = (getPC() + 1) & 0xFFFF;
+                    setAddress((base + (byte) getOperand()) & 0xFFFF);
+                    setBoundaryCrossed(getAddressHigh() != ((base >>> 8) & 0xFF));
+                    if (!getBoundaryCrossed()) {
+                        pollInterrupts();
+                    }
+                }
+
                 subCycleIndex = 2;
             }
             case 2 -> {
@@ -9790,18 +9802,12 @@ public class NMOS6502 implements Processor {
                 subCycleIndex = 4;
             }
             case 4 -> {
-                short signedOperand = (short) ((byte) getOperand());
-                int originalPC = getPC();
-                int signedOffsetHigh = ((originalPC + signedOperand) >>> 8) & 0xFF;
-                if (signedOffsetHigh != getPCH()) {
-                    subCycleIndex = 5;
-                } else {
+                setPCL(getAddressLow());
+                if (!getBoundaryCrossed()) {
                     subCycleIndex = 7;
+                } else {
+                    subCycleIndex = 5;
                 }
-                setPCL(getPCL() + signedOperand);
-
-                // Save original PC
-                setAddress(originalPC);
             }
             case 5 -> {
                 readByte(getPC());
@@ -9809,10 +9815,7 @@ public class NMOS6502 implements Processor {
                 subCycleIndex = 6;
             }
             case 6 -> {
-                short signedOperand = (short) ((byte) getOperand());
-
-                // Original PC value stored in address
-                setPCH(((getAddress() + signedOperand) >>> 8) & 0xFF);
+                setPCH(getAddressHigh());
                 subCycleIndex = 7;
             }
             case 7 -> {
