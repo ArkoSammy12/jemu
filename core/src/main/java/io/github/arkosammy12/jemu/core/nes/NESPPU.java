@@ -189,6 +189,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int ppuMask;
     private int ppuStatus;
 
+    private int ioBus;
+
     private int currentVRAMAddress; // v
     private int temporaryVRAMAddress; // t
     private int fineXScroll; // x
@@ -273,14 +275,20 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     @Override
     public int readByte(int address) {
         return switch (address) {
-            case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> 0xFF;
+            case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.ioBus;
             case PPUSTATUS_ADDR -> {
                 int value = this.ppuStatus;
                 this.setVBlankFlag(false);
                 this.clearW();
-                yield value | 0b11111;
+                int ret = value & 0b11100000 | this.ioBus & 0b00011111;
+                this.ioBus = this.ioBus & 0b00011111 | value & 0b11100000;
+                yield ret;
             }
-            case OAMDATA_ADDR -> this.primaryOAM[this.primaryOamAddress];
+            case OAMDATA_ADDR -> {
+                int ret = this.primaryOAM[this.primaryOamAddress];
+                this.ioBus = ret & 0xFF;
+                yield ret;
+            }
             case PPUDATA_ADDR -> {
                 int readAddress = this.getV() & 0x3FFF;
 
@@ -304,6 +312,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     setV(getV() + this.getVRAMAddressIncrement());
                 }
 
+                this.ioBus = ret & 0xFF;
                 yield ret;
             }
             default -> throw new EmulatorException("Invalid address $%04X for NES PPU!".formatted(address));
@@ -314,6 +323,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     @Override
     public void writeByte(int address, int value) {
+        this.ioBus = value & 0xFF;
+
         // Block register writes during the first frame until the vbl, sprite 0 and sprite overflow flags are cleared
         if (this.ppuInit) {
             return;
