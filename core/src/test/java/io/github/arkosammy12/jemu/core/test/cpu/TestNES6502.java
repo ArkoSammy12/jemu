@@ -22,7 +22,7 @@ public class TestNES6502 extends NES6502 {
         this.setP(initialState.getP());
 
         // Prevent the initial reset from being triggered
-        this.signalReset = false;
+        this.brkSource = null;
 
     }
 
@@ -37,6 +37,7 @@ public class TestNES6502 extends NES6502 {
                     }
                     case 1 -> {
                         setOperand(systemBus.getBus().readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {

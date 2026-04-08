@@ -46,10 +46,9 @@ public class NMOS6502 implements Processor {
     private int lastAddress;
 
     private boolean oldNMI;
-    protected boolean signalReset;
-    private boolean signalNMI;
-    private boolean signalIRQ;
-    private BRKSource brkSource = BRKSource.SOFTWARE;
+    private boolean nmiEdgeLatch;
+    private boolean disablePCWrites;
+    protected BRKSource brkSource = null;
     private int brkVector = IRQ_BRK_VECTOR;
     private boolean pushB;
 
@@ -70,7 +69,9 @@ public class NMOS6502 implements Processor {
     }
 
     protected void setPC(int value) {
-        this.programCounter = value & 0xFFFF;
+        if (!this.disablePCWrites) {
+            this.programCounter = value & 0xFFFF;
+        }
     }
 
     private void setPCH(int value) {
@@ -328,20 +329,14 @@ public class NMOS6502 implements Processor {
         if (this.subCycleIndex < 0) {
             setIR(readByte(getPC()));
 
-            if (!this.cpuHalted) {
-                if (this.signalReset) {
-                    this.brkSource = BRKSource.RESET;
-                } else if (this.signalNMI) {
-                    this.brkSource = BRKSource.NMI;
-                } else if (this.signalIRQ) {
-                    this.brkSource = BRKSource.IRQ;
-                } else {
-                    this.brkSource = BRKSource.SOFTWARE;
-                }
+            if (this.brkSource != null) {
+                setIR(0x00);
+            } else if (getIR() == 0x00) {
+                this.brkSource = BRKSource.SOFTWARE;
+            }
 
-                if (this.brkSource != BRKSource.SOFTWARE) {
-                    setIR(0x00);
-                }
+            if (getIR() == 0x00) {
+                this.pushB = true;
             }
 
             subCycleIndex = 0;
@@ -353,22 +348,27 @@ public class NMOS6502 implements Processor {
 
     private void onSubCycleEnd() {
         if (this.phase == Phase.PHI_2) {
-            boolean nmiNow = systemBus.getNMI();
-            if (!oldNMI && nmiNow) {
-                this.signalNMI = true;
+            boolean currentNMI = systemBus.getNMI();
+            if (!this.oldNMI && currentNMI) {
+                this.nmiEdgeLatch = true;
             }
-            oldNMI = nmiNow;
-
-            if (systemBus.getRES()) {
-                this.signalReset = true;
-            }
-            if (systemBus.getIRQ() && !getFI()) {
-                this.signalIRQ = true;
-            }
-
+            this.oldNMI = currentNMI;
             this.cpuHalted = systemBus.getRDY() && this.readWriteCycle == ReadWriteCycle.READ;
         }
         this.phase = this.phase.getOpposite();
+    }
+
+    protected void pollInterrupts() {
+        if (systemBus.getRES()) {
+            this.brkSource = BRKSource.RESET;
+            this.disablePCWrites = true;
+        } else if (this.nmiEdgeLatch) {
+            this.brkSource = BRKSource.NMI;
+            this.disablePCWrites = true;
+        } else if (systemBus.getIRQ() && !getFI()) {
+            this.brkSource = BRKSource.IRQ;
+            this.disablePCWrites = true;
+        }
     }
 
     private void execute() {
@@ -398,19 +398,16 @@ public class NMOS6502 implements Processor {
             case 0x0 -> { // BRK, implied
                 switch (subCycleIndex) {
                     case 0 -> {
-                        if (this.brkSource == BRKSource.SOFTWARE) {
-                            setPC(getPC() + 1);
-                        }
+                        setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
                     case 1 -> {
                         readByte(getPC());
+                        this.nmiEdgeLatch = false;
                         subCycleIndex = 2;
                     }
                     case 2 -> {
-                        if (this.brkSource == BRKSource.SOFTWARE) {
-                            setPC(getPC() + 1);
-                        }
+                        setPC(getPC() + 1);
                         subCycleIndex = 3;
                     }
                     case 3 -> {
@@ -436,24 +433,14 @@ public class NMOS6502 implements Processor {
                     }
                     case 6 -> {
                         int brkVector = IRQ_BRK_VECTOR;
-                        this.pushB = true;
-
-                        if (this.signalReset) {
+                        if (this.brkSource == BRKSource.RESET) {
                             brkVector = RESET_VECTOR;
-                            this.pushB = false;
-                        } else if (this.signalNMI) {
+                        } else if (systemBus.getNMI()) {
                             brkVector = NMI_VECTOR;
-                            this.pushB = false;
                         }
 
-                        if (this.signalReset) {
-                            this.signalReset = false;
-                        }
-                        if (this.signalNMI) {
-                            this.signalNMI = false;
-                        }
-                        if (this.signalIRQ) {
-                            this.signalIRQ = false;
+                        if (this.brkSource != BRKSource.SOFTWARE) {
+                            this.pushB = false;
                         }
 
                         setBrkVector(brkVector);
@@ -486,12 +473,14 @@ public class NMOS6502 implements Processor {
                         subCycleIndex = 11;
                     }
                     case 11 -> {
+                        this.disablePCWrites = false;
                         setAddressHigh(readByte((getBrkVector() + 1) & 0xFFFF));
+                        // Does not poll interrupts
                         subCycleIndex = 12;
                     }
                     case 12 -> {
                         setPC(getAddress());
-                        brkSource = BRKSource.SOFTWARE;
+                        brkSource = null;
                         subCycleIndex = 13;
                     }
                     case 13 -> {
@@ -537,6 +526,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -612,6 +602,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -641,6 +632,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -689,6 +681,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -735,6 +728,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -760,6 +754,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         writeByte(getS() | 0x0100, getP() | B_MASK | M_MASK);
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -779,6 +774,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -802,6 +798,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -844,6 +841,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -878,6 +876,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -934,6 +933,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -988,6 +988,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1039,6 +1040,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -1050,6 +1052,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1127,6 +1130,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -1164,6 +1168,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -1220,6 +1225,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1274,6 +1280,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1292,6 +1299,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1330,6 +1338,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -1341,6 +1350,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1412,6 +1422,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -1452,6 +1463,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -1463,6 +1475,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1529,6 +1542,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -1593,6 +1607,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -1645,6 +1660,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setAddressHigh(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1695,6 +1711,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -1771,6 +1788,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -1797,6 +1815,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -1826,6 +1845,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -1875,6 +1895,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1922,6 +1943,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -1955,6 +1977,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getS() | 0x0100));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -1976,6 +1999,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -1999,6 +2023,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -2042,6 +2067,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 ->  {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2079,6 +2105,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2136,6 +2163,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2191,6 +2219,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2242,6 +2271,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -2253,6 +2283,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2331,6 +2362,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -2368,6 +2400,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -2425,6 +2458,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2480,6 +2514,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2498,6 +2533,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 ->  {
@@ -2536,6 +2572,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -2547,6 +2584,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2619,6 +2657,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -2659,6 +2698,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -2670,6 +2710,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -2737,6 +2778,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -2802,6 +2844,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -2860,6 +2903,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setAddressHigh(readByte(getS() | 0x0100));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2909,6 +2953,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -2984,6 +3029,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -3013,6 +3059,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3061,6 +3108,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3107,6 +3155,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3132,6 +3181,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         writeByte(getS() | 0x0100, getA());
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3151,6 +3201,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3174,6 +3225,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3197,6 +3249,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -3230,6 +3283,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setAddressHigh(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -3265,6 +3319,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3321,6 +3376,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3375,6 +3431,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3426,6 +3483,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -3437,6 +3495,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3514,6 +3573,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -3551,6 +3611,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -3607,6 +3668,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3661,6 +3723,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -3679,6 +3742,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 ->  {
@@ -3717,6 +3781,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -3728,6 +3793,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3799,6 +3865,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -3839,6 +3906,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -3850,6 +3918,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -3916,6 +3985,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -3980,6 +4050,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -4034,6 +4105,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4083,6 +4155,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4153,6 +4226,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -4182,6 +4256,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -4228,6 +4303,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4272,6 +4348,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4305,6 +4382,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getS() | 0x0100));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4326,6 +4404,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4346,6 +4425,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4370,6 +4450,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4419,6 +4500,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setAddressHigh(readByte((getPointerHigh() << 8) | ((getPointerLow() + 1) & 0xFF)));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4454,6 +4536,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4508,6 +4591,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4560,6 +4644,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4611,6 +4696,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -4622,6 +4708,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4694,6 +4781,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -4731,6 +4819,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -4785,6 +4874,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4837,6 +4927,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -4855,6 +4946,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -4893,6 +4985,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -4904,6 +4997,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -4970,6 +5064,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -5010,6 +5105,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (getAddressHigh() == getFinalHigh()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -5021,6 +5117,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5085,6 +5182,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -5147,6 +5245,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -5203,6 +5302,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -5251,6 +5351,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getA() & getX());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -5277,6 +5378,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         writeByte(getAddress(), getY());
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5303,6 +5405,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5329,6 +5432,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         writeByte(getAddress(), getX());
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5355,6 +5459,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         writeByte(getAddress(), getA() & getX());
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -5373,6 +5478,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5394,6 +5500,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5415,6 +5522,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5456,6 +5564,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getY());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5490,6 +5599,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5524,6 +5634,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getX());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5558,6 +5669,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getA() & getX());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5616,6 +5728,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -5678,6 +5791,7 @@ public class NMOS6502 implements Processor {
                         int finalVal = (high & getA() & getX()) & 0xFFFF;
                         int finalAddress = address;
                         writeByte(finalAddress, finalVal & 0xFF);
+                        pollInterrupts();
                         subCycleIndex = 11;
                     }
                     case 10 -> { // PAGE BOUNDARY CROSSED BRANCH
@@ -5686,6 +5800,7 @@ public class NMOS6502 implements Processor {
                         int finalVal = (high & getA() & getX()) & 0xFFFF;
                         int finalAddress = ((finalVal << 8) | getAddressLow()) & 0xFFFF;
                         writeByte(finalAddress, finalVal & 0xFF);
+                        pollInterrupts();
                         subCycleIndex = 11;
                     }
                     case 11 -> {
@@ -5720,6 +5835,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getY());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5754,6 +5870,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5788,6 +5905,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getX());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5822,6 +5940,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         writeByte(getAddress(), getA() & getX());
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -5840,6 +5959,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5888,6 +6008,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -5906,6 +6027,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -5960,6 +6082,7 @@ public class NMOS6502 implements Processor {
                             int val = ((getAddressHigh() + 1) & getA() & getX()) & 0xFF;
                             writeByte(getAddress(), val);
                         }
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -6012,6 +6135,7 @@ public class NMOS6502 implements Processor {
                             int val = ((getAddressHigh() + 1) & getY()) & 0xFF;
                             writeByte(getAddress(), val);
                         }
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -6058,6 +6182,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getA());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -6110,6 +6235,7 @@ public class NMOS6502 implements Processor {
                             int val = ((getAddressHigh() + 1) & getX()) & 0xFF;
                             writeByte(getAddress(), val);
                         }
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -6166,6 +6292,7 @@ public class NMOS6502 implements Processor {
                         } else {
                             writeByte(getAddress(), val);
                         }
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -6189,6 +6316,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -6241,6 +6369,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -6262,6 +6391,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -6314,6 +6444,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -6344,6 +6475,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -6373,6 +6505,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -6402,6 +6535,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -6431,6 +6565,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -6453,6 +6588,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -6474,6 +6610,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -6496,6 +6633,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -6517,6 +6655,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -6557,6 +6696,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6594,6 +6734,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6631,6 +6772,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6668,6 +6810,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6725,6 +6868,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getPointer()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -6736,6 +6880,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getPointer()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -6787,6 +6932,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getPointer()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -6798,6 +6944,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getPointer()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -6836,6 +6983,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6873,6 +7021,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6913,6 +7062,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6953,6 +7103,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -6975,6 +7126,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7015,6 +7167,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -7026,6 +7179,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7047,6 +7201,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7089,6 +7244,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -7100,6 +7256,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7145,6 +7302,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -7156,6 +7314,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7198,6 +7357,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -7209,6 +7369,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7251,6 +7412,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -7262,6 +7424,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7304,6 +7467,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -7315,6 +7479,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7342,6 +7507,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7394,6 +7560,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -7466,6 +7633,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -7492,6 +7660,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -7521,6 +7690,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -7567,6 +7737,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7611,6 +7782,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -7629,6 +7801,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7650,6 +7823,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7672,6 +7846,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7693,6 +7868,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -7733,6 +7909,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -7770,6 +7947,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -7824,6 +8002,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -7876,6 +8055,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -7929,6 +8109,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getPointer()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -7940,6 +8121,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getPointer()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -8016,6 +8198,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getPointer(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -8053,6 +8236,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -8107,6 +8291,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -8159,6 +8344,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -8177,6 +8363,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -8217,6 +8404,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -8228,6 +8416,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -8298,6 +8487,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -8340,6 +8530,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -8351,6 +8542,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -8417,6 +8609,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -8481,6 +8674,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -8504,6 +8698,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         setOperand(readByte(getPC()));
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -8554,6 +8749,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -8621,6 +8817,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -8647,6 +8844,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -8674,6 +8872,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 4;
                     }
                     case 4 -> {
@@ -8716,6 +8915,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -8757,6 +8957,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -8775,6 +8976,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -8818,6 +9020,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -8853,6 +9056,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -8903,6 +9107,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -8952,6 +9157,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -9005,6 +9211,7 @@ public class NMOS6502 implements Processor {
                     case 7 -> {
                         setOperand(readByte(getPointer()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 10;
                         } else {
                             subCycleIndex = 8;
@@ -9016,6 +9223,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         setOperand(readByte(getPointer()));
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -9087,6 +9295,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 13 -> {
                         writeByte(getPointer(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 14;
                     }
                     case 14 -> {
@@ -9124,6 +9333,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 6;
                     }
                     case 6 -> {
@@ -9174,6 +9384,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -9223,6 +9434,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 9 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 10;
                     }
                     case 10 -> {
@@ -9241,6 +9453,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
+                        pollInterrupts();
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -9281,6 +9494,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -9292,6 +9506,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -9357,6 +9572,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -9399,6 +9615,7 @@ public class NMOS6502 implements Processor {
                     case 5 -> {
                         setOperand(readByte(getAddress()));
                         if (!getBoundaryCrossed()) {
+                            pollInterrupts();
                             subCycleIndex = 8;
                         } else {
                             subCycleIndex = 6;
@@ -9410,6 +9627,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         setOperand(readByte(getAddress()));
+                        pollInterrupts();
                         subCycleIndex = 8;
                     }
                     case 8 -> {
@@ -9472,6 +9690,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -9533,6 +9752,7 @@ public class NMOS6502 implements Processor {
                     }
                     case 11 -> {
                         writeByte(getAddress(), getOperand());
+                        pollInterrupts();
                         subCycleIndex = 12;
                     }
                     case 12 -> {
@@ -9554,6 +9774,7 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 setOperand(readByte(getPC()));
+                pollInterrupts();
                 subCycleIndex = 2;
             }
             case 2 -> {
@@ -9584,6 +9805,7 @@ public class NMOS6502 implements Processor {
             }
             case 5 -> {
                 readByte(getPC());
+                pollInterrupts();
                 subCycleIndex = 6;
             }
             case 6 -> {
@@ -9688,6 +9910,7 @@ public class NMOS6502 implements Processor {
             }
             case 7 -> {
                 readByte(0xFFFE);
+                // Does not poll interrupts
                 subCycleIndex = 8;
             }
             case 8 -> {
@@ -9716,6 +9939,7 @@ public class NMOS6502 implements Processor {
             }
             case 3 -> {
                 setOperand(readByte(getAddress()));
+                pollInterrupts();
                 subCycleIndex = 4;
             }
             case 4 -> {
@@ -9735,6 +9959,7 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 setOperand(readByte(getPC()));
+                pollInterrupts();
                 subCycleIndex = 2;
             }
             case 2 -> {
@@ -9776,6 +10001,7 @@ public class NMOS6502 implements Processor {
             }
             case 5 -> {
                 setOperand(readByte(getAddress()));
+                pollInterrupts();
                 subCycleIndex = 6;
             }
             case 6 -> {
@@ -9795,6 +10021,7 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 readByte(getPC());
+                pollInterrupts();
                 subCycleIndex = 2;
             }
             case 2 -> {
@@ -9833,6 +10060,7 @@ public class NMOS6502 implements Processor {
             case 5 -> {
                 setOperand(readByte(getAddress()));
                 if (getAddressHigh() == getFinalHigh()) {
+                    pollInterrupts();
                     subCycleIndex = 8;
                 } else {
                     subCycleIndex = 6;
@@ -9844,6 +10072,7 @@ public class NMOS6502 implements Processor {
             }
             case 7 -> {
                 setOperand(readByte(getAddress()));
+                pollInterrupts();
                 subCycleIndex = 8;
             }
             case 8 -> {
@@ -9863,6 +10092,7 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 setOperand(readByte(getPC()));
+                pollInterrupts();
                 subCycleIndex = 2;
             }
             case 2 -> {
@@ -9883,6 +10113,7 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 setOperand(readByte(getPC()));
+                pollInterrupts();
                 subCycleIndex = 2;
             }
             case 2 -> {
@@ -9938,7 +10169,7 @@ public class NMOS6502 implements Processor {
 
     }
 
-    private enum BRKSource {
+    protected enum BRKSource {
         SOFTWARE,
         IRQ,
         NMI,
