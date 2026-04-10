@@ -287,12 +287,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case OAMDATA_ADDR -> {
                 int ret = this.primaryOAM[this.primaryOamAddress];
                 if ((this.primaryOamAddress & 3) == 2) {
-                    ret &= ~0b00111100;
+                    ret &= ~0b00011100;
                 }
                 if (this.isVisibleScanline() && ((this.dotNumber >= 1 && this.dotNumber <= 64) || (this.dotNumber >= 256 && this.dotNumber <= 320)) && this.isRenderingEnabled()) {
                     ret = 0xFF;
                 }
-
                 this.ioBus = ret & 0xFF;
                 yield ret;
             }
