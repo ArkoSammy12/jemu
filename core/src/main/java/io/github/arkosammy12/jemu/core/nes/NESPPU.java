@@ -280,8 +280,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 int value = this.ppuStatus;
                 this.setVBlankFlag(false);
                 this.clearW();
-                int ret = value & 0b11100000 | this.ioBus & 0b00011111;
-                this.ioBus = this.ioBus & 0b00011111 | value & 0b11100000;
+                int ret = (value & 0b11100000) | (this.ioBus & 0b00011111);
+                this.ioBus = (this.ioBus & 0b00011111) | (value & 0b11100000);
                 yield ret;
             }
             case OAMDATA_ADDR -> {

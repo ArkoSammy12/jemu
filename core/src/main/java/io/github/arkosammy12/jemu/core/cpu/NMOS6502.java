@@ -405,7 +405,6 @@ public class NMOS6502 implements Processor {
                     }
                     case 1 -> {
                         readByte(getPC());
-                        this.nmiEdgeLatch = false;
                         subCycleIndex = 2;
                     }
                     case 2 -> {
@@ -437,8 +436,9 @@ public class NMOS6502 implements Processor {
                         int brkVector = IRQ_BRK_VECTOR;
                         if (this.brkSource == BRKSource.RESET) {
                             brkVector = RESET_VECTOR;
-                        } else if (systemBus.getNMI()) {
+                        } else if (this.nmiEdgeLatch) {
                             brkVector = NMI_VECTOR;
+                            this.nmiEdgeLatch = false;
                         }
 
                         if (this.brkSource != BRKSource.SOFTWARE) {
