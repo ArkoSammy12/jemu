@@ -286,6 +286,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             }
             case OAMDATA_ADDR -> {
                 int ret = this.primaryOAM[this.primaryOamAddress];
+                if ((this.primaryOamAddress & 3) == 2) {
+                    ret &= ~0b00111100;
+                }
+                if (this.isVisibleScanline() && ((this.dotNumber >= 1 && this.dotNumber <= 64) || (this.dotNumber >= 256 && this.dotNumber <= 320)) && this.isRenderingEnabled()) {
+                    ret = 0xFF;
+                }
+
                 this.ioBus = ret & 0xFF;
                 yield ret;
             }
@@ -346,8 +353,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case OAMADDR_ADDR -> this.primaryOamAddress = value & 0xFF;
             case OAMDATA_ADDR -> {
                 // TODO: Bus conflicts. Read OAMDATA register section in nesdev for more info.
-                this.primaryOAM[this.primaryOamAddress] = value & 0xFF;
-                this.primaryOamAddress = (this.primaryOamAddress + 1) & 0xFF;
+
+                if (this.isVisibleScanline()) {
+                    this.primaryOamAddress = (this.primaryOamAddress + 4) & 0xFC;
+                } else {
+                    this.primaryOAM[this.primaryOamAddress] = value & 0xFF;
+                    this.primaryOamAddress = (this.primaryOamAddress + 1) & 0xFF;
+                }
             }
             case PPUSCROLL_ADDR -> {
                 if (this.getW()) {
