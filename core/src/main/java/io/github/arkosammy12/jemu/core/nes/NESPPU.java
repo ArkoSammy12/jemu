@@ -643,16 +643,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
                 for (int i = 0; i < 8; i++) {
                     SpriteShifter shifter = this.spriteShifters[i];
-                    int xPosition = shifter.getXPosition();
+                    int xPositionPositionCounter = shifter.getXPositionCounter();
 
-                    if (xPosition > 0) {
-                        shifter.decrementX();
+                    if (xPositionPositionCounter > 0) {
+                        shifter.decrementXPositionCounter();
                     } else {
                         int spriteColor = shifter.shiftOutPixel();
                         int spritePaletteNumber = shifter.getPaletteNumber() | 0b100;
-
-                        boolean bgAllowed = this.showBackgroundInLeftmost8Pixels() || this.dotNumber > 8;
-                        boolean spriteAllowed = this.showSpritesInLeftmost8Pixels() || this.dotNumber > 8;
 
                         if (i == 0
                                 && this.sprite0OnThisScanline
@@ -660,9 +657,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                                 && this.enableSpriteRendering()
                                 && bgPixelColor != 0
                                 && spriteColor != 0
-                                && bgAllowed
-                                && spriteAllowed
-                                && this.dotNumber != 254) {
+                                && (this.showBackgroundInLeftmost8Pixels() || this.dotNumber > 8)
+                                && (this.showSpritesInLeftmost8Pixels() || this.dotNumber > 8)
+                                && this.dotNumber != LAST_VISIBLE_DOT - 2
+                                && shifter.getXPosition() != 0xFF) {
                             this.setSprite0HitFlag(true);
                         }
 
@@ -1129,6 +1127,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         private final LinkedList<Integer> shiftRegister = new LinkedList<>();
         private int xPosition = 0xFF;
         private int attributes = 0xFF;
+        private int xPositionCounter = 0xFF;
 
         private SpriteShifter() {
             for (int i = 0; i < 8; i++) {
@@ -1139,6 +1138,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         private void initialize(int patternBitsLow, int patternBitsHigh, int xPosition, int attributes) {
             this.xPosition = xPosition & 0xFF;
             this.attributes = attributes & 0xFF;
+            this.xPositionCounter = this.xPosition;
 
             boolean xFlip = this.getSpriteHorizontalFlip();
 
@@ -1151,14 +1151,18 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
         }
 
-        private void decrementX() {
-            if (this.xPosition > 0) {
-                this.xPosition--;
+        private void decrementXPositionCounter() {
+            if (this.xPositionCounter > 0) {
+                this.xPositionCounter--;
             }
         }
 
         private int getXPosition() {
             return this.xPosition;
+        }
+
+        private int getXPositionCounter() {
+            return this.xPositionCounter;
         }
 
         private int getPaletteNumber() {
