@@ -659,8 +659,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                                 && spriteColor != 0
                                 && (this.showBackgroundInLeftmost8Pixels() || this.dotNumber > 8)
                                 && (this.showSpritesInLeftmost8Pixels() || this.dotNumber > 8)
-                                && this.dotNumber != LAST_VISIBLE_DOT - 2
-                                && shifter.getXPosition() != 0xFF) {
+                                && this.dotNumber != 256) {
                             this.setSprite0HitFlag(true);
                         }
 
