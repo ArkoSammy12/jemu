@@ -911,7 +911,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     }
 
     private boolean isSpriteYInRange(int spriteY) {
-        return this.scanlineNumber - spriteY >= 0 && this.scanlineNumber - spriteY < (this.getSpriteSize() ? 16 : 8);
+        int difference = (this.scanlineNumber & 0xFF) - spriteY;
+        return difference >= 0 && difference < (this.getSpriteSize() ? 16 : 8);
     }
 
     private void tickSpriteFetcher() {
