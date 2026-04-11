@@ -957,7 +957,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
                 boolean inRange = this.isSpriteYInRange(this.spriteFetcherYPosition);
 
-                this.spriteShifters[this.spriteShifterInitIndex].initialize(inRange ? this.spriteFetcherPatternTableLow : 0, inRange ? spriteFetcherPatternTableHigh : 0, xPosition, this.spriteFetcherAttributeByte);
+                // TODO: Properly implement the sprite shifter's counter and output+shift modes, as well as the signal (with a 2.5 dot delay), to reset all shifters back to counting mode
+                if (this.isRenderingEnabled()) {
+                    this.spriteShifters[this.spriteShifterInitIndex].initialize(inRange ? this.spriteFetcherPatternTableLow : 0, inRange ? spriteFetcherPatternTableHigh : 0, xPosition, this.spriteFetcherAttributeByte);
+                }
+
                 this.spriteShifterInitIndex = (this.spriteShifterInitIndex + 1);
                 this.spriteFetcherStep = 0;
             }
