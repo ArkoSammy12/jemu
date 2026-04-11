@@ -636,22 +636,22 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             } else {
                 paletteRamIndex = 0;
             }
+
+            for (SpriteShifter shifter : this.spriteShifters) {
+                shifter.decrementXPositionCounter();
+            }
         } else {
-            int pixelColor = 0;
-            int paletteNumber = 0;
+            int pixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
+            int paletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
 
-            int bgPixelColor = this.shiftBackgroundRegister(this.getX()) & 0b11;
-            int bgPaletteNumber = this.shiftAttributeRegister(this.getX()) & 0b11;
-
-            if (this.showBackgroundInLeftmost8Pixels() || this.dotNumber - 1 >= 8) {
-                pixelColor = bgPixelColor;
-                paletteNumber = bgPaletteNumber;
+            if (!this.enableBackgroundRendering() || (!this.showBackgroundInLeftmost8Pixels() && this.dotNumber <= 8)) {
+                pixelColor = 0;
+                paletteNumber = 0;
             }
 
-            if (this.enableSpriteRendering() && this.isVisibleDot() && this.isVisibleScanline()) {
+            if (this.isVisibleDot() && this.isVisibleScanline()) {
 
                 boolean foundSprite = false;
-
                 for (int i = 0; i < 8; i++) {
                     SpriteShifter shifter = this.spriteShifters[i];
                     int xPositionPositionCounter = shifter.getXPositionCounter();
@@ -660,17 +660,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         shifter.decrementXPositionCounter();
                     } else {
                         int spriteColor = shifter.shiftOutPixel();
-                        int spritePaletteNumber = shifter.getPaletteNumber() | 0b100;
+                        if (!this.enableSpriteRendering() || (!this.showSpritesInLeftmost8Pixels() && this.dotNumber <= 8)) {
+                            spriteColor = 0;
+                        }
 
-                        if (i == 0
-                                && this.sprite0OnThisScanline
-                                && this.enableBackgroundRendering()
-                                && this.enableSpriteRendering()
-                                && bgPixelColor != 0
-                                && spriteColor != 0
-                                && (this.showBackgroundInLeftmost8Pixels() || this.dotNumber > 8)
-                                && (this.showSpritesInLeftmost8Pixels() || this.dotNumber > 8)
-                                && this.dotNumber != 256) {
+                        if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
                             this.setSprite0HitFlag(true);
                         }
 
@@ -678,23 +672,18 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                             spriteColor = 0;
                         }
 
-                        boolean priority = shifter.getPriority();
-
-                        if (!foundSprite && spriteColor != 0 && (pixelColor == 0 || !priority)) {
+                        if (!foundSprite && spriteColor != 0 && (pixelColor == 0 || !shifter.getPriority())) {
                             foundSprite = true;
                             pixelColor = spriteColor;
-                            paletteNumber = spritePaletteNumber;
+                            paletteNumber = shifter.getPaletteNumber() | 0b100;
                         }
                     }
 
                 }
             }
 
-            if (pixelColor == 0 || !this.enableBackgroundRendering()) {
-                paletteRamIndex = 0;
-            } else {
-                paletteRamIndex = (paletteNumber << 2) | pixelColor;
-            }
+            paletteRamIndex = pixelColor == 0 ? 0 : (paletteNumber << 2) | pixelColor;
+
         }
 
         int paletteByte = this.paletteRam[paletteRamIndex];
