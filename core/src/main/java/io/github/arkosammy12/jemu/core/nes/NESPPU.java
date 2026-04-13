@@ -277,7 +277,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.ioBus;
             case PPUSTATUS_ADDR -> {
                 int value = this.ppuStatus;
-                // TODO: VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
+                // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
+                this.setVBlankFlag(false);
                 this.clearVblOnPpuStatusReadCountdown = 2;
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.ioBus & 0b00011111);
@@ -316,7 +317,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.incrementHorizontalPosition();
                     this.incrementVerticalPosition();
                 } else {
-                    setV(getV() + this.getVRAMAddressIncrement());
+                    this.setV(this.getV() + this.getVRAMAddressIncrement());
                 }
 
                 this.ioBus = ret & 0xFF;
@@ -389,7 +390,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.incrementHorizontalPosition();
                     this.incrementVerticalPosition();
                 } else {
-                    setV(getV() + this.getVRAMAddressIncrement());
+                    this.setV(this.getV() + this.getVRAMAddressIncrement());
                 }
             }
             default -> throw new EmulatorException("Invalid address $%04X for NES PPU!".formatted(address));
