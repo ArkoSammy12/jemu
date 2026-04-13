@@ -277,6 +277,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.ioBus;
             case PPUSTATUS_ADDR -> {
                 int value = this.ppuStatus;
+                // TODO: VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.clearVblOnPpuStatusReadCountdown = 2;
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.ioBus & 0b00011111);
