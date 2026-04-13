@@ -210,8 +210,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int ppuDataReadBuffer;
     private boolean sprite0OnNextScanline;
     private boolean sprite0OnThisScanline;
+
     private int copyTtoVCountdown;
     private int toggleRenderingCountdown;
+    private int clearVblOnPpuStatusReadCountdown;
 
     private final LinkedList<Integer> backgroundShiftRegister = new LinkedList<>();
     private final LinkedList<Integer> attributeShiftRegister = new LinkedList<>();
@@ -275,7 +277,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.ioBus;
             case PPUSTATUS_ADDR -> {
                 int value = this.ppuStatus;
-                this.setVBlankFlag(false);
+                this.clearVblOnPpuStatusReadCountdown = 2;
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.ioBus & 0b00011111);
                 this.ioBus = (this.ioBus & 0b00011111) | (value & 0b11100000);
@@ -470,10 +472,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.toggleRenderingCountdown--;
             if (this.toggleRenderingCountdown <= 0) {
                 this.isRendering = !this.isRendering;
-                if (!this.isRendering) {
-                    this.setSprite0HitFlag(false);
-                    this.setSpriteOverflowFlag(false);
-                }
+            }
+        }
+
+        if (this.clearVblOnPpuStatusReadCountdown > 0) {
+            this.clearVblOnPpuStatusReadCountdown--;
+            if (this.clearVblOnPpuStatusReadCountdown <= 0) {
+                this.setVBlankFlag(false);
             }
         }
 
