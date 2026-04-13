@@ -836,7 +836,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.spriteEvaluationStep = 1;
             }
             case 1 -> { // Write cycle
-                if (!this.spriteEvaluationSecondaryOamAddressOverflowed) {
+                if (!this.spriteEvaluationPrimaryOamAddressOverflowed && !this.spriteEvaluationSecondaryOamAddressOverflowed) {
                     this.secondaryOAM[this.secondaryOamAddress] = this.primaryOamBuffer;
                     if (this.spriteEvaluationOamReadingCounter > 0) {
                         this.spriteEvaluationOamReadingCounter--;
@@ -844,6 +844,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     }
                 } else if (this.spriteEvaluationOamReadingCounter > 0) {
                     this.spriteEvaluationOamReadingCounter--;
+                } else {
+                    // TODO: OAM2 writes become reads
                 }
                 this.spriteEvaluationStep = 0;
             }
