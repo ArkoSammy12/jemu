@@ -844,9 +844,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         this.spriteEvaluationOamReadingCounter--;
                         this.incrementSecondaryOamAddress();
                     }
-                } else if (this.spriteEvaluationOamReadingCounter > 0) {
-                    this.spriteEvaluationOamReadingCounter--;
                 } else {
+                    if (this.spriteEvaluationOamReadingCounter > 0) {
+                        this.spriteEvaluationOamReadingCounter--;
+                    }
                     // TODO: OAM2 writes become reads
                 }
                 this.spriteEvaluationStep = 0;
