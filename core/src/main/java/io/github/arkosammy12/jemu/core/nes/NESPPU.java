@@ -511,19 +511,21 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     }
 
                     if (this.dotNumber >= 257 && this.dotNumber <= 320) {
-                        this.primaryOamAddress = 0;
                         this.spriteEvaluationStep = 0;
                         this.spriteEvaluationOamReadingCounter = 0;
+                        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
                         if (this.isRenderingEnabled()) {
+                            this.primaryOamAddress = 0;
+                            this.spriteEvaluationPrimaryOamAddressOverflowed = false;
                             this.sprite0OnThisScanline = this.sprite0OnNextScanline;
                         }
                     }
 
                     if (this.dotNumber == 64 || this.dotNumber == 256 || this.dotNumber == 340) {
-                        this.secondaryOamAddress = 0;
-                        this.spriteEvaluationPrimaryOamAddressOverflowed = false;
-                        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
-                        this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+                        if (this.isRenderingEnabled()) {
+                            this.secondaryOamAddress = 0;
+                            this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+                        }
                     }
 
                     if (this.isPreRenderScanline()) {
@@ -785,6 +787,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     }
 
     private void incrementSecondaryOamAddress() {
+        if (!this.isRenderingEnabled()) {
+            return;
+        }
+
         if (!this.spriteEvaluationSecondaryOamAddressOverflowed) {
             int originalSecondaryOamAddress = this.secondaryOamAddress;
             this.secondaryOamAddress = (this.secondaryOamAddress + 1) & 0x1F;
@@ -793,6 +799,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     }
 
     private void incrementPrimaryOamAddress1() {
+        if (!this.isRenderingEnabled()) {
+            return;
+        }
+
         if (!this.spriteEvaluationPrimaryOamAddressOverflowed) {
             int originalPrimaryOamAddress = this.primaryOamAddress;
             this.primaryOamAddress = (this.primaryOamAddress + 1) & 0xFF;
@@ -801,6 +811,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     }
 
     private void incrementPrimaryOamAddress4(boolean zeroLower2Bits) {
+        if (!this.isRenderingEnabled()) {
+            return;
+        }
+
         if (!this.spriteEvaluationPrimaryOamAddressOverflowed) {
             int originalPrimaryOamAddress = this.primaryOamAddress;
             this.primaryOamAddress = (this.primaryOamAddress + 4) & 0xFF;
