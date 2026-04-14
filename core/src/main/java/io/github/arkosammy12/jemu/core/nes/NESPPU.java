@@ -230,6 +230,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int primaryOamBuffer;
     private int spriteEvaluationStep = 0;
     private int spriteEvaluationOamReadingCounter = 0;
+    private boolean spriteEvaluationOriginalPrimaryOamAddressOverflowed;
     private boolean spriteEvaluationPrimaryOamAddressOverflowed;
     private boolean spriteEvaluationSecondaryOamAddressOverflowed;
 
@@ -809,8 +810,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.spriteEvaluationPrimaryOamAddressOverflowed = this.primaryOamAddress < originalPrimaryOamAddress;
         }
     }
-
-    private boolean spriteEvaluationOriginalPrimaryOamAddressOverflowed;
 
     private void tickSpriteEvaluation(boolean firstDot) {
         switch (this.spriteEvaluationStep) {
