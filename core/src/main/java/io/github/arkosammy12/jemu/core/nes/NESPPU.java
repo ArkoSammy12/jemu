@@ -521,6 +521,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     if (this.dotNumber == 64 || this.dotNumber == 256 || this.dotNumber == 340) {
                         this.secondaryOamAddress = 0;
                         this.spriteEvaluationPrimaryOamAddressOverflowed = false;
+                        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
                         this.spriteEvaluationSecondaryOamAddressOverflowed = false;
                     }
 
@@ -809,9 +810,12 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         }
     }
 
+    private boolean spriteEvaluationOriginalPrimaryOamAddressOverflowed;
+
     private void tickSpriteEvaluation(boolean firstDot) {
         switch (this.spriteEvaluationStep) {
             case 0 -> { // Read cycle
+                this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = this.spriteEvaluationPrimaryOamAddressOverflowed;
                 this.primaryOamBuffer = this.primaryOAM[this.primaryOamAddress];
                 if (firstDot && this.isRenderingEnabled()) {
                     this.sprite0OnNextScanline = this.isSpriteYInRange(this.primaryOamBuffer);
@@ -838,7 +842,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.spriteEvaluationStep = 1;
             }
             case 1 -> { // Write cycle
-                if (!this.spriteEvaluationPrimaryOamAddressOverflowed && !this.spriteEvaluationSecondaryOamAddressOverflowed) {
+                if (!this.spriteEvaluationOriginalPrimaryOamAddressOverflowed && !this.spriteEvaluationSecondaryOamAddressOverflowed) {
                     this.secondaryOAM[this.secondaryOamAddress] = this.primaryOamBuffer;
                     if (this.spriteEvaluationOamReadingCounter > 0) {
                         this.spriteEvaluationOamReadingCounter--;
