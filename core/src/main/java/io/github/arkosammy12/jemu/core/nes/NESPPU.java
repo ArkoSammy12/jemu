@@ -206,7 +206,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private boolean ppuInit = true;
     private boolean isRendering;
 
-    private boolean oddFrame;
+    private FrameParity frameParity = FrameParity.EVEN;
+    private boolean dotSkipped;
     private int ppuDataReadBuffer;
     private boolean sprite0OnNextScanline;
     private boolean sprite0OnThisScanline;
@@ -488,7 +489,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         switch (this.currentDotHalf) {
             case FIRST -> {
                 if (this.isRenderScanline()) {
-                    if (this.dotNumber == 65 || this.dotNumber == 257 || this.dotNumber == 0) {
+                    if (this.dotNumber == 65 || this.dotNumber == 257 || this.dotNumber == (this.dotSkipped ? 1 : 0)) {
                         if (this.isRenderingEnabled()) {
                             this.secondaryOamAddress = 0;
                             this.spriteEvaluationSecondaryOamAddressOverflowed = false;
@@ -506,6 +507,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
                     }
                 }
+                this.dotSkipped = false;
             }
             case SECOND -> {
                 if (this.isRenderScanline()) {
@@ -597,8 +599,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.scanlineNumber++;
                     if (this.scanlineNumber >= this.scanlinesPerFrame) {
                         this.scanlineNumber = 0;
-                        this.oddFrame = !this.oddFrame;
-                        if (this.oddFrameDotSkip && !this.oddFrame && this.isRenderingEnabled()) {
+                        this.frameParity = this.frameParity.getOpposite();
+                        if (this.oddFrameDotSkip && this.frameParity.isEven() && this.isRenderingEnabled()) {
+                            this.dotSkipped = true;
                             this.dotNumber = 1;
                         }
                     }
@@ -1092,6 +1095,27 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 case FIRST -> SECOND;
                 case SECOND -> FIRST;
             };
+        }
+
+    }
+
+    private enum FrameParity {
+        EVEN,
+        ODD;
+
+        private FrameParity getOpposite() {
+            return switch (this) {
+                case EVEN -> ODD;
+                case ODD -> EVEN;
+            };
+        }
+
+        private boolean isEven() {
+            return this == EVEN;
+        }
+
+        private boolean isOdd() {
+            return this == ODD;
         }
 
     }
