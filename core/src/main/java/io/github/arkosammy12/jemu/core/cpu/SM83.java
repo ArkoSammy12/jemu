@@ -55,7 +55,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
     private boolean opcodeIsPrefixed = false;
     private boolean haltBug = false;
     private boolean servicingInterrupt = false;
-    protected int machineCycleIndex = TERMINATE_INSTRUCTION;
+    protected int machineCycleIndex = 0;
 
     public SM83(S systemBus) {
         this.systemBus = systemBus;
