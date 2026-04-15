@@ -487,7 +487,25 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
         switch (this.currentDotHalf) {
             case FIRST -> {
+                if (this.isRenderScanline()) {
+                    if (this.dotNumber == 65 || this.dotNumber == 257 || this.dotNumber == 0) {
+                        if (this.isRenderingEnabled()) {
+                            this.secondaryOamAddress = 0;
+                            this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+                        }
+                    }
 
+                    if (this.dotNumber >= 257 && this.dotNumber <= 320) {
+                        this.spriteEvaluationStep = 0;
+                        this.spriteEvaluationOamReadingCounter = 0;
+                        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
+                        if (this.isRenderingEnabled()) {
+                            this.primaryOamAddress = 0;
+                            this.spriteEvaluationPrimaryOamAddressOverflowed = false;
+                            this.sprite0OnThisScanline = this.sprite0OnNextScanline;
+                        }
+                    }
+                }
             }
             case SECOND -> {
                 if (this.isRenderScanline()) {
@@ -517,14 +535,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         if (this.isRenderingEnabled()) {
                             this.primaryOamAddress = 0;
                             this.spriteEvaluationPrimaryOamAddressOverflowed = false;
-                            this.sprite0OnThisScanline = this.sprite0OnNextScanline;
-                        }
-                    }
-
-                    if (this.dotNumber == 64 || this.dotNumber == 256 || this.dotNumber == 340) {
-                        if (this.isRenderingEnabled()) {
-                            this.secondaryOamAddress = 0;
-                            this.spriteEvaluationSecondaryOamAddressOverflowed = false;
                         }
                     }
 
@@ -633,6 +643,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.setV((this.getV() & ~0x7BE0) | (this.getT() & 0x7BE0));
     }
 
+    // Assumes called once per full dot, on the second half
     private void tickPixelShifter() {
 
         int paletteRamIndex;
@@ -672,6 +683,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
 
                         if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
+                            // TODO: 4 dot delay for the flag to be set according to nesdev wiki timing diagram. Rendering probably cancels this behavior.
                             this.setSprite0HitFlag(true);
                         }
 
@@ -718,6 +730,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         return ret;
     }
 
+    // Assumes called once per full dot, on the second half
     private void tickBgFetcher() {
         switch (this.bgFetcherStep) {
             case 0 -> {
@@ -768,6 +781,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         }
     }
 
+    // Assumes called once per full dot, on the second half
     private void tickSecondaryOamClear() {
         switch (this.secondaryOamClearStep) {
             case 0 -> {
@@ -825,6 +839,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         }
     }
 
+    // Assumes called once per full dot, on the second half
     private void tickSpriteEvaluation(boolean firstDot) {
         switch (this.spriteEvaluationStep) {
             case 0 -> { // Read cycle
@@ -872,6 +887,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         }
     }
 
+    // Assumes called once per full dot, on the second half
     private void tickSpriteFetcher() {
         switch (this.spriteFetcherStep) {
             case 0 -> {
