@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.nes;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.CIRAM_START;
@@ -20,7 +21,11 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
 
     public static <E extends NESEmulator> NESCartridge<E> getCartridge(E emulator, INESFile iNESFile) {
         // TODO: Easy mappers (CNROM, UNROM, ANDROM)
-        return new NROMCartridge<>(emulator, iNESFile);
+        int mapperNumber = iNESFile.getMapperNumber();
+        return switch (mapperNumber) {
+            case 0 -> new NROMCartridge<>(emulator, iNESFile);
+            default -> throw new EmulatorException("Unimplemented iNES mapper number %d!".formatted(mapperNumber));
+        };
     }
 
     public INESFile getINESFile() {
