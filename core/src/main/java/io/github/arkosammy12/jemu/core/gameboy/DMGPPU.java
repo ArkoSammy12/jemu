@@ -477,7 +477,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
 
         int currentSpriteEntryIndex = this.getSpriteEntryIndexMatchingX(this.pixelX);
-        boolean fetchingSprite = currentSpriteEntryIndex >= 0 && this.getObjectEnable();
+        boolean fetchingSprite = this.isFetchingSprites(currentSpriteEntryIndex);
 
         if (!fetchingSprite) {
             this.tickPixelShifter();
@@ -597,6 +597,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             this.backgroundFifo.enqueue((high << 1) | low);
         }
         this.bgFifoFetcherX++;
+    }
+
+    protected boolean isFetchingSprites(int currentSpriteEntryIndex) {
+        return currentSpriteEntryIndex >= 0 && this.getObjectEnable();
     }
 
     @SuppressWarnings("DuplicatedCode")
