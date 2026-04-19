@@ -722,7 +722,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int shiftBackgroundRegister(int select) {
         int ret = this.backgroundShiftRegister.get(select);
         this.backgroundShiftRegister.poll();
-        this.backgroundShiftRegister.offer(0b10);
+        this.backgroundShiftRegister.offer(0b01);
         return ret;
     }
 
