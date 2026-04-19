@@ -85,7 +85,7 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         } else if (address >= 0xC000 && address <= 0xFFFF) {
             return this.programRom[(address - 0x8000) % this.programRom.length];
         } else {
-            return 0xFF;
+            return -1;
         }
     }
 

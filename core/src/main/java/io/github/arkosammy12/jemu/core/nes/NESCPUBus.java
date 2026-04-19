@@ -3,6 +3,8 @@ package io.github.arkosammy12.jemu.core.nes;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 
+import static io.github.arkosammy12.jemu.core.nes.RP2A03.*;
+
 public class NESCPUBus<E extends NESEmulator> implements Bus {
 
     private static final int RAM_START = 0x0000;
@@ -20,11 +22,10 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
     public static final int CARTRIDGE_START = 0x4020;
     public static final int CARTRIDGE_END = 0xFFFF;
 
-
-
     private final E emulator;
 
     private final int[] ram = new int[0x800];
+    private int dataBus;
 
     public NESCPUBus(E emulator) {
         this.emulator = emulator;
@@ -32,37 +33,55 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
 
     @Override
     public int readByte(int address) {
+        int ret = -1;
+
         if (address >= RAM_START && address <= RAM_END) {
-            return this.ram[address & 0x7FF];
-        } else if (address >= PPU_START && address <= PPU_END) {
-            return this.emulator.getVideoGenerator().readByte(0x2000 + (address & 7));
-        } else if (address >= APU_IO_START && address <= APU_IO_END) {
-            return this.emulator.getRicohCore().readByte(address);
-        } else if (address >= CPU_TEST_MODE_START && address <= CPU_TEST_MODE_END) {
-            return 0xFF;
-        } else if (address >= CARTRIDGE_START && address <= CARTRIDGE_END) {
-            return this.emulator.getCartridge().readByte(address);
-        } else {
-            throw new EmulatorException("Invalid NES CPU memory address $%04X!".formatted(address));
+            ret = this.ram[address & 0x7FF];
+
         }
+
+        int ppuByte = this.emulator.getVideoGenerator().readByte(address);
+        if (ppuByte >= 0) {
+            ret = ret >= 0 ? ppuByte & ret : ppuByte;
+        }
+
+        int apuIoByte = this.emulator.getRicohCore().readByte(address);
+        if (apuIoByte >= 0) {
+            ret = ret >= 0 ? apuIoByte & ret : apuIoByte;
+        }
+
+        int cartridgeByte = this.emulator.getCartridge().readByte(address);
+        if (cartridgeByte >= 0) {
+            ret = ret >= 0 ? cartridgeByte & ret : cartridgeByte;
+        }
+
+        if (ret >= 0) {
+            if (address == JOY1_ADDR || address == JOY2_ADDR) {
+                ret = (ret & ~0xE0) | (this.dataBus & 0xE0);
+            } else if (address == SND_CHN_ADDR) {
+                ret = (ret & ~0b00100000) | (this.dataBus & 0b00100000);
+            }
+
+            if (address != SND_CHN_ADDR) {
+                this.dataBus = ret;
+            }
+
+        }
+
+        return ret >= 0 ? ret : this.dataBus;
     }
 
     @Override
     public void writeByte(int address, int value) {
         value &= 0xFF;
+        this.dataBus = value;
         if (address >= RAM_START && address <= RAM_END) {
             this.ram[address & 0x7FF] = value;
-        } else if (address >= PPU_START && address <= PPU_END) {
-            this.emulator.getVideoGenerator().writeByte(0x2000 + (address & 7), value);
-        } else if (address >= APU_IO_START && address <= APU_IO_END) {
-            this.emulator.getRicohCore().writeByte(address, value);
-        } else if (address >= CPU_TEST_MODE_START && address <= CPU_TEST_MODE_END) {
-
-        } else if (address >= CARTRIDGE_START && address <= CARTRIDGE_END) {
-            this.emulator.getCartridge().writeByte(address, value);
-        } else {
-            throw new EmulatorException("Invalid NES CPU memory address $%04X!".formatted(address));
         }
+
+        this.emulator.getVideoGenerator().writeByte(address, value);
+        this.emulator.getRicohCore().writeByte(address, value);
+        this.emulator.getCartridge().writeByte(address, value);
     }
 
 }

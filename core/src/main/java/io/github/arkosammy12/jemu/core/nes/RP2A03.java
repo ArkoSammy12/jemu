@@ -124,13 +124,13 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR) {
             return this.apu.readByte(address);
         } else if (address == OAMDMA_ADDR) {
-            return 0xFF;
+            return -1;
         } else if (address == JOY1_ADDR) {
             return this.controller.readJoy1();
         } else if (address == JOY2_ADDR) {
             return this.controller.readJoy2();
         } else {
-            return 0xFF;
+            return -1;
         }
     }
 

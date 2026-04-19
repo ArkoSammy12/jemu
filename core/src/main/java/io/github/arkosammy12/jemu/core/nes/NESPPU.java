@@ -7,6 +7,9 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import java.util.Arrays;
 import java.util.LinkedList;
 
+import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.PPU_END;
+import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.PPU_START;
+
 public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
 
     public static final int[] PALETTE_2C02G_WIKI_PAL = {
@@ -279,6 +282,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     @Override
     public int readByte(int address) {
+        if (!(address >= PPU_START && address <= PPU_END)) {
+            return -1;
+        }
+        address = 0x2000 + (address & 7);
+
         return switch (address) {
             case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.dataBus;
             case PPUSTATUS_ADDR -> {
@@ -337,11 +345,12 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     @Override
     public void writeByte(int address, int value) {
-        this.setDataBus(value);
-        this.decayPpuDataBusCountdown = this.dotsPerFrame * 60;
-        if (address == 0x2002 && value == 0xFF) {
-            int a = 1;
+        if (!(address >= PPU_START && address <= PPU_END)) {
+            return;
         }
+        address = 0x2000 + (address & 7);
+
+        this.setDataBus(value);
 
         // Block register writes during the first frame until the vbl, sprite 0 and sprite overflow flags are cleared
         if (this.ppuInit) {
