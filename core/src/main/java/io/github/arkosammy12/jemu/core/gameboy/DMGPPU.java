@@ -700,6 +700,9 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         this.spriteFifo.offer(null);
         if (objPixel != null) {
             int objColorNumber = getDmgColorNumberFromObjPixelEntry(objPixel);
+            if (!this.getObjectEnable()) {
+                objColorNumber = 0;
+            }
             boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
             boolean objPalette = getDmgPaletteForObjPixelEntry(objPixel);
             if (objColorNumber != 0 && !(objPriority && bgPixel != 0)) {
@@ -740,7 +743,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         return (this.lcdControl & 0b00000100) != 0;
     }
 
-    private boolean getObjectEnable() {
+    protected boolean getObjectEnable() {
         return (this.lcdControl & 0b00000010) != 0;
     }
 

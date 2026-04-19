@@ -324,6 +324,9 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
 
             if (objPixel != null) {
                 int objColorNumber = getDmgColorNumberFromObjPixelEntry(objPixel);
+                if (!this.getObjectEnable()) {
+                    objColorNumber = 0;
+                }
                 boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
                 boolean objPalette = getDmgPaletteForObjPixelEntry(objPixel);
                 if (objColorNumber != 0 && !(objPriority && bgPixel != 0)) {
@@ -352,6 +355,9 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
             if (objPixel != null) {
                 boolean objPriority = getDmgPriorityForObjPixelEntry(objPixel);
                 int objColor = getCgbColorNumberFromObjPixelEntry(objPixel);
+                if (!this.getObjectEnable()) {
+                    objColor = 0;
+                }
                 int objPalette = getCgbPaletteFromObjPixelEntry(objPixel);
                 if (objColor != 0 && (!this.getBackgroundAndWindowEnable() || bgColor == 0 || (!bgPriority && !objPriority))) {
                     finalPixel = this.getARGBForObjPixelEntry(objColor, objPalette);
