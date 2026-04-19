@@ -180,6 +180,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private final int scanlinesPerFrame;
     private final int visibleScanlines;
     private final boolean oddFrameDotSkip;
+    private final int dotsPerFrame;
 
     private final int[] primaryOAM = new int[256];
     private final int[] secondaryOAM = new int[32];
@@ -189,7 +190,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int ppuMask;
     private int ppuStatus;
 
-    private int ioBus;
+    private int dataBus;
 
     private int currentVRAMAddress; // v
     private int temporaryVRAMAddress; // t
@@ -215,6 +216,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int copyTtoVCountdown;
     private int toggleRenderingCountdown;
     private int clearVblOnPpuStatusReadCountdown;
+    private int decayPpuDataBusCountdown;
 
     private final LinkedList<Integer> backgroundShiftRegister = new LinkedList<>();
     private final LinkedList<Integer> attributeShiftRegister = new LinkedList<>();
@@ -250,6 +252,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.visibleScanlines = NTSC_VISIBLE_SCANLINES;
         this.oddFrameDotSkip = true;
 
+        this.dotsPerFrame = this.scanlinesPerFrame * DOTS_PER_SCANLINE;
+
         this.video = new int[WIDTH][this.visibleScanlines];
         for (int[] ints : this.video) {
             Arrays.fill(ints, 0xFF000000);
@@ -276,15 +280,15 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     @Override
     public int readByte(int address) {
         return switch (address) {
-            case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.ioBus;
+            case PPUCTRL_ADDR, PPUMASK_ADDR, OAMADDR_ADDR, PPUADDR_ADDR, PPUSCROLL_ADDR -> this.dataBus;
             case PPUSTATUS_ADDR -> {
                 int value = this.ppuStatus;
                 // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.setVBlankFlag(false);
                 this.clearVblOnPpuStatusReadCountdown = 2;
                 this.clearW();
-                int ret = (value & 0b11100000) | (this.ioBus & 0b00011111);
-                this.ioBus = (this.ioBus & 0b00011111) | (value & 0b11100000);
+                int ret = (value & 0b11100000) | (this.dataBus & 0b00011111);
+                this.setDataBus(ret);
                 yield ret;
             }
             case OAMDATA_ADDR -> {
@@ -295,7 +299,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 if (this.isVisibleScanline() && ((this.dotNumber >= 1 && this.dotNumber <= 64) || (this.dotNumber >= 256 && this.dotNumber <= 320)) && this.isRenderingEnabled()) {
                     ret = 0xFF;
                 }
-                this.ioBus = ret & 0xFF;
+                this.setDataBus(ret);
                 yield ret;
             }
             case PPUDATA_ADDR -> {
@@ -310,7 +314,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 } else {
                     this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress & ~(1 << 12));
-                    ret = (this.paletteRam[this.mapPaletteRamAddress(readAddress)] & (this.useGrayscaleColors() ? 0b00110000 : 0b00111111)) | (this.ioBus & 0b11000000);
+                    ret = (this.paletteRam[this.mapPaletteRamAddress(readAddress)] & (this.useGrayscaleColors() ? 0b00110000 : 0b00111111)) | (this.dataBus & 0b11000000);
 
                 }
 
@@ -322,7 +326,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.setV(this.getV() + this.getVRAMAddressIncrement());
                 }
 
-                this.ioBus = ret & 0xFF;
+                this.setDataBus(ret);
                 yield ret;
             }
             default -> throw new EmulatorException("Invalid address $%04X for NES PPU!".formatted(address));
@@ -333,7 +337,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     @Override
     public void writeByte(int address, int value) {
-        this.ioBus = value & 0xFF;
+        this.setDataBus(value);
+        this.decayPpuDataBusCountdown = this.dotsPerFrame * 60;
+        if (address == 0x2002 && value == 0xFF) {
+            int a = 1;
+        }
 
         // Block register writes during the first frame until the vbl, sprite 0 and sprite overflow flags are cleared
         if (this.ppuInit) {
@@ -397,6 +405,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             }
             default -> throw new EmulatorException("Invalid address $%04X for NES PPU!".formatted(address));
         }
+    }
+
+    private void setDataBus(int value) {
+        this.dataBus = value & 0xFF;
+        this.decayPpuDataBusCountdown = this.dotsPerFrame * 60;
     }
 
     private void setNMISignal(boolean value) {
@@ -483,6 +496,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.clearVblOnPpuStatusReadCountdown--;
             if (this.clearVblOnPpuStatusReadCountdown <= 0) {
                 this.setVBlankFlag(false);
+            }
+        }
+
+        if (this.decayPpuDataBusCountdown > 0) {
+            this.decayPpuDataBusCountdown--;
+            if (this.decayPpuDataBusCountdown <= 0) {
+                this.dataBus = 0;
             }
         }
 
