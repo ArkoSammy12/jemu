@@ -409,7 +409,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     private void setDataBus(int value) {
         this.dataBus = value & 0xFF;
-        this.decayPpuDataBusCountdown = this.dotsPerFrame * 60;
+        this.decayPpuDataBusCountdown = this.dotsPerFrame * 2 * 60;
     }
 
     private void setNMISignal(boolean value) {
