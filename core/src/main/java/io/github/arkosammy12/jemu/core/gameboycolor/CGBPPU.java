@@ -214,7 +214,9 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         this.bgFifoFetcherX++;
     }
 
+    @Override
     protected boolean isFetchingSprites(int currentSpriteEntryIndex) {
+        // The CGB's PPU still fetches regardless of the obj enable bit in LCDC
         return currentSpriteEntryIndex >= 0;
     }
 
