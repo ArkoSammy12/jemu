@@ -53,9 +53,21 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                     case BANK_1 -> 0xFF;
                 };
                 case BGPI -> this.backgroundPaletteIndex | 0b01000000;
-                case BGPD -> this.bgPaletteRam[this.getBgPaletteAddress()];
+                case BGPD -> {
+                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
+                        yield this.bgPaletteRam[this.getBgPaletteAddress()];
+                    } else {
+                        yield 0xFF;
+                    }
+                }
                 case OBPI -> this.objectPaletteIndex | 0b01000000;
-                case OBPD -> this.objPaletteRam[this.getObjPaletteAddress()];
+                case OBPD -> {
+                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
+                        yield this.objPaletteRam[this.getObjPaletteAddress()];
+                    } else {
+                        yield 0xFF;
+                    }
+                }
                 case OPRI -> this.objectPriorityMode ? 0xFF : 0xFE;
                 default -> super.readByte(address);
             };
@@ -76,18 +88,18 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                 case VBK -> this.vramBank = (value & 1) != 0 ? VRAMBank.BANK_1 : VRAMBank.BANK_0;
                 case BGPI -> this.backgroundPaletteIndex = value & 0xFF;
                 case BGPD -> {
-                    //if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
+                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
                         this.bgPaletteRam[this.getBgPaletteAddress()] = value & 0xFF;
-                    //}
+                    }
                     if (this.getBgPaletteAddressAutoIncrement()) {
                         this.incrementBgPaletteAddress();
                     }
                 }
                 case OBPI -> this.objectPaletteIndex = value & 0xFF;
                 case OBPD -> {
-                    //if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
+                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPpuMode()) || !this.getLcdPpuEnable()) {
                         this.objPaletteRam[this.getObjPaletteAddress()] = value & 0xFF;
-                    //}
+                    }
                     if (this.getObjPaletteAddressAutoIncrement()) {
                         this.incrementObjPaletteAddress();
                     }
