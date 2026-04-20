@@ -72,6 +72,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
         this.apuDivisorCounter--;
         if (this.apuDivisorCounter <= 0) {
+            this.apu.cycleHalf();
             this.cycleDma();
             this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
             this.apuDivisorCounter = this.apuDivisor;
@@ -119,6 +120,10 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         return this.controller;
     }
 
+    public APUHalfCycleType getCurrentApuHalfCycleType() {
+        return this.apuHalfCycleType;
+    }
+
     @Override
     public int readByte(int address) {
         if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR) {
@@ -147,7 +152,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         }
     }
 
-    private enum APUHalfCycleType {
+    public enum APUHalfCycleType {
         GET,
         PUT;
 

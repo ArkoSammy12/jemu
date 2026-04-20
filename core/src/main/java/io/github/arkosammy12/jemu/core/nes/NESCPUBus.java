@@ -33,6 +33,15 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
 
     @Override
     public int readByte(int address) {
+        if (address == SND_CHN_ADDR) {
+            int sndChnByte = this.emulator.getRicohCore().readByte(address);
+            if (sndChnByte >= 0) {
+                return (sndChnByte & ~0b00100000) | (this.dataBus & 0b00100000);
+            } else {
+                return this.dataBus;
+            }
+        }
+
         int ret = -1;
 
         if (address >= RAM_START && address <= RAM_END) {
@@ -58,14 +67,8 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
         if (ret >= 0) {
             if (address == JOY1_ADDR || address == JOY2_ADDR) {
                 ret = (ret & ~0xE0) | (this.dataBus & 0xE0);
-            } else if (address == SND_CHN_ADDR) {
-                ret = (ret & ~0b00100000) | (this.dataBus & 0b00100000);
             }
-
-            if (address != SND_CHN_ADDR) {
-                this.dataBus = ret;
-            }
-
+            this.dataBus = ret;
         }
 
         return ret >= 0 ? ret : this.dataBus;
