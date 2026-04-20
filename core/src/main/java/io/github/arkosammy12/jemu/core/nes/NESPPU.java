@@ -794,19 +794,19 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case 7 -> {
                 int bgFetcherPatternTableHigh = this.readBytePPU(this.getBackgroundPatternByteAddress(true));
 
-                for (int i = 0; i < 8; i++) {
-                    int bit = 7 - i;
-                    int hi = (bgFetcherPatternTableHigh >>> bit) & 1;
-                    int lo = (this.bgFetcherPatternTableLow >>> bit) & 1;
-                    this.backgroundShiftRegister.set(i + 8, (hi << 1) | lo);
-                }
-
-                int coarseX = this.getV() & 0x1F;
-                int coarseY = (this.getV() >>> 5) & 0x1F;
-                int shift = ((coarseY & 0b10) | ((coarseX & 0b10) >>> 1)) * 2;
-                this.attributeRegisterLatch = (this.bgFetcherAttributeByte >>> shift) & 0b11;
-
                 if (this.isRenderingEnabled()) {
+                    for (int i = 0; i < 8; i++) {
+                        int bit = 7 - i;
+                        int hi = (bgFetcherPatternTableHigh >>> bit) & 1;
+                        int lo = (this.bgFetcherPatternTableLow >>> bit) & 1;
+                        this.backgroundShiftRegister.set(i + 8, (hi << 1) | lo);
+                    }
+
+                    int coarseX = this.getV() & 0x1F;
+                    int coarseY = (this.getV() >>> 5) & 0x1F;
+                    int shift = ((coarseY & 0b10) | ((coarseX & 0b10) >>> 1)) * 2;
+                    this.attributeRegisterLatch = (this.bgFetcherAttributeByte >>> shift) & 0b11;
+
                     this.incrementHorizontalPosition();
                 }
                 this.bgFetcherStep = 0;
