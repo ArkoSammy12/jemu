@@ -69,9 +69,10 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
                 ret = (ret & ~0xE0) | (this.dataBus & 0xE0);
             }
             this.dataBus = ret;
+            return ret;
+        } else {
+            return this.dataBus;
         }
-
-        return ret >= 0 ? ret : this.dataBus;
     }
 
     @Override
