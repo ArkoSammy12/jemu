@@ -30,10 +30,10 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     };
 
     protected final int[] vRam = new int[0x2000];
-    private final int[] oam = new int[0x00A0];
+    private final int[] oam = new int[0x00A0]; // TODO: OAM BUG (ONLY FOR DMG) GODDAMMIT!
 
     private int lcdControl;
-    private int ppuStatus;
+    private int ppuStatus; // TODO: STAT WRITE BUG!!!!
     protected int scrollY;
     protected int scrollX;
     private int lcdY;
