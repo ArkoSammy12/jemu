@@ -44,6 +44,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private int windowY;
     private int windowX;
 
+    // TODO: Implement the PPU behavior when the CPU is in STOP mode for the DMG and CGB
     protected final int[][] lcd;
 
     protected Mode currentMode = Mode.MODE_0_HBLANK;
@@ -355,7 +356,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
          */
 
-        this.dotsSpentInSpritePlusStalling = 0;
+        //this.dotsSpentInSpritePlusStalling = 0;
         this.spriteCount = 0;
 
         this.scannedEntries = 0;
@@ -461,7 +462,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
     }
 
-    private int dotsSpentInSpritePlusStalling;
+    //private int dotsSpentInSpritePlusStalling;
 
     private void tickDraw() {
         boolean originalWindowCondition = this.isRenderingWindow();
