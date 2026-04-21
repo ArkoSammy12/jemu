@@ -206,7 +206,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private DotHalf currentDotHalf = DotHalf.FIRST;
     private int dotNumber;
     private int scanlineNumber;
-    private boolean nmiSignal;
+    private boolean vBlankFlagForNMI;
+    private boolean nmiOutput;
     private boolean ppuInit = true;
     private boolean isRendering;
 
@@ -293,6 +294,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 int value = this.ppuStatus;
                 // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.setVBlankFlag(false);
+                this.vBlankFlagForNMI = false;
                 this.clearVblOnPpuStatusReadCountdown = 2;
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.dataBus & 0b00011111);
@@ -423,11 +425,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     }
 
     private void setNMISignal(boolean value) {
-        this.nmiSignal = value;
+        this.nmiOutput = value;
     }
 
     public boolean getNMISignal() {
-        return this.nmiSignal && this.getVBlankFlag();
+        return this.nmiOutput && vBlankFlagForNMI;
     }
 
     private boolean isRenderingEnabled() {
@@ -504,9 +506,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
         if (this.clearVblOnPpuStatusReadCountdown > 0) {
             this.clearVblOnPpuStatusReadCountdown--;
-            if (this.clearVblOnPpuStatusReadCountdown <= 0) {
-                this.setVBlankFlag(false);
-            }
+            this.setVBlankFlag(false);
+            this.vBlankFlagForNMI = false;
         }
 
         if (this.decayPpuDataBusCountdown > 0) {
@@ -571,10 +572,12 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     }
 
                     if (this.isPreRenderScanline()) {
-                        if (this.dotNumber == 1) {
-                            this.setVBlankFlag(false);
+                        if (this.dotNumber == 0) {
+                            this.vBlankFlagForNMI = false;
                             this.setSprite0HitFlag(false);
                             this.setSpriteOverflowFlag(false);
+                        } else if (this.dotNumber == 1) {
+                            this.setVBlankFlag(false);
                             if (this.ppuInit) {
                                 this.ppuInit = false;
                             }
@@ -613,7 +616,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     }
 
                 } else if (this.scanlineNumber == this.visibleScanlines + 1) {
-                    if (this.dotNumber == 1) {
+                    if (this.dotNumber == 0) {
+                        this.vBlankFlagForNMI = true;
+                    } else if (this.dotNumber == 1) {
                         this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.video));
                         this.setVBlankFlag(true);
                     }
