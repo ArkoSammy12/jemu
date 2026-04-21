@@ -56,6 +56,10 @@ public class NMOS6502 implements Processor {
         this.systemBus = systemBus;
     }
 
+    public Phase getHalfCyclePhase() {
+        return this.phase;
+    }
+
     public ReadWriteCycle getReadWriteCycle() {
         return this.readWriteCycle;
     }
@@ -10159,7 +10163,7 @@ public class NMOS6502 implements Processor {
         WRITE
     }
 
-    private enum Phase {
+    public enum Phase {
         PHI_1,
         PHI_2;
 

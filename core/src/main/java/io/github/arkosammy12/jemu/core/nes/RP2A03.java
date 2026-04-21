@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.core.nes;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.cpu.NES6502;
+import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
 
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.OAMDATA_ADDR;
 
@@ -41,10 +42,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     private final NESController<?> controller;
 
     private final int cpuDivisor;
-    private final int apuDivisor;
-
     private int cpuDivisorCounter;
-    private int apuDivisorCounter;
 
     private int oamDmaTransferredBytes = 256;
     private int oamDmaSourceAddressHighByte;
@@ -56,8 +54,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     public RP2A03(E emulator, double baseClockDividerMultipliers) {
         this.emulator = emulator;
         this.cpuDivisor = (int) (NTSC_CPU_CLOCK_DIVISOR * baseClockDividerMultipliers);
-        this.apuDivisor = this.cpuDivisor * 2;
-
         this.cpu = new NES6502(emulator);
         this.apu = new NESAPU<>(emulator);
         this.controller = new NESController<>(emulator);
@@ -66,16 +62,15 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     public void onMasterClock() {
         this.cpuDivisorCounter--;
         if (this.cpuDivisorCounter <= 0) {
+            NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
             this.cpu.cycle();
             this.cpuDivisorCounter = this.cpuDivisor;
-        }
 
-        this.apuDivisorCounter--;
-        if (this.apuDivisorCounter <= 0) {
-            this.apu.cycleHalf();
-            this.cycleDma();
-            this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
-            this.apuDivisorCounter = this.apuDivisor;
+            if (phase == NMOS6502.Phase.PHI_2) {
+                this.apu.cycleHalf(this.apuHalfCycleType);
+                this.cycleDma();
+                this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
+            }
         }
     }
 

@@ -84,7 +84,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         }
     }
 
-    public void cycleHalf() {
+    public void cycleHalf(APUHalfCycleType halfCycleType) {
 
     }
 
