@@ -33,7 +33,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
     private final int[] oam = new int[0x00A0]; // TODO: OAM BUG (ONLY FOR DMG) GODDAMMIT!
 
     private int lcdControl;
-    private int ppuStatus; // TODO: STAT WRITE BUG!!!!
+    private int ppuStatus; // TODO: STAT WRITE BUG (ONLY FOR DMG)!!!!
     protected int scrollY;
     protected int scrollX;
     private int lcdY;
@@ -494,7 +494,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
         }
          */
 
-        if (!fetchingSprite || this.backgroundFifo.isEmpty() || (this.bgFifoStep <= 1)) {
+        if (!fetchingSprite || this.backgroundFifo.isEmpty() || (this.bgFifoStep <= 4)) {
             this.tickBackgroundFifo();
         } else {
             if (this.spriteFifoCurrentEntryIndex < 0) {
