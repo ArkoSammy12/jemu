@@ -96,6 +96,7 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus {
     @Override
     public int readByte(int address) {
         if (this.isOamBusConflict(address)) {
+            // TODO: Perhaps this value is only returned when reading from OAM. Otherwise return the current value being read by OAM. Check numism test ROM for info.
             return 0xFF;
         } if (this.enableBootRom && address >= 0x0000 && address <= 0x00FF) {
             return BOOTIX[address];
