@@ -51,11 +51,11 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     private APUHalfCycleType apuHalfCycleType = APUHalfCycleType.GET;
 
-    public RP2A03(E emulator, double baseClockDividerMultipliers) {
+    public RP2A03(E emulator, double baseClockDividerMultipliers, int apuSamplesPerFrame) {
         this.emulator = emulator;
         this.cpuDivisor = (int) (NTSC_CPU_CLOCK_DIVISOR * baseClockDividerMultipliers);
         this.cpu = new NES6502(emulator);
-        this.apu = new NESAPU<>(emulator);
+        this.apu = new NESAPU<>(emulator, apuSamplesPerFrame);
         this.controller = new NESController<>(emulator);
     }
 
@@ -67,7 +67,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
             this.cpuDivisorCounter = this.cpuDivisor;
 
             if (phase == NMOS6502.Phase.PHI_2) {
-                this.apu.cycleHalf(this.apuHalfCycleType);
+                this.apu.cycleHalf();
                 this.cycleDma();
                 this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
             }

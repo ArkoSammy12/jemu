@@ -31,7 +31,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     public NESEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
 
-        this.ricohCore = new RP2A03<>(this, 0.5);
+        this.ricohCore = new RP2A03<>(this, 0.5, NTSC_MASTER_CLOCK_FREQUENCY_HZ / NTSC_CPU_CLOCK_DIVISOR / FRAMERATE);
         this.ppu = new NESPPU<>(this);
         this.cpuBus = new NESCPUBus<>(this);
         this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(SystemHost.byteToIntArray(this.getHost().getRom())));
