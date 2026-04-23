@@ -182,7 +182,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private final int[][] video;
     private final int scanlinesPerFrame;
     private final int visibleScanlines;
-    private final boolean oddFrameDotSkip;
+    private final boolean doOddFrameDotSkipping;
     private final int dotsPerFrame;
 
     private final int[] primaryOAM = new int[256];
@@ -254,7 +254,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         // TODO: PAL support
         this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
         this.visibleScanlines = NTSC_VISIBLE_SCANLINES;
-        this.oddFrameDotSkip = true;
+        this.doOddFrameDotSkipping = true;
 
         this.dotsPerFrame = this.scanlinesPerFrame * DOTS_PER_SCANLINE;
 
@@ -520,7 +520,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         switch (this.currentDotHalf) {
             case FIRST -> {
                 if (this.isRenderScanline()) {
-                    if (this.dotNumber == 65 || this.dotNumber == 257 || this.dotNumber == (this.dotSkipped ? 1 : 0)) {
+                    if (this.dotNumber == 65 || this.dotNumber == 257 || this.dotNumber == 0) {
                         if (this.isRenderingEnabled()) {
                             this.secondaryOamAddress = 0;
                             this.spriteEvaluationSecondaryOamAddressOverflowed = false;
@@ -538,7 +538,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
                     }
                 }
-                this.dotSkipped = false;
             }
             case SECOND -> {
                 if (this.isRenderScanline()) {
@@ -611,7 +610,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         this.tickBgFetcher();
                     } else if (this.dotNumber == 338) {
                         this.readBytePPU(this.getNametableFetchAddress());
-                    } else if (this.dotNumber == 340) {
+                    }
+
+                    if ((this.dotSkipped && this.dotNumber == 0) || (!this.dotSkipped && this.dotNumber == 340)) {
                         this.readBytePPU(this.getNametableFetchAddress());
                     }
 
@@ -628,17 +629,17 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.spriteShifterInitIndex = 0;
                 }
 
+                this.dotSkipped = false;
                 this.dotNumber++;
+                if (this.dotNumber == DOTS_PER_SCANLINE - 1 && this.isPreRenderScanline() && this.frameParity.isOdd() && this.isRenderingEnabled() && this.doOddFrameDotSkipping) {
+                    this.dotNumber++;
+                }
                 if (this.dotNumber >= DOTS_PER_SCANLINE) {
                     this.dotNumber = 0;
                     this.scanlineNumber++;
                     if (this.scanlineNumber >= this.scanlinesPerFrame) {
                         this.scanlineNumber = 0;
                         this.frameParity = this.frameParity.getOpposite();
-                        if (this.oddFrameDotSkip && this.frameParity.isEven() && this.isRenderingEnabled()) {
-                            this.dotSkipped = true;
-                            this.dotNumber = 1;
-                        }
                     }
                 }
             }
