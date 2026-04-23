@@ -10,6 +10,7 @@ import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.nes.RP2A03.*;
 
+// TODO: PAL implementation
 public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements Bus {
 
     private final byte[] sampleBuffer;

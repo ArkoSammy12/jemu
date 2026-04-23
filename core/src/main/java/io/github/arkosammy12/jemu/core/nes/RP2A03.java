@@ -6,9 +6,8 @@ import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
 
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.OAMDATA_ADDR;
 
+// TODO: PAL implementation
 public class RP2A03<E extends NESEmulator> implements Bus {
-
-    private static final int NTSC_CPU_CLOCK_DIVISOR = 12;
 
     public static final int SQ1_VOL_ADDR = 0x4000;
     public static final int SQ1_SWEEP_ADDR = 0x4001;
@@ -41,9 +40,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     private final NESAPU<?> apu;
     private final NESController<?> controller;
 
-    private final int cpuDivisor;
-    private int cpuDivisorCounter;
-
     private int oamDmaTransferredBytes = 256;
     private int oamDmaSourceAddressHighByte;
     private int oamDmaCurrentData = -1;
@@ -51,26 +47,20 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     private APUHalfCycleType apuHalfCycleType = APUHalfCycleType.GET;
 
-    public RP2A03(E emulator, double baseClockDividerMultipliers, int apuSamplesPerFrame) {
+    public RP2A03(E emulator, int apuSampleBufferSize) {
         this.emulator = emulator;
-        this.cpuDivisor = (int) (NTSC_CPU_CLOCK_DIVISOR * baseClockDividerMultipliers);
         this.cpu = new NES6502(emulator);
-        this.apu = new NESAPU<>(emulator, apuSamplesPerFrame);
+        this.apu = new NESAPU<>(emulator, apuSampleBufferSize);
         this.controller = new NESController<>(emulator);
     }
 
-    public void onMasterClock() {
-        this.cpuDivisorCounter--;
-        if (this.cpuDivisorCounter <= 0) {
-            NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
-            this.cpu.cycle();
-            this.cpuDivisorCounter = this.cpuDivisor;
-
-            if (phase == NMOS6502.Phase.PHI_2) {
-                this.apu.cycleHalf();
-                this.cycleDma();
-                this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
-            }
+    public void cycleHalf() {
+        NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
+        this.cpu.cycle();
+        if (phase == NMOS6502.Phase.PHI_2) {
+            this.apu.cycleHalf();
+            this.cycleDma();
+            this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
         }
     }
 

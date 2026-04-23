@@ -10,6 +10,7 @@ import java.util.LinkedList;
 import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.PPU_END;
 import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.PPU_START;
 
+// TODO: PAL implementation
 public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
 
     public static final int[] PALETTE_2C02G_WIKI_PAL = {
@@ -174,14 +175,18 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private static final int LAST_VISIBLE_DOT = 256;
 
     private static final int NTSC_SCANLINES_PER_FRAME = 262;
+    private static final int NTSC_VBL_SCANLINE = 241;
     private static final int NTSC_VISIBLE_SCANLINES = 240;
 
+    // TODO: https://forums.nesdev.org/viewtopic.php?p=304638#p304638
     private static final int PAL_SCANLINES_PER_FRAME = 312;
+    private static final int PAL_VBL_SCANLINE = 241;
     private static final int PAL_VISIBLE_SCANLINES = 239;
 
     private final int[][] video;
     private final int scanlinesPerFrame;
     private final int visibleScanlines;
+    private final int vblScanline;
     private final boolean doOddFrameDotSkipping;
     private final int dotsPerFrame;
 
@@ -254,10 +259,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         // TODO: PAL support
         this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
         this.visibleScanlines = NTSC_VISIBLE_SCANLINES;
+        this.vblScanline = NTSC_VBL_SCANLINE;
         this.doOddFrameDotSkipping = true;
 
         this.dotsPerFrame = this.scanlinesPerFrame * DOTS_PER_SCANLINE;
-
         this.video = new int[WIDTH][this.visibleScanlines];
         for (int[] ints : this.video) {
             Arrays.fill(ints, 0xFF000000);
@@ -616,7 +621,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         this.readBytePPU(this.getNametableFetchAddress());
                     }
 
-                } else if (this.scanlineNumber == this.visibleScanlines + 1) {
+                } else if (this.scanlineNumber == this.vblScanline) {
                     if (this.dotNumber == 0) {
                         this.vBlankFlagForNMI = true;
                     } else if (this.dotNumber == 1) {

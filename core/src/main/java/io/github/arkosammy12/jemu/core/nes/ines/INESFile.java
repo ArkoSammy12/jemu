@@ -122,6 +122,10 @@ public class INESFile {
         return this.hasAlternativeNametableLayout;
     }
 
+    public boolean isPAL() {
+        return false;
+    }
+
     public static INESFile getINESFile(int[] file) {
         try {
             int maskedByte7 = file[7] & 0x0C;
