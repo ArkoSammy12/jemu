@@ -21,11 +21,11 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private final NoiseChannel noiseChannel = new NoiseChannel();
     private final DMCChannel dmcChannel = new DMCChannel();
 
-    private int frameCounterControlUpdateBuffer;
+    private int frameCounterControlUpdateCountdown;
     private int joy2UpdateValueBuffer;
 
-    private int clockHalfFrameCountdown;
-    private int clockQuarterFrameCountdown;
+    private int clockHalfFrameSignalCountdown;
+    private int clockQuarterFrameSignalCountdown;
 
     private int clearFrameInterruptFlagCountdown;
 
@@ -133,7 +133,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             }
             case JOY2_ADDR -> { // Frame counter control
                 // If the write occurs during an APU cycle, the effects occur 3 CPU cycles after the $4017 write cycle, and if the write occurs between APU cycles, the effects occurs 4 CPU cycles after the write cycle.
-                this.frameCounterControlUpdateBuffer = switch (this.getCurrentApuHalfCycleType()) {
+                this.frameCounterControlUpdateCountdown = switch (this.getCurrentApuHalfCycleType()) {
                     case GET -> 3;
                     case PUT -> 4;
                 };
@@ -144,11 +144,11 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     }
 
     private void signalHalfFrameClock() {
-        this.clockHalfFrameCountdown = 1;
+        this.clockHalfFrameSignalCountdown = 1;
     }
 
     private void signalQuarterFrameClock() {
-        this.clockQuarterFrameCountdown = 1;
+        this.clockQuarterFrameSignalCountdown = 1;
     }
 
     private void setInterruptFlagIfApplicable() {
@@ -159,23 +159,23 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
     public void cycleHalf() {
 
-        if (this.clockHalfFrameCountdown > 0) {
-            this.clockHalfFrameCountdown--;
-            if (this.clockHalfFrameCountdown <= 0) {
+        if (this.clockHalfFrameSignalCountdown > 0) {
+            this.clockHalfFrameSignalCountdown--;
+            if (this.clockHalfFrameSignalCountdown <= 0) {
                 this.clockHalfFrame();
             }
         }
 
-        if (this.clockQuarterFrameCountdown > 0) {
-            this.clockQuarterFrameCountdown--;
-            if (this.clockQuarterFrameCountdown <= 0) {
+        if (this.clockQuarterFrameSignalCountdown > 0) {
+            this.clockQuarterFrameSignalCountdown--;
+            if (this.clockQuarterFrameSignalCountdown <= 0) {
                 this.clockQuarterFrame();
             }
         }
 
-        if (this.frameCounterControlUpdateBuffer > 0) {
-            this.frameCounterControlUpdateBuffer--;
-            if (this.frameCounterControlUpdateBuffer <= 0) {
+        if (this.frameCounterControlUpdateCountdown > 0) {
+            this.frameCounterControlUpdateCountdown--;
+            if (this.frameCounterControlUpdateCountdown <= 0) {
                 this.frameCounterStepMode = (this.joy2UpdateValueBuffer & (1 << 7)) != 0 ? FrameCounterStepMode.STEP_5 : FrameCounterStepMode.STEP_4;
                 this.frameCounterInterruptInhibitFlag = (this.joy2UpdateValueBuffer & (1 << 6)) != 0;
                 this.frameCounterCycleCounter = 0;
