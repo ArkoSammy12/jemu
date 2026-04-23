@@ -88,10 +88,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 int ret = this.getDmcInterruptFlag() ? 1 << 7 : 0;
                 ret |= this.frameInterruptFlag ? 1 << 6 : 0;
                 ret |= this.dmcChannel.isActive() ? 1 << 4 : 0;
-                ret |= this.noiseChannel.getLengthCounter() > 0 && !this.noiseChannel.haltLengthCounter() ? 1 << 3 : 0;
-                ret |= this.triangleChannel.getLengthCounter() > 0 && !this.triangleChannel.haltLengthCounter() ? 1 << 2 : 0;
-                ret |= this.pulseChannel2.getLengthCounter() > 0 && !this.pulseChannel2.haltLengthCounter() ? 1 << 1 : 0;
-                ret |= this.pulseChannel1.getLengthCounter() > 0 && !this.pulseChannel1.haltLengthCounter() ? 1 : 0;
+                ret |= this.noiseChannel.getLengthCounter() > 0 /*&& !this.noiseChannel.haltLengthCounter()*/ ? 1 << 3 : 0;
+                ret |= this.triangleChannel.getLengthCounter() > 0 /*&& !this.triangleChannel.haltLengthCounter()*/ ? 1 << 2 : 0;
+                ret |= this.pulseChannel2.getLengthCounter() > 0 /*&& !this.pulseChannel2.haltLengthCounter()*/ ? 1 << 1 : 0;
+                ret |= this.pulseChannel1.getLengthCounter() > 0 /*&& !this.pulseChannel1.haltLengthCounter()*/ ? 1 : 0;
 
                 this.clearFrameInterruptFlagCountdown = switch (this.getCurrentApuHalfCycleType()) {
                     case GET -> 3;
@@ -267,7 +267,11 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                                 this.setInterruptFlagIfApplicable();
                             }
                         }
-                        this.frameCounterCycleCounter++;
+                        //if (!this.frameCounterCycleCounterReset) {
+                            this.frameCounterCycleCounter++;
+                        //} else {
+                            //this.frameCounterCycleCounterReset = false;
+                        //}
                     }
                 }
             }
@@ -289,11 +293,11 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                                 this.signalHalfFrameClock();
                             }
                         }
-                        if (!this.frameCounterCycleCounterReset) {
+                        //if (!this.frameCounterCycleCounterReset) {
                             this.frameCounterCycleCounter++;
-                        } else {
-                            this.frameCounterCycleCounterReset = false;
-                        }
+                        //} else {
+                            //this.frameCounterCycleCounterReset = false;
+                        //}
                     }
                 }
             }
