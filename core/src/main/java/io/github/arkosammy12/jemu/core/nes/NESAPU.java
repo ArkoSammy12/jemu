@@ -34,7 +34,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private boolean frameInterruptFlag;
     private FrameCounterStepMode frameCounterStepMode = FrameCounterStepMode.STEP_4;
     private boolean frameCounterInterruptInhibitFlag;
-    private boolean frameCounterCycleCounterReset;
 
     public NESAPU(E emulator, int samplesPerFrame) {
         super(emulator);
@@ -88,10 +87,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 int ret = this.getDmcInterruptFlag() ? 1 << 7 : 0;
                 ret |= this.frameInterruptFlag ? 1 << 6 : 0;
                 ret |= this.dmcChannel.isActive() ? 1 << 4 : 0;
-                ret |= this.noiseChannel.getLengthCounter() > 0 /*&& !this.noiseChannel.haltLengthCounter()*/ ? 1 << 3 : 0;
-                ret |= this.triangleChannel.getLengthCounter() > 0 /*&& !this.triangleChannel.haltLengthCounter()*/ ? 1 << 2 : 0;
-                ret |= this.pulseChannel2.getLengthCounter() > 0 /*&& !this.pulseChannel2.haltLengthCounter()*/ ? 1 << 1 : 0;
-                ret |= this.pulseChannel1.getLengthCounter() > 0 /*&& !this.pulseChannel1.haltLengthCounter()*/ ? 1 : 0;
+                ret |= this.noiseChannel.getLengthCounter() > 0 ? 1 << 3 : 0;
+                ret |= this.triangleChannel.getLengthCounter() > 0 ? 1 << 2 : 0;
+                ret |= this.pulseChannel2.getLengthCounter() > 0 ? 1 << 1 : 0;
+                ret |= this.pulseChannel1.getLengthCounter() > 0 ? 1 : 0;
 
                 this.clearFrameInterruptFlagCountdown = switch (this.getCurrentApuHalfCycleType()) {
                     case GET -> 3;
@@ -185,7 +184,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                     this.frameInterruptFlag = false;
                 }
 
-                if (this.frameCounterStepMode == FrameCounterStepMode.STEP_4) {
+                if (this.frameCounterStepMode == FrameCounterStepMode.STEP_5) {
                     this.signalHalfFrameClock();
                     this.signalQuarterFrameClock();
                 }
@@ -247,7 +246,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                             }
                             case 14915 -> {
                                 this.setInterruptFlagIfApplicable();
-                                this.frameCounterCycleCounterReset = true;
                                 this.frameCounterCycleCounter = 0;
                             }
                         }
@@ -267,11 +265,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                                 this.setInterruptFlagIfApplicable();
                             }
                         }
-                        //if (!this.frameCounterCycleCounterReset) {
-                            this.frameCounterCycleCounter++;
-                        //} else {
-                            //this.frameCounterCycleCounterReset = false;
-                        //}
+                        this.frameCounterCycleCounter++;
                     }
                 }
             }
@@ -279,7 +273,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 switch (this.getCurrentApuHalfCycleType()) {
                     case GET -> {
                         if (this.frameCounterCycleCounter == 18641) {
-                            this.frameCounterCycleCounterReset = true;
                             this.frameCounterCycleCounter = 0;
                         }
                     }
@@ -293,11 +286,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                                 this.signalHalfFrameClock();
                             }
                         }
-                        //if (!this.frameCounterCycleCounterReset) {
-                            this.frameCounterCycleCounter++;
-                        //} else {
-                            //this.frameCounterCycleCounterReset = false;
-                        //}
+                        this.frameCounterCycleCounter++;
                     }
                 }
             }
