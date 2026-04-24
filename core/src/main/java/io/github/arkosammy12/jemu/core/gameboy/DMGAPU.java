@@ -22,13 +22,6 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     private static final float MAX_VOLUME = 15.0f;
     private static final float SAMPLE_SCALE = 127.0f;
 
-    private static final int[][] DUTY_CYCLES = {
-            {0, 0, 0, 0, 0, 0, 0, 1},
-            {0, 0, 0, 0, 0, 0, 1, 1},
-            {1, 0, 0, 0, 0, 1, 1, 1},
-            {1, 1, 1, 1, 1, 1, 0, 0}
-    };
-
     private final byte[] leftChannelSamples = new byte[GameBoyEmulator.T_CYCLES_PER_FRAME];
     private final byte[] rightChannelSamples = new byte[GameBoyEmulator.T_CYCLES_PER_FRAME];
     private int currentSampleIndex = 0;
@@ -440,6 +433,13 @@ public class DMGAPU<E extends GameBoyEmulator> extends AudioGenerator<E> impleme
     }
 
     protected class Channel2 extends AudioChannel {
+
+        protected static final int[][] DUTY_CYCLES = {
+                {0, 0, 0, 0, 0, 0, 0, 1},
+                {0, 0, 0, 0, 0, 0, 1, 1},
+                {1, 0, 0, 0, 0, 1, 1, 1},
+                {1, 1, 1, 1, 1, 1, 0, 0}
+        };
 
         int waveDutyIndex;
         protected int wavePeriodTimer;

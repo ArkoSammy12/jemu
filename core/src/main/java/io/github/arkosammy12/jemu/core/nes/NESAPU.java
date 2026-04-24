@@ -258,14 +258,14 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                     }
                     case PUT -> {
                         switch (this.frameCounterCycleCounter) {
-                            case 3728, 11185 -> {
+                            case 3728 - 2, 11185 - 2 -> {
                                 this.signalQuarterFrameClock();
                             }
-                            case 7456 -> {
+                            case 7456 - 1 -> {
                                 this.signalQuarterFrameClock();
                                 this.signalHalfFrameClock();
                             }
-                            case 14914 -> {
+                            case 14914 - 1 -> {
                                 this.signalQuarterFrameClock();
                                 this.signalHalfFrameClock();
                                 this.setInterruptFlagIfApplicable();
@@ -287,7 +287,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                             case 3728, 11185 -> {
                                 this.signalQuarterFrameClock();
                             }
-                            case 7456, 18640 -> {
+                            case 7456 - 1, 18640 - 1 -> {
                                 this.signalQuarterFrameClock();
                                 this.signalHalfFrameClock();
                             }
@@ -377,9 +377,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         @Override
         protected void setEnabled(boolean value) {
-            boolean originalEnabled = this.isEnabled();
             super.setEnabled(value);
-            if (originalEnabled && !this.isEnabled()) {
+            if (!this.isEnabled()) {
                 this.lengthCounter = 0;
             }
         }
@@ -554,7 +553,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
     private static class TriangleChannel extends WaveformChannel {
 
-        private static final int[] DIGI_LUT = {
+        private static final int[] TRIANGLE_WAVEFORM_LUT = {
                 15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
                 0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15
         };
@@ -621,7 +620,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             if (this.getLengthCounter() <= 0) {
                 return 0;
             }
-            return DIGI_LUT[this.sequencerStep];
+            return TRIANGLE_WAVEFORM_LUT[this.sequencerStep];
         }
 
     }
@@ -747,14 +746,13 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         @Override
         protected void setEnabled(boolean value) {
-            boolean originalEnabled = this.isEnabled();
             super.setEnabled(value);
-            if (!originalEnabled && this.isEnabled()) {
+            if (this.isEnabled()) {
                 if (this.bytesRemainingCounter <= 0) {
                     this.startSample();
                 }
                 this.checkStartMemoryReader(DmcDmaType.LOAD);
-            } else if (originalEnabled && !this.isEnabled()) {
+            } else {
                 this.bytesRemainingCounter = 0;
             }
         }
