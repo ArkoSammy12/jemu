@@ -47,6 +47,10 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     private APUHalfCycleType apuHalfCycleType = APUHalfCycleType.GET;
 
+    private int scheduleDmcDmaHaltCountdown;
+    private DmcDmaStep dmcDmaStep = DmcDmaStep.NONE;
+    private int dmcDmaAddress;
+
     public RP2A03(E emulator, int apuSampleBufferSize) {
         this.emulator = emulator;
         this.cpu = new NES6502(emulator);
@@ -58,27 +62,93 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
         this.cpu.cycle();
         if (phase == NMOS6502.Phase.PHI_2) {
+
+            if (this.scheduleDmcDmaHaltCountdown > 0) {
+                this.scheduleDmcDmaHaltCountdown--;
+                if (this.scheduleDmcDmaHaltCountdown <= 0) {
+                    this.startDmcDma();
+                }
+            }
+
             this.apu.cycleHalf();
             this.cycleDma();
+
             this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
         }
     }
 
+    private void startDmcDma() {
+        this.rdySignal = true;
+        this.dmcDmaStep = DmcDmaStep.DUMMY;
+
+    }
+
     private void cycleDma() {
-        if (this.oamDmaTransferredBytes >= 256 || !this.cpu.isHalted()) {
+        if (!((this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE) && this.cpu.isHalted())) {
             return;
         }
         switch (this.apuHalfCycleType) {
             case GET -> {
-                this.oamDmaCurrentData = this.emulator.getBus().readByte((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
+                switch (this.dmcDmaStep) {
+                    case NONE -> this.tickOamDmaGetIfOngoing();
+                    case DUMMY -> {
+                        this.dmcDmaStep = DmcDmaStep.GET;
+                        this.tickOamDmaGetIfOngoing();
+                    }
+                    case GET -> {
+                        this.apu.writeDmcDma(this.emulator.getBus().readByte(this.dmcDmaAddress));
+                        this.dmcDmaStep = DmcDmaStep.NONE;
+                        if (this.oamDmaTransferredBytes >= 256) {
+                            this.rdySignal = false;
+                        }
+                    }
+                }
+
             }
             case PUT -> {
-                if (this.oamDmaCurrentData >= 0) {
+                if (this.dmcDmaStep == DmcDmaStep.DUMMY) {
+                    this.dmcDmaStep = DmcDmaStep.GET;
+                }
+                if (this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes < 256) {
                     this.emulator.getBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
                     this.oamDmaTransferredBytes++;
-                    if (this.oamDmaTransferredBytes >= 256) {
-                        this.oamDmaCurrentData = -1;
+                    this.oamDmaCurrentData = -1;
+                    if (this.oamDmaTransferredBytes >= 256 && this.dmcDmaStep == DmcDmaStep.NONE) {
                         this.rdySignal = false;
+                    }
+                }
+            }
+        }
+    }
+
+    private void tickOamDmaGetIfOngoing() {
+        if (this.oamDmaTransferredBytes < 256) {
+            this.oamDmaCurrentData = this.emulator.getBus().readByte((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
+        }
+    }
+
+    void triggerDmcDma(NESAPU.DmcDmaType dmcDmaType, int address) {
+        this.dmcDmaAddress = address & 0xFFFF;
+        switch (dmcDmaType) {
+            case LOAD -> {
+                if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
+                    this.scheduleDmcDmaHaltCountdown = switch (this.apuHalfCycleType) {
+                        case GET -> 3;
+                        case PUT -> 2;
+                    };
+                }
+            }
+            case RELOAD -> {
+                switch (this.apuHalfCycleType) {
+                    case GET -> {
+                        if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
+                            this.scheduleDmcDmaHaltCountdown = 1;
+                        }
+                    }
+                    case PUT -> {
+                        if (this.dmcDmaStep == DmcDmaStep.NONE) {
+                            this.startDmcDma();
+                        }
                     }
                 }
             }
@@ -147,6 +217,12 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                 case PUT -> GET;
             };
         }
+    }
+
+    private enum DmcDmaStep {
+        NONE,
+        DUMMY,
+        GET
     }
 
 }

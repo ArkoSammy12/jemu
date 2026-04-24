@@ -84,8 +84,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                  DMC_FREQ_ADDR, DMC_RAW_ADDR, DMC_START_ADDR, DMC_LEN_ADDR -> -1;
 
             case SND_CHN_ADDR -> {
-
-                int ret = this.getDmcInterruptFlag() ? 1 << 7 : 0;
+                // TODO: If an interrupt flag was set at the same moment of the read, it will read back as 1 but it will not be cleared.
+                int ret = this.dmcChannel.getInterruptFlag() ? 1 << 7 : 0;
                 ret |= this.frameInterruptFlag ? 1 << 6 : 0;
                 ret |= this.dmcChannel.isActive() ? 1 << 4 : 0;
                 ret |= this.noiseChannel.getLengthCounter() > 0 ? 1 << 3 : 0;
@@ -131,6 +131,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 this.triangleChannel.setEnabled((value & (1 << 2)) != 0);
                 this.noiseChannel.setEnabled((value & (1 << 3)) != 0);
                 this.dmcChannel.setEnabled((value & (1 << 4)) != 0);
+                this.dmcChannel.clearInterruptFlag();
             }
             case JOY2_ADDR -> { // Frame counter control
                 // If the write occurs during an APU cycle, the effects occur 3 CPU cycles after the $4017 write cycle, and if the write occurs between APU cycles, the effects occurs 4 CPU cycles after the write cycle.
@@ -156,6 +157,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         if (!this.frameCounterInterruptInhibitFlag) {
             this.frameInterruptFlag = true;
         }
+    }
+
+    public void writeDmcDma(int value) {
+        this.dmcChannel.writeDmcDma(value);
     }
 
     public void cycleHalf() {
@@ -202,12 +207,12 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         this.clockFrameCounter();
 
         this.triangleChannel.clockTimer();
-        // Clock the noise's timer in both APU halves to line up with the CPU cycles period amount
+        // Clock the noise and dmc channels' timers in both APU halves to line up with the CPU cycles period amount
         this.noiseChannel.clockTimer();
+        this.dmcChannel.clockTimer();
         if (this.getCurrentApuHalfCycleType() == APUHalfCycleType.PUT) {
             this.pulseChannel1.clockTimer();
             this.pulseChannel2.clockTimer();
-            this.dmcChannel.clockTimer();
         }
 
         int pulse1 = this.pulseChannel1.getDigitalOutput();
@@ -312,11 +317,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     }
 
     public boolean getIRQSignal() {
-        return this.frameInterruptFlag;
-    }
-
-    private boolean getDmcInterruptFlag() {
-        return false;
+        return this.frameInterruptFlag || this.dmcChannel.getInterruptFlag();
     }
 
     private APUHalfCycleType getCurrentApuHalfCycleType() {
@@ -326,7 +327,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private enum FrameCounterStepMode {
         STEP_4,
         STEP_5
-
     }
 
     private abstract static class AudioChannel {
@@ -648,7 +648,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             // Value on power-up
             this.lfsr = 1;
             this.cpuCyclesPeriodLut = NTSC_TIMER_PERIOD_LUT;
-            this.timer = NTSC_TIMER_PERIOD_LUT[0];
         }
 
         private boolean getConstantVolumeFlag() {
@@ -714,37 +713,183 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
     }
 
-    private static class DMCChannel extends AudioChannel {
+    private class DMCChannel extends AudioChannel {
+
+        // TODO: Add PAL support
+        private static final int[] NTSC_RATE_PERIOD_LUT = {
+            // Values are in CPU cycles!
+            428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106,  84,  72,  54
+        };
+
+        private final int[] ratePeriodLut;
+
+        private int freq;
+        private int start;
+        private int length;
+
+        private boolean interruptFlag;
+
+        private int timer;
+
+        private boolean sampleBufferEmpty = true;
+        private int sampleBuffer;
+        private boolean silenceFlag;
+        private int shiftRegister;
+        private int outputLevel;
+
+        private int bitsRemainingCounter;
+        private int currentAddress;
+        private int bytesRemainingCounter;
+
+        protected DMCChannel() {
+            this.ratePeriodLut = NTSC_RATE_PERIOD_LUT;
+        }
+
+        @Override
+        protected void setEnabled(boolean value) {
+            boolean originalEnabled = this.isEnabled();
+            super.setEnabled(value);
+            if (!originalEnabled && this.isEnabled()) {
+                if (this.bytesRemainingCounter <= 0) {
+                    this.startSample();
+                }
+                this.checkStartMemoryReader(DmcDmaType.LOAD);
+            } else if (originalEnabled && !this.isEnabled()) {
+                this.bytesRemainingCounter = 0;
+            }
+        }
+
+        private void startSample() {
+            this.currentAddress = this.getSampleAddress();
+            this.bytesRemainingCounter = this.getSampleLength();
+        }
 
         protected void setFreq(int value) {
-
+            this.freq = value & 0xFF;
+            if (!this.getIRQEnabledFlag()) {
+                this.interruptFlag = false;
+            }
         }
 
         protected void setRaw(int value) {
-
+            this.setOutputLevel(value);
         }
 
         protected void setStart(int value) {
-
+            this.start = value & 0xFF;
         }
 
         protected void setLength(int value) {
+            this.length = value & 0xFF;
+        }
 
+        private boolean getIRQEnabledFlag() {
+            return (this.freq & (1 << 7)) != 0;
+        }
+
+        private boolean getLoopFlag() {
+            return (this.freq & (1 << 6)) != 0;
+        }
+
+        private int getRateIndex() {
+            return this.freq & 0b1111;
+        }
+
+        private int getSampleAddress() {
+            return 0xC000 + (this.start * 64);
+        }
+
+        private int getSampleLength() {
+            return (this.length * 16) + 1;
+        }
+
+        protected void clearInterruptFlag() {
+            this.interruptFlag = false;
+        }
+
+        protected boolean getInterruptFlag() {
+            return this.interruptFlag;
         }
 
         protected boolean isActive() {
-            return false;
+            return this.bytesRemainingCounter > 0;
+        }
+
+        private void setOutputLevel(int value) {
+            this.outputLevel = value & 0x7F;
         }
 
         @Override
         protected void clockTimer() {
+            if (this.timer > 0) {
+                this.timer--;
+            } else {
+                this.timer = this.ratePeriodLut[this.getRateIndex()];
+                if (!this.silenceFlag) {
+                    if ((this.shiftRegister & 1) != 0) {
+                        if (this.outputLevel <= 125) {
+                            this.setOutputLevel(this.outputLevel + 2);
+                        }
+                    } else {
+                        if (this.outputLevel >= 2) {
+                            this.setOutputLevel(this.outputLevel - 2);
+                        }
+                    }
+                }
 
+                this.shiftRegister >>>= 1;
+                this.bitsRemainingCounter--;
+                if (this.bitsRemainingCounter <= 0) {
+                    this.bitsRemainingCounter = 8;
+                    if (this.sampleBufferEmpty) {
+                        this.silenceFlag = true;
+                    } else {
+                        this.silenceFlag = false;
+                        this.shiftRegister = this.sampleBuffer;
+                        this.sampleBuffer = 0;
+                        this.sampleBufferEmpty = true;
+                        this.checkStartMemoryReader(DmcDmaType.RELOAD);
+                    }
+                }
+            }
         }
+
+        private void checkStartMemoryReader(DmcDmaType dmcDmaType) {
+            if (!(this.sampleBufferEmpty && this.bytesRemainingCounter > 0)) {
+                return;
+            }
+            emulator.getRicohCore().triggerDmcDma(dmcDmaType, this.currentAddress);
+        }
+
+        protected void writeDmcDma(int value) {
+            this.sampleBuffer = value & 0xFF;
+            this.sampleBufferEmpty = false;
+            this.currentAddress++;
+            if (this.currentAddress > 0xFFFF) {
+                this.currentAddress = 0x8000;
+            }
+            this.bytesRemainingCounter--;
+            if (this.bytesRemainingCounter <= 0) {
+                if (this.getLoopFlag()) {
+                    this.startSample();
+                    this.checkStartMemoryReader(DmcDmaType.RELOAD);
+                } else if (this.getIRQEnabledFlag()) {
+                    this.interruptFlag = true;
+                }
+            }
+        }
+
 
         @Override
         protected int getDigitalOutput() {
-            return 0;
+            return this.outputLevel;
         }
+
+    }
+
+    public enum DmcDmaType {
+        LOAD,
+        RELOAD
     }
 
 }
