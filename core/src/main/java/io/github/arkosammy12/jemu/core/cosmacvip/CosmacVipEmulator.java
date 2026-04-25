@@ -61,9 +61,11 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
         return this.cpu;
     }
 
+    /*
     public CosmacVipBus getBusView() {
         return this.bus;
     }
+     */
 
     @Override
     public Bus getBus() {
@@ -168,12 +170,12 @@ public class CosmacVipEmulator implements Emulator, CDP1802.SystemBus {
     }
 
     private void runCycle() {
-        this.cpu.getCurrentState();
+        //this.cpu.getCurrentState();
         this.cycleCpu();
         this.cycleIoDevices();
         this.cpu.nextState();
 
-        this.cpu.getCurrentState();
+        //this.cpu.getCurrentState();
     }
 
     @Override
