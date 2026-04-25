@@ -892,7 +892,6 @@ public class CDP1802 implements Processor {
             return this == S2_DMA_IN || this == S2_DMA_OUT;
         }
 
-
     }
 
     public interface SystemBus extends io.github.arkosammy12.jemu.core.common.SystemBus {

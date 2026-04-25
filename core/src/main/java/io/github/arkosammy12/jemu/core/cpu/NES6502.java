@@ -13,6 +13,7 @@ public class NES6502 extends NMOS6502 {
         return this.cpuHalted;
     }
 
+    @Override
     protected void addOrSubCarry(boolean subtract) {
         int a = getA();
         int m = subtract ? getOperand() ^ 0xFF : getOperand();
