@@ -191,8 +191,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 }
 
                 if (this.frameCounterStepMode == FrameCounterStepMode.STEP_5) {
-                    this.signalHalfFrameClock();
-                    this.signalQuarterFrameClock();
+                    this.clockQuarterFrame();
+                    this.clockHalfFrame();
                 }
             }
         }
