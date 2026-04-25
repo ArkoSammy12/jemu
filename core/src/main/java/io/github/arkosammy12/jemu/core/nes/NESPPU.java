@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.core.nes;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.util.ActionSignal;
 
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -222,10 +223,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private boolean sprite0OnNextScanline;
     private boolean sprite0OnThisScanline;
 
-    private int copyTtoVCountdown;
-    private int toggleRenderingCountdown;
-    private int clearVblOnPpuStatusReadCountdown;
-    private int decayPpuDataBusCountdown;
+    private final ActionSignal copyTtoVSignal;
+    private final ActionSignal toggleRenderingSignal;
+    private final ActionSignal clearVblOnPpuStatusReadSignal;
+    private final ActionSignal decayPpuDataBusSignal;
 
     private final LinkedList<Integer> backgroundShiftRegister = new LinkedList<>();
     private final LinkedList<Integer> attributeShiftRegister = new LinkedList<>();
@@ -274,6 +275,15 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.attributeShiftRegister.offer(0b00);
             this.spriteShifters[i] = new SpriteShifter();
         }
+
+        this.copyTtoVSignal = new ActionSignal(() -> this.setV(this.getT()));
+        this.toggleRenderingSignal = new ActionSignal(() -> this.isRendering = !this.isRendering);
+        this.clearVblOnPpuStatusReadSignal = new ActionSignal(() -> {
+            this.setVBlankFlag(false);
+            this.vBlankFlagForNMI = false;
+        });
+        this.decayPpuDataBusSignal = new ActionSignal(() -> this.dataBus = 0);
+
     }
 
     @Override
@@ -300,7 +310,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.setVBlankFlag(false);
                 this.vBlankFlagForNMI = false;
-                this.clearVblOnPpuStatusReadCountdown = 2;
+                this.clearVblOnPpuStatusReadSignal.trigger(2);
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.dataBus & 0b00011111);
                 this.setDataBus(ret);
@@ -373,7 +383,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 boolean originalEnableRendering = this.enableBackgroundRendering() || this.enableSpriteRendering();
                 this.ppuMask = value & 0xFF;
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
-                    this.toggleRenderingCountdown = 3;
+                    this.toggleRenderingSignal.trigger(3);
+                    //this.toggleRenderingCountdown = 3;
                 }
             }
             case PPUSTATUS_ADDR -> {}
@@ -401,7 +412,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 if (this.getW()) {
                     this.setT((this.getT() & ~0xFF) | (value & 0xFF));
                     // (wait 1 to 1.5 dots after the write completes as per nesdev)
-                    this.copyTtoVCountdown = 3;
+                    this.copyTtoVSignal.trigger(3);
+                    //this.copyTtoVCountdown = 3;
                 } else {
                     this.setT((this.getT() & ~0x3F00) | ((value & 0b00111111) << 8));
                     this.setT(this.getT() & ~(1 << 14));
@@ -427,7 +439,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.dataBus = value & 0xFF;
         // TODO: it takes around 30000 to 40000 PPU cycles for the PPU data bus value to decay
         // TODO: Individual decay timers for bits which are driven by returned values. Undriven bits should not have their decay timers updated
-        this.decayPpuDataBusCountdown = this.dotsPerFrame * 2 * 60;
+        this.decayPpuDataBusSignal.trigger(this.dotsPerFrame * 2 * 60);
     }
 
     private void setNMISignal(boolean value) {
@@ -496,32 +508,10 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     public void cycleHalfDot() {
 
-        if (this.copyTtoVCountdown > 0) {
-            this.copyTtoVCountdown--;
-            if (this.copyTtoVCountdown <= 0) {
-                this.setV(this.getT());
-            }
-        }
-
-        if (this.toggleRenderingCountdown > 0) {
-            this.toggleRenderingCountdown--;
-            if (this.toggleRenderingCountdown <= 0) {
-                this.isRendering = !this.isRendering;
-            }
-        }
-
-        if (this.clearVblOnPpuStatusReadCountdown > 0) {
-            this.clearVblOnPpuStatusReadCountdown--;
-            this.setVBlankFlag(false);
-            this.vBlankFlagForNMI = false;
-        }
-
-        if (this.decayPpuDataBusCountdown > 0) {
-            this.decayPpuDataBusCountdown--;
-            if (this.decayPpuDataBusCountdown <= 0) {
-                this.dataBus = 0;
-            }
-        }
+        this.copyTtoVSignal.tick();
+        this.toggleRenderingSignal.tick();
+        this.clearVblOnPpuStatusReadSignal.tick();
+        this.decayPpuDataBusSignal.tick();
 
         switch (this.currentDotHalf) {
             case FIRST -> {
