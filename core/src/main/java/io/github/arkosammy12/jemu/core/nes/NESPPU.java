@@ -425,6 +425,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     private void setDataBus(int value) {
         this.dataBus = value & 0xFF;
+        // TODO: it takes around 30000 to 40000 PPU cycles for the PPU data bus value to decay
         // TODO: Individual decay timers for bits which are driven by returned values. Undriven bits should not have their decay timers updated
         this.decayPpuDataBusCountdown = this.dotsPerFrame * 2 * 60;
     }

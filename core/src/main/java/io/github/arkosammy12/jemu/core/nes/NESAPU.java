@@ -731,6 +731,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         private int timer;
 
         private boolean sampleBufferEmpty = true;
+        private boolean resetSampleFlag;
+
         private int sampleBuffer;
         private boolean silenceFlag;
         private int shiftRegister;
@@ -749,15 +751,15 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             super.setEnabled(value);
             if (this.isEnabled()) {
                 if (this.bytesRemainingCounter <= 0) {
-                    this.startSample();
+                    this.resetSampleFlag = true;
                 }
-                this.checkStartMemoryReader(DmcDmaType.LOAD);
+                this.checkStartDmcDma(DmcDmaType.LOAD);
             } else {
                 this.bytesRemainingCounter = 0;
             }
         }
 
-        private void startSample() {
+        private void resetSample() {
             this.currentAddress = this.getSampleAddress();
             this.bytesRemainingCounter = this.getSampleLength();
         }
@@ -819,6 +821,11 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         @Override
         protected void clockTimer() {
+            this.checkStartDmcDma(DmcDmaType.RELOAD);
+            if (this.resetSampleFlag) {
+                this.resetSample();
+                this.resetSampleFlag = false;
+            }
             if (this.timer > 0) {
                 this.timer--;
             } else {
@@ -843,20 +850,17 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                         this.silenceFlag = true;
                     } else {
                         this.silenceFlag = false;
-                        this.shiftRegister = this.sampleBuffer;
-                        this.sampleBuffer = 0;
                         this.sampleBufferEmpty = true;
-                        this.checkStartMemoryReader(DmcDmaType.RELOAD);
+                        this.shiftRegister = this.sampleBuffer;
                     }
                 }
             }
         }
 
-        private void checkStartMemoryReader(DmcDmaType dmcDmaType) {
-            if (!(this.sampleBufferEmpty && this.bytesRemainingCounter > 0)) {
-                return;
+        private void checkStartDmcDma(DmcDmaType dmcDmaType) {
+            if (this.sampleBufferEmpty && this.bytesRemainingCounter > 0) {
+                emulator.getRicohCore().triggerDmcDma(dmcDmaType, this.currentAddress);
             }
-            emulator.getRicohCore().triggerDmcDma(dmcDmaType, this.currentAddress);
         }
 
         protected void writeDmcDma(int value) {
@@ -869,8 +873,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             this.bytesRemainingCounter--;
             if (this.bytesRemainingCounter <= 0) {
                 if (this.getLoopFlag()) {
-                    this.startSample();
-                    this.checkStartMemoryReader(DmcDmaType.RELOAD);
+                    this.resetSampleFlag = true;
                 } else if (this.getIRQEnabledFlag()) {
                     this.interruptFlag = true;
                 }

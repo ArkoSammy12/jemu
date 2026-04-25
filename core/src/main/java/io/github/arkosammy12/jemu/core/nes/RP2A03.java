@@ -43,7 +43,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     private int oamDmaTransferredBytes = 256;
     private int oamDmaSourceAddressHighByte;
     private int oamDmaCurrentData = -1;
-    private boolean rdySignal;
 
     private APUHalfCycleType apuHalfCycleType = APUHalfCycleType.GET;
 
@@ -78,9 +77,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     private void startDmcDma() {
-        this.rdySignal = true;
         this.dmcDmaStep = DmcDmaStep.DUMMY;
-
     }
 
     private void cycleDma() {
@@ -98,9 +95,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                     case GET -> {
                         this.apu.writeDmcDma(this.emulator.getBus().readByte(this.dmcDmaAddress));
                         this.dmcDmaStep = DmcDmaStep.NONE;
-                        if (this.oamDmaTransferredBytes >= 256) {
-                            this.rdySignal = false;
-                        }
                     }
                 }
 
@@ -113,9 +107,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                     this.emulator.getBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
                     this.oamDmaTransferredBytes++;
                     this.oamDmaCurrentData = -1;
-                    if (this.oamDmaTransferredBytes >= 256 && this.dmcDmaStep == DmcDmaStep.NONE) {
-                        this.rdySignal = false;
-                    }
                 }
             }
         }
@@ -146,7 +137,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                         }
                     }
                     case PUT -> {
-                        if (this.dmcDmaStep == DmcDmaStep.NONE) {
+                        if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
                             this.startDmcDma();
                         }
                     }
@@ -160,7 +151,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     public boolean getRDYSignal() {
-        return this.rdySignal;
+        return this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE;
     }
 
     public NES6502 getCpu() {
@@ -201,7 +192,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         } else if (address == OAMDMA_ADDR) {
             this.oamDmaSourceAddressHighByte = value & 0xFF;
             this.oamDmaTransferredBytes = 0;
-            this.rdySignal = true;
         } else if (address == JOY1_ADDR) {
             this.controller.writeJoy1(value);
         }
