@@ -14,6 +14,7 @@ public final class ActionSignal {
     }
 
     public void trigger(int delay) {
+        // TODO: THIS SHIT BUSTED
         this.timers.enqueue(Math.toIntExact(this.ticks + delay));
     }
 
