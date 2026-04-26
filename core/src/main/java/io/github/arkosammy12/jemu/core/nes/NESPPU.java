@@ -697,7 +697,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
             if (this.isVisibleDot() && this.isVisibleScanline()) {
 
-                boolean foundSprite = false;
+                boolean foundOpaqueSpritePixel = false;
                 for (int i = 0; i < 8; i++) {
                     SpriteShifter shifter = this.spriteShifters[i];
                     int xPositionPositionCounter = shifter.getXPositionCounter();
@@ -715,10 +715,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                             this.setSprite0HitFlag(true);
                         }
 
-                        if (!foundSprite && spriteColor != 0 && (pixelColor == 0 || !shifter.getPriority())) {
-                            foundSprite = true;
-                            pixelColor = spriteColor;
-                            paletteNumber = shifter.getPaletteNumber() | 0b100;
+                        if (!foundOpaqueSpritePixel && spriteColor != 0) {
+                            foundOpaqueSpritePixel = true;
+
+                            if (pixelColor == 0 || !shifter.getPriority()) {
+                                pixelColor = spriteColor;
+                                paletteNumber = shifter.getPaletteNumber() | 0b100;
+                            }
                         }
                     }
 
