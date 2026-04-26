@@ -24,6 +24,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         int mapperNumber = iNESFile.getMapperNumber();
         return switch (mapperNumber) {
             case 0 -> new NROMCartridge<>(emulator, iNESFile);
+            case 7 -> new AXROMCartridge<>(emulator, iNESFile);
             default -> throw new EmulatorException("Unimplemented iNES mapper number %d!".formatted(mapperNumber));
         };
     }

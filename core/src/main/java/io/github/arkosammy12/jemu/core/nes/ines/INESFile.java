@@ -10,6 +10,7 @@ public class INESFile {
 
     public static final int KB_8 = 0x2000;
     public static final int KB_16 = 0x4000;
+    public static final int KB_32 = KB_16 * 2;
 
     private final NametableArrangement nametableArrangement;
     private final boolean hasBattery;
