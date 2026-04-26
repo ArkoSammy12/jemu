@@ -72,6 +72,7 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
         protected void trigger() {
             this.triggeredThisCycle = true;
             super.trigger();
+            this.wavePeriodTimer = 4;
         }
 
     }
