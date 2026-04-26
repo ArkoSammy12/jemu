@@ -16,8 +16,6 @@ import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_END;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_MIRROR_END;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_MIRROR_START;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_START;
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_16;
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
 
 public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
@@ -25,27 +23,21 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     private final int[] characterRom;
     private final int[] characterRam;
 
-    private final int characterRomMask;
-
     private int bankSelect;
 
     public CNROMCartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
 
         int[] programRomData = iNESFile.getProgramRom();
-        int programRomSize = Math.clamp(programRomData.length, 0, KB_16 * 2);
-        this.programRom = new int[programRomSize];
-        System.arraycopy(programRomData, 0, this.programRom, 0, this.programRom.length);
+        this.programRom = Arrays.copyOf(programRomData, programRomData.length);
 
         Optional<int[]> characterRomOptional = iNESFile.getCharacterRom();
         if (characterRomOptional.isEmpty()) {
             this.characterRom = null;
-            this.characterRam = new int[KB_8];
-            this.characterRomMask = 0;
+            this.characterRam = new int[iNESFile.getCharacterRamSize()];
         } else {
             int[] characterRomData = characterRomOptional.get();
             this.characterRom = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRomMask = this.characterRom.length - 1;
             this.characterRam = null;
         }
 
@@ -57,7 +49,7 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
             if (this.characterRom == null) {
                 return this.characterRam[address % this.characterRam.length];
             } else {
-                return this.characterRom[(((this.bankSelect << 13) | address)) & this.characterRomMask];
+                return this.characterRom[(((this.bankSelect << 13) | address)) % this.characterRom.length];
             }
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
             return this.readByteVRAM(this.mapNametableAddress(address));

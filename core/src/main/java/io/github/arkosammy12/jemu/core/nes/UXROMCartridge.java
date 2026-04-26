@@ -6,7 +6,6 @@ import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.*;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.CHR_ROM_END;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.CHR_ROM_START;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.CIRAM_END;
@@ -17,15 +16,12 @@ import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_END;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_MIRROR_END;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_MIRROR_START;
 import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_START;
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
 
 public class UXROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     private final int[] programRom;
     private final int[] characterRom;
     private final int[] characterRam;
-
-    private final int programRomMask;
 
     private int bankSelect;
 
@@ -34,17 +30,14 @@ public class UXROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
         int[] programRomData = iNESFile.getProgramRom();
         this.programRom = Arrays.copyOf(programRomData, programRomData.length);
-        this.programRomMask = this.programRom.length - 1;
 
         Optional<int[]> characterRomOptional = iNESFile.getCharacterRom();
         if (characterRomOptional.isEmpty()) {
             this.characterRom = null;
-            this.characterRam = new int[KB_8];
+            this.characterRam = new int[iNESFile.getCharacterRamSize()];
         } else {
             int[] characterRomData = characterRomOptional.get();
-            int characterRomSize = Math.clamp(characterRomData.length, 0, KB_8);
-            this.characterRom = new int[characterRomSize];
-            System.arraycopy(characterRomData, 0, this.characterRom, 0, this.characterRom.length);
+            this.characterRom = Arrays.copyOf(characterRomData, characterRomData.length);
             this.characterRam = null;
         }
 
