@@ -226,7 +226,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private final ActionSignal copyTtoVSignal;
     private final ActionSignal toggleRenderingSignal;
     private final ActionSignal clearVblOnPpuStatusReadSignal;
-    private final ActionSignal decayPpuDataBusSignal;
+
+    private int decayPpuDataBusCountdown;
 
     private final LinkedList<Integer> backgroundShiftRegister = new LinkedList<>();
     private final LinkedList<Integer> attributeShiftRegister = new LinkedList<>();
@@ -282,8 +283,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.setVBlankFlag(false);
             this.vBlankFlagForNMI = false;
         });
-        this.decayPpuDataBusSignal = new ActionSignal(() -> this.dataBus = 0);
-
     }
 
     @Override
@@ -430,9 +429,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     private void setDataBus(int value) {
         this.dataBus = value & 0xFF;
-        // TODO: it takes around 30000 to 40000 PPU cycles for the PPU data bus value to decay
+        // It takes around 30000 to 40000 PPU cycles for the PPU data bus value to decay
         // TODO: Individual decay timers for bits which are driven by returned values. Undriven bits should not have their decay timers updated
-        this.decayPpuDataBusSignal.trigger(this.dotsPerFrame * 2 * 60);
+        this.decayPpuDataBusCountdown = 40000 * 2;
     }
 
     private void setNMISignal(boolean value) {
@@ -504,7 +503,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.copyTtoVSignal.tick();
         this.toggleRenderingSignal.tick();
         this.clearVblOnPpuStatusReadSignal.tick();
-        this.decayPpuDataBusSignal.tick();
+
+        if (this.decayPpuDataBusCountdown > 0) {
+            this.decayPpuDataBusCountdown--;
+            if (this.decayPpuDataBusCountdown <= 0) {
+                this.dataBus = 0;
+            }
+        }
 
         switch (this.currentDotHalf) {
             case FIRST -> {
