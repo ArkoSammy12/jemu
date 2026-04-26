@@ -1,12 +1,12 @@
 package io.github.arkosammy12.jemu.core.util;
 
-import it.unimi.dsi.fastutil.ints.IntHeapPriorityQueue;
-import it.unimi.dsi.fastutil.ints.IntPriorityQueue;
+import it.unimi.dsi.fastutil.longs.LongHeapPriorityQueue;
+import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
 
 public final class ActionSignal {
 
     private final Runnable action;
-    private final IntPriorityQueue timers = new IntHeapPriorityQueue();
+    private final LongPriorityQueue timers = new LongHeapPriorityQueue();
     private long ticks;
 
     public ActionSignal(Runnable action) {
@@ -14,15 +14,14 @@ public final class ActionSignal {
     }
 
     public void trigger(int delay) {
-        // TODO: THIS SHIT BUSTED
-        this.timers.enqueue(Math.toIntExact(this.ticks + delay));
+        this.timers.enqueue(this.ticks + delay);
     }
 
     public void tick() {
         this.ticks++;
-        while (!this.timers.isEmpty() && this.timers.firstInt() <= this.ticks) {
+        while (!this.timers.isEmpty() && this.timers.firstLong() <= this.ticks) {
             this.action.run();
-            this.timers.dequeueInt();
+            this.timers.dequeueLong();
         }
     }
 
