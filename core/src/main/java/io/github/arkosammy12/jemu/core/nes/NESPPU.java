@@ -331,16 +331,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 int readAddress = this.getV() & 0x3FFF;
 
                 int ret = this.ppuDataReadBuffer;
-                if (readAddress <= CHR_ROM_END) {
-                    this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
-                } else if (readAddress <= CIRAM_END) {
-                    this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
-                } else if (readAddress <= CIRAM_MIRROR_END) {
-                    this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
-                } else {
+                if (readAddress >= 0x3F00) {
                     this.ppuDataReadBuffer = emulator.getCartridge().readBytePPU(readAddress & ~(1 << 12));
                     ret = (this.paletteRam[this.mapPaletteRamAddress(readAddress)] & (this.useGrayscaleColors() ? 0b00110000 : 0b00111111)) | (this.dataBus & 0b11000000);
-
+                } else {
+                    this.ppuDataReadBuffer = this.emulator.getCartridge().readBytePPU(readAddress);
                 }
 
                 // TODO: If the $2007 access happens to coincide with a standard VRAM address increment (either horizontal or vertical), it will presumably not double-increment the relevant counter.
@@ -384,7 +379,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.ppuMask = value & 0xFF;
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
                     this.toggleRenderingSignal.trigger(3);
-                    //this.toggleRenderingCountdown = 3;
                 }
             }
             case PPUSTATUS_ADDR -> {}
@@ -413,7 +407,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.setT((this.getT() & ~0xFF) | (value & 0xFF));
                     // (wait 1 to 1.5 dots after the write completes as per nesdev)
                     this.copyTtoVSignal.trigger(3);
-                    //this.copyTtoVCountdown = 3;
                 } else {
                     this.setT((this.getT() & ~0x3F00) | ((value & 0b00111111) << 8));
                     this.setT(this.getT() & ~(1 << 14));
@@ -1084,28 +1077,17 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     private int readBytePPU(int address) {
         address &= 0x3FFF;
-        if (address <= CHR_ROM_END) {
-            return this.emulator.getCartridge().readBytePPU(address);
-        } else if (address <= CIRAM_END) {
-            return this.emulator.getCartridge().readBytePPU(address);
-        } else if (address <= CIRAM_MIRROR_END) {
-            return this.emulator.getCartridge().readBytePPU(address);
-        } else {
-            this.emulator.getCartridge().readBytePPU(address);
-            return this.paletteRam[this.mapPaletteRamAddress(address)];
+        int ret = this.emulator.getCartridge().readBytePPU(address);
+        if (address >= 0x3F00) {
+            ret = this.paletteRam[this.mapPaletteRamAddress(address)];
         }
+        return ret;
     }
 
     private void writeBytePPU(int address, int value) {
         address &= 0x3FFF;
-        if (address <= CHR_ROM_END) {
-            this.emulator.getCartridge().writeBytePPU(address, value);
-        } else if (address <= CIRAM_END) {
-            this.emulator.getCartridge().writeBytePPU(address, value);
-        } else if (address <= CIRAM_MIRROR_END) {
-            this.emulator.getCartridge().writeBytePPU(address, value);
-        } else {
-            this.emulator.getCartridge().writeBytePPU(address, value);
+        this.emulator.getCartridge().writeBytePPU(address, value);
+        if (address >= 0x3F00) {
             this.paletteRam[this.mapPaletteRamAddress(address)] = value & 0xFF;
         }
     }
