@@ -99,4 +99,5 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
         }
     }
+
 }
