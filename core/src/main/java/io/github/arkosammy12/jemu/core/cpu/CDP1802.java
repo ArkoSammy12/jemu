@@ -175,9 +175,11 @@ public class CDP1802 implements Processor {
         };
     }
 
+    /*
     public int getCurrentInstructionAddress() {
         return this.currentInstructionAddress;
     }
+     */
 
     public void nextState() {
         this.currentState = switch (currentState) {
