@@ -109,6 +109,8 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                     this.emulator.getBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
                     this.oamDmaTransferredBytes++;
                     this.oamDmaCurrentData = -1;
+                } else {
+                    this.emulator.getBus().readByte(this.cpu.getLastAddress());
                 }
             }
         }
@@ -117,6 +119,8 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     private void tickOamDmaGetIfOngoing() {
         if (this.oamDmaTransferredBytes < 256) {
             this.oamDmaCurrentData = this.emulator.getBus().readByte((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
+        } else {
+            this.emulator.getBus().readByte(this.cpu.getLastAddress());
         }
     }
 

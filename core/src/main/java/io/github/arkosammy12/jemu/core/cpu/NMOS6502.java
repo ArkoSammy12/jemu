@@ -64,6 +64,10 @@ public class NMOS6502 implements Processor {
         return this.readWriteCycle;
     }
 
+    public int getLastAddress() {
+        return this.lastAddress;
+    }
+
     private void setBrkVector(int vector) {
         this.brkVector = vector & 0xFFFF;
     }
@@ -319,10 +323,6 @@ public class NMOS6502 implements Processor {
         }
 
         if (halted) {
-            if (this.phase == Phase.PHI_2) {
-                // TODO: Reintroduce this
-                //readByte(this.lastAddress);
-            }
             this.onSubCycleEnd();
             return 0;
         }
