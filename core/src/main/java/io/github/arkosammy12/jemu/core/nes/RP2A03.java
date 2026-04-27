@@ -84,6 +84,8 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         if (!((this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE) && this.cpu.isHalted())) {
             return;
         }
+
+        // TODO: In no-operation DMA cycles, the CPU's constant reading becomes visible
         switch (this.apuHalfCycleType) {
             case GET -> {
                 switch (this.dmcDmaStep) {

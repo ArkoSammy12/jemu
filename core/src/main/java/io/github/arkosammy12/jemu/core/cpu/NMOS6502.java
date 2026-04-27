@@ -320,6 +320,7 @@ public class NMOS6502 implements Processor {
 
         if (halted) {
             if (this.phase == Phase.PHI_2) {
+                // TODO: Reintroduce this
                 //readByte(this.lastAddress);
             }
             this.onSubCycleEnd();
