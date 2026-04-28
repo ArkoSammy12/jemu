@@ -7,7 +7,7 @@ import java.io.Closeable;
 
 public abstract class AudioRenderer implements Closeable {
 
-    public static final int SAMPLE_RATE = 44100;
+    public static final int SAMPLE_RATE = 48000;
     protected static final int TARGET_FRAME_LATENCY = 3;
 
     protected final int samplesPerFrame;
