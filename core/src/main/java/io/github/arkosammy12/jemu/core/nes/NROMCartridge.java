@@ -80,7 +80,11 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     @Override
     public int readByte(int address) {
         if (address >= 0x6000 && address <= 0x7FFF) {
-            return this.programRam[(address - 0x6000) % this.programRam.length];
+            if (this.programRam.length > 0) {
+                return this.programRam[(address - 0x6000) % this.programRam.length];
+            } else {
+                return -1;
+            }
         } else if (address >= 0x8000 && address <= 0xBFFF) {
             return this.programRom[(address - 0x8000) % this.programRom.length];
         } else if (address >= 0xC000 && address <= 0xFFFF) {
@@ -93,7 +97,9 @@ public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0x6000 && address <= 0x7FFF) {
-            this.programRam[(address - 0x6000) % this.programRam.length] = value & 0xFF;
+            if (this.programRam.length > 0) {
+                this.programRam[(address - 0x6000) % this.programRam.length] = value & 0xFF;
+            }
         }
     }
 
