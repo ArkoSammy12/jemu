@@ -226,6 +226,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private final ActionSignal copyTtoVSignal;
     private final ActionSignal toggleRenderingSignal;
     private final ActionSignal clearVblOnPpuStatusReadSignal;
+    private final ActionSignal setSprite0HItSignal;
 
     private int decayPpuDataBusCountdown;
 
@@ -282,6 +283,11 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.clearVblOnPpuStatusReadSignal = new ActionSignal(() -> {
             this.setVBlankFlag(false);
             this.vBlankFlagForNMI = false;
+        });
+        this.setSprite0HItSignal = new ActionSignal(() -> {
+            if (this.isRenderingEnabled()) {
+                this.setSprite0HitFlag(true);
+            }
         });
     }
 
@@ -378,7 +384,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.ppuMask = value & 0xFF;
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
                     // Change in rendering behavior takes 3 - 4 dots
-                    this.toggleRenderingSignal.trigger(7);
+                    this.toggleRenderingSignal.trigger(8);
                 }
             }
             case PPUSTATUS_ADDR -> {}
@@ -505,6 +511,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.copyTtoVSignal.tick();
         this.toggleRenderingSignal.tick();
         this.clearVblOnPpuStatusReadSignal.tick();
+        this.setSprite0HItSignal.tick();
 
         if (this.decayPpuDataBusCountdown > 0) {
             this.decayPpuDataBusCountdown--;
@@ -718,8 +725,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
 
                         if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
-                            // TODO: 4 dot delay for the flag to be set according to nesdev wiki timing diagram. Rendering probably cancels this behavior.
-                            this.setSprite0HitFlag(true);
+                            this.setSprite0HItSignal.trigger(8);
                         }
 
                         if (!foundOpaqueSpritePixel && spriteColor != 0) {
