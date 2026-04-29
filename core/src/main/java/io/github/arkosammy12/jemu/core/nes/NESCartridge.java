@@ -19,7 +19,6 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
     }
 
     public static <E extends NESEmulator> NESCartridge<E> getCartridge(E emulator, INESFile iNESFile) {
-        // TODO: Easy mappers (CNROM, UNROM, ANROM)
         int mapperNumber = iNESFile.getMapperNumber();
         return switch (mapperNumber) {
             case 0 -> new NROMCartridge<>(emulator, iNESFile);
