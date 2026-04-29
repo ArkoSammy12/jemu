@@ -377,7 +377,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 boolean originalEnableRendering = this.enableBackgroundRendering() || this.enableSpriteRendering();
                 this.ppuMask = value & 0xFF;
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
-                    this.toggleRenderingSignal.trigger(3);
+                    // Change in rendering behavior takes 3 - 4 dots
+                    this.toggleRenderingSignal.trigger(7);
                 }
             }
             case PPUSTATUS_ADDR -> {}
@@ -404,7 +405,8 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
             case PPUADDR_ADDR -> {
                 if (this.getW()) {
                     this.setT((this.getT() & ~0xFF) | (value & 0xFF));
-                    // (wait 1 to 1.5 dots after the write completes as per nesdev)
+                    // Copying of t to v is continuous during the write
+                    this.setV(this.getT());
                     this.copyTtoVSignal.trigger(3);
                 } else {
                     this.setT((this.getT() & ~0x3F00) | ((value & 0b00111111) << 8));
