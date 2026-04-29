@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.core.nes.ines;
 
-public class INES10 extends INESFile {
+public class ExtendedINESFile extends INESFile {
 
-    public INES10(int[] file) {
+    public ExtendedINESFile(int[] file) {
         super(file);
     }
 

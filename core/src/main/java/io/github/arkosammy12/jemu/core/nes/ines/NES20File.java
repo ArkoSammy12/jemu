@@ -1,11 +1,11 @@
 package io.github.arkosammy12.jemu.core.nes.ines;
 
-public class INES20 extends INES10 {
+public class NES20File extends ExtendedINESFile {
 
     private final int nonVolatileProgramRamSize;
     private final int nonVolatileCharacterRamSize;
 
-    public INES20(int[] file) {
+    public NES20File(int[] file) {
         super(file);
 
         this.nonVolatileProgramRamSize = this.getNonVolatileProgramRamSize(file);

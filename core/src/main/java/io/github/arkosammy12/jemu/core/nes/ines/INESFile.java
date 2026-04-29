@@ -139,8 +139,8 @@ public class INESFile {
             }
 
             boolean hasByeTrainer = (file[6] & (1 << 2)) != 0;
-            int programRomSizeBytes = INES20.parseNes20ProgramRomSizeBytes(file);
-            int characterRomSizeBytes = INES20.parseNes20CharacterRomSizeBytes(file);
+            int programRomSizeBytes = NES20File.parseNes20ProgramRomSizeBytes(file);
+            int characterRomSizeBytes = NES20File.parseNes20CharacterRomSizeBytes(file);
 
             int finalIndex = 16;
             if (hasByeTrainer) {
@@ -150,12 +150,12 @@ public class INESFile {
             finalIndex += programRomSizeBytes;
             finalIndex += characterRomSizeBytes;
 
-            if (maskedByte7 == 0x08 && finalIndex < file.length) {
-                return new INES20(file);
+            if (maskedByte7 == 0x08 && finalIndex <= file.length) {
+                return new NES20File(file);
             } else if (maskedByte7 == 0x04) {
                 return new INESFile(file);
             } else if (maskedByte7 == 0x00 && bytes12To15AreZero) {
-                return new INES10(file);
+                return new ExtendedINESFile(file);
             } else {
                 return new INESFile(file);
             }
