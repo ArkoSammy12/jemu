@@ -369,10 +369,13 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
 
         this.setDataBus(value);
 
+        // TODO: Make this into a system-specific setting in the future. Off by default.
         // Block register writes during the first frame until the vbl, sprite 0 and sprite overflow flags are cleared
+        /*
         if (this.ppuInit) {
             return;
         }
+         */
         switch (address) {
             case PPUCTRL_ADDR -> {
                 this.ppuControl = value & 0xFC;
