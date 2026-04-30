@@ -41,14 +41,30 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
             return;
         }
         switch (joypadAction) {
-            case UP -> up = true;
-            case DOWN -> down = true;
-            case LEFT -> left = true;
-            case RIGHT -> right = true;
-            case START -> start = true;
-            case SELECT -> select = true;
-            case A -> A = true;
-            case B -> B = true;
+            case UP -> {
+                if (!this.down) {
+                    this.up = true;
+                }
+            }
+            case DOWN -> {
+                if (!this.up) {
+                    this.down = true;
+                }
+            }
+            case LEFT -> {
+                if (!this.right) {
+                    this.left = true;
+                }
+            }
+            case RIGHT -> {
+                if (!this.left) {
+                    this.right = true;
+                }
+            }
+            case START -> this.start = true;
+            case SELECT -> this.select = true;
+            case A -> this.A = true;
+            case B -> this.B = true;
         }
         this.updateJoyP();
     }
@@ -59,14 +75,14 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
             return;
         }
         switch (joypadAction) {
-            case UP -> up = false;
-            case DOWN -> down = false;
-            case LEFT -> left = false;
-            case RIGHT -> right = false;
-            case START -> start = false;
-            case SELECT -> select = false;
-            case A -> A = false;
-            case B -> B = false;
+            case UP -> this.up = false;
+            case DOWN -> this.down = false;
+            case LEFT -> this.left = false;
+            case RIGHT -> this.right = false;
+            case START -> this.start = false;
+            case SELECT -> this.select = false;
+            case A -> this.A = false;
+            case B -> this.B = false;
         }
         this.updateJoyP();
     }
