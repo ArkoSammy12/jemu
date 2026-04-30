@@ -13,6 +13,8 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
     private static final int LEFT_MASK = 1 << 6;
     private static final int RIGHT_MASK = 1 << 7;
 
+    private int physicalControllerState;
+
     private boolean strobeSignal;
     private boolean previousStrobe;
     private int currentControllerState;
@@ -21,7 +23,6 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
     public NESController(E emulator) {
         super(emulator);
     }
-
     @Override
     public void onActionPressed(Action action) {
         if (!(action instanceof Actions joypadAction)) {
@@ -29,22 +30,26 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
         }
         switch (joypadAction) {
             case UP -> {
-                if ((this.currentControllerState & DOWN_MASK) == 0) {
+                this.physicalControllerState |= UP_MASK;
+                if ((this.physicalControllerState & DOWN_MASK) == 0) {
                     this.currentControllerState |= UP_MASK;
                 }
             }
             case DOWN -> {
-                if ((this.currentControllerState & UP_MASK) == 0) {
+                this.physicalControllerState |= DOWN_MASK;
+                if ((this.physicalControllerState & UP_MASK) == 0) {
                     this.currentControllerState |= DOWN_MASK;
                 }
             }
             case LEFT -> {
-                if ((this.currentControllerState & RIGHT_MASK) == 0) {
+                this.physicalControllerState |= LEFT_MASK;
+                if ((this.physicalControllerState & RIGHT_MASK) == 0) {
                     this.currentControllerState |= LEFT_MASK;
                 }
             }
             case RIGHT -> {
-                if ((this.currentControllerState & LEFT_MASK) == 0) {
+                this.physicalControllerState |= RIGHT_MASK;
+                if ((this.physicalControllerState & LEFT_MASK) == 0) {
                     this.currentControllerState |= RIGHT_MASK;
                 }
             }
@@ -61,11 +66,35 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
             return;
         }
         switch (joypadAction) {
-            case UP -> this.currentControllerState &= ~UP_MASK;
-            case DOWN -> this.currentControllerState &= ~DOWN_MASK;
-            case LEFT -> this.currentControllerState &= ~LEFT_MASK;
-            case RIGHT -> this.currentControllerState &= ~RIGHT_MASK;
-            case START -> this.currentControllerState &= ~START_MASK;
+            case UP -> {
+                this.physicalControllerState &= ~UP_MASK;
+                this.currentControllerState &= ~UP_MASK;
+                if ((this.physicalControllerState & DOWN_MASK) != 0) {
+                    this.currentControllerState |= DOWN_MASK;
+                }
+            }
+            case DOWN -> {
+                this.physicalControllerState &= ~DOWN_MASK;
+                this.currentControllerState &= ~DOWN_MASK;
+                if ((this.physicalControllerState & UP_MASK) != 0) {
+                    this.currentControllerState |= UP_MASK;
+                }
+            }
+            case LEFT -> {
+                this.physicalControllerState &= ~LEFT_MASK;
+                this.currentControllerState &= ~LEFT_MASK;
+                if ((this.physicalControllerState & RIGHT_MASK) != 0) {
+                    this.currentControllerState |= RIGHT_MASK;
+                }
+            }
+            case RIGHT -> {
+                this.physicalControllerState &= ~RIGHT_MASK;
+                this.currentControllerState &= ~RIGHT_MASK;
+                if ((this.physicalControllerState & LEFT_MASK) != 0) {
+                    this.currentControllerState |= LEFT_MASK;
+                }
+            }
+            case START  -> this.currentControllerState &= ~START_MASK;
             case SELECT -> this.currentControllerState &= ~SELECT_MASK;
             case A -> this.currentControllerState &= ~A_MASK;
             case B -> this.currentControllerState &= ~B_MASK;

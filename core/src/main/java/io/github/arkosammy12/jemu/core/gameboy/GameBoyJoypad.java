@@ -14,6 +14,11 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     private static final int B_LEFT_MASK = 1 << 1;
     private static final int A_RIGHT_MASK = 1;
 
+    private boolean upPhysical;
+    private boolean downPhysical;
+    private boolean leftPhysical;
+    private boolean rightPhysical;
+
     private boolean up;
     private boolean down;
     private boolean left;
@@ -42,26 +47,30 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
         }
         switch (joypadAction) {
             case UP -> {
-                if (!this.down) {
+                this.upPhysical = true;
+                if (!this.downPhysical) {
                     this.up = true;
                 }
             }
             case DOWN -> {
-                if (!this.up) {
+                this.downPhysical = true;
+                if (!this.upPhysical) {
                     this.down = true;
                 }
             }
             case LEFT -> {
-                if (!this.right) {
+                this.leftPhysical = true;
+                if (!this.rightPhysical) {
                     this.left = true;
                 }
             }
             case RIGHT -> {
-                if (!this.left) {
+                this.rightPhysical = true;
+                if (!this.leftPhysical) {
                     this.right = true;
                 }
             }
-            case START -> this.start = true;
+            case START  -> this.start = true;
             case SELECT -> this.select = true;
             case A -> this.A = true;
             case B -> this.B = true;
@@ -75,10 +84,34 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
             return;
         }
         switch (joypadAction) {
-            case UP -> this.up = false;
-            case DOWN -> this.down = false;
-            case LEFT -> this.left = false;
-            case RIGHT -> this.right = false;
+            case UP -> {
+                this.upPhysical = false;
+                this.up = false;
+                if (this.downPhysical) {
+                    this.down = true;
+                }
+            }
+            case DOWN -> {
+                this.downPhysical = false;
+                this.down = false;
+                if (this.upPhysical) {
+                    this.up = true;
+                }
+            }
+            case LEFT -> {
+                this.leftPhysical = false;
+                this.left = false;
+                if (this.rightPhysical) {
+                    this.right = true;
+                }
+            }
+            case RIGHT -> {
+                this.rightPhysical = false;
+                this.right = false;
+                if (this.leftPhysical) {
+                    this.left = true;
+                }
+            }
             case START -> this.start = false;
             case SELECT -> this.select = false;
             case A -> this.A = false;
