@@ -117,8 +117,8 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
         return 0x00;
     }
 
-    public void cycle(RP2A03.APUHalfCycleType currentHalfCycleType) {
-        if (this.strobeSignal && currentHalfCycleType == RP2A03.APUHalfCycleType.GET) {
+    public void cycle() {
+        if (this.strobeSignal && this.emulator.getRicohCore().getCurrentApuHalfCycleType() == RP2A03.APUHalfCycleType.GET) {
             this.joy1ShiftRegister = this.currentControllerState;
         }
     }

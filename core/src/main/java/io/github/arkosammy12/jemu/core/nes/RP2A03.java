@@ -57,12 +57,63 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         this.controller = new NESController<>(emulator);
     }
 
+    public boolean getIRQSignal() {
+        return this.apu.getIRQSignal();
+    }
+
+    public boolean getRDYSignal() {
+        return this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE;
+    }
+
+    public NES6502 getCpu() {
+        return this.cpu;
+    }
+
+    public NESAPU<?> getApu() {
+        return this.apu;
+    }
+
+    public NESController<?> getController() {
+        return this.controller;
+    }
+
+    public APUHalfCycleType getCurrentApuHalfCycleType() {
+        return this.apuHalfCycleType;
+    }
+
+    @Override
+    public int readByte(int address) {
+        if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR) {
+            return this.apu.readByte(address);
+        } else if (address == OAMDMA_ADDR) {
+            return -1;
+        } else if (address == JOY1_ADDR) {
+            return this.controller.readJoy1();
+        } else if (address == JOY2_ADDR) {
+            return this.controller.readJoy2();
+        } else {
+            return -1;
+        }
+    }
+
+    @Override
+    public void writeByte(int address, int value) {
+        if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR || address == JOY2_ADDR) {
+            this.apu.writeByte(address, value);
+        } else if (address == OAMDMA_ADDR) {
+            this.oamDmaSourceAddressHighByte = value & 0xFF;
+            this.oamDmaTransferredBytes = 0;
+        } else if (address == JOY1_ADDR) {
+            this.controller.writeJoy1(value);
+        }
+    }
+
     public void cycleHalf() {
         NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
         this.cpu.cycle();
         if (phase == NMOS6502.Phase.PHI_2) {
 
-            this.controller.cycle(this.apuHalfCycleType);
+            this.controller.cycle();
 
             if (this.scheduleDmcDmaHaltCountdown > 0) {
                 this.scheduleDmcDmaHaltCountdown--;
@@ -154,57 +205,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                     }
                 }
             }
-        }
-    }
-
-    public boolean getIRQSignal() {
-        return this.apu.getIRQSignal();
-    }
-
-    public boolean getRDYSignal() {
-        return this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE;
-    }
-
-    public NES6502 getCpu() {
-        return this.cpu;
-    }
-
-    public NESAPU<?> getApu() {
-        return this.apu;
-    }
-
-    public NESController<?> getController() {
-        return this.controller;
-    }
-
-    public APUHalfCycleType getCurrentApuHalfCycleType() {
-        return this.apuHalfCycleType;
-    }
-
-    @Override
-    public int readByte(int address) {
-        if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR) {
-            return this.apu.readByte(address);
-        } else if (address == OAMDMA_ADDR) {
-            return -1;
-        } else if (address == JOY1_ADDR) {
-            return this.controller.readJoy1();
-        } else if (address == JOY2_ADDR) {
-            return this.controller.readJoy2();
-        } else {
-            return -1;
-        }
-    }
-
-    @Override
-    public void writeByte(int address, int value) {
-        if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR || address == JOY2_ADDR) {
-            this.apu.writeByte(address, value);
-        } else if (address == OAMDMA_ADDR) {
-            this.oamDmaSourceAddressHighByte = value & 0xFF;
-            this.oamDmaTransferredBytes = 0;
-        } else if (address == JOY1_ADDR) {
-            this.controller.writeJoy1(value);
         }
     }
 
