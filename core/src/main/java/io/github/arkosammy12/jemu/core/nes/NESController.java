@@ -28,10 +28,26 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
             return;
         }
         switch (joypadAction) {
-            case UP -> this.currentControllerState |= UP_MASK;
-            case DOWN -> this.currentControllerState |= DOWN_MASK;
-            case LEFT -> this.currentControllerState |= LEFT_MASK;
-            case RIGHT -> this.currentControllerState |= RIGHT_MASK;
+            case UP -> {
+                if ((this.currentControllerState & DOWN_MASK) == 0) {
+                    this.currentControllerState |= UP_MASK;
+                }
+            }
+            case DOWN -> {
+                if ((this.currentControllerState & UP_MASK) == 0) {
+                    this.currentControllerState |= DOWN_MASK;
+                }
+            }
+            case LEFT -> {
+                if ((this.currentControllerState & RIGHT_MASK) == 0) {
+                    this.currentControllerState |= LEFT_MASK;
+                }
+            }
+            case RIGHT -> {
+                if ((this.currentControllerState & LEFT_MASK) == 0) {
+                    this.currentControllerState |= RIGHT_MASK;
+                }
+            }
             case START -> this.currentControllerState |= START_MASK;
             case SELECT -> this.currentControllerState |= SELECT_MASK;
             case A -> this.currentControllerState |= A_MASK;
