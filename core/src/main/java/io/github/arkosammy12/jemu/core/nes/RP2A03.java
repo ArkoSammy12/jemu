@@ -79,7 +79,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     private void startDmcDma() {
-        this.dmcDmaStep = DmcDmaStep.DUMMY;
+        this.dmcDmaStep = DmcDmaStep.HALT;
     }
 
     private void cycleDma() {
@@ -87,11 +87,14 @@ public class RP2A03<E extends NESEmulator> implements Bus {
             return;
         }
 
-        // TODO: In no-operation DMA cycles, the CPU's constant reading becomes visible
         switch (this.apuHalfCycleType) {
             case GET -> {
                 switch (this.dmcDmaStep) {
                     case NONE -> this.tickOamDmaGetIfOngoing();
+                    case HALT -> {
+                        this.dmcDmaStep = DmcDmaStep.DUMMY;
+                        this.tickOamDmaGetIfOngoing();
+                    }
                     case DUMMY -> {
                         this.dmcDmaStep = DmcDmaStep.GET;
                         this.tickOamDmaGetIfOngoing();
@@ -101,11 +104,11 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                         this.dmcDmaStep = DmcDmaStep.NONE;
                     }
                 }
-
             }
             case PUT -> {
-                if (this.dmcDmaStep == DmcDmaStep.DUMMY) {
-                    this.dmcDmaStep = DmcDmaStep.GET;
+                switch (this.dmcDmaStep) {
+                    case HALT -> this.dmcDmaStep = DmcDmaStep.DUMMY;
+                    case DUMMY -> this.dmcDmaStep = DmcDmaStep.GET;
                 }
                 if (this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes < 256) {
                     this.emulator.getBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
@@ -219,6 +222,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     private enum DmcDmaStep {
         NONE,
+        HALT,
         DUMMY,
         GET
     }
