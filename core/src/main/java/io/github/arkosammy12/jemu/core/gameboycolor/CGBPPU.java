@@ -308,7 +308,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                 this.spriteFifoCurrentEntryIndex = -1;
                 this.spriteFifoStep = 0;
 
-                this.spriteCount++;
+                //this.spriteCount++;
             }
         }
     }
