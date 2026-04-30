@@ -62,6 +62,8 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         this.cpu.cycle();
         if (phase == NMOS6502.Phase.PHI_2) {
 
+            this.controller.cycle(this.apuHalfCycleType);
+
             if (this.scheduleDmcDmaHaltCountdown > 0) {
                 this.scheduleDmcDmaHaltCountdown--;
                 if (this.scheduleDmcDmaHaltCountdown <= 0) {

@@ -102,12 +102,7 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
     }
 
     public void writeJoy1(int value) {
-        boolean newStrobe = (value & 1) != 0;
-        if (this.previousStrobe && !newStrobe) {
-            this.joy1ShiftRegister = this.currentControllerState;
-        }
-        this.strobeSignal = newStrobe;
-        this.previousStrobe = newStrobe;
+        this.strobeSignal = (value & 1) != 0;
     }
 
     public int readJoy1() {
@@ -115,8 +110,14 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
             return (this.currentControllerState & 1);
         }
         int bit = this.joy1ShiftRegister & 1;
-        this.joy1ShiftRegister >>= 1;
+        this.joy1ShiftRegister = (this.joy1ShiftRegister >> 1) | 0x80;
         return bit;
+    }
+
+    public void cycle(RP2A03.APUHalfCycleType currentHalfCycleType) {
+        if (this.strobeSignal && currentHalfCycleType == RP2A03.APUHalfCycleType.GET) {
+            this.joy1ShiftRegister = this.currentControllerState;
+        }
     }
 
     public int readJoy2() {
