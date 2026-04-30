@@ -540,6 +540,13 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                             this.sprite0OnThisScanline = this.sprite0OnNextScanline;
                         }
                     }
+
+                    if (this.isPreRenderScanline()) {
+                        if (this.dotNumber == 0) {
+                            this.setSprite0HitFlag(false);
+                        }
+                    }
+
                 }
             }
             case SECOND -> {
@@ -576,7 +583,6 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                     if (this.isPreRenderScanline()) {
                         if (this.dotNumber == 0) {
                             this.vBlankFlagForNMI = false;
-                            this.setSprite0HitFlag(false);
                             this.setSpriteOverflowFlag(false);
                         } else if (this.dotNumber == 1) {
                             this.setVBlankFlag(false);
@@ -725,7 +731,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
 
                         if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
-                            this.setSprite0HItSignal.trigger(8);
+                            this.setSprite0HItSignal.trigger(1);
                         }
 
                         if (!foundOpaqueSpritePixel && spriteColor != 0) {
