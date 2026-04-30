@@ -716,6 +716,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
             }
         }
 
+        // TODO: Emulate color shown in the LCD during CPU STOP mode depending on which mode the STOP mode lands on. Same for CGB
         if (finalPixel != null) {
             if (this.pixelX >= 8 && this.enablePixelWrites) {
                 this.lcd[this.pixelX - 8][this.scanlineNumber] = finalPixel;
