@@ -357,7 +357,7 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
          */
 
         //this.dotsSpentInSpritePlusStalling = 0;
-        this.spriteCount = 0;
+        //this.spriteCount = 0;
 
         this.scannedEntries = 0;
 
@@ -676,12 +676,12 @@ public class DMGPPU<E extends GameBoyEmulator> extends VideoGenerator<E> impleme
                 this.spriteFifoCurrentEntryIndex = -1;
                 this.spriteFifoStep = 0;
 
-                this.spriteCount++;
+                //this.spriteCount++;
             }
         }
     }
 
-    protected int spriteCount;
+    //protected int spriteCount;
 
     protected void tickPixelShifter() {
         if (this.backgroundFifo.isEmpty()) {
