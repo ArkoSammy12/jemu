@@ -16,7 +16,6 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
     private int physicalControllerState;
 
     private boolean strobeSignal;
-    private boolean previousStrobe;
     private int currentControllerState;
     private int joy1ShiftRegister;
 
