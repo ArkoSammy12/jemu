@@ -113,14 +113,14 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
         return bit;
     }
 
+    public int readJoy2() {
+        return 0x00;
+    }
+
     public void cycle(RP2A03.APUHalfCycleType currentHalfCycleType) {
         if (this.strobeSignal && currentHalfCycleType == RP2A03.APUHalfCycleType.GET) {
             this.joy1ShiftRegister = this.currentControllerState;
         }
-    }
-
-    public int readJoy2() {
-        return 0x00;
     }
 
     public enum Actions implements Action {
