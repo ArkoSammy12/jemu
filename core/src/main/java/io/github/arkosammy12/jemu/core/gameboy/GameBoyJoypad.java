@@ -70,7 +70,7 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
                     this.right = true;
                 }
             }
-            case START  -> this.start = true;
+            case START -> this.start = true;
             case SELECT -> this.select = true;
             case A -> this.A = true;
             case B -> this.B = true;

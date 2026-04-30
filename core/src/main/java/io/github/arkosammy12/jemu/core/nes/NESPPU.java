@@ -384,7 +384,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.ppuMask = value & 0xFF;
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
                     // Change in rendering behavior takes 3 - 4 dots
-                    this.toggleRenderingSignal.trigger(8);
+                    this.toggleRenderingSignal.trigger(7);
                 }
             }
             case PPUSTATUS_ADDR -> {}
