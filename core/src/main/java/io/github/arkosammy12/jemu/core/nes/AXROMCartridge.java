@@ -6,14 +6,14 @@ import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.*;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.CIRAM_END;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.CIRAM_MIRROR_END;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.CIRAM_MIRROR_START;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_END;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_MIRROR_END;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_MIRROR_START;
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.PALETTE_RAM_START;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.*;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_END;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_MIRROR_END;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_MIRROR_START;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_END;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_MIRROR_END;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_MIRROR_START;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
 
 public class AXROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 

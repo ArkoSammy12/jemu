@@ -12,9 +12,9 @@ import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.PPU_END;
 import static io.github.arkosammy12.jemu.core.nes.NESCPUBus.PPU_START;
 
 // TODO: PAL implementation
-public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
+public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
 
-    public static final int[] PALETTE_2C02G_WIKI_PAL = {
+    public static final int[] PALETTE_2C02G_WIKI = {
             0x62, 0x62, 0x62, 0x00, 0x1c, 0x95, 0x19, 0x04, 0xac, 0x42, 0x00, 0x9d,
             0x61, 0x00, 0x6b, 0x6e, 0x00, 0x25, 0x65, 0x05, 0x00, 0x49, 0x1e, 0x00,
             0x22, 0x37, 0x00, 0x00, 0x49, 0x00, 0x00, 0x4f, 0x00, 0x00, 0x48, 0x16,
@@ -257,7 +257,7 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int spriteFetcherAttributeByte;
     private int spriteFetcherPatternTableLow;
 
-    public NESPPU(E emulator) {
+    public RP2C02(E emulator) {
         super(emulator);
         // TODO: PAL support
         this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
@@ -757,9 +757,9 @@ public class NESPPU<E extends NESEmulator> extends VideoGenerator<E> implements 
         }
 
         int videoColorIndex = ((this.getEmphasisBits() << 6) | (paletteByte & 0b111111)) * 3;
-        int red = PALETTE_2C02G_WIKI_PAL[videoColorIndex];
-        int green = PALETTE_2C02G_WIKI_PAL[videoColorIndex + 1];
-        int blue = PALETTE_2C02G_WIKI_PAL[videoColorIndex + 2];
+        int red = PALETTE_2C02G_WIKI[videoColorIndex];
+        int green = PALETTE_2C02G_WIKI[videoColorIndex + 1];
+        int blue = PALETTE_2C02G_WIKI[videoColorIndex + 2];
         int argb = 0xFF000000 | (red << 16) | (green << 8) | blue;
         if (this.isVisibleDot() && this.isVisibleScanline()) {
             this.video[this.dotNumber - 1][this.scanlineNumber] = argb;

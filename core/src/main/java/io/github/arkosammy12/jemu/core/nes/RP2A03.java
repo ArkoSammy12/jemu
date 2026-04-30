@@ -4,7 +4,7 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.cpu.NES6502;
 import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
 
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.OAMDATA_ADDR;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.OAMDATA_ADDR;
 
 // TODO: PAL implementation
 public class RP2A03<E extends NESEmulator> implements Bus {

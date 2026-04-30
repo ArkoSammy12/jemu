@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 import java.util.Arrays;
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.core.nes.NESPPU.*;
+import static io.github.arkosammy12.jemu.core.nes.RP2C02.*;
 import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
 
 public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {

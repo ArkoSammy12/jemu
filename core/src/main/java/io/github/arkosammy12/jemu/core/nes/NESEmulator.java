@@ -19,7 +19,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private final SystemHost systemHost;
 
     private final RP2A03<?> ricohCore;
-    private final NESPPU<?> ppu;
+    private final RP2C02<?> ppu;
     private final NESCPUBus<?> cpuBus;
     private final NESCartridge<?> cartridge;
 
@@ -60,7 +60,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
         }
 
         this.ricohCore = new RP2A03<>(this, apuSampleBufferSize);
-        this.ppu = new NESPPU<>(this);
+        this.ppu = new RP2C02<>(this);
         this.cpuBus = new NESCPUBus<>(this);
     }
 
@@ -78,7 +78,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     }
 
     @Override
-    public NESPPU<?> getVideoGenerator() {
+    public RP2C02<?> getVideoGenerator() {
         return this.ppu;
     }
 
