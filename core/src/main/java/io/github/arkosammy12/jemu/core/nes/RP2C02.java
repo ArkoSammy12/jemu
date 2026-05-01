@@ -567,9 +567,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
 
                     if (this.dotNumber >= 257 && this.dotNumber <= 320) {
                         this.tickSpriteFetcher();
-                    }
 
-                    if (this.dotNumber >= 257 && this.dotNumber <= 320) {
                         this.spriteEvaluationStep = 0;
                         this.spriteEvaluationOamReadingCounter = 0;
                         this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
@@ -588,9 +586,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                             if (this.ppuInit) {
                                 this.ppuInit = false;
                             }
-                        }
-
-                        if (this.dotNumber >= 280 && this.dotNumber <= 304) {
+                        } else if (this.dotNumber >= 280 && this.dotNumber <= 304) {
                             if (this.isRenderingEnabled()) {
                                 this.copyVerticalPositionBitsToV();
                             }
@@ -605,22 +601,12 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                         if (this.isRenderingEnabled()) {
                             this.copyHorizontalPositionBitsToV();
                         }
-                    } else if (this.dotNumber == 258) {
-                        this.readBytePPU(this.getNametableFetchAddress());
-                    } else if (this.dotNumber == 260) {
-                        this.readBytePPU(this.getNametableFetchAddress());
-                    } else if (this.dotNumber == 266) {
-                        this.readBytePPU(this.getNametableFetchAddress());
-                    } else if (this.dotNumber == 306) {
-                        this.readBytePPU(this.getNametableFetchAddress());
                     } else if (this.dotNumber >= 321 && this.dotNumber <= 336) {
                         this.tickPixelShifter();
                         this.tickBgFetcher();
                     } else if (this.dotNumber == 338) {
-                        this.readBytePPU(this.getNametableFetchAddress());
-                    }
-
-                    if ((this.dotSkipped && this.dotNumber == 0) || (!this.dotSkipped && this.dotNumber == 340)) {
+                        this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
+                    } else if ((this.dotSkipped && this.dotNumber == 0) || (!this.dotSkipped && this.dotNumber == 340)) {
                         this.readBytePPU(this.getNametableFetchAddress());
                     }
 
@@ -943,6 +929,9 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.spriteFetcherStep = 1;
             }
             case 1 -> {
+                // TODO: Check parity of unused nametable fetch read
+                this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
+
                 this.spriteFetcherYPosition = this.secondaryOAM[this.secondaryOamAddress];
                 this.incrementSecondaryOamAddress();
                 this.spriteFetcherStep = 2;
@@ -951,6 +940,9 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.spriteFetcherStep = 3;
             }
             case 3 -> {
+                // TODO: Check parity of unused nametable fetch read
+                this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
+
                 this.spriteFetcherTileNumber = this.secondaryOAM[this.secondaryOamAddress];
                 this.incrementSecondaryOamAddress();
                 this.spriteFetcherStep = 4;
