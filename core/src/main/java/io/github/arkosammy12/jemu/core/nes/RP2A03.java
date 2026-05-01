@@ -57,14 +57,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         this.controller = new NESController<>(emulator);
     }
 
-    public boolean getIRQSignal() {
-        return this.apu.getIRQSignal();
-    }
-
-    public boolean getRDYSignal() {
-        return this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE;
-    }
-
     public NES6502 getCpu() {
         return this.cpu;
     }
@@ -109,10 +101,10 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     public void cycleHalf() {
+        boolean isHalted = this.cpu.isHalted();
         NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
         this.cpu.cycle();
         if (phase == NMOS6502.Phase.PHI_2) {
-
             this.controller.cycle();
 
             if (this.scheduleDmcDmaHaltCountdown > 0) {
@@ -123,29 +115,24 @@ public class RP2A03<E extends NESEmulator> implements Bus {
             }
 
             this.apu.cycleHalf();
-            this.cycleDma();
+            this.cycleDma(isHalted);
 
             this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
         }
     }
 
     private void startDmcDma() {
-        this.dmcDmaStep = DmcDmaStep.HALT;
+        this.dmcDmaStep = DmcDmaStep.DUMMY;
     }
 
-    private void cycleDma() {
-        if (!((this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE) && this.cpu.isHalted())) {
+    private void cycleDma(boolean isHalted) {
+        if (!((this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE) && isHalted)) {
             return;
         }
-
         switch (this.apuHalfCycleType) {
             case GET -> {
                 switch (this.dmcDmaStep) {
                     case NONE -> this.tickOamDmaGetIfOngoing();
-                    case HALT -> {
-                        this.dmcDmaStep = DmcDmaStep.DUMMY;
-                        this.tickOamDmaGetIfOngoing();
-                    }
                     case DUMMY -> {
                         this.dmcDmaStep = DmcDmaStep.GET;
                         this.tickOamDmaGetIfOngoing();
@@ -157,9 +144,8 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                 }
             }
             case PUT -> {
-                switch (this.dmcDmaStep) {
-                    case HALT -> this.dmcDmaStep = DmcDmaStep.DUMMY;
-                    case DUMMY -> this.dmcDmaStep = DmcDmaStep.GET;
+                if (this.dmcDmaStep == DmcDmaStep.DUMMY) {
+                    this.dmcDmaStep = DmcDmaStep.GET;
                 }
                 if (this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes < 256) {
                     this.emulator.getBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
@@ -208,6 +194,14 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         }
     }
 
+    public boolean getIRQSignal() {
+        return this.apu.getIRQSignal();
+    }
+
+    public boolean getRDYSignal() {
+        return this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE;
+    }
+
     public enum APUHalfCycleType {
         GET,
         PUT;
@@ -222,7 +216,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     private enum DmcDmaStep {
         NONE,
-        HALT,
         DUMMY,
         GET
     }

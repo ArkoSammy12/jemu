@@ -314,16 +314,19 @@ public class NMOS6502 implements Processor {
     @Override
     public int cycle() {
 
+        int originalSubCycleIndex = this.subCycleIndex;
+        int originalInstructionRegister = this.getIR();
+        boolean originalDisablePCWrites = this.disablePCWrites;
         boolean halted = this.cpuHalted;
 
         if (this.firstSubCycle) {
             this.firstSubCycle = false;
-            this.onSubCycleEnd();
+            this.onSubCycleEnd(originalSubCycleIndex, originalInstructionRegister, originalDisablePCWrites);
             return 0;
         }
 
         if (halted) {
-            this.onSubCycleEnd();
+            this.onSubCycleEnd(originalSubCycleIndex, originalInstructionRegister, originalDisablePCWrites);
             return 0;
         }
 
@@ -352,11 +355,11 @@ public class NMOS6502 implements Processor {
             subCycleIndex = 0;
         }
 
-        this.onSubCycleEnd();
+        this.onSubCycleEnd(originalSubCycleIndex, originalInstructionRegister, originalDisablePCWrites);
         return 0;
     }
 
-    private void onSubCycleEnd() {
+    private void onSubCycleEnd(int originalSubCycleIndex, int originalInstructionRegister, boolean originalDisablePCWrites) {
         if (this.phase == Phase.PHI_2) {
             boolean currentNMI = systemBus.getNMI();
             if (!this.oldNMI && currentNMI) {
@@ -364,11 +367,19 @@ public class NMOS6502 implements Processor {
             }
             this.oldNMI = currentNMI;
             this.cpuHalted = systemBus.getRDY() && this.readWriteCycle == ReadWriteCycle.READ;
+            if (this.cpuHalted) {
+                //setIR(originalInstructionRegister);
+                //this.subCycleIndex = originalSubCycleIndex;
+                //this.disablePCWrites = originalDisablePCWrites;
+            }
         }
         this.phase = this.phase.getOpposite();
     }
 
     protected void pollInterrupts() {
+        if (systemBus.getRDY() && this.readWriteCycle == ReadWriteCycle.READ) {
+            return;
+        }
         if (systemBus.getRES()) {
             this.brkSource = BRKSource.RESET;
         } else if (this.nmiEdgeLatch) {
