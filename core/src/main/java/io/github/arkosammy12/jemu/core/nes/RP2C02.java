@@ -358,8 +358,6 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         };
     }
 
-    // TODO: Bus conflicts for VRAM and OAM during rendering
-
     @Override
     public void writeByte(int address, int value) {
         if (!(address >= PPU_START && address <= PPU_END)) {
@@ -393,9 +391,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
             case PPUSTATUS_ADDR -> {}
             case OAMADDR_ADDR -> this.primaryOamAddress = value & 0xFF;
             case OAMDATA_ADDR -> {
-                // TODO: Bus conflicts. Read OAMDATA register section in nesdev for more info.
-
-                if (this.isVisibleScanline()) {
+                if ((this.isVisibleScanline() || this.isPreRenderScanline()) && this.isRenderingEnabled()) {
                     this.primaryOamAddress = (this.primaryOamAddress + 4) & 0xFC;
                 } else {
                     this.primaryOAM[this.primaryOamAddress] = value & 0xFF;
