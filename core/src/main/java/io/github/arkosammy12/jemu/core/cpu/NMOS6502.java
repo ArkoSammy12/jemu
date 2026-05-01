@@ -429,7 +429,6 @@ public class NMOS6502 implements Processor {
                     }
                     case 3 -> {
                         if (this.brkSource == BRKSource.RESET) {
-                            // TODO: Populate data bus
                             readByte(getS() | 0x0100);
                         } else {
                             writeByte(getS() | 0x0100, getPCH());
@@ -441,7 +440,6 @@ public class NMOS6502 implements Processor {
                     }
                     case 5 -> {
                         if (this.brkSource == BRKSource.RESET) {
-                            // TODO: Populate data bus
                             readByte(((getS() - 1) & 0xFF) | 0x0100);
                         } else {
                             writeByte(((getS() - 1) & 0xFF) | 0x0100, getPCL());
@@ -466,7 +464,6 @@ public class NMOS6502 implements Processor {
                     }
                     case 7 -> {
                         if (this.brkSource == BRKSource.RESET) {
-                            // TODO: Populate data bus
                             readByte(((getS() - 2) & 0xFF) | 0x0100);
                         } else {
                             int P = getP();
