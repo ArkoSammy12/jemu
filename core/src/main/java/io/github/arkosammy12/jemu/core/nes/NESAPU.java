@@ -155,7 +155,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             case JOY2_ADDR -> { // Frame counter control
 
                 this.frameCounterControlUpdateSignal.trigger(switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 3;
+                    case GET -> 5;
                     case PUT -> 4;
                 });
 
