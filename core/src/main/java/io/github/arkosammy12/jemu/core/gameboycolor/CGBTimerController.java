@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.core.gameboycolor;
 
-import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.gameboy.DMGTimerController;
 
 public class CGBTimerController<E extends GameBoyColorEmulator> extends DMGTimerController<E> {
@@ -16,26 +15,9 @@ public class CGBTimerController<E extends GameBoyColorEmulator> extends DMGTimer
 
     @Override
     protected boolean cycleSystemClock() {
-
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
-        if (this.reloadDelay > 0) {
-            this.reloadDelay--;
-
-            if (this.reloadDelay <= 0) {
-                this.timerCounter = this.timerModulo;
-                this.triggerInterrupt();
-                this.reloadOccurred = true;
-            }
-
-        }
-
-        boolean frequencyBit = switch (this.timerControl & TAC_CLOCK_SELECT_MASK) {
-            case 0 -> (this.systemClock & FREQ_0) != 0;
-            case 1 -> (this.systemClock & FREQ_1) != 0;
-            case 2 -> (this.systemClock & FREQ_2) != 0;
-            case 3 -> (this.systemClock & FREQ_3) != 0;
-            default -> throw new EmulatorException("Lower 2 bits of TAC is not in the range [0, 3]!");
-        };
+        this.tickPendingReloadIfPresent();
+        boolean frequencyBit = this.getFrequencyBit();
 
         if (this.oldFrequencyBit && !frequencyBit && (this.timerControl & TAC_ENABLE_BIT) != 0) {
             int newTimerCounter = this.timerCounter + 1;
@@ -44,7 +26,6 @@ public class CGBTimerController<E extends GameBoyColorEmulator> extends DMGTimer
             }
             this.timerCounter = newTimerCounter & 0xFF;
         }
-
         this.oldFrequencyBit = frequencyBit;
 
         boolean divBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
@@ -58,7 +39,6 @@ public class CGBTimerController<E extends GameBoyColorEmulator> extends DMGTimer
         this.oldDivBit4 = divBit4;
         this.oldDivBit5 = divBit5;
         return apuFrameSequencerTick;
-
     }
 
     public void onAPUPowerOn() {

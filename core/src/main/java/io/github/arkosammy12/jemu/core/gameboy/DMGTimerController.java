@@ -85,37 +85,16 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
     }
 
     protected boolean cycleSystemClock() {
-
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
-        if (this.reloadDelay > 0) {
-            this.reloadDelay--;
-
-            if (this.reloadDelay <= 0) {
-                this.timerCounter = this.timerModulo;
-                this.triggerInterrupt();
-                this.reloadOccurred = true;
-            }
-
-        }
-
-        boolean frequencyBit = switch (this.timerControl & TAC_CLOCK_SELECT_MASK) {
-            case 0 -> (this.systemClock & FREQ_0) != 0;
-            case 1 -> (this.systemClock & FREQ_1) != 0;
-            case 2 -> (this.systemClock & FREQ_2) != 0;
-            case 3 -> (this.systemClock & FREQ_3) != 0;
-            default -> throw new EmulatorException("Lower 2 bits of TAC is not in the range [0, 3]!");
-        };
-
-        boolean timerInput = frequencyBit && (this.timerControl & TAC_ENABLE_BIT) != 0;
+        this.tickPendingReloadIfPresent();
+        boolean timerInput = this.getFrequencyBit() && (this.timerControl & TAC_ENABLE_BIT) != 0;
 
         if (this.oldTimerInput && !timerInput) {
-
             int newTimerCounter = this.timerCounter + 1;
             if (newTimerCounter > 0xFF) {
                 this.reloadDelay = 4;
             }
             this.timerCounter = newTimerCounter & 0xFF;
-
         }
 
         this.oldTimerInput = timerInput;
@@ -124,7 +103,27 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
         boolean apuFrameSequencerTick = this.oldDivBit4 && !divBit4;
         this.oldDivBit4 = divBit4;
         return apuFrameSequencerTick;
+    }
 
+    protected void tickPendingReloadIfPresent() {
+        if (this.reloadDelay > 0) {
+            this.reloadDelay--;
+            if (this.reloadDelay <= 0) {
+                this.timerCounter = this.timerModulo;
+                this.triggerInterrupt();
+                this.reloadOccurred = true;
+            }
+        }
+    }
+
+    protected boolean getFrequencyBit() {
+        return switch (this.timerControl & TAC_CLOCK_SELECT_MASK) {
+            case 0 -> (this.systemClock & FREQ_0) != 0;
+            case 1 -> (this.systemClock & FREQ_1) != 0;
+            case 2 -> (this.systemClock & FREQ_2) != 0;
+            case 3 -> (this.systemClock & FREQ_3) != 0;
+            default -> throw new EmulatorException("Lower 2 bits of TAC is not in the range [0, 3]!");
+        };
     }
 
     public void resetDiv() {
