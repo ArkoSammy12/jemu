@@ -278,13 +278,13 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
             this.spriteShifters[i] = new SpriteShifter();
         }
 
-        this.copyTtoVSignal = new ActionSignal(() -> this.setV(this.getT()));
-        this.toggleRenderingSignal = new ActionSignal(() -> this.isRendering = !this.isRendering);
-        this.clearVblOnPpuStatusReadSignal = new ActionSignal(() -> {
+        this.copyTtoVSignal = new ActionSignal(_ -> this.setV(this.getT()));
+        this.toggleRenderingSignal = new ActionSignal(_ -> this.isRendering = !this.isRendering);
+        this.clearVblOnPpuStatusReadSignal = new ActionSignal(_ -> {
             this.setVBlankFlag(false);
             this.vBlankFlagForNMI = false;
         });
-        this.setSprite0HItSignal = new ActionSignal(() -> {
+        this.setSprite0HItSignal = new ActionSignal(_ -> {
             if (this.isRenderingEnabled()) {
                 this.setSprite0HitFlag(true);
             }
@@ -315,7 +315,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.setVBlankFlag(false);
                 this.vBlankFlagForNMI = false;
-                this.clearVblOnPpuStatusReadSignal.trigger(2);
+                this.clearVblOnPpuStatusReadSignal.trigger(2, 0);
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.dataBus & 0b00011111);
                 this.setDataBus(ret);
@@ -387,7 +387,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.ppuMask = value & 0xFF;
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
                     // Change in rendering behavior takes 3 - 4 dots
-                    this.toggleRenderingSignal.trigger(7);
+                    this.toggleRenderingSignal.trigger(7, 0);
                 }
             }
             case PPUSTATUS_ADDR -> {}
@@ -416,7 +416,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.setT((this.getT() & ~0xFF) | (value & 0xFF));
                     // Copying of t to v is continuous during the write
                     this.setV(this.getT());
-                    this.copyTtoVSignal.trigger(3);
+                    this.copyTtoVSignal.trigger(3, 0);
                 } else {
                     this.setT((this.getT() & ~0x3F00) | ((value & 0b00111111) << 8));
                     this.setT(this.getT() & ~(1 << 14));
@@ -734,7 +734,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
 
                         if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
-                            this.setSprite0HItSignal.trigger(1);
+                            this.setSprite0HItSignal.trigger(1, 0);
                         }
 
                         if (!foundOpaqueSpritePixel && spriteColor != 0) {

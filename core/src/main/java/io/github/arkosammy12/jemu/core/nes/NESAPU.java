@@ -23,7 +23,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private final NoiseChannel noiseChannel = new NoiseChannel();
     private final DMCChannel dmcChannel = new DMCChannel();
 
-    private int joy2UpdateValueBuffer;
 
     private int frameCounterCycleCounter;
 
@@ -40,9 +39,9 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         super(emulator);
         this.sampleBuffer = new byte[samplesPerFrame];
 
-        this.frameCounterControlUpdateSignal = new ActionSignal(() -> {
-            this.frameCounterStepMode = (this.joy2UpdateValueBuffer & (1 << 7)) != 0 ? FrameCounterStepMode.STEP_5 : FrameCounterStepMode.STEP_4;
-            this.frameCounterInterruptInhibitFlag = (this.joy2UpdateValueBuffer & (1 << 6)) != 0;
+        this.frameCounterControlUpdateSignal = new ActionSignal(newJoy2Value -> {
+            this.frameCounterStepMode = (newJoy2Value & (1 << 7)) != 0 ? FrameCounterStepMode.STEP_5 : FrameCounterStepMode.STEP_4;
+            this.frameCounterInterruptInhibitFlag = (newJoy2Value & (1 << 6)) != 0;
             this.frameCounterCycleCounter = 0;
 
             if (this.frameCounterInterruptInhibitFlag) {
@@ -55,9 +54,9 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             }
         });
 
-        this.clockHalfFrameSignal = new ActionSignal(this::clockHalfFrame);
-        this.clockQuarterFrameSignal = new ActionSignal(this::clockQuarterFrame);
-        this.clearFrameInterruptFlagSignal = new ActionSignal(() -> this.frameInterruptFlag = false);
+        this.clockHalfFrameSignal = new ActionSignal(_ -> this.clockHalfFrame());
+        this.clockQuarterFrameSignal = new ActionSignal(_ -> this.clockQuarterFrame());
+        this.clearFrameInterruptFlagSignal = new ActionSignal(_ -> this.frameInterruptFlag = false);
     }
 
     @Override
@@ -115,7 +114,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 this.clearFrameInterruptFlagSignal.trigger(switch (this.getCurrentApuHalfCycleType()) {
                     case GET -> 3;
                     case PUT -> 1;
-                });
+                }, 0);
 
                 yield ret;
             }
@@ -155,22 +154,21 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             case JOY2_ADDR -> { // Frame counter control
 
                 this.frameCounterControlUpdateSignal.trigger(switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 5;
+                    case GET -> 3;
                     case PUT -> 4;
-                });
+                }, value & 0xFF);
 
-                this.joy2UpdateValueBuffer = value & 0xFF;
             }
             default -> throw new EmulatorException("Invalid write address $%04X for NES APU!".formatted(address));
         }
     }
 
     private void signalHalfFrameClock() {
-        this.clockHalfFrameSignal.trigger(1);
+        this.clockHalfFrameSignal.trigger(1, 0);
     }
 
     private void signalQuarterFrameClock() {
-        this.clockQuarterFrameSignal.trigger(1);
+        this.clockQuarterFrameSignal.trigger(1, 0);
     }
 
     private void setInterruptFlagIfApplicable() {
