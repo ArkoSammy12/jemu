@@ -154,6 +154,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
                 if ((value & 0x80) != 0) {
                     this.clockHalfFrame();
+                    this.clockQuarterFrame();
                 }
 
             }
