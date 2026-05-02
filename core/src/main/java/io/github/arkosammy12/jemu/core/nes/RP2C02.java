@@ -332,6 +332,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.setDataBus(ret);
                 yield ret;
             }
+            // TODO: 5 dot (?) delay between $2007 access and the memory access happening. Ask 100th Coin for more details.
             case PPUDATA_ADDR -> {
                 int readAddress = this.getV() & 0x3FFF;
 
@@ -419,6 +420,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 }
                 this.toggleW();
             }
+            // TODO: 5 dot (?) delay between $2007 access and the memory access happening. Ask 100th Coin for more details.
             case PPUDATA_ADDR -> {
                 this.writeBytePPU(this.getV(), value);
 

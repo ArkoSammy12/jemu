@@ -2,7 +2,6 @@ package io.github.arkosammy12.jemu.core.nes;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.cpu.NES6502;
-import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
 
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.OAMDATA_ADDR;
 
@@ -119,22 +118,25 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     public void cycleHalf() {
         boolean isHalted = this.cpu.isHalted();
-        NMOS6502.Phase phase = this.cpu.getHalfCyclePhase();
-        this.cpu.cycle();
-        if (phase == NMOS6502.Phase.PHI_2) {
-            this.controller.cycle();
+        switch (this.cpu.getHalfCyclePhase()) {
+            case PHI_1 -> this.cpu.cycle();
+            case PHI_2 -> {
+                this.cpu.cycle();
 
-            if (this.scheduleDmcDmaHaltCountdown > 0) {
-                this.scheduleDmcDmaHaltCountdown--;
-                if (this.scheduleDmcDmaHaltCountdown <= 0) {
-                    this.startDmcDma();
+                this.controller.cycle();
+
+                if (this.scheduleDmcDmaHaltCountdown > 0) {
+                    this.scheduleDmcDmaHaltCountdown--;
+                    if (this.scheduleDmcDmaHaltCountdown <= 0) {
+                        this.startDmcDma();
+                    }
                 }
+
+                this.apu.cycleHalf();
+                this.cycleDma(isHalted);
+
+                this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
             }
-
-            this.apu.cycleHalf();
-            this.cycleDma(isHalted);
-
-            this.apuHalfCycleType = this.apuHalfCycleType.getOpposite();
         }
     }
 
