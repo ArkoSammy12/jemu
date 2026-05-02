@@ -43,14 +43,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             this.frameCounterStepMode = (newJoy2Value & (1 << 7)) != 0 ? FrameCounterStepMode.STEP_5 : FrameCounterStepMode.STEP_4;
             this.frameCounterInterruptInhibitFlag = (newJoy2Value & (1 << 6)) != 0;
             this.frameCounterCycleCounter = 0;
-
             if (this.frameCounterInterruptInhibitFlag) {
                 this.frameInterruptFlag = false;
-            }
-
-            if (this.frameCounterStepMode == FrameCounterStepMode.STEP_5) {
-                this.clockQuarterFrame();
-                this.clockHalfFrame();
             }
         });
 
@@ -154,9 +148,13 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             case JOY2_ADDR -> { // Frame counter control
 
                 this.frameCounterControlUpdateSignal.trigger(switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 3;
+                    case GET -> 5;
                     case PUT -> 4;
                 }, value & 0xFF);
+
+                if ((value & 0x80) != 0) {
+                    this.clockHalfFrame();
+                }
 
             }
             default -> throw new EmulatorException("Invalid write address $%04X for NES APU!".formatted(address));
