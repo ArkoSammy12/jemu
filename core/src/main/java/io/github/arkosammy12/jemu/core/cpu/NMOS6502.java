@@ -9789,15 +9789,11 @@ public class NMOS6502 implements Processor {
             }
             case 1 -> {
                 setOperand(readByte(getPC()));
-                if (!condition) {
-                    pollInterrupts();
-                } else {
+                pollInterrupts();
+                if (condition) {
                     int base = (getPC() + 1) & 0xFFFF;
                     setAddress((base + (byte) getOperand()) & 0xFFFF);
                     setBoundaryCrossed(getAddressHigh() != ((base >>> 8) & 0xFF));
-                    if (!getBoundaryCrossed()) {
-                        pollInterrupts();
-                    }
                 }
 
                 subCycleIndex = 2;
