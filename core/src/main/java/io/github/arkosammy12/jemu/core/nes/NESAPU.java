@@ -23,7 +23,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private final NoiseChannel noiseChannel = new NoiseChannel();
     private final DMCChannel dmcChannel = new DMCChannel();
 
-
     private int frameCounterCycleCounter;
 
     private final ActionSignal frameCounterControlUpdateSignal;
@@ -249,6 +248,9 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                                 this.signalQuarterFrameClock();
                                 this.signalHalfFrameClock();
                                 this.trySetFrameCounterIRQFlag(true);
+                            }
+                            case 14914 -> {
+                                this.trySetFrameCounterIRQFlag(false);
                             }
                         }
                         this.frameCounterCycleCounter++;
