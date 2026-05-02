@@ -31,7 +31,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private final ActionSignal clearFrameInterruptFlagSignal;
 
     private boolean frameInterruptFlag;
-    private boolean frameInterruptFlagForIRQ;
+    private boolean frameInterruptFlagForIRQSignal;
     private FrameCounterStepMode frameCounterStepMode = FrameCounterStepMode.STEP_4;
     private boolean frameCounterInterruptInhibitFlag;
 
@@ -45,7 +45,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             this.frameCounterCycleCounter = 0;
             if (this.frameCounterInterruptInhibitFlag) {
                 this.frameInterruptFlag = false;
-                this.frameInterruptFlagForIRQ = false;
+                this.frameInterruptFlagForIRQSignal = false;
             }
         });
 
@@ -53,7 +53,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         this.clockQuarterFrameSignal = new ActionSignal(_ -> this.clockQuarterFrame());
         this.clearFrameInterruptFlagSignal = new ActionSignal(_ -> {
             this.frameInterruptFlag = false;
-            this.frameInterruptFlagForIRQ = false;
+            this.frameInterruptFlagForIRQSignal = false;
         });
     }
 
@@ -234,7 +234,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                         switch (this.frameCounterCycleCounter) {
                             case 14914 -> {
                                 this.trySetFrameCounterIRQFlag(true);
-                                this.frameInterruptFlagForIRQ = !this.frameCounterInterruptInhibitFlag;
+                                this.frameInterruptFlagForIRQSignal = !this.frameCounterInterruptInhibitFlag;
                             }
                             case 14915 -> {
                                 this.trySetFrameCounterIRQFlag(false);
@@ -306,7 +306,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     }
 
     public boolean getIRQSignal() {
-        return this.dmcChannel.getInterruptFlag() || (this.frameInterruptFlagForIRQ && !this.frameCounterInterruptInhibitFlag);
+        return this.dmcChannel.getInterruptFlag() || (this.frameInterruptFlagForIRQSignal && !this.frameCounterInterruptInhibitFlag);
     }
 
     private APUHalfCycleType getCurrentApuHalfCycleType() {
