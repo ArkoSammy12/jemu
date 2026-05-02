@@ -50,6 +50,8 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     private DmcDmaStep dmcDmaStep = DmcDmaStep.NONE;
     private int dmcDmaAddress;
 
+    private int internalDataBus;
+
     public RP2A03(E emulator, int apuSampleBufferSize) {
         this.emulator = emulator;
         this.cpu = new NES6502(emulator);
@@ -75,8 +77,23 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     @Override
     public int readByte(int address) {
+        this.internalDataBus = this.emulator.getCpuBus().readByte(address);
+        return this.internalDataBus;
+    }
+
+    @Override
+    public void writeByte(int address, int value) {
+        this.internalDataBus = value;
+        this.emulator.getCpuBus().writeByte(address, value);
+    }
+
+    public int readByteIO(int address) {
         if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR) {
-            return this.apu.readByte(address);
+            int ret = this.apu.readByte(address);
+            if (address == SND_CHN_ADDR) {
+                ret = (ret & ~0b00100000) | (this.internalDataBus & 0b00100000);
+            }
+            return ret;
         } else if (address == OAMDMA_ADDR) {
             return -1;
         } else if (address == JOY1_ADDR) {
@@ -88,11 +105,11 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         }
     }
 
-    @Override
-    public void writeByte(int address, int value) {
+    public void writeByteIO(int address, int value) {
         if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR || address == JOY2_ADDR) {
             this.apu.writeByte(address, value);
         } else if (address == OAMDMA_ADDR) {
+            this.internalDataBus = value & 0xFF;
             this.oamDmaSourceAddressHighByte = value & 0xFF;
             this.oamDmaTransferredBytes = 0;
         } else if (address == JOY1_ADDR) {
@@ -129,6 +146,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         if (!((this.oamDmaTransferredBytes < 256 || this.dmcDmaStep != DmcDmaStep.NONE) && isHalted)) {
             return;
         }
+        // TODO: Proper bus isolation in the specific case (which I still don't yet understand) that makes the DMA units not update the data bus
         switch (this.apuHalfCycleType) {
             case GET -> {
                 switch (this.dmcDmaStep) {
@@ -138,7 +156,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                         this.tickOamDmaGetIfOngoing();
                     }
                     case GET -> {
-                        this.apu.writeDmcDma(this.emulator.getBus().readByte(this.dmcDmaAddress));
+                        this.apu.writeDmcDma(this.emulator.getCpuBus().readByte(this.dmcDmaAddress));
                         this.dmcDmaStep = DmcDmaStep.NONE;
                     }
                 }
@@ -148,7 +166,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
                     this.dmcDmaStep = DmcDmaStep.GET;
                 }
                 if (this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes < 256) {
-                    this.emulator.getBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
+                    this.emulator.getCpuBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
                     this.oamDmaTransferredBytes++;
                     this.oamDmaCurrentData = -1;
                 } else {
@@ -160,9 +178,9 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
     private void tickOamDmaGetIfOngoing() {
         if (this.oamDmaTransferredBytes < 256) {
-            this.oamDmaCurrentData = this.emulator.getBus().readByte((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
+            this.oamDmaCurrentData = this.emulator.getCpuBus().readByte((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
         } else {
-            this.emulator.getBus().readByte(this.cpu.getLastAddress());
+            this.emulator.getCpuBus().readByte(this.cpu.getLastAddress());
         }
     }
 

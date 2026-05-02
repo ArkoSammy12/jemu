@@ -93,7 +93,11 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     }
 
     @Override
-    public NESCPUBus<?> getBus() {
+    public RP2A03<?> getBus() {
+        return this.ricohCore;
+    }
+
+    public NESCPUBus<?> getCpuBus() {
         return this.cpuBus;
     }
 

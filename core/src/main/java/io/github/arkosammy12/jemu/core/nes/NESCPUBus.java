@@ -34,12 +34,7 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
     @Override
     public int readByte(int address) {
         if (address == SND_CHN_ADDR) {
-            int sndChnByte = this.emulator.getRicohCore().readByte(address);
-            if (sndChnByte >= 0) {
-                return (sndChnByte & ~0b00100000) | (this.dataBus & 0b00100000);
-            } else {
-                return this.dataBus;
-            }
+            return this.emulator.getRicohCore().readByteIO(address);
         }
 
         int ret = -1;
@@ -54,7 +49,7 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
             ret = ret >= 0 ? ppuByte & ret : ppuByte;
         }
 
-        int apuIoByte = this.emulator.getRicohCore().readByte(address);
+        int apuIoByte = this.emulator.getRicohCore().readByteIO(address);
         if (apuIoByte >= 0) {
             ret = ret >= 0 ? apuIoByte & ret : apuIoByte;
         }
@@ -84,7 +79,7 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
         }
 
         this.emulator.getVideoGenerator().writeByte(address, value);
-        this.emulator.getRicohCore().writeByte(address, value);
+        this.emulator.getRicohCore().writeByteIO(address, value);
         this.emulator.getCartridge().writeByte(address, value);
     }
 
