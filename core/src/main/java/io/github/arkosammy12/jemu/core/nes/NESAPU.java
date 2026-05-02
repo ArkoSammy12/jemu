@@ -51,7 +51,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         this.clockHalfFrameSignal = new ActionSignal(_ -> this.clockHalfFrame());
         this.clockQuarterFrameSignal = new ActionSignal(_ -> this.clockQuarterFrame());
-        this.clearFrameInterruptFlagSignal = new ActionSignal(_ -> this.frameInterruptFlag = false);
+        this.clearFrameInterruptFlagSignal = new ActionSignal(_ -> {
+            this.frameInterruptFlag = false;
+            this.frameInterruptFlagForIRQ = false;
+        });
     }
 
     @Override
