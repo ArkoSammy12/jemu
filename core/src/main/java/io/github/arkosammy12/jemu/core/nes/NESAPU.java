@@ -29,7 +29,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private final ActionSignal clockHalfFrameSignal;
     private final ActionSignal clockQuarterFrameSignal;
     private final ActionSignal clearFrameInterruptFlagSignal;
-    private final ActionSignal changeFrameInterruptFlagForIRQSignal;
 
     private boolean frameInterruptFlag;
     private boolean frameInterruptFlagForIRQ;
@@ -46,13 +45,13 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             this.frameCounterCycleCounter = 0;
             if (this.frameCounterInterruptInhibitFlag) {
                 this.frameInterruptFlag = false;
+                this.frameInterruptFlagForIRQ = false;
             }
         });
 
         this.clockHalfFrameSignal = new ActionSignal(_ -> this.clockHalfFrame());
         this.clockQuarterFrameSignal = new ActionSignal(_ -> this.clockQuarterFrame());
         this.clearFrameInterruptFlagSignal = new ActionSignal(_ -> this.frameInterruptFlag = false);
-        this.changeFrameInterruptFlagForIRQSignal = new ActionSignal(val -> this.frameInterruptFlagForIRQ = val != 0);
     }
 
     @Override
@@ -154,12 +153,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                     case PUT -> 4;
                 }, value & 0xFF);
 
-                if ((value & (1 << 6)) != 0) {
-                    this.changeFrameInterruptFlagForIRQSignal.trigger(switch (this.getCurrentApuHalfCycleType()) {
-                        case GET -> 4;
-                        case PUT -> 3;
-                    }, 0);
-                }
 
                 if ((value & 0x80) != 0) {
                     this.clockHalfFrame();
@@ -193,7 +186,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         this.clockHalfFrameSignal.tick();
         this.frameCounterControlUpdateSignal.tick();
         this.clearFrameInterruptFlagSignal.tick();
-        this.changeFrameInterruptFlagForIRQSignal.tick();
 
         this.clockFrameCounter();
 
