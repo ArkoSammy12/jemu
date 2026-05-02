@@ -172,23 +172,17 @@ public class RP2A03<E extends NESEmulator> implements Bus {
             case LOAD -> {
                 if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
                     this.scheduleDmcDmaHaltCountdown = switch (this.apuHalfCycleType) {
-                        case GET -> 3;
-                        case PUT -> 2;
+                        case GET -> 4;
+                        case PUT -> 3;
                     };
                 }
             }
             case RELOAD -> {
-                switch (this.apuHalfCycleType) {
-                    case GET -> {
-                        if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
-                            this.scheduleDmcDmaHaltCountdown = 1;
-                        }
-                    }
-                    case PUT -> {
-                        if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
-                            this.startDmcDma();
-                        }
-                    }
+                if (this.scheduleDmcDmaHaltCountdown <= 0 && this.dmcDmaStep == DmcDmaStep.NONE) {
+                    this.scheduleDmcDmaHaltCountdown = switch (this.apuHalfCycleType) {
+                        case GET -> 2;
+                        case PUT -> 1;
+                    };
                 }
             }
         }

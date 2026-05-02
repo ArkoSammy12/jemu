@@ -720,7 +720,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         private int timer;
 
         private boolean sampleBufferEmpty = true;
-        private boolean resetSampleFlag;
 
         private int sampleBuffer;
         private boolean silenceFlag;
