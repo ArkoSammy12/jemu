@@ -170,10 +170,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         this.clockQuarterFrameSignal.trigger(1, 0);
     }
 
-    private void setInterruptFlagIfApplicable() {
-        if (!this.frameCounterInterruptInhibitFlag) {
-            this.frameInterruptFlag = true;
-        }
+    private void trySetFrameCounterIRQFlag(boolean forceSet) {
+        this.frameInterruptFlag = forceSet || !this.frameCounterInterruptInhibitFlag;
     }
 
     public void writeDmcDma(int value) {
@@ -224,17 +222,16 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
     private void clockFrameCounter() {
         // TODO: PAL implementation with different apu cycle totals for signals
-
         switch (this.frameCounterStepMode) {
             case STEP_4 -> {
                 switch (this.getCurrentApuHalfCycleType()) {
                     case GET -> {
                         switch (this.frameCounterCycleCounter) {
                             case 14914 -> {
-                                this.setInterruptFlagIfApplicable();
+                                this.trySetFrameCounterIRQFlag(true);
                             }
                             case 14915 -> {
-                                this.setInterruptFlagIfApplicable();
+                                this.trySetFrameCounterIRQFlag(false);
                                 this.frameCounterCycleCounter = 0;
                             }
                         }
@@ -251,7 +248,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                             case 14914 - 1 -> {
                                 this.signalQuarterFrameClock();
                                 this.signalHalfFrameClock();
-                                this.setInterruptFlagIfApplicable();
+                                this.trySetFrameCounterIRQFlag(true);
                             }
                         }
                         this.frameCounterCycleCounter++;
@@ -300,7 +297,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     }
 
     public boolean getIRQSignal() {
-        return this.frameInterruptFlag || this.dmcChannel.getInterruptFlag();
+        return this.dmcChannel.getInterruptFlag() || (this.frameInterruptFlag && !this.frameCounterInterruptInhibitFlag);
     }
 
     private APUHalfCycleType getCurrentApuHalfCycleType() {
