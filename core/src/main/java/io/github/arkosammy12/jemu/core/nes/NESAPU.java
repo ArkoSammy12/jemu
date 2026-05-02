@@ -810,9 +810,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         @Override
         protected void clockTimer() {
-            if (this.timer > 0) {
-                this.timer--;
-            } else {
+            this.timer--;
+            if (this.timer <= 0) {
                 this.timer = this.ratePeriodLut[this.getRateIndex()];
                 if (!this.silenceFlag) {
                     if ((this.shiftRegister & 1) != 0) {
