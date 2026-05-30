@@ -6,6 +6,8 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPEmulator;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.nes.NESController;
+import net.java.games.input.Event;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.KeyEvent;
@@ -53,6 +55,12 @@ public class CosmacVIPAdapter extends AbstractSystemAdapter implements CosmacVIP
             case KeyEvent.VK_V -> CosmacVIPKeypad.Actions.KEY_F;
             default -> null;
         };
+    }
+
+    @Override
+    @Nullable
+    protected CosmacVIPKeypad.Actions getActionForJoypadEvent(Event e) {
+        return null;
     }
 
     @Override

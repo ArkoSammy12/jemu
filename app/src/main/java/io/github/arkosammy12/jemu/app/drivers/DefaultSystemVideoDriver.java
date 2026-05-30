@@ -1,5 +1,6 @@
 package io.github.arkosammy12.jemu.app.drivers;
 
+import io.github.arkosammy12.jemu.app.adapters.JoypadAdapter;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
@@ -11,6 +12,12 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.Closeable;
+
+import net.java.games.input.Controller;
+import net.java.games.input.Event;
+import net.java.games.input.EventQueue;
+import net.java.games.input.ControllerEnvironment;
+import net.java.games.input.Component;
 
 import java.awt.image.BufferStrategy;
 
@@ -31,10 +38,14 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
     private volatile boolean running = true;
     private boolean frameRequested = false;
 
+    private final Thread joypadThread;
+    private volatile boolean joypadRunning = true;
+    private final JoypadAdapter joypadAdapter;
+
     private int lastWidth = -1;
     private int lastHeight = -1;
 
-    public DefaultSystemVideoDriver(VideoGenerator<?> videoGenerator, KeyListener keyListener) {
+    public DefaultSystemVideoDriver(VideoGenerator<?> videoGenerator, KeyListener keyListener, JoypadAdapter joypadAdapter) {
         this.displayWidth = videoGenerator.getImageWidth();
         this.displayHeight = videoGenerator.getImageHeight();
 
@@ -42,10 +53,48 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
         this.bufferedImage = new BufferedImage(displayWidth, displayHeight, BufferedImage.TYPE_INT_RGB);
 
         this.addKeyListener(keyListener);
+        this.joypadAdapter = joypadAdapter;
+
+        this.joypadThread = new Thread(this::joypadLoop, "%s-joypad-thread".formatted(MavenProperties.ARTIFACT_ID));
+        this.joypadThread.setDaemon(true);
+        this.joypadThread.start();
 
         this.renderThread = new Thread(this::renderLoop, "%s-render-thread".formatted(MavenProperties.ARTIFACT_ID));
         this.renderThread.setDaemon(true);
         this.renderThread.start();
+    }
+
+    private void joypadLoop() {
+        Event event = new Event();
+
+        while (joypadRunning) {
+            // Leave this in the loop - presumably it will populate controllers going online
+            // after application has started?
+            Controller[] controllers = ControllerEnvironment.getDefaultEnvironment().getControllers();
+
+            if(controllers.length > 0)
+            {
+                // Only poll the first controller for now, as this is a hard-coded POC
+                // Remember that there could be multiple controllers for release
+                var controller = controllers[0];
+
+                if (controller.poll())
+                {
+                    EventQueue queue = controller.getEventQueue();
+
+                    while (queue.getNextEvent(event)) {
+                        this.joypadAdapter.joypadEvent(event);
+                    }
+                }
+            }
+
+            try {
+                Thread.sleep(5); // test
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return;
+            }
+        }
     }
 
     @Override
@@ -141,6 +190,13 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
         if (this.renderThread != null) {
             try {
                 this.renderThread.join();
+            } catch (InterruptedException _) {}
+        }
+
+        this.joypadRunning = false;
+        if (this.joypadThread != null) {
+            try {
+                this.joypadThread.join();
             } catch (InterruptedException _) {}
         }
     }

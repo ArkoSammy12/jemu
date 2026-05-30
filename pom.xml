@@ -94,11 +94,57 @@
                 <version>5.10.1</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>net.java.jinput</groupId>
+                <artifactId>jinput</artifactId>
+                <version>2.0.10</version>
+            </dependency>
+            <dependency>
+                <groupId>net.java.jinput</groupId>
+                <artifactId>jinput</artifactId>
+                <version>2.0.10</version>
+                <classifier>natives-all</classifier>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
     <build>
         <plugins>
+            <plugin>
+                <groupId>com.googlecode.mavennatives</groupId>
+                <artifactId>maven-nativedependencies-plugin</artifactId>
+                <version>0.0.7</version>
+                <executions>
+                    <execution>
+                        <id>unpacknatives</id>
+                        <goals>
+                            <goal>copy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>1.6.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <executable>java</executable>
+                    <arguments>
+                        <argument>-classpath</argument>
+                        <classpath/>
+                        <argument>-Djava.library.path=${project.build.directory}/natives</argument>
+                        <argument>-Djinput.loglevel=OFF</argument>
+                        <argument>net.java.games.input.example.ReadAllEvents</argument>
+                    </arguments>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>

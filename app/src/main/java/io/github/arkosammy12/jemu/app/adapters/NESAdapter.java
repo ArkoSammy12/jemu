@@ -5,6 +5,8 @@ import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.nes.NESController;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
+import net.java.games.input.Component;
+import net.java.games.input.Event;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.KeyEvent;
@@ -40,6 +42,44 @@ public class NESAdapter extends AbstractSystemAdapter {
             case KeyEvent.VK_K -> NESController.Actions.B;
             default -> null;
         };
+    }
+
+    @Override
+    @Nullable
+    protected NESController.Actions getActionForJoypadEvent(Event e) {
+        Component.Identifier id = e.getComponent().getIdentifier();
+        float value = e.getValue();
+
+        if (id == Component.Identifier.Axis.POV)
+        {
+            if (value == Component.POV.UP)
+                return NESController.Actions.UP;
+
+            if (value == Component.POV.DOWN)
+                return NESController.Actions.DOWN;
+
+            if (value == Component.POV.LEFT)
+                return NESController.Actions.LEFT;
+
+            if (value == Component.POV.RIGHT)
+                return NESController.Actions.RIGHT;
+
+            return null;
+        }
+
+        if (id == Component.Identifier.Button._8)
+            return NESController.Actions.START;
+
+        if (id == Component.Identifier.Button._7)
+            return NESController.Actions.SELECT;
+
+        if (id == Component.Identifier.Button._1)
+            return NESController.Actions.A;
+
+        if (id == Component.Identifier.Button._3)
+            return NESController.Actions.B;
+
+        return null;
     }
 
     @Override

@@ -12,6 +12,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.audio.AudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.MonoAudioRenderer;
 import io.github.arkosammy12.jemu.frontend.audio.StereoAudioRenderer;
+import net.java.games.input.Event;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -66,7 +67,9 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
 
         };
 
-        this.videoDriver = new DefaultSystemVideoDriver(this.emulator.getVideoGenerator(), keyAdapter);
+        JoypadAdapter joypadAdapter = new JoypadAdapter(this);
+
+        this.videoDriver = new DefaultSystemVideoDriver(this.emulator.getVideoGenerator(), keyAdapter, joypadAdapter);
         this.audioDriver = this.emulator.getAudioGenerator().isStereo()
                 ? new StereoAudioRendererDriver(this.emulator.getAudioGenerator(), new StereoAudioRenderer(this.emulator.getFramerate()))
                 : new MonoAudioRendererDriver(this.emulator.getAudioGenerator(), new MonoAudioRenderer(this.emulator.getFramerate()));
@@ -77,6 +80,9 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
 
     @Nullable
     protected abstract SystemController.Action getActionForKeyCode(int keyCode);
+
+    @Nullable
+    protected abstract SystemController.Action getActionForJoypadEvent(Event e);
 
     @Override
     public byte[] getRom() {

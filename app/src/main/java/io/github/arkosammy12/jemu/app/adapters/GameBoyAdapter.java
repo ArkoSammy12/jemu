@@ -4,10 +4,12 @@ import io.github.arkosammy12.jemu.app.io.initializers.CoreInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
 import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
+import net.java.games.input.Event;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -80,6 +82,11 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
         };
     }
 
+    @Override
+    @Nullable
+    protected GameBoyJoypad.Actions getActionForJoypadEvent(Event e) {
+        return null;
+    }
 
     @Override
     public System getSystem() {
