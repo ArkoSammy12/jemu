@@ -31,6 +31,7 @@ public class NMOS6507 extends NMOS6502 {
             public Bus getBus() {
                 return systemBus.getBus();
             }
+
         });
     }
 
