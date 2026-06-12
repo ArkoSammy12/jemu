@@ -21,10 +21,13 @@ public class MBC3 extends GameBoyCartridge {
 
     private int romBankNumber = 1;
     protected int ramBankNumber;
-    protected int ramEnable;
+    protected boolean ramRTCEnable;
+    private final boolean mbc30;
 
     public MBC3(GameBoyEmulator emulator, int cartridgeType) {
         super(emulator, cartridgeType);
+
+        boolean mbc30 = false;
 
         this.romBanks = switch (this.romSizeHeader) {
             case 0x00 -> new byte[2][0x4000];
@@ -34,7 +37,10 @@ public class MBC3 extends GameBoyCartridge {
             case 0x04 -> new byte[32][0x4000];
             case 0x05 -> new byte[64][0x4000];
             case 0x06 -> new byte[128][0x4000];
-            case 0x07 -> new byte[256][0x4000];
+            case 0x07 -> {
+                mbc30 = true;
+                yield new byte[256][0x4000];
+            }
             default -> throw new EmulatorException("Incompatible ROM size header $%02X for MBC3 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
 
@@ -44,7 +50,10 @@ public class MBC3 extends GameBoyCartridge {
                 case 0x01 -> new byte[1][0x800];
                 case 0x02 -> new byte[1][0x2000];
                 case 0x03 -> new byte[4][0x2000];
-                case 0x05 -> new byte[8][0x2000];
+                case 0x05 -> {
+                    mbc30 = true;
+                    yield new byte[8][0x2000];
+                }
                 default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC3 GameBoy cartridge type!".formatted(this.ramSizeHeader));
             };
         } else {
@@ -82,6 +91,7 @@ public class MBC3 extends GameBoyCartridge {
                 }
             });
         }
+        this.mbc30 = mbc30;
     }
 
     @Override
@@ -91,7 +101,7 @@ public class MBC3 extends GameBoyCartridge {
         } else if (address >= 0x4000 && address <= 0x7FFF) {
             return (int) this.romBanks[this.romBankNumber & this.romBankMask][address - 0x4000] & 0xFF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber <= 0x07 && this.ramEnable == 0x0A && this.ramBanks != null) {
+            if (this.ramBankNumber <= 0x07 && this.ramRTCEnable && this.ramBanks != null) {
                 byte[] ramBank = this.ramBanks[this.ramBankNumber & this.ramBankMask];
                 address -= 0xA000;
                 if (address < ramBank.length) {
@@ -110,17 +120,17 @@ public class MBC3 extends GameBoyCartridge {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0x0000 && address <= 0x1FFF) {
-            this.ramEnable = value & 0xFF;
+            this.ramRTCEnable = (value & 0xF) == 0xA;
         } else if (address >= 0x2000 && address <= 0x3FFF) {
-            this.romBankNumber = value & 0xFF;
+            this.romBankNumber = value & (this.mbc30 ? 0xFF : 0x7F);
             if (this.romBankNumber == 0) {
                 this.romBankNumber = 1;
             }
             this.romBankNumber &= this.romBankMask;
         } else if (address >= 0x4000 && address <= 0x5FFF) {
-            this.ramBankNumber = value & 0xFF;
+            this.ramBankNumber = value & 0xF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber <= 0x07 && this.ramEnable == 0x0A && this.ramBanks != null) {
+            if (this.ramBankNumber <= 0x07 && this.ramRTCEnable && this.ramBanks != null) {
                 byte[] ramBank = this.ramBanks[this.ramBankNumber & this.ramBankMask];
                 address -= 0xA000;
                 if (address < ramBank.length) {

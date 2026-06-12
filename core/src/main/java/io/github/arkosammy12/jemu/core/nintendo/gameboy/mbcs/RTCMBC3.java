@@ -64,7 +64,7 @@ public class RTCMBC3 extends MBC3 {
     @Override
     public int readByte(int address) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramEnable == 0x0A) {
+            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramRTCEnable) {
                 return switch (this.ramBankNumber) {
                     case RTC_S_ADDR -> this.seconds;
                     case RTC_M_ADDR -> this.minutes;
@@ -81,7 +81,7 @@ public class RTCMBC3 extends MBC3 {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramEnable == 0x0A) {
+            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramRTCEnable) {
                 switch (this.ramBankNumber) {
                     case RTC_S_ADDR -> {
                         this.internalSeconds = value & 0x3F;
