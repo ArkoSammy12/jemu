@@ -45,15 +45,15 @@ public class RCAStudioIIAdapter extends AbstractSystemAdapter {
             case KeyEvent.VK_C -> RCAStudioIIKeypad.Actions.KEYPAD1_9;
 
             case KeyEvent.VK_0, KeyEvent.VK_NUMPAD0 -> RCAStudioIIKeypad.Actions.KEYPAD2_0;
-            case KeyEvent.VK_1, KeyEvent.VK_NUMPAD1 -> RCAStudioIIKeypad.Actions.KEYPAD2_1;
-            case KeyEvent.VK_2, KeyEvent.VK_NUMPAD2 -> RCAStudioIIKeypad.Actions.KEYPAD2_2;
-            case KeyEvent.VK_3, KeyEvent.VK_NUMPAD3 -> RCAStudioIIKeypad.Actions.KEYPAD2_3;
+            case KeyEvent.VK_1, KeyEvent.VK_NUMPAD7 -> RCAStudioIIKeypad.Actions.KEYPAD2_1;
+            case KeyEvent.VK_2, KeyEvent.VK_NUMPAD8 -> RCAStudioIIKeypad.Actions.KEYPAD2_2;
+            case KeyEvent.VK_3, KeyEvent.VK_NUMPAD9 -> RCAStudioIIKeypad.Actions.KEYPAD2_3;
             case KeyEvent.VK_4, KeyEvent.VK_NUMPAD4 -> RCAStudioIIKeypad.Actions.KEYPAD2_4;
             case KeyEvent.VK_5, KeyEvent.VK_NUMPAD5 -> RCAStudioIIKeypad.Actions.KEYPAD2_5;
             case KeyEvent.VK_6, KeyEvent.VK_NUMPAD6 -> RCAStudioIIKeypad.Actions.KEYPAD2_6;
-            case KeyEvent.VK_7, KeyEvent.VK_NUMPAD7 -> RCAStudioIIKeypad.Actions.KEYPAD2_7;
-            case KeyEvent.VK_8, KeyEvent.VK_NUMPAD8 -> RCAStudioIIKeypad.Actions.KEYPAD2_8;
-            case KeyEvent.VK_9, KeyEvent.VK_NUMPAD9 -> RCAStudioIIKeypad.Actions.KEYPAD2_9;
+            case KeyEvent.VK_7, KeyEvent.VK_NUMPAD1 -> RCAStudioIIKeypad.Actions.KEYPAD2_7;
+            case KeyEvent.VK_8, KeyEvent.VK_NUMPAD2 -> RCAStudioIIKeypad.Actions.KEYPAD2_8;
+            case KeyEvent.VK_9, KeyEvent.VK_NUMPAD3 -> RCAStudioIIKeypad.Actions.KEYPAD2_9;
             default -> null;
         };
     }
