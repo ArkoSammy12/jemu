@@ -59,7 +59,8 @@ public class RCAStudioIIAdapter extends AbstractSystemAdapter {
     }
 
     @Override
-    public @Nullable SystemController.Action getActionForJoypadEvent(InputComponent.ID id) {
+    @Nullable
+    public SystemController.Action getActionForJoypadEvent(InputComponent.ID id) {
         return null;
     }
 
