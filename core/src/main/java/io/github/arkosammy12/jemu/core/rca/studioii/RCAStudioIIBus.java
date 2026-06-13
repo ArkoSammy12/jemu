@@ -8,7 +8,7 @@ import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
 
 public class RCAStudioIIBus implements Bus {
 
-    private static final byte[] SYSTEM_ROM = intToByteArray(new int[] {
+    static final byte[] SYSTEM_ROM = intToByteArray(new int[] {
             0x90, 0xb1, 0xb4, 0xa5, 0xab, 0xf8, 0x08, 0xb2, 0xb6, 0xb8, 0xf8, 0x1c,
             0xa1, 0xf8, 0xbf, 0xa2, 0xf8, 0x6b, 0xa4, 0xf8, 0x03, 0xb5, 0xd4, 0x7a,
             0x42, 0xf6, 0x42, 0x70, 0x22, 0x78, 0x22, 0x73, 0xc0, 0x00, 0x23, 0x7e,
@@ -183,7 +183,7 @@ public class RCAStudioIIBus implements Bus {
     });
 
     private final byte[] cartridge;
-    private final byte[] ram = new byte[512];
+    protected final byte[] ram = new byte[512];
 
     public RCAStudioIIBus(RCAStudioIIEmulator emulator) {
         this.cartridge = emulator.getHost().getRom().map(rom -> Arrays.copyOf(rom, rom.length)).orElse(null);
@@ -191,7 +191,7 @@ public class RCAStudioIIBus implements Bus {
 
     @Override
     public int readByte(int address) {
-        address &= 0xFFF;
+        address &= 0xFFFF;
         if (address <= 0x3FF) {
             return (int) SYSTEM_ROM[address & 0x7FF] & 0xFF;
         } else if (address <= 0x7FF) {
@@ -212,7 +212,7 @@ public class RCAStudioIIBus implements Bus {
 
     @Override
     public void writeByte(int address, int value) {
-        address &= 0xFFF;
+        address &= 0xFFFF;
         if (address > 0x7FF) {
             address &= 0x3FF;
             if (address <= 0x1FF) {

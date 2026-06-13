@@ -16,7 +16,7 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     COSMAC_VIP("cosmac-vip", "COSMAC-VIP", new String[] {"cos", "bin"}, args -> new CosmacVIPAdapter(args.jemu(), args.emulatorInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),
     VIP_CHIP_8("vip-chip8", "VIP CHIP-8", new String[] {"ch8", "hc8"}, args -> new CosmacVIPAdapter(args.jemu(), args.emulatorInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8)),
     VIP_CHIP_8X("vip-chip8x", "VIP CHIP-8X", new String[] {"ch8", "c8x"}, args -> new CosmacVIPAdapter(args.jemu(), args.emulatorInitializer(), CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
-    RCA_STUDIO_II("rca-studioii", "RCA Studio II", new String[]{"bin"}, args -> new RCAStudioIIAdapter(args.jemu(), args.emulatorInitializer())),
+    RCA_STUDIO_II("rca-studioii", "RCA Studio II", new String[]{"bin", "st2"}, args -> new RCAStudioIIAdapter(args.jemu(), args.emulatorInitializer())),
     GAME_BOY("gameboy", "Game Boy", new String[] {"gb"}, args -> new GameBoyAdapter(args.jemu(), args.emulatorInitializer(), GameBoyHost.Model.DMG)),
     GAME_BOY_COLOR("gameboy-color", "Game Boy Color", new String[] {"gbc"}, args -> new GameBoyAdapter(args.jemu(), args.emulatorInitializer(), GameBoyHost.Model.CGB)),
     NES("nes", "Nintendo Entertainment System", new String[] {"nes"}, args -> new NESAdapter(args.jemu(), args.emulatorInitializer()));

@@ -5,13 +5,16 @@ import io.github.arkosammy12.jemu.core.rca.CDP1802System;
 import io.github.arkosammy12.jemu.core.rca.CDP1861;
 import io.github.arkosammy12.jemu.core.rca.ToneGenerator;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
+import org.apache.commons.io.FilenameUtils;
+
+import java.util.Optional;
 
 public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
 
     private final SystemHost systemHost;
 
     private final CDP1802 cpu;
-    private final RCAStudioIIBus bus;
+    private final Bus bus;
     private final CDP1861<?> vdp;
     private final AudioGenerator audioGenerator;
     private final RCAStudioIIKeypad keypad;
@@ -19,10 +22,17 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     public RCAStudioIIEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
         this.cpu = new CDP1802(this);
-        this.bus = new RCAStudioIIBus(this);
         this.vdp = new CDP1861<>(this);
         this.audioGenerator = new ToneGenerator<>(this);
         this.keypad = new RCAStudioIIKeypad();
+
+        Optional<Boolean> isSt2File = systemHost.getRomPath().map(path -> FilenameUtils.getExtension(path.toString()).equals("st2"));
+        Optional<byte[]> rom = systemHost.getRom();
+        if (rom.isPresent() && isSt2File.isPresent() && isSt2File.get()) {
+            this.bus = new St2LoadedBus(rom.get());
+        } else {
+            this.bus = new RCAStudioIIBus(this);
+        }
     }
 
     @Override
