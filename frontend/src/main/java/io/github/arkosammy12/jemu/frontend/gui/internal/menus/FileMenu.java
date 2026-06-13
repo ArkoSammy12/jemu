@@ -159,16 +159,12 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         return Optional.ofNullable(this.currentRomPath);
     }
 
-    public void loadFile(Path filePath) {
-        this.loadFile(filePath, false);
-    }
-
     @Override
-    public void loadFile(Path filePath, boolean forceReset) {
+    public void loadFile(Path filePath) {
         SwingUtilities.invokeLater(() -> {
             this.currentRomPath = filePath;
             this.ejectRomButton.setEnabled(true);
-            if (this.resetOnFileSelect || forceReset) {
+            if (this.resetOnFileSelect) {
                 mainWindow.getMainMenuBar().getEmulatorMenu().restartEmulator();
             }
         });

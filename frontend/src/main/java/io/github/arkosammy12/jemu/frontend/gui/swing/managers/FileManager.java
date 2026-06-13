@@ -5,7 +5,7 @@ import java.util.Optional;
 
 public interface FileManager {
 
-    void loadFile(Path filePath, boolean forceReset);
+    void loadFile(Path filePath);
 
     Optional<Path> getSelectedRomPath();
 

@@ -77,13 +77,14 @@ Usage:
 jemu [-hV] -r=<romPath> [-s=<system>]
 ```
 
-| Argument                    | Description                                                                                                                                     | Default |
-|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `-r, --rom <path>`          | **Required.** Path to the ROM file.                                                                                                             | —       |
-| `-s, --system <identifier>` | Launch with the specified system selected, or omit to use the saved setting. See [supported systems](#supported-systems) for valid identifiers. | —       |
-| `-h, --help`                | Show the help message and exit.                                                                                                                 | —       |
-| `-V, --version`             | Print version information and exit.                                                                                                             | —       |
+| Argument                    | Description                                                                                                                                                                                              | Default |
+|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `-r, --rom <path>`          | Path to the ROM file.                                                                                                                                                                                    | —       |
+| `-s, --system <identifier>` | Launch with the specified system selected, or omit to use the saved setting or system detected from ROM file extension, if specified. See [supported systems](#supported-systems) for valid identifiers. | —       |
+| `-h, --help`                | Show the help message and exit.                                                                                                                                                                          | —       |
+| `-V, --version`             | Print version information and exit.                                                                                                                                                                      | —       |
 
+On startup **jemu** will attempt to perform a power-cycle with the provided, detected, or saved system and specified ROM file, if any.
 
 ## Dev Builds
 

@@ -66,9 +66,11 @@ public final class Jemu {
             this.uiEventListenerThread = new Thread(this::eventListenerLoop, "%s-event-listener-thread".formatted(MavenProperties.ARTIFACT_ID));
 
             if (cliArgs != null) {
-                Optional<System> system = cliArgs.getSystem();
-                this.mainWindow.getFileManager().loadFile(cliArgs.getRomPath(), system.isPresent());
-                system.ifPresent(s -> this.mainWindow.getEmulatorManager().setCurrentSystemDescriptor(s));
+                cliArgs.getRomPath().ifPresent(romPath -> this.mainWindow.getFileManager().loadFile(romPath));
+                cliArgs.getSystem().ifPresent(system -> {
+                    this.mainWindow.getEmulatorManager().setCurrentSystemDescriptor(system);
+                    this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(system, false));
+                });
             }
 
             this.mainWindow.show();
