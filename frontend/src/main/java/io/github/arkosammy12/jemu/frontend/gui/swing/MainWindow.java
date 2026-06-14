@@ -191,6 +191,10 @@ public class MainWindow implements Closeable {
         return this.systemDescriptors;
     }
 
+    public Optional<Path> getDataDirectoryPath() {
+        return Optional.ofNullable(this.dataDirectory);
+    }
+
     public SystemViewport getSystemViewport() {
         return Objects.requireNonNull(this.systemViewport);
     }

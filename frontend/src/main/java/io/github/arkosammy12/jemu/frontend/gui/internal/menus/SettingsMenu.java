@@ -12,10 +12,13 @@ import io.github.arkosammy12.jemu.util.Pair;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.ActionListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
+import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow.tryParseInt;
 
@@ -90,6 +93,30 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         });
         sampleRateButtonGroup.add(kHz48000Button);
 
+        JMenuItem openDataDirectoryButton = new JMenuItem("Open data directory");
+        openDataDirectoryButton.addActionListener(_ -> {
+            Optional<Path> optionalDataDirectoryPath = mainWindow.getDataDirectoryPath();
+            if (optionalDataDirectoryPath.isEmpty()) {
+                mainWindow.showDialog("Failed to open data directory", "Data directory path was not specified or failed to be acquired!", MainWindow.DialogType.ERROR);
+                return;
+            }
+            Path dataDirectory = optionalDataDirectoryPath.get();
+            if (!Files.exists(dataDirectory) || !Files.isDirectory(dataDirectory)) {
+                mainWindow.showDialog("Failed to open data directory", "Directory does not exist: " + dataDirectory, MainWindow.DialogType.ERROR);
+                return;
+            }
+            if (!Desktop.isDesktopSupported()) {
+                mainWindow.showDialog("Failed to open data directory", "Desktop API not supported!", MainWindow.DialogType.ERROR);
+                return;
+            }
+            Desktop desktop = Desktop.getDesktop();
+            try {
+                desktop.open(dataDirectory.toFile());
+            } catch (IOException e) {
+                mainWindow.showDialog("Failed to open data directory", e.getMessage(), MainWindow.DialogType.ERROR);
+            }
+        });
+
         sampleRateMenu.add(kHz44100Button);
         sampleRateMenu.add(kHz48000Button);
 
@@ -99,6 +126,8 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
 
         this.getJMenu().add(windowMenu);
         this.getJMenu().add(soundMenu);
+        this.getJMenu().addSeparator();
+        this.getJMenu().add(openDataDirectoryButton);
 
         kHz44100Button.setSelected(true);
         mainWindow.pushEvent(new InternalSampleRateChangedEvent(SampleRate.HZ_44100));

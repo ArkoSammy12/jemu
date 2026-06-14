@@ -25,6 +25,7 @@ import net.harawata.appdirs.AppDirsFactory;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
@@ -46,16 +47,9 @@ public final class Jemu {
     private volatile boolean shutdownStarted = false;
 
     public Jemu(@Nullable CLIArgs cliArgs) throws Exception {
-        Path appDataDirectory = null;
-        try {
-            appDataDirectory = Path.of(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
-        } catch (Exception e) {
-            Logger.error("Error obtaining data directory path: {}", e);
-        }
-        this.appDataDirectory = appDataDirectory;
+        this.appDataDirectory = this.tryAcquireAndCreateDataDirectory();
 
         try {
-
             Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
                 Logger.error("Uncaught exception in thread {}: {}", thread.getName(), throwable, throwable.getStackTrace());
                 try {
@@ -247,6 +241,24 @@ public final class Jemu {
 
     private State onEmulatorStepCycleCommand() {
         return State.STEPPING_CYCLE;
+    }
+
+    private Path tryAcquireAndCreateDataDirectory() {
+        Path appDataDirectory = null;
+        try {
+            appDataDirectory = Path.of(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
+        } catch (Exception e) {
+            Logger.error("Error obtaining data directory path: {}", e);
+        }
+
+        if (appDataDirectory != null && (!Files.exists(appDataDirectory) || !Files.isDirectory(appDataDirectory))) {
+            try {
+                Files.createDirectory(appDataDirectory);
+            } catch (Exception e) {
+                Logger.error("Failed to create app data directory!", e);
+            }
+        }
+        return appDataDirectory;
     }
 
     private void initMainWindow() {
