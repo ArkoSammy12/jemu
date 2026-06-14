@@ -111,7 +111,7 @@ public class AxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     }
 
     @Override
-    protected Optional<byte[]> getChrRam() {
+    protected Optional<byte[]> getNonVolatileChrRam() {
         return Optional.ofNullable(this.characterRAM);
     }
 

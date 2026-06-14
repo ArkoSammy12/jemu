@@ -148,7 +148,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         }
 
         if (this.savePrgRam()) {
-            this.getPrgRam().ifPresent(programRAM -> {
+            this.getNonVolatilePrgRam().ifPresent(programRAM -> {
                 Path prgRamSaveDataFilePath = saveDataDirectory.resolve("%s.sav".formatted(romName));
                 try {
                     Files.write(prgRamSaveDataFilePath, Arrays.copyOf(programRAM, programRAM.length));
@@ -159,7 +159,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         }
 
         if (this.saveChrRam()) {
-            this.getChrRam().ifPresent(characterRAM -> {
+            this.getNonVolatileChrRam().ifPresent(characterRAM -> {
                 Path chrRamSaveDataFilePath = saveDataDirectory.resolve("%s.chr.sav".formatted(romName));
                 try {
                     Files.write(chrRamSaveDataFilePath, Arrays.copyOf(characterRAM, characterRAM.length));
@@ -241,11 +241,11 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         });
     }
 
-    protected Optional<byte[]> getPrgRam() {
+    protected Optional<byte[]> getNonVolatilePrgRam() {
         return Optional.empty();
     }
 
-    protected Optional<byte[]> getChrRam() {
+    protected Optional<byte[]> getNonVolatileChrRam() {
         return Optional.empty();
     }
 
