@@ -26,7 +26,7 @@ import java.util.Optional;
 
 public abstract class AbstractSystemAdapter implements SystemAdapter {
 
-    private final Jemu jemu;
+    protected final Jemu jemu;
 
     private byte[] rom;
     private Path path;

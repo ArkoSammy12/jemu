@@ -63,11 +63,13 @@ public class MainWindow implements Closeable {
     private final Collection<SystemDescriptor> systemDescriptors;
 
     private Rectangle unmaximizedBounds;
+
+    @Nullable
     private final Path dataDirectory;
     private final Collection<PropertyEntry> stateProperties = new CopyOnWriteArrayList<>();
     private final Collection<PropertyEntry> settingProperties = new CopyOnWriteArrayList<>();
 
-    public MainWindow(String title, Path dataDirectory, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
+    public MainWindow(String title, @Nullable Path dataDirectory, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
 
         List<? extends SystemDescriptor> descriptors = new ArrayList<>(systemDescriptors);
 
@@ -85,6 +87,9 @@ public class MainWindow implements Closeable {
 
         this.systemDescriptors = List.copyOf(systemDescriptors);
         this.dataDirectory = dataDirectory;
+        if (this.dataDirectory == null) {
+            Logger.warn("No data directory was provided to the UI. Settings and state will not be saved or restored!");
+        }
 
         if (SystemInfo.isMacOS) {
             System.setProperty("apple.awt.application.appearance", "system");
@@ -176,35 +181,7 @@ public class MainWindow implements Closeable {
             this.registerStateProperty(new SerializedEntry("frame.height", () -> Integer.toString(unmaximizedBounds.height), s -> tryParseInt(s).ifPresent(height -> appFrame.setSize(new Dimension(appFrame.getWidth(), height)))));
             this.registerStateProperty(new SerializedEntry("frame.extended_state", () -> Integer.toString(appFrame.getExtendedState()), s -> tryParseInt(s).ifPresent(extendedState -> appFrame.setExtendedState(extendedState))));
 
-            try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
-                Properties stateProperties = new Properties();
-                stateProperties.load(input);
-                for (PropertyEntry entry : this.stateProperties) {
-                    String property = stateProperties.getProperty(entry.key());
-                    if (property != null) {
-                        entry.deserializer().accept(property);
-                    }
-                }
-            } catch (FileNotFoundException e) {
-                Logger.warn("swing-state-ui.properties file not found!");
-            } catch (IOException e) {
-                Logger.error("Error restoring swing ui state from properties file: {}", e);
-            }
-
-            try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
-                Properties settingProperties = new Properties();
-                settingProperties.load(input);
-                for (PropertyEntry entry : this.settingProperties) {
-                    String property = settingProperties.getProperty(entry.key());
-                    if (property != null) {
-                        entry.deserializer().accept(property);
-                    }
-                }
-            } catch (FileNotFoundException e) {
-                Logger.warn("swing-state-settings.properties file not found!");
-            } catch (IOException e) {
-                Logger.error("Error restoring swing ui settings from properties file: {}", e);
-            }
+            this.readSwingStateAndSettings();
 
         });
 
@@ -435,6 +412,42 @@ public class MainWindow implements Closeable {
             return Optional.of(Integer.valueOf(s));
         } catch (NumberFormatException e) {
             return Optional.empty();
+        }
+    }
+
+    private void readSwingStateAndSettings() {
+        if (this.dataDirectory == null) {
+            return;
+        }
+
+        try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
+            Properties stateProperties = new Properties();
+            stateProperties.load(input);
+            for (PropertyEntry entry : this.stateProperties) {
+                String property = stateProperties.getProperty(entry.key());
+                if (property != null) {
+                    entry.deserializer().accept(property);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            Logger.warn("swing-state-ui.properties file not found!");
+        } catch (IOException e) {
+            Logger.error("Error restoring swing ui state from properties file: {}", e);
+        }
+
+        try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
+            Properties settingProperties = new Properties();
+            settingProperties.load(input);
+            for (PropertyEntry entry : this.settingProperties) {
+                String property = settingProperties.getProperty(entry.key());
+                if (property != null) {
+                    entry.deserializer().accept(property);
+                }
+            }
+        } catch (FileNotFoundException e) {
+            Logger.warn("swing-state-settings.properties file not found!");
+        } catch (IOException e) {
+            Logger.error("Error restoring swing ui settings from properties file: {}", e);
         }
     }
 

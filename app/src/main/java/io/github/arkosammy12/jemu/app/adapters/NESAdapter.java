@@ -80,7 +80,7 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
 
     @Override
     public Optional<Path> getSaveDataDirectory() {
-        return Optional.of(Jemu.SAVES_DIR);
+        return this.jemu.getSavesDirectory();
     }
 
     @Override

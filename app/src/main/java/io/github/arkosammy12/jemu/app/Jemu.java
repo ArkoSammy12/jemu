@@ -31,23 +31,29 @@ import java.util.Optional;
 
 public final class Jemu {
 
-    private static final Path APP_DIR = Path.of(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
-    public static final Path SAVES_DIR = APP_DIR.resolve("saves");
-
-    private volatile AbstractSystemAdapter currentSystem = null;
-    private volatile State currentState = State.STOPPED;
-
     private final MainWindow mainWindow;
     private final AudioEngine audioEngine;
+    private final Path appDataDirectory;
 
     private final Thread emulatorCommandListenerThread;
     private final Thread uiEventListenerThread;
+
+    private volatile AbstractSystemAdapter currentSystem = null;
+    private volatile State currentState = State.STOPPED;
 
     private volatile boolean running;
     private final Object systemLock = new Object();
     private volatile boolean shutdownStarted = false;
 
     public Jemu(@Nullable CLIArgs cliArgs) throws Exception {
+        Path appDataDirectory = null;
+        try {
+            appDataDirectory = Path.of(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
+        } catch (Exception e) {
+            Logger.error("Error obtaining data directory path: {}", e);
+        }
+        this.appDataDirectory = appDataDirectory;
+
         try {
 
             Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
@@ -57,7 +63,7 @@ public final class Jemu {
                 } catch (Exception e) {}
             });
 
-            this.mainWindow = new MainWindow(MavenProperties.ARTIFACT_ID, APP_DIR, Arrays.stream(System.values()).toList());
+            this.mainWindow = new MainWindow(MavenProperties.ARTIFACT_ID, this.getAppDataDirectory().orElse(null), Arrays.stream(System.values()).toList());
             this.initMainWindow();
 
             this.audioEngine = new AudioEngine("%s-audio-thread".formatted(MavenProperties.ARTIFACT_ID));
@@ -84,6 +90,14 @@ public final class Jemu {
 
     public AudioEngine getAudioEngine() {
         return this.audioEngine;
+    }
+
+    private Optional<Path> getAppDataDirectory() {
+        return Optional.ofNullable(this.appDataDirectory);
+    }
+
+    public Optional<Path> getSavesDirectory() {
+        return Optional.ofNullable(this.appDataDirectory).map(path -> path.resolve("saves"));
     }
 
     public void start() {
