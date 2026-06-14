@@ -241,6 +241,12 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         });
     }
 
+    // TODO: Take into account that on some mappers not all of PRG-RAM or CHR-RAM should be saved.
+    // >There are only a few mappers where this is a thing, and those have a canonical ordering.
+    // >Otherwise, you should expect that a mapper will have only one type and you should probably reject ROMs that specify both.
+    //
+    // Fiskbit
+
     protected Optional<byte[]> getNonVolatilePrgRam() {
         return Optional.empty();
     }
