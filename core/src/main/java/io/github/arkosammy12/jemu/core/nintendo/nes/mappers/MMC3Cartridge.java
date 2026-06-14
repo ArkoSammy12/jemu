@@ -92,6 +92,9 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
         }
 
         this.setIRQSignal = new ActionSignal(_ -> this.irqSignal = true);
+
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
     @Override
@@ -320,6 +323,16 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
     @Override
     public boolean getIRQSignal() {
         return this.irqSignal;
+    }
+
+    @Override
+    protected Optional<byte[]> getPrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

@@ -75,6 +75,8 @@ public class VRC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
         this.setChrSelectLowFunction = this.getSetChrSelectLowFunction();
         this.setChrSelectHighFunction = this.getSetChrSelectHighFunction();
 
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
     protected int getA0Bit() {
@@ -265,6 +267,16 @@ public class VRC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     protected int mapPrgRamAddress(int address) {
         return address & 0x1FFF;
+    }
+
+    @Override
+    protected Optional<byte[]> getPrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

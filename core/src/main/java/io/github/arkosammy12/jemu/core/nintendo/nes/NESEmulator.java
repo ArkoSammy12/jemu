@@ -20,7 +20,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private static final int PAL_PPU_CLOCK_DIVISOR = 5;
     private static final int PAL_FRAMERATE = 50;
 
-    private final SystemHost systemHost;
+    private final NESHost systemHost;
 
     private final RP2A03<?> ricohCore;
     private final RP2C02<?> ppu;
@@ -39,7 +39,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private final int ppuSubCycleDivisor;
     private int ppuDivisorCounter;
 
-    public NESEmulator(SystemHost systemHost) {
+    public NESEmulator(NESHost systemHost) {
         this.systemHost = systemHost;
         Optional<byte[]> optionalROM = systemHost.getRom();
         if (optionalROM.isEmpty()) {
@@ -110,7 +110,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     }
 
     @Override
-    public SystemHost getHost() {
+    public NESHost getHost() {
         return this.systemHost;
     }
 
@@ -192,8 +192,14 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     }
 
     @Override
-    public void close() throws Exception {
-
+    public void close() {
+        try {
+            if (this.cartridge != null) {
+                this.cartridge.save();
+            }
+        } catch (Exception e) {
+            throw new EmulatorException("Error releasing emulator resources!", e);
+        }
     }
 
     public enum TVSystem {

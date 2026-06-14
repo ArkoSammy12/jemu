@@ -64,26 +64,6 @@ public abstract class GameBoyCartridge implements Bus {
 
     }
 
-    protected final Optional<byte[]> readSaveData() {
-        Optional<Path> optionalSaveDataDirectory = this.gameBoyEmulator.getHost().getSaveDataDirectory();
-        if (optionalSaveDataDirectory.isEmpty()) {
-            Logger.warn("Cannot read GameBoy cartridge save data because no save data directory was provided!");
-            return Optional.empty();
-        }
-        Path saveDataDirectory = optionalSaveDataDirectory.get();
-        String romName = FilenameUtils.getBaseName(this.gameBoyEmulator.getHost().getRomPath().toString());
-        Path saveDataFilePath = saveDataDirectory.resolve("%s.sav".formatted(romName));
-        try {
-            return Optional.of(Files.readAllBytes(saveDataFilePath));
-        } catch (NoSuchFileException e) {
-            Logger.warn("Save data for GameBoy ROM file %s not found!".formatted(saveDataFilePath));
-            return Optional.empty();
-        } catch (IOException e) {
-            Logger.error("Error reading save data for GameBoy ROM file: {}", e);
-            return Optional.empty();
-        }
-    }
-
     public void save() {
         Optional<byte[]> saveDataOptional = this.getSaveData();
         if (saveDataOptional.isEmpty()) {
@@ -117,6 +97,26 @@ public abstract class GameBoyCartridge implements Bus {
             Files.write(saveDataFilePath, bytes);
         } catch (IOException e) {
             Logger.error("Error writing save data for GameBoy system cartridge: {}", e);
+        }
+    }
+
+    protected final Optional<byte[]> readSaveData() {
+        Optional<Path> optionalSaveDataDirectory = this.gameBoyEmulator.getHost().getSaveDataDirectory();
+        if (optionalSaveDataDirectory.isEmpty()) {
+            Logger.warn("Cannot read GameBoy cartridge save data because no save data directory was provided!");
+            return Optional.empty();
+        }
+        Path saveDataDirectory = optionalSaveDataDirectory.get();
+        String romName = FilenameUtils.getBaseName(this.gameBoyEmulator.getHost().getRomPath().toString());
+        Path saveDataFilePath = saveDataDirectory.resolve("%s.sav".formatted(romName));
+        try {
+            return Optional.of(Files.readAllBytes(saveDataFilePath));
+        } catch (NoSuchFileException e) {
+            Logger.warn("Save data for GameBoy ROM file %s not found!".formatted(saveDataFilePath));
+            return Optional.empty();
+        } catch (IOException e) {
+            Logger.error("Error reading save data for GameBoy ROM file: {}", e);
+            return Optional.empty();
         }
     }
 

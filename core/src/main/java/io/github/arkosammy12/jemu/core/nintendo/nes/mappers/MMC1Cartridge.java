@@ -58,6 +58,9 @@ public class MMC1Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
             this.characterRAM = null;
         }
+
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
     @Override
@@ -225,6 +228,16 @@ public class MMC1Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             bankBits >>>= 1;
         }
         return address | (bankBits << 13);
+    }
+
+    @Override
+    protected Optional<byte[]> getPrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

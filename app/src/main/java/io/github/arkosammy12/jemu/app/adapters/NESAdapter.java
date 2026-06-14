@@ -8,16 +8,20 @@ import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESController;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
+import io.github.arkosammy12.jemu.core.nintendo.nes.NESHost;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.event.KeyEvent;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.Optional;
 
-public class NESAdapter extends AbstractSystemAdapter {
+public class NESAdapter extends AbstractSystemAdapter implements NESHost {
 
     private String romTitle;
     private System system;
+
+    private Path saveDataDirectory;
 
     private static final Map<InputComponent.ID, NESController.Actions> XINPUT_MAPPINGS = Map.of(
             XInput.DPAD_UP, NESController.Actions.JOY1_UP,
@@ -36,6 +40,7 @@ public class NESAdapter extends AbstractSystemAdapter {
 
     @Override
     protected Emulator createEmulator() {
+        this.saveDataDirectory = this.getRomPath().map(Path::getParent).orElse(null);
         return new NESEmulator(this);
     }
 
@@ -74,6 +79,11 @@ public class NESAdapter extends AbstractSystemAdapter {
     @Override
     public System getSystem() {
         return this.system;
+    }
+
+    @Override
+    public Optional<Path> getSaveDataDirectory() {
+        return Optional.ofNullable(this.saveDataDirectory);
     }
 
     @Override

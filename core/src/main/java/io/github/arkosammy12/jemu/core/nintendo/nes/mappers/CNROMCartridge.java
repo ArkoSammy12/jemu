@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
+import io.github.arkosammy12.jemu.core.nintendo.nes.ines.NES20File;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -17,7 +18,7 @@ import static io.github.arkosammy12.jemu.core.nintendo.nes.RP2C02.PALETTE_RAM_ST
 
 public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
-    private final byte[] programRAM;
+    private final byte[] programROM;
     private final byte[] characterROM;
     private final byte[] characterRAM;
 
@@ -28,12 +29,16 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         super(emulator, iNESFile);
 
         byte[] programRomData = iNESFile.getProgramRom();
-        this.programRAM = Arrays.copyOf(programRomData, programRomData.length);
+        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
 
         Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
         if (characterRomOptional.isEmpty()) {
             this.characterROM = null;
-            this.characterRAM = new byte[iNESFile.getCharacterRamSize()];
+            int characterRamSize = iNESFile.getCharacterRamSize();
+            if (iNESFile instanceof NES20File nes20File) {
+                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
+            }
+            this.characterRAM = new byte[characterRamSize];
         } else {
             byte[] characterRomData = characterRomOptional.get();
             this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
@@ -44,6 +49,8 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
             case 0, 2 -> true;
             default -> false;
         };
+
+        this.restoreSaveData(null, this.characterRAM);
 
     }
 
@@ -84,7 +91,7 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     @Override
     public int readByte(int address) {
         if (address >= 0x8000 && address <= 0xFFFF) {
-            return (int) this.programRAM[this.mapPrgRomAddress(address) % this.programRAM.length] & 0xFF;
+            return (int) this.programROM[this.mapPrgRomAddress(address) % this.programROM.length] & 0xFF;
         } else {
             return -1;
         }
@@ -94,7 +101,7 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     public void writeByte(int address, int value) {
         if (address >= 0x8000 && address <= 0xFFFF) {
             if (this.hasBusConflict) {
-                value &= (int) this.programRAM[this.mapPrgRomAddress(address) % this.programRAM.length] & 0xFF;
+                value &= (int) this.programROM[this.mapPrgRomAddress(address) % this.programROM.length] & 0xFF;
             }
             this.bankSelect = value & 3;
         }
@@ -102,6 +109,11 @@ public class CNROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     private int mapPrgRomAddress(int address) {
         return address - 0x8000;
+    }
+
+    @Override
+    protected Optional<byte[]> getChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

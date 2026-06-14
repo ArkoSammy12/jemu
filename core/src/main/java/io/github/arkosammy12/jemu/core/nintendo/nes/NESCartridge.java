@@ -3,8 +3,18 @@ package io.github.arkosammy12.jemu.core.nintendo.nes;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
+import io.github.arkosammy12.jemu.core.nintendo.nes.ines.NES20File;
 import io.github.arkosammy12.jemu.core.nintendo.nes.mappers.*;
-import io.github.arkosammy12.jemu.core.nintendo.nes.mappers.*;
+import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Optional;
 
 public abstract class NESCartridge<E extends NESEmulator> implements Bus {
 
@@ -15,7 +25,6 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
     private final byte[] vram;
 
     public NESCartridge(E emulator, INESFile iNESFile) {
-        // TODO: SRAM saving support for cartridges that have it
         this.emulator = emulator;
         this.iNESFile = iNESFile;
         this.iNESFileNametableArrangement = this.iNESFile.getNametableArrangement() ? NESCartridge.NametableArrangement.HORIZONTAL : NESCartridge.NametableArrangement.VERTICAL;
@@ -121,6 +130,138 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         return false;
     }
 
+    public void save() {
+        Optional<Path> optionalSaveDataDirectory = this.emulator.getHost().getSaveDataDirectory();
+        if (optionalSaveDataDirectory.isEmpty()) {
+            Logger.warn("Cannot save NES cartridge save data because no save data directory was provided!");
+            return;
+        }
+        Path saveDataDirectory = optionalSaveDataDirectory.get();
+        String romName = FilenameUtils.getBaseName(this.emulator.getHost().getRomPath().toString());
+        if (!Files.exists(saveDataDirectory)) {
+            try {
+                Files.createDirectory(saveDataDirectory);
+            } catch (IOException e) {
+                Logger.error("Error creating save data directory for NES system cartridge: {}", e);
+                return;
+            }
+        }
+
+        if (this.savePrgRam()) {
+            this.getPrgRam().ifPresent(programRAM -> {
+                Path prgRamSaveDataFilePath = saveDataDirectory.resolve("%s.sav".formatted(romName));
+                try {
+                    Files.write(prgRamSaveDataFilePath, Arrays.copyOf(programRAM, programRAM.length));
+                } catch (IOException e) {
+                    Logger.error("Error writing save PRG-RAM for NES system cartridge: {}", e);
+                }
+            });
+        }
+
+        if (this.saveChrRam()) {
+            this.getChrRam().ifPresent(characterRAM -> {
+                Path chrRamSaveDataFilePath = saveDataDirectory.resolve("%s.chr.sav".formatted(romName));
+                try {
+                    Files.write(chrRamSaveDataFilePath, Arrays.copyOf(characterRAM, characterRAM.length));
+                } catch (IOException e) {
+                    Logger.error("Error writing save CHR-RAM for NES system cartridge: {}", e);
+                }
+            });
+        }
+    }
+
+    protected Optional<SaveData> readSaveData() {
+        boolean savePrgRam = this.savePrgRam();
+        boolean saveChrRam = this.saveChrRam();
+
+        if (!savePrgRam && !saveChrRam) {
+            return Optional.empty();
+        }
+
+        Optional<Path> optionalSaveDataDirectory = this.emulator.getHost().getSaveDataDirectory();
+        if (optionalSaveDataDirectory.isEmpty()) {
+            Logger.warn("Cannot read NES cartridge save data because no save data directory was provided!");
+            return Optional.empty();
+        }
+        Path saveDataDirectory = optionalSaveDataDirectory.get();
+        String romName = FilenameUtils.getBaseName(this.emulator.getHost().getRomPath().toString());
+
+        byte[] prgRam = null;
+        byte[] chrRam = null;
+
+        if (savePrgRam) {
+            Path prgRamSaveDataFilePath = saveDataDirectory.resolve("%s.sav".formatted(romName));
+            try {
+                prgRam = Files.readAllBytes(prgRamSaveDataFilePath);
+            } catch (NoSuchFileException e) {
+                Logger.warn("PRG-RAM save data for NES ROM file %s not found!".formatted(prgRamSaveDataFilePath));
+            } catch (IOException e) {
+                Logger.error("Error reading PRG-RAM save data for NES ROM file: {}", e);
+            }
+        }
+
+        if (saveChrRam) {
+            Path chrRamSaveDataFilePath = saveDataDirectory.resolve("%s.chr.sav".formatted(romName));
+            try {
+                chrRam = Files.readAllBytes(chrRamSaveDataFilePath);
+            } catch (NoSuchFileException e) {
+                Logger.warn("CHR-RAM save data for NES ROM file %s not found!".formatted(chrRamSaveDataFilePath));
+            } catch (IOException e) {
+                Logger.error("Error reading CHR-RAM save data for NES ROM file: {}", e);
+            }
+        }
+
+        if (prgRam == null && chrRam == null) {
+            return Optional.empty();
+        } else {
+            return Optional.of(new SaveData(prgRam, chrRam));
+        }
+    }
+
+    protected void restoreSaveData(byte @Nullable [] programRAM, byte @Nullable [] characterRAM) {
+        this.readSaveData().ifPresent(saveData -> {
+            if (saveData.prgRam() != null && programRAM != null) {
+                try {
+                    System.arraycopy(saveData.prgRam(), 0, programRAM, 0, programRAM.length);
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    Logger.error("Error attempting to restore saved PRG-RAM (expected %d bytes, but found %d bytes instead)!".formatted(programRAM.length, saveData.prgRam().length));
+                } catch (Exception e) {
+                    Logger.error("Error attempting to restore saved PRG-RAM: {}", e);
+                }
+            }
+            if (saveData.chrRam() != null && characterRAM != null) {
+                try {
+                    System.arraycopy(saveData.chrRam(), 0, characterRAM, 0, characterRAM.length);
+                } catch (ArrayIndexOutOfBoundsException e) {
+                    Logger.error("Error attempting to restore saved CHR-RAM (expected %d bytes, but found %d bytes instead)!".formatted(characterRAM.length, saveData.chrRam().length));
+                } catch (Exception e) {
+                    Logger.error("Error attempting to restore saved CHR-RAM: {}", e);
+                }
+            }
+        });
+    }
+
+    protected Optional<byte[]> getPrgRam() {
+        return Optional.empty();
+    }
+
+    protected Optional<byte[]> getChrRam() {
+        return Optional.empty();
+    }
+
+    protected boolean savePrgRam() {
+        if (this.iNESFile instanceof NES20File nes20File) {
+            return nes20File.getNonVolatileProgramRamSizeBytes() > 0;
+        } else {
+            return this.iNESFile.hasBattery();
+        }
+    }
+
+    protected boolean saveChrRam() {
+        // TODO: Check if the battery bit is set in case this is the RacerMate mapper, as it does save its CHR-RAM if so
+        return this.iNESFile instanceof NES20File nes20File && nes20File.getNonVolatileCharacterRamSizeBytes() > 0;
+    }
+
     public enum NametableArrangement {
         HORIZONTAL,
         VERTICAL,
@@ -133,5 +274,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         KB_2,
         KB_4
     }
+
+    protected record SaveData(byte @Nullable [] prgRam, byte @Nullable [] chrRam) {}
 
 }

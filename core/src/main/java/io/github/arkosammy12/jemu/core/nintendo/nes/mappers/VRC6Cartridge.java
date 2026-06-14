@@ -92,6 +92,8 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             default -> throw new EmulatorException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
         };
 
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
    @Override
@@ -476,6 +478,16 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     private boolean getFrequency256x() {
         return this.frequency256x;
+    }
+
+    @Override
+    protected Optional<byte[]> getPrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
     private abstract class WaveformChannel {

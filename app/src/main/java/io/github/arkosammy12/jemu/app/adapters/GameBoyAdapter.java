@@ -115,11 +115,6 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
     }
 
     @Override
-    public Optional<Path> getSaveDataDirectory() {
-        return Optional.ofNullable(this.saveDataDirectory);
-    }
-
-    @Override
     public String getSystemName() {
         return this.system.getDisplayName();
     }
@@ -127,6 +122,11 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
     @Override
     public Optional<String> getRomTitle() {
         return Optional.ofNullable(this.romTitle);
+    }
+
+    @Override
+    public Optional<Path> getSaveDataDirectory() {
+        return Optional.ofNullable(this.saveDataDirectory);
     }
 
 }
