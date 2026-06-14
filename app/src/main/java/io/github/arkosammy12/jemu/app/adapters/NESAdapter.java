@@ -21,8 +21,6 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
     private String romTitle;
     private System system;
 
-    private Path saveDataDirectory;
-
     private static final Map<InputComponent.ID, NESController.Actions> XINPUT_MAPPINGS = Map.of(
             XInput.DPAD_UP, NESController.Actions.JOY1_UP,
             XInput.DPAD_DOWN, NESController.Actions.JOY1_DOWN,
@@ -40,7 +38,6 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
 
     @Override
     protected Emulator createEmulator() {
-        this.saveDataDirectory = this.getRomPath().map(Path::getParent).orElse(null);
         return new NESEmulator(this);
     }
 
@@ -83,7 +80,7 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
 
     @Override
     public Optional<Path> getSaveDataDirectory() {
-        return Optional.ofNullable(this.saveDataDirectory);
+        return Optional.of(Jemu.SAVES_DIR);
     }
 
     @Override

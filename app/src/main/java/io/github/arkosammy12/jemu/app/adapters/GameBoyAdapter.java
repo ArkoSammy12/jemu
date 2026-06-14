@@ -39,8 +39,6 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
     private final System system;
     private final Model model;
 
-    private Path saveDataDirectory;
-
     public GameBoyAdapter(Jemu jemu, EmulatorInitializer initializer, Model model) {
         this.model = model;
         this.system = initializer.getSystem().orElse(System.GAME_BOY);
@@ -75,10 +73,8 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
         if (romPathOptional.isPresent()) {
             Path romPath = romPathOptional.get();
             this.romTitle = title == null || title.isBlank() ? romPath.getFileName().toString() : title;
-            this.saveDataDirectory = romPath.getParent();
         } else {
             this.romTitle = title;
-            this.saveDataDirectory = null;
         }
 
         return switch (this.model) {
@@ -126,7 +122,7 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
 
     @Override
     public Optional<Path> getSaveDataDirectory() {
-        return Optional.ofNullable(this.saveDataDirectory);
+        return Optional.of(Jemu.SAVES_DIR);
     }
 
 }

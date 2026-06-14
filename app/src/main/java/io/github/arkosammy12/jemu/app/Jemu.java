@@ -32,6 +32,7 @@ import java.util.Optional;
 public final class Jemu {
 
     private static final Path APP_DIR = Path.of(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
+    public static final Path SAVES_DIR = APP_DIR.resolve("saves");
 
     private volatile AbstractSystemAdapter currentSystem = null;
     private volatile State currentState = State.STOPPED;
