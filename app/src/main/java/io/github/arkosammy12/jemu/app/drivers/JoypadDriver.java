@@ -13,6 +13,8 @@ import org.tinylog.Logger;
 
 import java.io.IOException;
 
+import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
+
 // input4j not working as expected; limited to 1 controller
 // TODO: find better library or work around
 public class JoypadDriver implements AutoCloseable {
@@ -247,9 +249,7 @@ public class JoypadDriver implements AutoCloseable {
         synchronized (this.joypadLock) {
             this.joypadLock.notifyAll();
         }
-        try {
-            this.pollThread.join();
-        } catch (InterruptedException _) {}
+        tryJoinSafely(this.pollThread);
     }
 
 }

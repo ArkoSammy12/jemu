@@ -13,6 +13,8 @@ import java.io.Closeable;
 
 import java.awt.image.BufferStrategy;
 
+import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
+
 public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Closeable {
 
     private final VideoGenerator videoGenerator;
@@ -149,11 +151,7 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
         synchronized (this.renderLock) {
             this.renderLock.notifyAll();
         }
-        if (this.renderThread != null) {
-            try {
-                this.renderThread.join();
-            } catch (InterruptedException _) {}
-        }
+        tryJoinSafely(this.renderThread);
     }
 
 }

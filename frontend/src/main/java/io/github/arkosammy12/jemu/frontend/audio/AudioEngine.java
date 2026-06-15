@@ -270,9 +270,11 @@ public class AudioEngine implements Closeable {
             this.audioThreadLock.notifyAll();
         }
 
-        try {
-            this.audioThread.join();
-        } catch (InterruptedException _) {}
+        if (this.audioThread != null && !Thread.currentThread().equals(this.audioThread) && this.audioThread.isAlive()) {
+            try {
+                this.audioThread.join();
+            } catch (InterruptedException _) {}
+        }
 
         synchronized (this.currentLineLock) {
             if (this.currentSourceDataLine != null) {

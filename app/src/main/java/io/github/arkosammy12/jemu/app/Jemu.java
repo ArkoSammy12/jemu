@@ -42,20 +42,18 @@ public final class Jemu {
     private volatile AbstractSystemAdapter currentSystem = null;
     private volatile State currentState = State.STOPPED;
 
-    private volatile boolean running;
     private final Object systemLock = new Object();
-    private volatile boolean shutdownStarted = false;
+    private volatile boolean running;
+    private volatile boolean shutdownStarted;
 
     public Jemu(@Nullable CLIArgs cliArgs) throws Exception {
-        this.appDataDirectory = this.tryAcquireAndCreateDataDirectory();
-
         try {
             Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
-                Logger.error("Uncaught exception in thread {}: {}", thread.getName(), throwable, throwable.getStackTrace());
-                try {
-                    this.onShutdown();
-                } catch (Exception e) {}
+                Logger.error(throwable, "Uncaught exception in thread {}", thread.getName());
+                this.shutdown();
             });
+
+            this.appDataDirectory = this.tryAcquireAndCreateDataDirectory();
 
             this.mainWindow = new MainWindow(MavenProperties.ARTIFACT_ID, this.getAppDataDirectory().orElse(null), Arrays.stream(System.values()).toList());
             this.initMainWindow();
@@ -75,10 +73,10 @@ public final class Jemu {
             }
 
             this.mainWindow.show();
-
         } catch (Exception e) {
-            this.onShutdown();
-            throw new RuntimeException("Failed to initialize %s: ".formatted(MavenProperties.ARTIFACT_ID), e);
+            Logger.error("Failed to initialize %s: ".formatted(MavenProperties.ARTIFACT_ID), e);
+            this.shutdown();
+            throw new RuntimeException(e);
         }
     }
 
@@ -262,15 +260,7 @@ public final class Jemu {
     }
 
     private void initMainWindow() {
-        this.mainWindow.setClosingHook(() -> {
-            this.running = false;
-            try {
-                this.onShutdown();
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
-        });
-
+        this.mainWindow.setClosingHook(this::shutdown);
         HelpManager helpManager = this.mainWindow.getHelpManager();
         helpManager.setProjectName(MavenProperties.ARTIFACT_ID);
         helpManager.setAuthorString(MavenProperties.AUTHOR);
@@ -357,37 +347,57 @@ public final class Jemu {
         };
     }
 
-    private void onShutdown() {
+    private void shutdown() {
+        this.running = false;
         if (this.shutdownStarted) {
             return;
         }
         this.shutdownStarted = true;
-        try {
-            if (this.emulatorCommandListenerThread != null) {
-                this.emulatorCommandListenerThread.interrupt();
-                this.emulatorCommandListenerThread.join();
-            }
-        } catch (InterruptedException _) {}
 
         try {
-            if (this.uiEventListenerThread != null) {
-                this.uiEventListenerThread.interrupt();
-                this.uiEventListenerThread.join();
+            if (this.audioEngine != null) {
+                this.audioEngine.close();
             }
-        } catch (InterruptedException _) {}
 
-        synchronized (this.systemLock) {
-            if (this.currentSystem != null) {
-                this.currentSystem.close();
-                this.currentSystem = null;
+            if (this.mainWindow != null) {
+                this.mainWindow.close();
             }
-        }
 
-        if (this.mainWindow != null) {
-            this.mainWindow.close();
+            this.emulatorCommandListenerThread.interrupt();
+            tryJoinSafely(this.emulatorCommandListenerThread);
+
+            this.uiEventListenerThread.interrupt();
+            tryJoinSafely(this.uiEventListenerThread);
+
+            synchronized (this.systemLock) {
+                if (this.currentSystem != null) {
+                    this.currentSystem.close();
+                    this.currentSystem = null;
+                }
+            }
+        } catch (Throwable t) {
+            this.forceShutdown(t);
         }
-        if (this.audioEngine != null) {
-            this.audioEngine.close();
+    }
+
+    private void forceShutdown(@Nullable Throwable t) {
+        if (t == null) {
+            Logger.error("Forcing shutdown...");
+        } else {
+            Logger.error(t, "Forcing shutdown because of {}", t.getCause());
+        }
+        java.lang.System.exit(1);
+    }
+
+    public static void tryJoinSafely(@Nullable Thread thread) {
+        tryJoinSafely(thread, 0);
+    }
+
+    public static void tryJoinSafely(@Nullable Thread thread, int timeout) {
+        if (thread != null && !Thread.currentThread().equals(thread) && thread.isAlive()) {
+            try {
+                thread.join(timeout);
+            } catch (InterruptedException e) {}
         }
     }
 
