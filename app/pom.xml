@@ -105,6 +105,7 @@
                     <mainClass>io.github.arkosammy12.jemu.app.Main</mainClass>
                     <runtimeImage>${java.home}</runtimeImage>
                     <destination>${project.parent.build.directory}/dist</destination>
+                    <winConsole>true</winConsole>
                     <javaOptions>
                         <option>-Dfile.encoding=UTF-8</option>
                         <option>--enable-native-access=ALL-UNNAMED</option>
