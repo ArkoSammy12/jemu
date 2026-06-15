@@ -457,7 +457,7 @@ public class MainWindow implements Closeable {
 
     private record PropertyEntry(String key, Supplier<String> serializer, Consumer<String> deserializer) {}
 
-    public class SafeEventQueue extends EventQueue {
+    private class SafeEventQueue extends EventQueue {
 
         @Override
         protected void dispatchEvent(AWTEvent event) {
