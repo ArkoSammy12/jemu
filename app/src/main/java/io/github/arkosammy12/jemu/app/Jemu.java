@@ -25,9 +25,15 @@ import net.harawata.appdirs.AppDirsFactory;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
+import javax.imageio.ImageIO;
+import java.awt.*;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Optional;
 
 public final class Jemu {
@@ -269,6 +275,28 @@ public final class Jemu {
         helpManager.setBuildDateString(MavenProperties.BUILD_DATE);
         helpManager.setProjectSourceLink("https://github.com/ArkoSammy12/jemu");
         helpManager.setProjectBugReportLink("https://github.com/ArkoSammy12/jemu/issues");
+
+        List<String> iconPaths = List.of(
+                "/icons/jemu_icon_16.png",
+                "/icons/jemu_icon_32.png",
+                "/icons/jemu_icon_64.png",
+                "/icons/jemu_icon_128.png"
+        );
+        List<Image> icons = new ArrayList<>();
+        for (String path : iconPaths) {
+            InputStream stream = getClass().getResourceAsStream(path);
+            if (stream == null) {
+                Logger.error("Missing bundled icon resource: {}", path);
+                return;
+            }
+            try (stream) {
+                icons.add(ImageIO.read(stream));
+            } catch (IOException e) {
+                Logger.error(e, "Failed to read icon: {}", path);
+                return;
+            }
+        }
+        this.mainWindow.setIcons(icons);
     }
 
     private void initAudioEngine() {

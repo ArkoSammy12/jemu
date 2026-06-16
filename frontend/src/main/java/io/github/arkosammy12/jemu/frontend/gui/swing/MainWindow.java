@@ -223,6 +223,14 @@ public class MainWindow implements Closeable {
         SwingUtilities.invokeLater(() -> this.getJFrame().setVisible(true));
     }
 
+    public void setIcons(List<Image> icons) {
+        SwingUtilities.invokeLater(() -> {
+            if (this.appFrame != null) {
+                this.appFrame.setIconImages(icons);
+            }
+        });
+    }
+
     public void setClosingHook(Runnable runnable) {
         this.getJFrame().addWindowListener(new WindowAdapter() {
 
