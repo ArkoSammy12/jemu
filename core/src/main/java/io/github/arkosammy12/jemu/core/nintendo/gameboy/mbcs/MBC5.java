@@ -7,97 +7,73 @@ import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public class MBC5 extends GameBoyCartridge {
 
-    private final byte[][] romBanks;
-
-    private final byte @Nullable [][] ramBanks;
-
-    private final int romBankMask;
-    private final int ramBankMask;
-    private final boolean hasBattery;
-
-    private int ramGate;
+    private boolean ramGate;
     private int romBankLower = 1;
     private int romBankUpper;
-    private int ramBankNumber;
+    private int ramBank;
 
-    public MBC5(GameBoyEmulator emulator, int cartridgeType) {
-        super(emulator, cartridgeType);
+    public MBC5(GameBoyEmulator emulator, int cartridgeType, byte[] romImage) {
+        super(emulator, cartridgeType, romImage);
+    }
 
-        this.romBanks = switch (this.romSizeHeader) {
-            case 0x00 -> new byte[2][0x4000];
-            case 0x01 -> new byte[4][0x4000];
-            case 0x02 -> new byte[8][0x4000];
-            case 0x03 -> new byte[16][0x4000];
-            case 0x04 -> new byte[32][0x4000];
-            case 0x05 -> new byte[64][0x4000];
-            case 0x06 -> new byte[128][0x4000];
-            case 0x07 -> new byte[256][0x4000];
-            case 0x08 -> new byte[512][0x4000];
+    @Override
+    protected int getROMLength() {
+        return switch (this.romSizeHeader) {
+            case 0x00 -> 2 * 0x4000;
+            case 0x01 -> 4 * 0x4000;
+            case 0x02 -> 8 * 0x4000;
+            case 0x03 -> 16 * 0x4000;
+            case 0x04 -> 32 * 0x4000;
+            case 0x05 -> 64 * 0x4000;
+            case 0x06 -> 128 * 0x4000;
+            case 0x07 -> 256 * 0x4000;
+            case 0x08 -> 512 * 0x4000;
             default -> throw new EmulatorException("Incompatible ROM size header $%02X for MBC5 GameBoy cartridge type!".formatted(this.romSizeHeader));
         };
+    }
 
+    @Override
+    protected OptionalInt getSRAMLength() {
         if (cartridgeType == 0x1A || cartridgeType == 0x1B || cartridgeType == 0x1D || cartridgeType == 0x1E) {
-            this.ramBanks = switch (this.ramSizeHeader) {
-                case 0x00 -> null;
-                case 0x01 -> new byte[1][0x800];
-                case 0x02 -> new byte[1][0x2000];
-                case 0x03 -> new byte[4][0x2000];
-                case 0x04 -> new byte[16][0x2000];
-                case 0x05 -> new byte[8][0x2000];
+            return switch (this.ramSizeHeader) {
+                case 0x00 -> OptionalInt.empty();
+                case 0x01 -> OptionalInt.of(0x800);
+                case 0x02 -> OptionalInt.of(0x2000);
+                case 0x03 -> OptionalInt.of(4 * 0x2000);
+                case 0x04 -> OptionalInt.of(16 * 0x2000);
+                case 0x05 -> OptionalInt.of(8 * 0x2000);
                 default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC5 GameBoy cartridge type!".formatted(this.ramSizeHeader));
             };
         } else {
-            this.ramBanks = null;
+            return OptionalInt.empty();
         }
+    }
 
-        this.hasBattery = cartridgeType == 0x1B || cartridgeType == 0x1E;
+    @Override
+    protected boolean hasBattery() {
+        return this.cartridgeType == 0x1B || this.cartridgeType == 0x1E;
+    }
 
-        try {
-            for (int i = 0; i < this.romBanks.length; i++) {
-                byte[] romBank = this.romBanks[i];
-                int start = i * romBank.length;
-                System.arraycopy(this.originalRom, start, romBank, 0, romBank.length);
-            }
-        } catch (Exception e) {
-            throw new EmulatorException("Error initializing GameBoy cartridge ROM!", e);
-        }
-
-        this.romBankMask = ((1 << (32 - Integer.numberOfLeadingZeros(this.romBanks.length))) - 1) >> 1;
-        this.ramBankMask = this.ramBanks == null ? 0 : ((1 << (32 - Integer.numberOfLeadingZeros(this.ramBanks.length))) - 1) >> 1;
-
-        if (this.hasBattery) {
-            this.readSaveData().ifPresent(saveData -> {
-                if (this.ramBanks == null) {
-                    return;
-                }
-                try {
-                    for (int i = 0; i < this.ramBanks.length; i++) {
-                        byte[] bank = this.ramBanks[i];
-                        System.arraycopy(saveData, i * bank.length, bank, 0, bank.length);
-                    }
-                } catch (Exception e) {
-                    Logger.error("Error reading save data for GameBoy MBC5 cartridge: {}", e);
-                }
-            });
-        }
-
+    @Override
+    protected byte @Nullable [] getSRAM() {
+        return this.sram;
     }
 
     @Override
     public int readByte(int address) {
         if (address >= 0x0000 && address <= 0x3FFF) {
-            return (int) this.romBanks[0][address] & 0xFF;
+            return (int) this.rom[(address & 0x3FFF) & this.romAddressMask] & 0xFF;
         } else if (address >= 0x4000 && address <= 0x7FFF) {
-            return (int) this.romBanks[(((this.romBankUpper & 1) << 8) | this.romBankLower) & this.romBankMask][address - 0x4000] & 0xFF;
+            return (int) this.rom[((this.romBankUpper << 22) | (this.romBankLower << 14) | (address & 0x3FFF)) & this.romAddressMask] & 0xFF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramGate == 0x0A && this.ramBanks != null) {
-                byte[] ramBank = this.ramBanks[(this.ramBankNumber & 0xF) & this.ramBankMask];
-                address -= 0xA000;
-                if (address < ramBank.length) {
-                    return (int) ramBank[address] & 0xFF;
+            if (this.ramGate && this.sram != null) {
+                address = ((this.ramBank << 13) | (address & 0x1FFF)) & this.ramAddressMask;
+                if (address < this.sram.length) {
+                    return (int) this.sram[address] & 0xFF;
                 } else {
                     return 0xFF;
                 }
@@ -112,27 +88,21 @@ public class MBC5 extends GameBoyCartridge {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0x0000 && address <= 0x1FFF) {
-            this.ramGate = value & 0xFF;
+            this.ramGate = (value & 0xFF) == 0x0A;
         } else if (address >= 0x2000 && address <= 0x2FFF) {
-            this.romBankLower = value & 0xFF & this.romBankMask;
+            this.romBankLower = value & 0xFF;
         } else if (address >= 0x3000 && address <= 0x3FFF) {
             this.romBankUpper = value & 1;
         } else if (address >= 0x4000 && address <= 0x5FFF) {
-            this.ramBankNumber = value & 0xF;
+            this.ramBank = value & 0xF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramGate == 0x0A && this.ramBanks != null) {
-                byte[] ramBank = this.ramBanks[(this.ramBankNumber & 0xF) & this.ramBankMask];
-                address -= 0xA000;
-                if (address < ramBank.length) {
-                    ramBank[address] = (byte) value;
+            if (this.ramGate && this.sram != null) {
+                address = ((this.ramBank << 13) | (address & 0x1FFF)) & this.ramAddressMask;
+                if (address < this.sram.length) {
+                    this.sram[address] = (byte) value;
                 }
             }
         }
-    }
-
-    @Override
-    protected Optional<byte[]> getSaveData() {
-        return Optional.ofNullable(this.hasBattery ? this.ramBanks : null).map(GameBoyCartridge::toFlatByteArray);
     }
 
 }

@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyEmulator;
+import org.tinylog.Logger;
 
 import java.util.Optional;
 
@@ -33,16 +34,19 @@ public class RTCMBC3 extends MBC3 {
     private int subSecondCounter;
     private int cycles;
 
-    public RTCMBC3(GameBoyEmulator emulator, int cartridgeType) {
-        super(emulator, cartridgeType);
+    public RTCMBC3(GameBoyEmulator emulator, int cartridgeType, byte[] romImage) {
+        super(emulator, cartridgeType, romImage);
+    }
 
-        if (this.saveData != null) {
+    protected void restoreSaveData(byte[] saveData) {
+        super.restoreSaveData(saveData);
+        try {
             int rtcDataStart = switch (this.ramSizeHeader) {
-                  case 0x01 -> 0x800;
-                  case 0x02 -> 0x2000;
-                  case 0x03 -> 4 * 0x2000;
-                  case 0x05 -> 8 * 0x2000;
-                  default -> 0;
+                case 0x01 -> 0x800;
+                case 0x02 -> 0x2000;
+                case 0x03 -> 4 * 0x2000;
+                case 0x05 -> 8 * 0x2000;
+                default -> 0;
             };
             if (rtcDataStart + 36 >= saveData.length) {
                 return;
@@ -57,15 +61,16 @@ public class RTCMBC3 extends MBC3 {
             this.hours = (int) saveData[rtcDataStart + 28] & 0xFF;
             this.daysLower = (int) saveData[rtcDataStart + 32] & 0xFF;
             this.daysUpperAndControl |= ((int) saveData[rtcDataStart + 36] != 0) ? 1 : 0;
-
+        } catch (Exception e) {
+            Logger.error("Failed to read saved RTC data for GameBoy cartridge: {}", e);
         }
     }
 
     @Override
     public int readByte(int address) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramRTCEnable) {
-                return switch (this.ramBankNumber) {
+            if (this.ramBank >= 0x08 && this.ramBank <= 0x0C && this.ramRTCEnable) {
+                return switch (this.ramBank) {
                     case RTC_S_ADDR -> this.seconds;
                     case RTC_M_ADDR -> this.minutes;
                     case RTC_H_ADDR -> this.hours;
@@ -81,8 +86,8 @@ public class RTCMBC3 extends MBC3 {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramRTCEnable) {
-                switch (this.ramBankNumber) {
+            if (this.ramBank >= 0x08 && this.ramBank <= 0x0C && this.ramRTCEnable) {
+                switch (this.ramBank) {
                     case RTC_S_ADDR -> {
                         this.internalSeconds = value & 0x3F;
                         this.subSecondCounter = 0;

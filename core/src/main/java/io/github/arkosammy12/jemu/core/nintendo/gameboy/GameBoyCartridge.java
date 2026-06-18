@@ -5,8 +5,8 @@ import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs.*;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs.*;
 import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import java.io.IOException;
@@ -15,6 +15,7 @@ import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 public abstract class GameBoyCartridge implements Bus {
 
@@ -22,24 +23,47 @@ public abstract class GameBoyCartridge implements Bus {
     public static final int ROM_SIZE_ADDRESS = 0x0148;
     public static final int RAM_SIZE_ADDRESS = 0x0149;
 
-    private final GameBoyEmulator gameBoyEmulator;
-    protected final byte[] originalRom;
+    private final GameBoyEmulator emulator;
 
     protected final int cartridgeType;
     protected final int romSizeHeader;
     protected final int ramSizeHeader;
 
-    public GameBoyCartridge(GameBoyEmulator emulator, int cartridgeType) {
-        this.gameBoyEmulator = emulator;
+    protected final byte[] rom;
+    protected final byte @Nullable [] sram;
+
+    protected final int romAddressMask;
+    protected final int ramAddressMask;
+
+    public GameBoyCartridge(GameBoyEmulator emulator, int cartridgeType, byte[] romImage) {
+        this.emulator = emulator;
         Optional<byte[]> optionalROM = emulator.getHost().getRom();
         if (optionalROM.isEmpty()) {
             throw new MissingROMException(emulator.getHost().getSystemName());
         }
-        byte[] rom = optionalROM.get();
-        this.originalRom = Arrays.copyOf(rom, rom.length);
         this.cartridgeType = cartridgeType;
-        this.romSizeHeader = rom[ROM_SIZE_ADDRESS];
-        this.ramSizeHeader = rom[RAM_SIZE_ADDRESS];
+        this.romSizeHeader = romImage[ROM_SIZE_ADDRESS];
+        this.ramSizeHeader = romImage[RAM_SIZE_ADDRESS];
+
+        this.rom = new byte[this.getROMLength()];
+        OptionalInt sramLength = this.getSRAMLength();
+        this.sram = sramLength.isPresent() ? new byte[sramLength.getAsInt()] : null;
+
+        this.romAddressMask = getBitMaskForLength(this.rom.length);
+        this.ramAddressMask = this.sram == null ? 0 : getBitMaskForLength(this.sram.length);
+
+        try {
+            System.arraycopy(romImage, 0, rom, 0, rom.length);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            throw new EmulatorException("ROM file size mismatch: expected %d bytes, got %d bytes!".formatted(rom.length, romImage.length));
+        } catch (Exception e) {
+            throw new EmulatorException("Error initializing GameBoy cartridge ROM!", e);
+        }
+
+        if (this.hasBattery()) {
+            this.readSaveData().ifPresent(this::restoreSaveData);
+        }
+
     }
 
     public static GameBoyCartridge getCartridge(GameBoyEmulator emulator) {
@@ -50,14 +74,36 @@ public abstract class GameBoyCartridge implements Bus {
         byte[] rom = optionalROM.get();
         int cartridgeType = SystemHost.byteToIntArray(rom)[CARTRIDGE_TYPE_ADDRESS];
         return switch (cartridgeType) {
-            case 0x00, 0x08, 0x09 -> new MBC0(emulator, cartridgeType);
-            case 0x01, 0x02, 0x03 -> new MBC1(emulator, cartridgeType);
-            case 0x05, 0x06 -> new MBC2(emulator, cartridgeType);
-            case 0x0F, 0x10 -> new RTCMBC3(emulator, cartridgeType);
-            case 0x11, 0x12, 0x13 -> new MBC3(emulator, cartridgeType);
-            case 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E -> new MBC5(emulator, cartridgeType);
+            case 0x00, 0x08, 0x09 -> new MBC0(emulator, cartridgeType, rom);
+            case 0x01, 0x02, 0x03 -> new MBC1(emulator, cartridgeType, rom);
+            case 0x05, 0x06 -> new MBC2(emulator, cartridgeType, rom);
+            case 0x0F, 0x10 -> new RTCMBC3(emulator, cartridgeType, rom);
+            case 0x11, 0x12, 0x13 -> new MBC3(emulator, cartridgeType, rom);
+            case 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E -> new MBC5(emulator, cartridgeType, rom);
             default -> throw new EmulatorException("Unimplemented GameBoy cartridge type %04X!".formatted(cartridgeType));
         };
+    }
+
+    protected abstract int getROMLength();
+
+    protected abstract OptionalInt getSRAMLength();
+
+    protected abstract boolean hasBattery();
+
+    protected abstract byte @Nullable [] getSRAM();
+
+    protected void restoreSaveData(byte[] saveData) {
+        byte[] sram = this.getSRAM();
+        if (sram == null) {
+            return;
+        }
+        try {
+            System.arraycopy(saveData, 0, sram, 0, sram.length);
+        } catch (ArrayIndexOutOfBoundsException e) {
+            Logger.error("Save data size mismatch for GameBoy cartridge: expected {} bytes, got {} bytes", sram.length, saveData.length);
+        } catch (Exception e) {
+            Logger.error("Error reading save data for GameBoy cartridge: {}", e);
+        }
     }
 
     public void cycle() {
@@ -70,7 +116,7 @@ public abstract class GameBoyCartridge implements Bus {
             return;
         }
 
-        Optional<Path> optionalSaveDataDirectory = this.gameBoyEmulator.getHost().getSaveDataDirectory();
+        Optional<Path> optionalSaveDataDirectory = this.emulator.getHost().getSaveDataDirectory();
         if (optionalSaveDataDirectory.isEmpty()) {
             Logger.warn("Cannot save GameBoy cartridge save data because no save data directory was provided!");
             return;
@@ -78,7 +124,7 @@ public abstract class GameBoyCartridge implements Bus {
         byte[] saveData = saveDataOptional.get();
 
         Path saveDataDirectory = optionalSaveDataDirectory.get();
-        String romName = FilenameUtils.getBaseName(this.gameBoyEmulator.getHost().getRomPath().toString());
+        String romName = FilenameUtils.getBaseName(this.emulator.getHost().getRomPath().toString());
         if (!Files.exists(saveDataDirectory)) {
             try {
                 Files.createDirectory(saveDataDirectory);
@@ -101,13 +147,13 @@ public abstract class GameBoyCartridge implements Bus {
     }
 
     protected final Optional<byte[]> readSaveData() {
-        Optional<Path> optionalSaveDataDirectory = this.gameBoyEmulator.getHost().getSaveDataDirectory();
+        Optional<Path> optionalSaveDataDirectory = this.emulator.getHost().getSaveDataDirectory();
         if (optionalSaveDataDirectory.isEmpty()) {
             Logger.warn("Cannot read GameBoy cartridge save data because no save data directory was provided!");
             return Optional.empty();
         }
         Path saveDataDirectory = optionalSaveDataDirectory.get();
-        String romName = FilenameUtils.getBaseName(this.gameBoyEmulator.getHost().getRomPath().toString());
+        String romName = FilenameUtils.getBaseName(this.emulator.getHost().getRomPath().toString());
         Path saveDataFilePath = saveDataDirectory.resolve("%s.sav".formatted(romName));
         try {
             return Optional.of(Files.readAllBytes(saveDataFilePath));
@@ -121,15 +167,12 @@ public abstract class GameBoyCartridge implements Bus {
     }
 
     protected Optional<byte[]> getSaveData() {
-        return Optional.empty();
+        return Optional.ofNullable(this.hasBattery() ? this.getSRAM() : null);
     }
 
-    protected static byte[] toFlatByteArray(byte[][] arr) {
-        byte[] flat = new byte[arr.length * arr[0].length];
-        for (int i = 0; i < arr.length; i++) {
-            System.arraycopy(arr[i], 0, flat, i * arr[0].length, arr[i].length);
-        }
-        return flat;
+
+    protected int getBitMaskForLength(int length) {
+        return ((1 << (32 - Integer.numberOfLeadingZeros(length))) - 1) >> 1;
     }
 
 }

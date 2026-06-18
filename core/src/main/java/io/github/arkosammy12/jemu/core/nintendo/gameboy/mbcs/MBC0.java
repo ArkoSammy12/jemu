@@ -7,49 +7,41 @@ import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import java.util.Optional;
-
+import java.util.OptionalInt;
 
 public class MBC0 extends GameBoyCartridge {
 
-    private final byte[] rom = new byte[0x8000];
-    private final byte @Nullable [] sram;
-    private final boolean hasBattery;
+    public MBC0(GameBoyEmulator emulator, int cartridgeType, byte[] romImage) {
+        super(emulator, cartridgeType, romImage);
+    }
 
-    public MBC0(GameBoyEmulator emulator, int cartridgeType) {
-        super(emulator, cartridgeType);
+    @Override
+    protected int getROMLength() {
+        return 0x8000;
+    }
 
-        if (cartridgeType == 0x08 || cartridgeType == 0x09) {
-            this.sram = switch (this.ramSizeHeader) {
-                case 0x00 -> null;
-                case 0x01 -> new byte[0x800];
-                case 0x02 -> new byte[0x2000];
+    @Override
+    protected OptionalInt getSRAMLength() {
+        if (this.cartridgeType == 0x08 || this.cartridgeType == 0x09) {
+            return switch (this.ramSizeHeader) {
+                case 0x00 -> OptionalInt.empty();
+                case 0x01 -> OptionalInt.of(0x800);
+                case 0x02 -> OptionalInt.of(0x2000);
                 default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC0 GameBoy cartridge type!".formatted(this.ramSizeHeader));
             };
         } else {
-            this.sram = null;
+            return OptionalInt.empty();
         }
+    }
 
-        this.hasBattery = cartridgeType == 0x09;
+    @Override
+    protected boolean hasBattery() {
+        return this.cartridgeType == 0x09;
+    }
 
-        try {
-            System.arraycopy(this.originalRom, 0, this.rom, 0, this.rom.length);
-        } catch (Exception e) {
-            throw new EmulatorException("Error initializing GameBoy cartridge ROM!", e);
-        }
-
-        if (this.hasBattery) {
-            this.readSaveData().ifPresent(saveData -> {
-                if (this.sram == null) {
-                    return;
-                }
-                try {
-                    System.arraycopy(saveData, 0, this.sram, 0, Math.min(saveData.length, this.sram.length));
-                } catch (Exception e) {
-                    Logger.error("Error reading save data for GameBoy MBC0 cartridge: {}", e);
-                }
-            });
-        }
-
+    @Override
+    protected byte @Nullable [] getSRAM() {
+        return this.sram;
     }
 
     @Override
@@ -57,7 +49,7 @@ public class MBC0 extends GameBoyCartridge {
         if (address >= 0x0000 && address <= 0x7FFF) {
             return (int) this.rom[address] & 0xFF;
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            address -= 0xA000;
+            address &= 0x1FFF;
             if (this.sram != null && address < this.sram.length) {
                 return (int) this.sram[address] & 0xFF;
             } else {
@@ -71,16 +63,11 @@ public class MBC0 extends GameBoyCartridge {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            address -= 0xA000;
+            address &= 0x1FFF;
             if (this.sram != null && address < this.sram.length) {
                 this.sram[address] = (byte) value;
             }
         }
-    }
-
-    @Override
-    protected Optional<byte[]> getSaveData() {
-        return Optional.ofNullable(this.hasBattery ? this.sram : null);
     }
 
 }
