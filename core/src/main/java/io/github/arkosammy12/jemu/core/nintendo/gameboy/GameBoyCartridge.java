@@ -90,15 +90,12 @@ public abstract class GameBoyCartridge implements Bus {
 
     protected abstract boolean hasBattery();
 
-    protected abstract byte @Nullable [] getSRAM();
-
     protected void restoreSaveData(byte[] saveData) {
-        byte[] sram = this.getSRAM();
-        if (sram == null) {
+        if (this.sram == null) {
             return;
         }
         try {
-            System.arraycopy(saveData, 0, sram, 0, sram.length);
+            System.arraycopy(saveData, 0, this.sram, 0, sram.length);
         } catch (ArrayIndexOutOfBoundsException e) {
             Logger.error("Save data size mismatch for GameBoy cartridge: expected {} bytes, got {} bytes", sram.length, saveData.length);
         } catch (Exception e) {
@@ -167,9 +164,8 @@ public abstract class GameBoyCartridge implements Bus {
     }
 
     protected Optional<byte[]> getSaveData() {
-        return Optional.ofNullable(this.hasBattery() ? this.getSRAM() : null);
+        return Optional.ofNullable(this.hasBattery() ? this.sram : null);
     }
-
 
     protected int getBitMaskForLength(int length) {
         return ((1 << (32 - Integer.numberOfLeadingZeros(length))) - 1) >> 1;

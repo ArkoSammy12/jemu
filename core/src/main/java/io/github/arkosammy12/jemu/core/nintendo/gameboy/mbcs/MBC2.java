@@ -40,11 +40,6 @@ public class MBC2 extends GameBoyCartridge {
     }
 
     @Override
-    protected byte @Nullable [] getSRAM() {
-        return this.sram;
-    }
-
-    @Override
     public int readByte(int address) {
         if (address >= 0x0000 && address <= 0x3FFF) {
             return (int) this.rom[(address & 0x3FFF) & this.romAddressMask] & 0xFF;
