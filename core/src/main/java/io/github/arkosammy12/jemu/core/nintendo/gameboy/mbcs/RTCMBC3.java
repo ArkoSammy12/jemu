@@ -41,13 +41,7 @@ public class RTCMBC3 extends MBC3 {
     protected void restoreSaveData(byte[] saveData) {
         super.restoreSaveData(saveData);
         try {
-            int rtcDataStart = switch (this.ramSizeHeader) {
-                case 0x01 -> 0x800;
-                case 0x02 -> 0x2000;
-                case 0x03 -> 4 * 0x2000;
-                case 0x05 -> 8 * 0x2000;
-                default -> 0;
-            };
+            int rtcDataStart = this.getSRAMLength().orElse(0);
             if (rtcDataStart + 36 >= saveData.length) {
                 return;
             }
