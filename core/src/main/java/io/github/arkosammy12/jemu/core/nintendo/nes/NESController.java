@@ -28,6 +28,7 @@ public class NESController<E extends NESEmulator> implements SystemController {
     public NESController(E emulator) {
         this.emulator = emulator;
     }
+
     @Override
     public void onActionPressed(Action action) {
         if (!(action instanceof Actions joypadAction)) {
