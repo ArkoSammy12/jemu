@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyEmulator;
+import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import java.util.Optional;
@@ -160,36 +161,43 @@ public class RTCMBC3 extends MBC3 {
 
     @Override
     protected Optional<byte[]> getSaveData() {
-        return super.getSaveData().map(data -> {
-
-            // VBA-M format 48-byte version. We write 7fffffff7fffffff in little-endian as we do not care about the UNIX timestamp
-            byte[] dataWithRtc = new byte[data.length + 48];
-
-            System.arraycopy(data, 0, dataWithRtc, 0, data.length);
-
-            dataWithRtc[data.length] = (byte) (this.internalSeconds & 0xFF);
-            dataWithRtc[data.length + 4] = (byte) (this.internalMinutes & 0xFF);
-            dataWithRtc[data.length + 8] = (byte) (this.internalHours & 0xFF);
-            dataWithRtc[data.length + 12] = (byte) (this.internalDays & 0xFF);
-            dataWithRtc[data.length + 16] = (byte) ((this.internalDays >>> 8) & 1);
-            dataWithRtc[data.length + 20] = (byte) (this.seconds & 0xFF);
-            dataWithRtc[data.length + 24] = (byte) (this.minutes & 0xFF);
-            dataWithRtc[data.length + 28] = (byte) (this.hours & 0xFF);
-            dataWithRtc[data.length + 32] = (byte) (this.daysLower & 0xFF);
-            dataWithRtc[data.length + 36] = (byte) (this.daysUpperAndControl & 1);
-            dataWithRtc[data.length + 40] = (byte) 0xFF;
-            dataWithRtc[data.length + 41] = (byte) 0xFF;
-            dataWithRtc[data.length + 42] = (byte) 0xFF;
-            dataWithRtc[data.length + 43] = (byte) 0x7F;
-            dataWithRtc[data.length + 44] = (byte) 0xFF;
-            dataWithRtc[data.length + 45] = (byte) 0xFF;
-            dataWithRtc[data.length + 46] = (byte) 0xFF;
-            dataWithRtc[data.length + 47] = (byte) 0x7F;
-
-            return dataWithRtc;
-
-        });
+        return super.getSaveData().map(this::getSaveDataWithRtc).or(() -> Optional.ofNullable(this.hasBattery() ? this.getSaveDataWithRtc(null) : null));
     }
 
+    private byte[] getSaveDataWithRtc(byte @Nullable [] precedingData) {
+        int rtcBeginOffset = 0;
+
+        // VBA-M format 48-byte version. We write 7fffffff7fffffff in little-endian as we do not care about the UNIX timestamp
+        final int rtcDataLength = 48;
+        byte[] dataWithRtc;
+        if (precedingData == null) {
+            dataWithRtc = new byte[rtcDataLength];
+        } else {
+            dataWithRtc = new byte[precedingData.length + rtcDataLength];
+            rtcBeginOffset = precedingData.length;
+            System.arraycopy(precedingData, 0, dataWithRtc, 0, precedingData.length);
+        }
+
+        dataWithRtc[rtcBeginOffset] = (byte) (this.internalSeconds & 0xFF);
+        dataWithRtc[rtcBeginOffset + 4] = (byte) (this.internalMinutes & 0xFF);
+        dataWithRtc[rtcBeginOffset + 8] = (byte) (this.internalHours & 0xFF);
+        dataWithRtc[rtcBeginOffset + 12] = (byte) (this.internalDays & 0xFF);
+        dataWithRtc[rtcBeginOffset + 16] = (byte) ((this.internalDays >>> 8) & 1);
+        dataWithRtc[rtcBeginOffset + 20] = (byte) (this.seconds & 0xFF);
+        dataWithRtc[rtcBeginOffset + 24] = (byte) (this.minutes & 0xFF);
+        dataWithRtc[rtcBeginOffset + 28] = (byte) (this.hours & 0xFF);
+        dataWithRtc[rtcBeginOffset + 32] = (byte) (this.daysLower & 0xFF);
+        dataWithRtc[rtcBeginOffset + 36] = (byte) (this.daysUpperAndControl & 1);
+        dataWithRtc[rtcBeginOffset + 40] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 41] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 42] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 43] = (byte) 0x7F;
+        dataWithRtc[rtcBeginOffset + 44] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 45] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 46] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 47] = (byte) 0x7F;
+
+        return dataWithRtc;
+    }
 
 }
