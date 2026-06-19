@@ -771,7 +771,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
 							this.dotNumber = 1;
 							this.dotSkipped = true;
 						}
-
 						this.skipDot0NextFrame = false;
 					}
 				}
