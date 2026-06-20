@@ -63,12 +63,12 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         }
 
         JMenuItem powerCycleButton = new JMenuItem("Power Cycle");
-        powerCycleButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
+        powerCycleButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK, true));
         powerCycleButton.setEnabled(true);
         powerCycleButton.addActionListener(_ -> this.submitPowerCycle());
 
         JMenuItem resetButton = new JMenuItem("Reset");
-        // TODO: Set accelerator keybind for reset button
+        resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
         resetButton.setEnabled(false);
         resetButton.addActionListener(_ -> this.submitReset());
 
