@@ -29,7 +29,6 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
     private final RP2C02<?> ppu;
     private final NESCPUBus<?> cpuBus;
 
-    @NotNull
     private NESCartridge<?> cartridge;
 
     private final TVSystem tvSystem;
