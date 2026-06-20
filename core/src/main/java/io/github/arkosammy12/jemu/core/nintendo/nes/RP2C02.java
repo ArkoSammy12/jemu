@@ -202,12 +202,19 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     private final int[] secondaryOAM = new int[32];
     private final int[] paletteRam = new int[0x20];
 
+    // =============================================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // If adding or changing the initial value of a field here,
+    // consider adding the correspond initialization code in reset()
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // =============================================================
+
     // PPUCTRL registers
     private int vramAddressIncrement = 1;
     private int spritePatternTableAddress8x8 = 0x0000;
     private int backgroundPatternTableAddress = 0x0000;
     private boolean spriteSize;
-    private boolean vblankNMIEnable;
+    private boolean vBlankNMIEnable;
 
     // PPUMASK registers
     private boolean useGreyscaleColors;
@@ -236,7 +243,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     protected int dotNumber;
     protected int scanlineNumber;
     private boolean vBlankFlagForNMI;
-    private boolean nmiOutput;
     private boolean ppuInit = true;
     private boolean isRendering;
 
@@ -324,6 +330,87 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
             }
         });
 
+        this.reset();
+
+    }
+
+    public void reset() {
+        // =============================================================
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // If changing the reset value of a field here, consider changing
+        // it in the field declaration and initialization up in the fields
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // =============================================================
+
+
+        // The reset signal, if implemented, is set on reset and cleared on the pre-render scanline dot
+        // that clears the vblank, sprite 0 and sprite overflow flags. During that time writes to registers are ignored
+
+        // Values on reset provided explicitly by the nesdev wiki in https://www.nesdev.org/wiki/PPU_power_up_state
+
+        // PPUCTRL
+        this.vramAddressIncrement = 1;
+        this.spritePatternTableAddress8x8 = 0x0000;
+        this.backgroundPatternTableAddress = 0x0000;
+        this.spriteSize = false;
+        this.vBlankNMIEnable = false;
+
+        // PPUMASK
+        this.useGreyscaleColors = false;
+        this.showBackgroundInLeftmost8Pixels = false;
+        this.showSpritesInLeftmost8Pixels = false;
+        this.enableBackgroundRendering = false;
+        this.enableSpriteRendering = false;
+        this.emphasisBits = 0b000;
+
+        // PPUSTATUS: U??x xxxx
+        this.ppuStatus &= 0x80;
+
+        // $2005 / $2006 latch
+        this.clearW();
+
+        // PPUSCROLL
+        this.setT(0);
+        this.setX(0);
+
+        // PPUDATA read buffer
+        this.ppuDataReadBuffer = 0;
+
+        // odd frame: no
+        this.frameParity = FrameParity.EVEN;
+
+        // Internal state resetting
+
+        // The PPU comes out of power and reset at the top of the picture
+        this.ppuInit = true;
+
+        this.currentDotHalf = DotHalf.FIRST;
+        this.dotNumber = 0;
+        this.scanlineNumber = 0;
+        this.isRendering = false;
+
+        this.dotSkipped = false;
+        this.skipDot0NextFrame = false;
+        this.blockSpriteHBlankReload = false;
+        this.sprite0OnNextScanline = false;
+        this.sprite0OnThisScanline = false;
+
+        this.signalDispatcher.reset();
+        this.refreshSpriteShiftersSignal.reset();
+
+        this.bgFetcherStep = 0;
+
+        this.secondaryOamClearStep = 0;
+
+        this.spriteEvaluationStep = 0;
+        this.spriteEvaluationOamReadingCounter = 0;
+        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
+        this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
+        this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+        this.spriteEvaluationOverflowMode = 0;
+
+        this.spriteShifterInitIndex = 0;
+        this.spriteFetcherStep = 0;
     }
 
     @Override
@@ -446,10 +533,9 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                 this.spritePatternTableAddress8x8 = (value & (1 << 3)) != 0 ? 0x1000 : 0x0000;
                 this.backgroundPatternTableAddress = (value & (1 << 4)) != 0 ? 0x1000 : 0x0000;
                 this.spriteSize = (value & (1 << 5)) != 0;
-                this.vblankNMIEnable = (value & (1 << 7)) != 0;
+                this.vBlankNMIEnable = (value & (1 << 7)) != 0;
 
                 setT((getT() &  ~0xC00) | ((value & 0b11) << 10));
-                this.setNMISignal(this.getVBlankNMIEnable());
             }
             // TODO: Greyscale flag has a delay and stuff. Check out https://forums.nesdev.org/viewtopic.php?p=256737#p256737
 			case PPUMASK_ADDR -> {
@@ -526,12 +612,8 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
         this.decayPPUDataBusCountdown = 40000 * 2;
     }
 
-    private void setNMISignal(boolean value) {
-        this.nmiOutput = value;
-    }
-
     public boolean getNMISignal() {
-        return this.nmiOutput && vBlankFlagForNMI;
+        return this.vBlankNMIEnable && this.vBlankFlagForNMI;
     }
 
     private boolean isRenderingEnabled() {
@@ -1281,10 +1363,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
 
     private boolean getSpriteSize() {
         return this.spriteSize;
-    }
-
-    private boolean getVBlankNMIEnable() {
-        return this.vblankNMIEnable;
     }
 
     private boolean useGrayscaleColors() {

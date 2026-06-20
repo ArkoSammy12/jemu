@@ -38,6 +38,11 @@ public class ActionSignalDispatcher {
         }
     }
 
+    public void reset() {
+        this.ticks = 0;
+        this.signals.forEach(Signal::reset);
+    }
+
     private static final class Signal {
 
         private final IntConsumer action;
@@ -46,6 +51,11 @@ public class ActionSignalDispatcher {
 
         private Signal(IntConsumer action) {
             this.action = action;
+        }
+
+        private void reset() {
+            this.timers.clear();
+            this.pendingValues.clear();
         }
 
     }

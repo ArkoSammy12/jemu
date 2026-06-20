@@ -32,4 +32,10 @@ public final class ActionSignal {
         }
     }
 
+    public void reset() {
+        this.pendingValues.clear();
+        this.timers.clear();
+        this.ticks = 0;
+    }
+
 }

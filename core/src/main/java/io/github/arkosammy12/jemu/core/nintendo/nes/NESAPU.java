@@ -45,6 +45,13 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private final HighPassFilter hpf1 = new HighPassFilter();
     private final HighPassFilter hpf2 = new HighPassFilter();
 
+    // =============================================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // If adding or changing the initial value of a field here,
+    // consider adding the correspond initialization code in reset()
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // =============================================================
+
     private int frameCounterCycleCounter;
 
     private final ActionSignalDispatcher signalDispatcher = new ActionSignalDispatcher();
@@ -202,6 +209,39 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
             };
         }
 
+        this.reset();
+
+    }
+
+    public void reset() {
+        // =============================================================
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // If changing the reset value of a field here, consider changing
+        // it in the field declaration and initialization up in the fields
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // =============================================================
+
+        // Values on reset provided explicitly by the nesdev wiki in https://www.nesdev.org/wiki/CPU_power_up_state
+
+        // See TriangleChannel class for the reasoning as to why we reset the sequencer step to 15 instead of 0
+        this.triangleChannel.sequencerStep = 15;
+        this.dmcChannel.outputLevel &= 1;
+
+        this.pulseChannel1.setEnabled(false);
+        this.pulseChannel2.setEnabled(false);
+        this.triangleChannel.setEnabled(false);
+        this.noiseChannel.setEnabled(false);
+        this.dmcChannel.setEnabled(false);
+
+        this.frameCounterCycleCounter = 0;
+
+        // Internal state resetting
+
+        this.signalDispatcher.reset();
+
+        // The frame counter IRQ flag being clear is expected by blargg's apu_reset tests
+        this.frameInterruptFlag = false;
+        this.frameInterruptFlagForIRQSignal = false;
     }
 
     @Override

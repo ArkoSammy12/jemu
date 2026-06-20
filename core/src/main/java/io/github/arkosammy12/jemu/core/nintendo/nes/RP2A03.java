@@ -64,6 +64,10 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         this.controller = new NESController<>(emulator);
     }
 
+    public void reset() {
+        this.apu.reset();
+    }
+
     public NES6502 getCpu() {
         return this.cpu;
     }
