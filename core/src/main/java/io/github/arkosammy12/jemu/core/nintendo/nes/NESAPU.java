@@ -265,9 +265,9 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
         int samplesPerFrame = audioDriver.getSamplesPerFrame();
         int sampleRate = audioDriver.getSampleRate();
 
-        this.hpf0.createHpf(285.17092929859564, (double) sampleRate);
-        this.hpf1.createHpf(85.509330674952423, (double) sampleRate);
-        this.hpf2.createHpf(7.3617262313390981, (double) sampleRate);
+        this.hpf0.createHpf(285.17092929859564, sampleRate);
+        this.hpf1.createHpf(85.509330674952423, sampleRate);
+        this.hpf2.createHpf(7.3617262313390981, sampleRate);
 
         byte[] out = new byte[samplesPerFrame * 2];
         double step = (double) this.sampleBuffer.length / (double) samplesPerFrame;
