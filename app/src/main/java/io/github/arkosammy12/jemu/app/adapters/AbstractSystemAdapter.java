@@ -33,7 +33,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
 
     private Emulator emulator;
     private DefaultAudioRendererDriver audioDriver;
-    private JoypadDriver joypadDriver;
+    //private JoypadDriver joypadDriver;
     private KeyListener keyListener;
 
     @Nullable
@@ -90,7 +90,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         if (this.videoDriver != null) {
             this.videoDriver.requestFrame();
         }
-        this.joypadDriver.poll();
+        //this.joypadDriver.poll();
     }
 
     public void reset(EmulatorInitializer emulatorInitializer) {
@@ -113,7 +113,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
             this.emulator = this.createEmulator();
         }
 
-        this.joypadDriver = new JoypadDriver(this);
+        //this.joypadDriver = new JoypadDriver(this);
         Optional.ofNullable(this.emulator).map(Emulator::getAudioGenerator).ifPresent(audioGenerator -> {
             this.audioDriver = audioGenerator.isStereo() ? new StereoAudioRendererDriver(jemu, this.emulator.getAudioGenerator()) : new MonoAudioRendererDriver(jemu, this.emulator.getAudioGenerator());
         });
@@ -147,7 +147,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
             this.videoDriver.close();
         }
         try {
-            this.joypadDriver.close();
+            //this.joypadDriver.close();
             if (this.emulator != null) {
                 this.emulator.close();
             }
