@@ -94,17 +94,25 @@ These builds are not well tested and may have bugs.
 
 ## Building
 
-A Java Development Kit targeting Java version 25 or later is required to build this project.
+A Java Development Kit targeting Java 25 or later is required to build this project.
 
-Clone the repository and run the following command on the top level directory:
+This repository contains git submodules. When cloning, use the `--recurse-submodules` flag to ensure they are all downloaded correctly.
 
+Once cloned, run the following from the top-level directory:
+
+**Windows:**
 ```
-mvnw clean package
+.\mvnw clean package
 ```
 
-An executable `.jar` file should have then been generated in `/target/jemu-x.y.z.jar`.
+**macOS/Linux:**
+```
+./mvnw clean package
+```
 
-Run with the `-DskipTests` flag to omit running the automated unit tests.
+An executable `.jar` file will be generated at `target/jemu-x.y.z.jar`.
+
+To skip the automated unit tests, append `-DskipTests` to the build command.
 
 ## License
 
