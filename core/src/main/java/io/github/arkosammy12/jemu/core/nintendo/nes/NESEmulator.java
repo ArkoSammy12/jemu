@@ -129,6 +129,9 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
             systemHost.getRomPath().ifPresent(path -> systemHost.getRom().ifPresent(newRom -> {
                 String romPathFilename = path.getFileName().toString();
                 if (!this.loadedRomFileName.equals(romPathFilename)) {
+                    if (this.cartridge != null) {
+                        this.cartridge.save();
+                    }
                     this.loadedRomFileName = romPathFilename;
                     this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(newRom));
                 }
