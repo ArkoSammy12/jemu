@@ -6,11 +6,13 @@ import io.github.arkosammy12.jemu.core.rca.CDP1861;
 import io.github.arkosammy12.jemu.core.rca.ToneGenerator;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 
+import java.nio.file.Path;
 import java.util.function.BooleanSupplier;
 
 public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Resetable {
 
     private final SystemHost systemHost;
+    private String loadedRomFileName = "";
 
     private final CDP1802 cpu;
     private final RCAStudioIIBus bus;
@@ -34,7 +36,12 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
         this.keypad = new RCAStudioIIKeypad();
 
         this.bus = new RCAStudioIIBus();
-        this.bus.initializeCartridge(systemHost.getRomPath().orElse(null), systemHost.getRom().orElse(null));
+
+        Path romPath = systemHost.getRomPath().orElse(null);
+        this.bus.initializeCartridge(romPath, systemHost.getRom().orElse(null));
+        if (romPath != null) {
+            this.loadedRomFileName = romPath.getFileName().toString();
+        }
 
         this.runCycleFunction = () -> {
             this.cpu.cycle();
@@ -43,6 +50,13 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
         };
 
         this.resetRunCycleFunction = () -> {
+            Path path = systemHost.getRomPath().orElse(null);
+            String romPathFileName = path == null ? "" : path.getFileName().toString();
+            if (!this.loadedRomFileName.equals(romPathFileName)) {
+                this.loadedRomFileName = romPathFileName;
+                this.bus.initializeCartridge(path, systemHost.getRom().orElse(null));
+            }
+
             this.vdp.reset();
             this.runCycleFunction.run();
             this.currentRunCycleFunction = this.runCycleFunction;
