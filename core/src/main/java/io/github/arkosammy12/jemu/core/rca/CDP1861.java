@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.rca;
 
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
+import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 
 public class CDP1861<E extends CDP1802System> implements VideoGenerator {
 
@@ -102,7 +103,8 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
 
     @SuppressWarnings("DuplicatedCode")
     public void onDMAOUT(int dmaOutAddress, int value) {
-        if (!this.emulator.getCpu().getCurrentState().isS2Dma()) {
+        CDP1802 cpu = this.emulator.getCpu();
+        if (!(cpu.getSC1() && !cpu.getSC0())) {
             return;
         }
         int row = this.scanlineIndex - DISPLAY_AREA_BEGIN;

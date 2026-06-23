@@ -104,6 +104,16 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     @Override
+    public boolean getCLEAR() {
+        return false;
+    }
+
+    @Override
+    public boolean getWAIT() {
+        return false;
+    }
+
+    @Override
     public boolean getDMAIN() {
         return false;
     }

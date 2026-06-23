@@ -57,6 +57,9 @@ public abstract class NMOS6502 implements Processor {
 
     public NMOS6502(SystemBus systemBus) {
         this.systemBus = systemBus;
+
+        // Trigger the initial resetting of the CPU
+        this.brkSource = BRKSource.RESET;
     }
 
     public Phase getHalfCyclePhase() {

@@ -7,9 +7,6 @@ import static io.github.arkosammy12.jemu.core.cpu.CDP1802.State.*;
 public class CDP1802 implements Processor {
 
     private final SystemBus systemBus;
-    private State currentState = State.S1_RESET;
-    private boolean s1ExecuteSecondCycle = false;
-    private boolean idling = false;
 
     private int accumulator; // D
     private boolean dataFlagRegister; // DF
@@ -23,12 +20,33 @@ public class CDP1802 implements Processor {
     private boolean interruptEnable; // IE
     private boolean outputFlipFlop; // Q
 
+    private Mode currentMode;
+    private State currentState = State.S1_INIT;
+    private boolean s1ExecuteSecondCycle = false;
+    private boolean idling = false;
+    private boolean dmaInOnLoadCycle = false;
+
     public CDP1802(SystemBus systemBus) {
         this.systemBus = systemBus;
+
+        // Trigger initial resetting of the CPU
+        this.currentMode = Mode.RESET;
     }
 
-    public State getCurrentState() {
-        return this.currentState;
+    public boolean getSC0() {
+        if (systemBus.getCLEAR()) {
+            return S1_EXECUTE.getSC0();
+        } else {
+            return this.currentState.getSC0();
+        }
+    }
+
+    public boolean getSC1() {
+        if (systemBus.getCLEAR()) {
+            return S1_EXECUTE.getSC1();
+        } else {
+            return this.currentState.getSC1();
+        }
     }
 
     protected void setD(int value) {
@@ -137,65 +155,103 @@ public class CDP1802 implements Processor {
 
     @Override
     public int cycle() {
-        switch (currentState) {
-            case S1_RESET -> onReset();
-            case S1_INIT -> onInit();
-            case S0_FETCH -> onFetch();
-            case S1_EXECUTE -> onExecute();
-            case S2_DMA_IN -> onDmaIn();
-            case S2_DMA_OUT -> onDmaOut();
-            case S3_INTERRUPT -> onInterrupt();
+        switch (this.currentMode) {
+            case RESET -> onReset();
+            case LOAD -> {
+                if (currentState == S1_INIT) {
+                    onInit();
+                } else if (this.dmaInOnLoadCycle) {
+                    onDmaIn();
+                }
+                onReset();
+            }
+            case PAUSE -> {
+                if (currentState == S1_INIT) {
+                    onInit();
+                }
+            }
+            case RUN -> {
+                switch (currentState) {
+                    case S1_INIT -> onInit();
+                    case S0_FETCH -> onFetch();
+                    case S1_EXECUTE -> onExecute();
+                    case S2_DMA_IN -> onDmaIn();
+                    case S2_DMA_OUT -> onDmaOut();
+                    case S3_INTERRUPT -> onInterrupt();
+                }
+            }
         }
         return 0;
     }
 
     public void nextState() {
-        this.currentState = switch (currentState) {
-            case S1_RESET -> S1_INIT;
-            case S1_INIT, S3_INTERRUPT -> {
-                if (systemBus.getDMAOUT()) {
-                    yield S2_DMA_OUT;
-                } else if (systemBus.getDMAIN()) {
-                    yield S2_DMA_IN;
-                } else {
-                    yield S0_FETCH;
+        switch (this.currentMode) {
+            case RESET -> {
+                onResetNextState();
+                this.currentState = S1_INIT;
+            }
+            case LOAD -> {
+                onResetNextState();
+                if (this.currentState == S1_INIT) {
+                    this.currentState = S0_FETCH;
+                }
+                if (systemBus.getDMAIN()) {
+                    this.dmaInOnLoadCycle = true;
                 }
             }
-            case S0_FETCH -> S1_EXECUTE;
-            case S1_EXECUTE -> {
-                if (this.s1ExecuteSecondCycle) {
-                    yield S1_EXECUTE;
-                } else {
+            case PAUSE -> {
+                if (this.currentState == S1_INIT) {
+                    this.currentState = S0_FETCH;
+                }
+            }
+            case RUN -> this.currentState = switch (currentState) {
+                case S1_INIT, S3_INTERRUPT -> {
                     if (systemBus.getDMAOUT()) {
-                        this.idling = false;
                         yield S2_DMA_OUT;
                     } else if (systemBus.getDMAIN()) {
-                        this.idling = false;
                         yield S2_DMA_IN;
                     } else {
-                        if (this.systemBus.getINT() && getIE()) {
+                        yield S0_FETCH;
+                    }
+                }
+                case S0_FETCH -> S1_EXECUTE;
+                case S1_EXECUTE -> {
+                    if (this.s1ExecuteSecondCycle) {
+                        yield S1_EXECUTE;
+                    } else {
+                        if (systemBus.getDMAOUT()) {
                             this.idling = false;
-                            yield S3_INTERRUPT;
-                        } else if (this.idling) {
-                            yield S1_EXECUTE;
+                            yield S2_DMA_OUT;
+                        } else if (systemBus.getDMAIN()) {
+                            this.idling = false;
+                            yield S2_DMA_IN;
                         } else {
-                            yield S0_FETCH;
+                            if (this.systemBus.getINT() && getIE()) {
+                                this.idling = false;
+                                yield S3_INTERRUPT;
+                            } else if (this.idling) {
+                                yield S1_EXECUTE;
+                            } else {
+                                yield S0_FETCH;
+                            }
                         }
                     }
                 }
-            }
-            case S2_DMA_IN, S2_DMA_OUT -> {
-                if (systemBus.getDMAOUT()) {
-                    yield S2_DMA_OUT;
-                } else if (systemBus.getDMAIN()) {
-                    yield S2_DMA_IN;
-                } else if (this.systemBus.getINT() && getIE()) {
-                    yield S3_INTERRUPT;
-                } else {
-                    yield S0_FETCH;
+                case S2_DMA_IN, S2_DMA_OUT -> {
+                    if (systemBus.getDMAOUT()) {
+                        yield S2_DMA_OUT;
+                    } else if (systemBus.getDMAIN()) {
+                        yield S2_DMA_IN;
+                    } else if (this.systemBus.getINT() && getIE()) {
+                        yield S3_INTERRUPT;
+                    } else {
+                        yield S0_FETCH;
+                    }
                 }
-            }
-        };
+            };
+        }
+
+        this.currentMode = Mode.getModeForControlLines(systemBus.getCLEAR(), systemBus.getWAIT());
     }
 
     private void onReset() {
@@ -203,12 +259,19 @@ public class CDP1802 implements Processor {
         setN(0);
         setQ(false);
         setIE(true);
+        this.dmaInOnLoadCycle = false;
+    }
+
+    private void onResetNextState() {
+        this.idling = false;
+        this.s1ExecuteSecondCycle = false;
     }
 
     private void onInit() {
         setX(0);
         setP(0);
         setR(0, 0);
+        this.dmaInOnLoadCycle = false;
     }
 
     private void onFetch() {
@@ -760,27 +823,59 @@ public class CDP1802 implements Processor {
         }
     }
 
+    private enum Mode {
+        LOAD,
+        RESET,
+        PAUSE,
+        RUN;
+
+        private static Mode getModeForControlLines(boolean clear, boolean wait) {
+            if (clear) {
+                if (wait) {
+                    return LOAD;
+                } else {
+                    return RESET;
+                }
+            } else {
+                if (wait) {
+                    return PAUSE;
+                } else {
+                    return RUN;
+                }
+            }
+        }
+
+    }
+
     public enum State {
         S0_FETCH,
-        S1_RESET,
         S1_INIT,
         S1_EXECUTE,
         S2_DMA_IN,
         S2_DMA_OUT,
         S3_INTERRUPT;
 
-        public boolean isS1Execute() {
-            return this == S1_RESET || this == S1_INIT || this == S1_EXECUTE;
+        public boolean getSC0() {
+            return switch (this) {
+                case S0_FETCH, S2_DMA_IN, S2_DMA_OUT -> false;
+                case S1_INIT, S1_EXECUTE, S3_INTERRUPT -> true;
+            };
         }
 
-        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-        public boolean isS2Dma() {
-            return this == S2_DMA_IN || this == S2_DMA_OUT;
+        public boolean getSC1() {
+            return switch (this) {
+                case S0_FETCH, S1_INIT, S1_EXECUTE -> false;
+                case S2_DMA_IN, S2_DMA_OUT, S3_INTERRUPT -> true;
+            };
         }
 
     }
 
     public interface SystemBus extends io.github.arkosammy12.jemu.core.common.SystemBus {
+
+        boolean getCLEAR();
+
+        boolean getWAIT();
 
         boolean getDMAIN();
 
