@@ -94,6 +94,11 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
     }
 
     @Override
+    public boolean getINT() {
+        return false;
+    }
+
+    @Override
     public boolean getEF1() {
         return true;
     }
@@ -111,11 +116,6 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
     @Override
     public boolean getEF4() {
         return true;
-    }
-
-    @Override
-    public boolean getINT() {
-        return false;
     }
 
     @Override

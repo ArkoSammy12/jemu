@@ -144,6 +144,11 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
     }
 
     @Override
+    public boolean getINT() {
+        return this.vdp.getINT();
+    }
+
+    @Override
     public boolean getDMAOUT() {
         return this.vdp.getDMAO();
     }
@@ -166,11 +171,6 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
     @Override
     public boolean getEF4() {
         return this.keypad.getKeypad2EFX();
-    }
-
-    @Override
-    public boolean getINT() {
-        return this.vdp.getINT();
     }
 
     @Override

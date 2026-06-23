@@ -869,6 +869,8 @@ public class CDP1802 implements Processor {
 
         boolean getDMAOUT();
 
+        boolean getINT();
+
         boolean getEF1();
 
         boolean getEF2();
@@ -876,8 +878,6 @@ public class CDP1802 implements Processor {
         boolean getEF3();
 
         boolean getEF4();
-
-        boolean getINT();
 
         int readDMAIN(int address);
 

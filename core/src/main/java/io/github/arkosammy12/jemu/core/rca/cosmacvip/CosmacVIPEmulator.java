@@ -154,6 +154,11 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Rese
     }
 
     @Override
+    public boolean getINT() {
+        return this.vdp.getINT();
+    }
+
+    @Override
     public boolean getEF1() {
         return this.vdp.getEFX();
     }
@@ -171,11 +176,6 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Rese
     @Override
     public boolean getEF4() {
         return false;
-    }
-
-    @Override
-    public boolean getINT() {
-        return this.vdp.getINT();
     }
 
     @Override
