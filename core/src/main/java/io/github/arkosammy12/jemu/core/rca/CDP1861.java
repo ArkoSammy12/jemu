@@ -92,7 +92,11 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
 
     public void cycle() {
         if (this.machineCycleCounter % CPU_CYCLES_PER_FRAME == 0) {
+            boolean originalEnabled = this.enabled;
             this.enabled = this.displayEnableLatch;
+            if (originalEnabled && !this.enabled) {
+                this.clearDisplay();
+            }
         }
         if (this.enabled) {
             this.efx = (this.scanlineNumber >= FIRST_EFX_BEGIN && this.scanlineNumber < FIRST_EFX_END) || (this.scanlineNumber >= SECOND_EFX_BEGIN && this.scanlineNumber < SECOND_EFX_END);
