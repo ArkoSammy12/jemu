@@ -7,7 +7,9 @@ import io.github.arkosammy12.jemu.core.rca.CDP1802System;
 import io.github.arkosammy12.jemu.core.rca.CDP1861;
 import io.github.arkosammy12.jemu.core.rca.ToneGenerator;
 
-public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
+import java.util.function.BooleanSupplier;
+
+public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Resetable {
 
     private final CosmacVIPHost host;
     private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
@@ -19,6 +21,14 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
     private final CosmacVIPKeypad keypad;
 
     private final int frameRate;
+
+    private final Runnable runCycleFunction;
+    private final Runnable resetRunCycleFunction;
+    private Runnable currentRunCycleFunction;
+
+    private final BooleanSupplier deassertCLEARSupplier;
+    private final BooleanSupplier assertCLEARSupplier;
+    private BooleanSupplier clearLineLevelSupplier;
 
     public CosmacVIPEmulator(CosmacVIPHost host) {
         try {
@@ -39,6 +49,27 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
         } catch (Exception e) {
             throw new EmulatorException(e);
         }
+
+        this.runCycleFunction = () -> {
+            this.cpu.cycle();
+            this.vdp.cycle();
+            this.cpu.nextState();
+        };
+
+        this.resetRunCycleFunction = () -> {
+            this.vdp.reset();
+            this.runCycleFunction.run();
+            this.currentRunCycleFunction = this.runCycleFunction;
+        };
+
+        this.currentRunCycleFunction = this.runCycleFunction;
+
+        this.deassertCLEARSupplier = () -> false;
+        this.assertCLEARSupplier = () -> {
+            this.clearLineLevelSupplier = this.deassertCLEARSupplier;
+            return true;
+        };
+        this.clearLineLevelSupplier = this.deassertCLEARSupplier;
     }
 
     @Override
@@ -93,9 +124,7 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     private void runCycle() {
-        this.cpu.cycle();
-        this.vdp.cycle();
-        this.cpu.nextState();
+        this.currentRunCycleFunction.run();
     }
 
     @Override
@@ -105,7 +134,7 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
 
     @Override
     public boolean getCLEAR() {
-        return false;
+        return this.clearLineLevelSupplier.getAsBoolean();
     }
 
     @Override
@@ -185,6 +214,12 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
                 }
             }
         }
+    }
+
+    @Override
+    public void reset() {
+        this.currentRunCycleFunction = this.resetRunCycleFunction;
+        this.clearLineLevelSupplier = this.assertCLEARSupplier;
     }
 
 }
