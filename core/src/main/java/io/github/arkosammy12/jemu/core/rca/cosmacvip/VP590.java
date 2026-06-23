@@ -2,6 +2,8 @@ package io.github.arkosammy12.jemu.core.rca.cosmacvip;
 
 import io.github.arkosammy12.jemu.core.rca.CDP1861;
 
+import java.util.Arrays;
+
 public class VP590<E extends CosmacVIPEmulator> extends CDP1861<E> {
 
     private static final int[] BACKGROUND_COLORS = {
@@ -14,14 +16,21 @@ public class VP590<E extends CosmacVIPEmulator> extends CDP1861<E> {
     private final byte[] colorRAM = new byte[256];
     private int backgroundColorIndex = 0;
     private boolean hiresColor = false;
-    private boolean colorRamModified = false;
+    private boolean colorModeEnabled = false;
 
     public VP590(E emulator) {
         super(emulator);
     }
 
+    @Override
+    public void reset() {
+        this.backgroundColorIndex = 0;
+        this.colorModeEnabled = false;
+        super.reset();
+    }
+
     public void writeColorRAM(int address, int value) {
-        this.colorRamModified = true;
+        this.colorModeEnabled = true;
         this.hiresColor = (address & (1 << 12)) != 0;
         this.colorRAM[address & (this.hiresColor ? 0xFF : 0xE7)] = (byte) (value & 7);
     }
@@ -35,11 +44,16 @@ public class VP590<E extends CosmacVIPEmulator> extends CDP1861<E> {
     }
 
     @Override
+    protected void clearDisplay() {
+        Arrays.fill(this.displayBuffer, BACKGROUND_COLORS[0]);
+    }
+
+    @Override
     protected int getPixelRGB(int dmaOutAddress, boolean bit) {
         if (!bit) {
-            return BACKGROUND_COLORS[this.colorRamModified ? this.backgroundColorIndex : 0];
+            return BACKGROUND_COLORS[this.colorModeEnabled ? this.backgroundColorIndex : 0];
         } else {
-            if (!this.colorRamModified) {
+            if (!this.colorModeEnabled) {
                 return 0xFFFFFF;
             } else {
                 int colorByte = this.readColorRAM(dmaOutAddress);

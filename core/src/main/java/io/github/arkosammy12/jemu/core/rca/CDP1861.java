@@ -3,6 +3,8 @@ package io.github.arkosammy12.jemu.core.rca;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 
+import java.util.Arrays;
+
 public class CDP1861<E extends CDP1802System> implements VideoGenerator {
 
     public static final int CPU_CYCLES_PER_FRAME = 3668;
@@ -43,6 +45,7 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
     public CDP1861(E emulator) {
         this.emulator = emulator;
         this.displayBuffer = new int[this.getImageWidth() * this.getImageHeight()];
+        this.clearDisplay();
     }
 
     public void reset() {
@@ -53,6 +56,7 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
         this.dmaOut = false;
         this.enabled = false;
         this.displayEnableLatch = false;
+        this.clearDisplay();
     }
 
     @Override
@@ -130,6 +134,10 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
             }
             this.displayBuffer[(row * IMAGE_WIDTH) + col] = this.getPixelRGB(dmaOutAddress, (value & mask) != 0);
         }
+    }
+
+    protected void clearDisplay() {
+        Arrays.fill(this.displayBuffer, 0x000000);
     }
 
     protected int getPixelRGB(int dmaOutAddress, boolean bit) {
