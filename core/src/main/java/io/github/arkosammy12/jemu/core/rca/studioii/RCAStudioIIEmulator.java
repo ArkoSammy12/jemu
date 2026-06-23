@@ -52,6 +52,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
         this.resetRunCycleFunction = () -> {
             this.vdp.reset();
             this.runCycleFunction.run();
+            this.currentRunCycleFunction = this.runCycleFunction;
         };
 
         this.currentRunCycleFunction = this.runCycleFunction;
@@ -61,6 +62,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
             this.clearLineLevelSupplier = this.deassertCLEARSupplier;
             return true;
         };
+        this.clearLineLevelSupplier = this.deassertCLEARSupplier;
     }
 
     @Override
@@ -106,7 +108,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
     }
 
     private void runCycle() {
-        this.runCycleFunction.run();
+        this.currentRunCycleFunction.run();
     }
 
     @Override
