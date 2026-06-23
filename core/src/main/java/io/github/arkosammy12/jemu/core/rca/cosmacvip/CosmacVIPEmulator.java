@@ -57,6 +57,7 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Rese
         };
 
         this.resetRunCycleFunction = () -> {
+            this.bus.reset();
             this.vdp.reset();
             this.runCycleFunction.run();
             this.currentRunCycleFunction = this.runCycleFunction;

@@ -277,6 +277,10 @@ public class CosmacVIPBus implements Bus {
         }
     }
 
+    public void reset() {
+        this.addressMSBLatched = true;
+    }
+
     @Override
     public int readByte(int address) {
         if (this.addressMSBLatched) {
