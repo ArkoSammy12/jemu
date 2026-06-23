@@ -9,22 +9,18 @@ public class CosmacVIPKeypad implements SystemController {
     private final boolean[] keys = new boolean[16];
     private int latchedKey = 0;
 
-    private BooleanSupplier efxFunction;
+    private final BooleanSupplier regularEfxSupplier = () -> this.keys[this.latchedKey];
+    private BooleanSupplier efxSupplier = this.regularEfxSupplier;
 
-    public CosmacVIPKeypad(boolean forceCKeyOnStartup) {
-        BooleanSupplier regularEfxFunction = () -> this.keys[this.latchedKey];
-        if (forceCKeyOnStartup) {
-            this.efxFunction = () -> {
-                if (this.latchedKey == 0xC) {
-                    this.efxFunction = regularEfxFunction;
-                    return true;
-                } else {
-                    return this.keys[this.latchedKey];
-                }
-            };
-        } else {
-            this.efxFunction = regularEfxFunction;
-        }
+    public void forceCKeyPressOnFirstPoll() {
+        this.efxSupplier = () -> {
+            if (this.latchedKey == 0xC) {
+                this.efxSupplier = this.regularEfxSupplier;
+                return true;
+            } else {
+                return this.keys[this.latchedKey];
+            }
+        };
     }
 
     @Override
@@ -44,7 +40,7 @@ public class CosmacVIPKeypad implements SystemController {
     }
 
     public boolean getEFX() {
-        return this.efxFunction.getAsBoolean();
+        return this.efxSupplier.getAsBoolean();
     }
 
     public void setLatchedKey(int value) {

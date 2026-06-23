@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.core.rca.cosmacvip;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -245,16 +246,20 @@ public class CosmacVIPBus implements Bus {
 
     private final CosmacVIPEmulator emulator;
 
-    protected final byte[] ram;
+    protected final byte[] ram = new byte[0x1000];
     protected boolean addressMSBLatched = true;
     protected int dataBus = 0;
 
     public CosmacVIPBus(CosmacVIPEmulator emulator) {
         this.emulator = emulator;
-        this.ram = new byte[0x1000];
-        try {
-            byte[] rom = emulator.getHost().getRom().map(hostRom -> Arrays.copyOf(hostRom, hostRom.length)).orElse(null);
+    }
 
+    public void reset() {
+        this.addressMSBLatched = true;
+    }
+
+    public void initializeROM(byte @Nullable [] rom) {
+        try {
             byte[] chip8Interpreter = switch (emulator.getChip8Interpreter()) {
                 case CHIP_8 -> CHIP_8_INTERPRETER;
                 case CHIP_8X -> CHIP_8X_INTERPRETER;
@@ -275,10 +280,6 @@ public class CosmacVIPBus implements Bus {
         } catch (Exception e) {
             throw new RuntimeException("Failed to initialize memory for Cosmac VIP system: " + e.getMessage(), e);
         }
-    }
-
-    public void reset() {
-        this.addressMSBLatched = true;
     }
 
     @Override

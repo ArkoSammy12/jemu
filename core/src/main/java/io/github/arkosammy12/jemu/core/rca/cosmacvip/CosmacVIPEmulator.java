@@ -7,12 +7,15 @@ import io.github.arkosammy12.jemu.core.rca.CDP1802System;
 import io.github.arkosammy12.jemu.core.rca.CDP1861;
 import io.github.arkosammy12.jemu.core.rca.ToneGenerator;
 
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.BooleanSupplier;
 
 public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Resetable {
 
     private final CosmacVIPHost host;
     private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
+    private String loadedRomFileName = "";
 
     private final CDP1802 cpu;
     private final CosmacVIPBus bus;
@@ -34,9 +37,20 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Rese
         try {
             this.host = host;
             this.chip8Interpreter = host.getChip8Interpreter();
-            this.keypad = new CosmacVIPKeypad(host.getRom().isEmpty());
             this.cpu = new CDP1802(this);
+
+            Optional<byte[]> rom = host.getRom();
             this.bus = new CosmacVIPBus(this);
+            this.bus.initializeROM(rom.orElse(null));
+            host.getRomPath().ifPresent(path -> {
+                this.loadedRomFileName = path.getFileName().toString();
+            });
+
+            this.keypad = new CosmacVIPKeypad();
+            if (rom.isEmpty()) {
+                this.keypad.forceCKeyPressOnFirstPoll();
+            }
+
             if (this.chip8Interpreter == CosmacVIPHost.Chip8Interpreter.CHIP_8X) {
                 this.vdp = new VP590<>(this);
                 this.audioGenerator = new VP595<>(this);
@@ -57,6 +71,17 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Rese
         };
 
         this.resetRunCycleFunction = () -> {
+            Path path = host.getRomPath().orElse(null);
+            String romPathFileName = path == null ? "" : path.getFileName().toString();
+            Optional<byte[]> rom = host.getRom();
+            if (!this.loadedRomFileName.equals(romPathFileName)) {
+                this.loadedRomFileName = romPathFileName;
+                this.bus.initializeROM(rom.orElse(null));
+            }
+            if (rom.isEmpty()) {
+                this.keypad.forceCKeyPressOnFirstPoll();
+            }
+
             this.bus.reset();
             this.vdp.reset();
             this.runCycleFunction.run();
