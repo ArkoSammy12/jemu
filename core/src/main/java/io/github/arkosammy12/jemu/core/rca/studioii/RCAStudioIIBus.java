@@ -198,7 +198,12 @@ public class RCAStudioIIBus implements Bus {
             if (this.cartridge == null) {
                 return (int) SYSTEM_ROM[address & 0x7FF] & 0xFF;
             } else {
-                return (int) this.cartridge[address & 0x3FF] & 0xFF;
+                address &= 0x3FF;
+                if (address < this.cartridge.length) {
+                    return (int) this.cartridge[address & 0x3FF] & 0xFF;
+                } else {
+                    return (int) SYSTEM_ROM[0x400 | address] & 0xFF;
+                }
             }
         } else {
             address &= 0x3FF;
