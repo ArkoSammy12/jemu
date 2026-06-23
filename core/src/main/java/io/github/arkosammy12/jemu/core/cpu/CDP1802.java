@@ -21,7 +21,7 @@ public class CDP1802 implements Processor {
     private boolean outputFlipFlop; // Q
 
     private Mode currentMode;
-    private State currentState = State.S1_INIT;
+    private State currentState = State.S0_FETCH;
     private boolean s1ExecuteSecondCycle = false;
     private boolean idling = false;
     private boolean dmaInOnLoadCycle = false;
@@ -157,22 +157,15 @@ public class CDP1802 implements Processor {
     public int cycle() {
         switch (this.currentMode) {
             case RESET -> onReset();
+            case INIT -> onInit();
             case LOAD -> {
-                if (currentState == S1_INIT) {
-                    onInit();
-                } else if (this.dmaInOnLoadCycle) {
+                if (this.dmaInOnLoadCycle) {
                     onDmaIn();
                 }
                 onReset();
             }
-            case PAUSE -> {
-                if (currentState == S1_INIT) {
-                    onInit();
-                }
-            }
             case RUN -> {
                 switch (currentState) {
-                    case S1_INIT -> onInit();
                     case S0_FETCH -> onFetch();
                     case S1_EXECUTE -> onExecute();
                     case S2_DMA_IN -> onDmaIn();
@@ -186,26 +179,15 @@ public class CDP1802 implements Processor {
 
     public void nextState() {
         switch (this.currentMode) {
-            case RESET -> {
-                onResetNextState();
-                this.currentState = S1_INIT;
-            }
+            case RESET -> onResetNextState();
             case LOAD -> {
                 onResetNextState();
-                if (this.currentState == S1_INIT) {
-                    this.currentState = S0_FETCH;
-                }
                 if (systemBus.getDMAIN()) {
                     this.dmaInOnLoadCycle = true;
                 }
             }
-            case PAUSE -> {
-                if (this.currentState == S1_INIT) {
-                    this.currentState = S0_FETCH;
-                }
-            }
             case RUN -> this.currentState = switch (currentState) {
-                case S1_INIT, S3_INTERRUPT -> {
+                case S3_INTERRUPT -> {
                     if (systemBus.getDMAOUT()) {
                         yield S2_DMA_OUT;
                     } else if (systemBus.getDMAIN()) {
@@ -251,7 +233,12 @@ public class CDP1802 implements Processor {
             };
         }
 
-        this.currentMode = Mode.getModeForControlLines(systemBus.getCLEAR(), systemBus.getWAIT());
+        Mode polledMode = Mode.getModeForControlLines(systemBus.getCLEAR(), systemBus.getWAIT());
+        if (this.currentMode == Mode.RESET && polledMode != Mode.RESET) {
+            this.currentMode = Mode.INIT;
+        } else {
+            this.currentMode = polledMode;
+        }
     }
 
     private void onReset() {
@@ -265,6 +252,7 @@ public class CDP1802 implements Processor {
     private void onResetNextState() {
         this.idling = false;
         this.s1ExecuteSecondCycle = false;
+        this.currentState = S0_FETCH;
     }
 
     private void onInit() {
@@ -824,10 +812,11 @@ public class CDP1802 implements Processor {
     }
 
     private enum Mode {
+        INIT,
         LOAD,
         RESET,
         PAUSE,
-        RUN;
+        RUN,;
 
         private static Mode getModeForControlLines(boolean clear, boolean wait) {
             if (clear) {
@@ -849,7 +838,6 @@ public class CDP1802 implements Processor {
 
     public enum State {
         S0_FETCH,
-        S1_INIT,
         S1_EXECUTE,
         S2_DMA_IN,
         S2_DMA_OUT,
@@ -858,13 +846,13 @@ public class CDP1802 implements Processor {
         public boolean getSC0() {
             return switch (this) {
                 case S0_FETCH, S2_DMA_IN, S2_DMA_OUT -> false;
-                case S1_INIT, S1_EXECUTE, S3_INTERRUPT -> true;
+                case S1_EXECUTE, S3_INTERRUPT -> true;
             };
         }
 
         public boolean getSC1() {
             return switch (this) {
-                case S0_FETCH, S1_INIT, S1_EXECUTE -> false;
+                case S0_FETCH, S1_EXECUTE -> false;
                 case S2_DMA_IN, S2_DMA_OUT, S3_INTERRUPT -> true;
             };
         }
