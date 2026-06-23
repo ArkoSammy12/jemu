@@ -110,7 +110,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
 
     @Override
     public boolean getDMAOUT() {
-        return this.vdp.getDMAOUTSignal();
+        return this.vdp.getDMAO();
     }
 
     @Override
@@ -135,7 +135,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
 
     @Override
     public boolean getINT() {
-        return this.vdp.getInterruptSignal();
+        return this.vdp.getINT();
     }
 
     @Override
@@ -145,7 +145,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
 
     @Override
     public void writeDMAOUT(int dmaOutAddress, int value) {
-        if (this.vdp.getDMAOUTSignal()) {
+        if (this.vdp.getDMAO()) {
             this.vdp.onDMAOUT(dmaOutAddress, value);
         }
     }

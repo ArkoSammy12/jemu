@@ -60,11 +60,11 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
         return 4.0;
     }
 
-    public boolean getInterruptSignal() {
+    public boolean getINT() {
         return this.interrupting;
     }
 
-    public boolean getDMAOUTSignal() {
+    public boolean getDMAO() {
         return this.dmaOut;
     }
 
