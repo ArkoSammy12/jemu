@@ -1,14 +1,19 @@
 package io.github.arkosammy12.jemu.core.rca.studioii;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
+import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.Nullable;
 
+import java.nio.file.Path;
 import java.util.Arrays;
 
 import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
 
 public class RCAStudioIIBus implements Bus {
 
-    static final byte[] SYSTEM_ROM = intToByteArray(new int[] {
+    private static final byte[] SYSTEM_ROM = intToByteArray(new int[] {
             0x90, 0xb1, 0xb4, 0xa5, 0xab, 0xf8, 0x08, 0xb2, 0xb6, 0xb8, 0xf8, 0x1c,
             0xa1, 0xf8, 0xbf, 0xa2, 0xf8, 0x6b, 0xa4, 0xf8, 0x03, 0xb5, 0xd4, 0x7a,
             0x42, 0xf6, 0x42, 0x70, 0x22, 0x78, 0x22, 0x73, 0xc0, 0x00, 0x23, 0x7e,
@@ -182,29 +187,62 @@ public class RCAStudioIIBus implements Bus {
             0xbc, 0x68, 0x04, 0x27, 0xbc, 0x17, 0x24, 0xbb
     });
 
-    private final byte[] cartridge;
-    protected final byte[] ram = new byte[512];
+    private final byte[][] cartridgeRomPages = new byte[256][];
+    private final byte[] ram = new byte[512];
 
-    public RCAStudioIIBus(RCAStudioIIEmulator emulator) {
-        this.cartridge = emulator.getHost().getRom().map(rom -> Arrays.copyOf(rom, rom.length)).orElse(null);
+    public void initializeCartridge(@Nullable Path romPath, byte @Nullable [] file) {
+        Arrays.fill(this.cartridgeRomPages, null);
+        if (file == null) {
+            return;
+        }
+
+        if (romPath != null && FilenameUtils.getExtension(romPath.toString()).equals("st2")) {
+            if (file.length < 0x200) {
+                throw new EmulatorException("Invalid .st2 ROM file (Must be at least 512 bytes)!");
+            }
+            if (file[0] != 'R' || file[1] != 'C' || file[2] != 'A' || file[3] != '2') {
+                throw new EmulatorException("Invalid .st2 ROM file (bad magic)!");
+            }
+            int blocks = (int) file[4] & 0xFF;
+            if (file.length != (blocks << 8)) {
+                throw new EmulatorException("Invalid .st2 ROM file. Expected 0x%04X bytes, but found 0x%04X bytes instead!".formatted(blocks << 8, file.length));
+            }
+            if (blocks < 2 || blocks > 65) {
+                throw new EmulatorException("Invalid .st2 ROM file. Invalid block number %04X. Must be between 2 and 65!".formatted(blocks));
+            }
+            for (int i = 0; i < (blocks - 1); i++) {
+                int blockPage = (int) file[64 + i] & 0xFF;
+                if (blockPage == 0x00) {
+                    continue;
+                }
+                byte[] page = new byte[256];
+                System.arraycopy(file, 256 + (256 * i), page, 0, page.length);
+                this.cartridgeRomPages[blockPage] = page;
+            }
+        } else {
+            // Assume regular raw ROM image up to 1KB in size, mapped to the $400 - $7FF region
+            int blocks = Math.min(Math.ceilDiv(file.length, 256), 4);
+            try {
+                for (int i = 0; i < blocks; i++) {
+                    int blockPage = 0x04 + i;
+                    byte[] page = new byte[256];
+                    System.arraycopy(file, i * 256, page, 0, page.length);
+                    this.cartridgeRomPages[blockPage] = page;
+                }
+            } catch (ArrayIndexOutOfBoundsException e) {
+                throw new ROMInitializationException("Expected %d bytes, but found %d bytes instead!".formatted(blocks * 256, file.length));
+            }
+        }
     }
 
     @Override
     public int readByte(int address) {
         address &= 0xFFFF;
-        if (address <= 0x3FF) {
-            return (int) SYSTEM_ROM[address & 0x7FF] & 0xFF;
+        int page = address >>> 8;
+        if (this.cartridgeRomPages[page] != null) {
+            return (int) this.cartridgeRomPages[page][address & 0xFF] & 0xFF;
         } else if (address <= 0x7FF) {
-            if (this.cartridge == null) {
-                return (int) SYSTEM_ROM[address & 0x7FF] & 0xFF;
-            } else {
-                address &= 0x3FF;
-                if (address < this.cartridge.length) {
-                    return (int) this.cartridge[address & 0x3FF] & 0xFF;
-                } else {
-                    return (int) SYSTEM_ROM[0x400 | address] & 0xFF;
-                }
-            }
+            return (int) SYSTEM_ROM[address & 0x7FF] & 0xFF;
         } else {
             address &= 0x3FF;
             if (address <= 0x1FF) {
@@ -218,7 +256,7 @@ public class RCAStudioIIBus implements Bus {
     @Override
     public void writeByte(int address, int value) {
         address &= 0xFFFF;
-        if (address > 0x7FF) {
+        if (address > 0x7FF && this.cartridgeRomPages[address >>> 8] == null) {
             address &= 0x3FF;
             if (address <= 0x1FF) {
                 this.ram[address & 0x1FF] = (byte) value;
