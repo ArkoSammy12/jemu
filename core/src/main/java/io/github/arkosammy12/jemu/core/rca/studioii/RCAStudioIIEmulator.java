@@ -8,8 +8,9 @@ import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 import org.apache.commons.io.FilenameUtils;
 
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
-public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
+public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Resetable {
 
     private final SystemHost systemHost;
 
@@ -18,6 +19,14 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     private final CDP1861<?> vdp;
     private final AudioGenerator audioGenerator;
     private final RCAStudioIIKeypad keypad;
+
+    private final Runnable runCycleFunction;
+    private final Runnable resetRunCycleFunction;
+    private Runnable currentRunCycleFunction;
+
+    private final BooleanSupplier deassertCLEARSupplier;
+    private final BooleanSupplier assertCLEARSupplier;
+    private BooleanSupplier clearLineLevelSupplier;
 
     public RCAStudioIIEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
@@ -33,6 +42,25 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
         } else {
             this.bus = new RCAStudioIIBus(this);
         }
+
+        this.runCycleFunction = () -> {
+            this.cpu.cycle();
+            this.vdp.cycle();
+            this.cpu.nextState();
+        };
+
+        this.resetRunCycleFunction = () -> {
+            this.vdp.reset();
+            this.runCycleFunction.run();
+        };
+
+        this.currentRunCycleFunction = this.runCycleFunction;
+
+        this.deassertCLEARSupplier = () -> false;
+        this.assertCLEARSupplier = () -> {
+            this.clearLineLevelSupplier = this.deassertCLEARSupplier;
+            return true;
+        };
     }
 
     @Override
@@ -78,9 +106,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     private void runCycle() {
-        this.cpu.cycle();
-        this.vdp.cycle();
-        this.cpu.nextState();
+        this.runCycleFunction.run();
     }
 
     @Override
@@ -95,7 +121,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
 
     @Override
     public boolean getCLEAR() {
-        return false;
+        return this.clearLineLevelSupplier.getAsBoolean();
     }
 
     @Override
@@ -164,6 +190,12 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
         if ((ioPort & 0b10) != 0) {
             this.keypad.setLatchedKey(value);
         }
+    }
+
+    @Override
+    public void reset() {
+        this.currentRunCycleFunction = this.resetRunCycleFunction;
+        this.clearLineLevelSupplier = this.assertCLEARSupplier;
     }
 
 }
