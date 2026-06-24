@@ -10,7 +10,6 @@ public class AudioEngine implements Closeable {
 
     private int samplesPerFrame;
     private int bytesPerFrame;
-    private int targetByteLatency;
     private byte[] emptySamples = new byte[0];
 
     private SourceDataLine currentSourceDataLine;
@@ -34,7 +33,7 @@ public class AudioEngine implements Closeable {
 
     private volatile Supplier<byte[]> sampleFrameCallback;
 
-    public AudioEngine(String threadName) {
+    public AudioEngine(String threadName) throws LineUnavailableException {
         this.running = true;
 
         this.audioThread = new Thread(this::audioLoop, threadName);
@@ -77,10 +76,15 @@ public class AudioEngine implements Closeable {
         }
     }
 
-    public void setFramerate(int framerate) {
+    public void setFramerate(int framerate) throws LineUnavailableException {
         synchronized (this.currentLineLock) {
+            boolean audioLineWasRunning = this.audioLineRunning;
+            this.stop();
             this.framerate = framerate;
             this.recalculateFrameMetrics();
+            if (audioLineWasRunning) {
+                this.start();
+            }
         }
     }
 
@@ -131,7 +135,7 @@ public class AudioEngine implements Closeable {
 
             AudioFormat format = new AudioFormat((float) this.getSampleRate(), 16, this.audioChannels == AudioChannels.STEREO ? 2 : 1, true, false);
             this.currentSourceDataLine = AudioSystem.getSourceDataLine(format);
-            this.currentSourceDataLine.open(format);
+            this.currentSourceDataLine.open(format, this.bytesPerFrame * (TARGET_FRAME_LATENCY + 1));
             this.volumeControl = (FloatControl) this.currentSourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
             this.muteControl = (BooleanControl) this.currentSourceDataLine.getControl(BooleanControl.Type.MUTE);
 
@@ -140,7 +144,6 @@ public class AudioEngine implements Closeable {
 
             this.audioLineFirstFrame = false;
             this.audioLineRunning = true;
-
         }
 
         synchronized (this.audioThreadLock) {
@@ -173,18 +176,8 @@ public class AudioEngine implements Closeable {
                     } catch (InterruptedException e) {}
                 }
             }
-
             if (this.audioLineRunning) {
-                if (this.needsFrame()) {
-                    this.pushAudioFrame();
-                } else {
-                    long sleepMs = this.calculateSleepMs();
-                    if (sleepMs > 0) {
-                        try {
-                            Thread.sleep(sleepMs);
-                        } catch (InterruptedException e) {}
-                    }
-                }
+                this.pushAudioFrame();
             }
         }
     }
@@ -204,6 +197,9 @@ public class AudioEngine implements Closeable {
                 this.currentSourceDataLine.flush();
                 this.currentSourceDataLine.start();
                 this.audioLineFirstFrame = true;
+                byte[] emptySamples = new byte[this.currentSourceDataLine.getBufferSize()];
+                this.currentSourceDataLine.write(emptySamples, 0, emptySamples.length);
+                return;
             }
 
             if (this.paused) {
@@ -217,16 +213,6 @@ public class AudioEngine implements Closeable {
 
             writtenSamples = this.ensureBufferLength(writtenSamples);
             this.currentSourceDataLine.write(writtenSamples, 0, writtenSamples.length);
-        }
-    }
-
-    private boolean needsFrame() {
-        synchronized (this.currentLineLock) {
-            if (this.currentSourceDataLine != null) {
-                return (this.currentSourceDataLine.getBufferSize() - this.currentSourceDataLine.available()) <= this.targetByteLatency;
-            } else {
-                return false;
-            }
         }
     }
 
@@ -257,7 +243,6 @@ public class AudioEngine implements Closeable {
     private void recalculateFrameMetrics() {
         this.samplesPerFrame = this.getSampleRate() / this.framerate;
         this.bytesPerFrame = this.samplesPerFrame * this.getBytesPerOutputSample();
-        this.targetByteLatency = this.bytesPerFrame * TARGET_FRAME_LATENCY;
         this.emptySamples = new byte[this.bytesPerFrame];
     }
 
@@ -283,21 +268,6 @@ public class AudioEngine implements Closeable {
                 this.currentSourceDataLine.close();
                 this.currentSourceDataLine = null;
             }
-        }
-    }
-
-    private long calculateSleepMs() {
-        synchronized (this.currentLineLock) {
-            if (this.currentSourceDataLine == null) {
-                return 1;
-            }
-            int bufferedBytes = this.currentSourceDataLine.getBufferSize() - this.currentSourceDataLine.available();
-            int excessBytes = bufferedBytes - this.targetByteLatency;
-            if (excessBytes <= 0) {
-                return 0;
-            }
-            float excessSamples = (float) excessBytes / (float) this.getBytesPerOutputSample();
-            return (long) ((excessSamples / (float) this.getSampleRate()) * 1000);
         }
     }
 
