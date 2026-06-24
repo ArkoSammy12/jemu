@@ -64,7 +64,7 @@ public final class Jemu {
             this.mainWindow = new MainWindow(MavenProperties.ARTIFACT_ID, this.getAppDataDirectory().orElse(null), Arrays.stream(System.values()).toList());
             this.initMainWindow();
 
-            this.audioEngine = new AudioEngine("%s-audio-thread".formatted(MavenProperties.ARTIFACT_ID));
+            this.audioEngine = new AudioEngine("%s-audio-callback-thread".formatted(MavenProperties.ARTIFACT_ID));
             this.initAudioEngine();
 
             this.emulatorCommandListenerThread = new Thread(this::emulatorCommandListenerLoop, "%s-emulator-command-listener-thread".formatted(MavenProperties.ARTIFACT_ID));
