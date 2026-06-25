@@ -10,6 +10,7 @@ import io.github.arkosammy12.jemu.core.rca.studioii.RCAStudioIIEmulator;
 import io.github.arkosammy12.jemu.core.rca.studioii.RCAStudioIIKeypad;
 import org.jetbrains.annotations.Nullable;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.util.Optional;
 
@@ -20,9 +21,9 @@ public class RCAStudioIIAdapter extends AbstractSystemAdapter {
     private String romTitle;
     private final System system;
 
-    public RCAStudioIIAdapter(Jemu jemu, EmulatorInitializer initializer) {
-        super(jemu, initializer);
+    public RCAStudioIIAdapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
         this.system = initializer.getSystem().orElse(RCA_STUDIO_II);
+        super(jemu, initializer);
     }
 
     @Override
@@ -80,7 +81,7 @@ public class RCAStudioIIAdapter extends AbstractSystemAdapter {
     }
 
     @Override
-    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) {
+    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         super.initialize(jemu, initializer, tryReset);
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
     }

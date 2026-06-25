@@ -24,9 +24,9 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     private final String identifier;
     private final String displayName;
     private final String[] fileExtensions;
-    private final Function<EmulatorSettingsArgs, ? extends AbstractSystemAdapter> args;
+    private final ThrowingFunction<EmulatorSettingsArgs, ? extends AbstractSystemAdapter> args;
 
-    System(String identifier, String displayName, String[] fileExtensions, Function<EmulatorSettingsArgs, ? extends AbstractSystemAdapter> args) {
+    System(String identifier, String displayName, String[] fileExtensions, ThrowingFunction<EmulatorSettingsArgs, ? extends AbstractSystemAdapter> args) {
         this.identifier = identifier;
         this.displayName = displayName;
         this.fileExtensions = fileExtensions;
@@ -38,7 +38,7 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
         return this.displayName;
     }
 
-    public static AbstractSystemAdapter getSystemAdapter(Jemu jemu, EmulatorInitializer initializer) {
+    public static AbstractSystemAdapter getSystemAdapter(Jemu jemu, EmulatorInitializer initializer) throws Exception {
         Optional<System> optionalVariant = initializer.getSystem();
         if (optionalVariant.isPresent()) {
              return optionalVariant.get().args.apply(new EmulatorSettingsArgs(jemu, initializer));
@@ -80,5 +80,11 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     }
 
     private record EmulatorSettingsArgs(Jemu jemu, EmulatorInitializer emulatorInitializer) {}
+
+    private interface ThrowingFunction<T, R> {
+
+        R apply(T t) throws Exception;
+
+    }
 
 }

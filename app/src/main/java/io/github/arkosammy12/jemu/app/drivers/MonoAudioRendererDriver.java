@@ -2,11 +2,14 @@ package io.github.arkosammy12.jemu.app.drivers;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.core.common.AudioGenerator;
+import io.github.arkosammy12.jemu.core.common.Emulator;
+
+import javax.sound.sampled.LineUnavailableException;
 
 public class MonoAudioRendererDriver extends DefaultAudioRendererDriver {
 
-    public MonoAudioRendererDriver(Jemu jemu, AudioGenerator audioGenerator) {
-        super(jemu, audioGenerator);
+    public MonoAudioRendererDriver(Jemu jemu, Emulator emulator) throws LineUnavailableException {
+        super(jemu, emulator);
     }
 
     @Override

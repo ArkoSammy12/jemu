@@ -5,17 +5,16 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
 import io.github.arkosammy12.jemu.app.drivers.MonoAudioRendererDriver;
-import io.github.arkosammy12.jemu.app.drivers.JoypadDriver;
 import io.github.arkosammy12.jemu.app.drivers.StereoAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
-import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
@@ -39,7 +38,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
     @Nullable
     private DefaultSystemVideoDriver videoDriver;
 
-    public AbstractSystemAdapter(Jemu jemu, EmulatorInitializer initializer) {
+    public AbstractSystemAdapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
         this.jemu = jemu;
         this.initialize(jemu, initializer, false);
     }
@@ -77,27 +76,21 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         return Optional.of(this.audioDriver);
     }
 
-    public KeyListener getSystemKeyListener() {
-        return this.keyListener;
-    }
-
-    public Component createAWTComponentVideoDriver() {
-        this.videoDriver = new DefaultSystemVideoDriver(this.emulator.getVideoGenerator());
-        return this.videoDriver;
-    }
-
     public void onFrame() {
         if (this.videoDriver != null) {
             this.videoDriver.requestFrame();
         }
+        if (this.audioDriver != null) {
+            this.audioDriver.onFrame();
+        }
         //this.joypadDriver.poll();
     }
 
-    public void reset(EmulatorInitializer emulatorInitializer) {
+    public void reset(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
         this.initialize(this.jemu, emulatorInitializer, true);
     }
 
-    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) {
+    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         Optional<byte[]> rawRomOptional = initializer.getRawRom();
         if (rawRomOptional.isPresent()) {
             byte[] rom = rawRomOptional.get();
@@ -114,9 +107,9 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         }
 
         //this.joypadDriver = new JoypadDriver(this);
-        Optional.ofNullable(this.emulator).map(Emulator::getAudioGenerator).ifPresent(audioGenerator -> {
-            this.audioDriver = audioGenerator.isStereo() ? new StereoAudioRendererDriver(jemu, this.emulator.getAudioGenerator()) : new MonoAudioRendererDriver(jemu, this.emulator.getAudioGenerator());
-        });
+        if (this.emulator != null) {
+            this.audioDriver = this.emulator.getAudioGenerator().isStereo() ? new StereoAudioRendererDriver(jemu, this.emulator) : new MonoAudioRendererDriver(jemu, this.emulator);
+        }
 
         this.keyListener = new KeyAdapter() {
 
@@ -139,12 +132,21 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
             }
 
         };
+
+        jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
+            this.videoDriver = new DefaultSystemVideoDriver(this.emulator.getVideoGenerator());
+            return this.videoDriver;
+        });
+        jemu.getMainWindow().getSystemViewport().setSystemKeyListener(this.keyListener);
     }
 
     @Override
     public void close() {
         if (this.videoDriver != null) {
             this.videoDriver.close();
+        }
+        if (this.audioDriver != null) {
+            this.audioDriver.close();
         }
         try {
             //this.joypadDriver.close();

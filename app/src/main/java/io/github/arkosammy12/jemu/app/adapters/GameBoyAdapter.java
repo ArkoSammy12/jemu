@@ -14,6 +14,7 @@ import io.github.arkosammy12.jemu.core.nintendo.gameboycolor.GameBoyColorEmulato
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.Map;
@@ -39,7 +40,7 @@ public class GameBoyAdapter extends AbstractSystemAdapter implements GameBoyHost
     private final System system;
     private final Model model;
 
-    public GameBoyAdapter(Jemu jemu, EmulatorInitializer initializer, Model model) {
+    public GameBoyAdapter(Jemu jemu, EmulatorInitializer initializer, Model model) throws LineUnavailableException {
         this.model = model;
         this.system = initializer.getSystem().orElse(System.GAME_BOY);
         super(jemu, initializer);

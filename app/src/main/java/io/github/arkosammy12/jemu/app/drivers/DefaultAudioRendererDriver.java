@@ -2,17 +2,27 @@ package io.github.arkosammy12.jemu.app.drivers;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.core.common.AudioGenerator;
+import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
-import org.jetbrains.annotations.Nullable;
+import io.github.arkosammy12.jemu.frontend.audio.AudioChannels;
 
-public abstract class DefaultAudioRendererDriver implements AudioDriver {
+import javax.sound.sampled.LineUnavailableException;
+import java.io.Closeable;
+import java.util.concurrent.ArrayBlockingQueue;
+
+public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeable {
 
     protected final Jemu jemu;
     protected final AudioGenerator audioGenerator;
 
-    public DefaultAudioRendererDriver(Jemu jemu, AudioGenerator audioGenerator) {
+    private final ArrayBlockingQueue<byte[]> audioBuffer = new ArrayBlockingQueue<>(2);
+
+    public DefaultAudioRendererDriver(Jemu jemu, Emulator emulator) throws LineUnavailableException {
         this.jemu = jemu;
-        this.audioGenerator = audioGenerator;
+        this.audioGenerator = emulator.getAudioGenerator();
+        this.jemu.getAudioEngine().setSampleFrameCallback(this.audioBuffer::poll);
+        this.jemu.getAudioEngine().setFramerate(emulator.getFramerate());
+        this.jemu.getAudioEngine().setAudioChannels(this.audioGenerator.isStereo() ? AudioChannels.STEREO : AudioChannels.MONO);
     }
 
     @Override
@@ -25,10 +35,19 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver {
         return this.jemu.getAudioEngine().getSamplesPerFrame();
     }
 
-    public byte @Nullable [] getSampleFrame() {
-        return this.audioGenerator.getSampleFrame().map(this::convertBitDepthIfNecessary).orElse(null);
+    public void onFrame() {
+        this.audioGenerator.getSampleFrame().map(this::convertBitDepthIfNecessary).ifPresent(samples -> {
+            try {
+                this.audioBuffer.put(samples);
+            } catch (InterruptedException _) {}
+        });
     }
 
     protected abstract byte[] convertBitDepthIfNecessary(byte[] buf);
+
+    @Override
+    public void close() {
+        this.audioBuffer.clear();
+    }
 
 }

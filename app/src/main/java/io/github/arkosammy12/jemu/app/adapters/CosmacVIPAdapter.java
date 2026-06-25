@@ -10,6 +10,7 @@ import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPEmulator;
 import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPHost;
 import org.jetbrains.annotations.Nullable;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.util.Optional;
 
@@ -21,7 +22,7 @@ public class CosmacVIPAdapter extends AbstractSystemAdapter implements CosmacVIP
     private final System system;
     private final Chip8Interpreter chip8Interpreter;
 
-    public CosmacVIPAdapter(Jemu jemu, EmulatorInitializer initializer, Chip8Interpreter chip8Interpreter) {
+    public CosmacVIPAdapter(Jemu jemu, EmulatorInitializer initializer, Chip8Interpreter chip8Interpreter) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
         this.system = initializer.getSystem().orElse(COSMAC_VIP);
         this.chip8Interpreter = chip8Interpreter;

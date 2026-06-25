@@ -6,7 +6,7 @@ import java.util.function.Supplier;
 
 public class AudioEngine implements Closeable {
 
-    private static final int TARGET_FRAME_LATENCY = 3;
+    private static final int TARGET_FRAME_LATENCY = 2;
 
     private int samplesPerFrame;
     private int bytesPerFrame;
@@ -159,11 +159,12 @@ public class AudioEngine implements Closeable {
                 this.currentSourceDataLine.flush();
                 this.currentSourceDataLine.close();
                 this.currentSourceDataLine = null;
+
+                this.volumeControl = null;
+                this.muteControl = null;
+                this.audioLineRunning = false;
+                this.audioLineFirstFrame = false;
             }
-            this.volumeControl = null;
-            this.muteControl = null;
-            this.audioLineRunning = false;
-            this.audioLineFirstFrame = false;
         }
     }
 
@@ -173,7 +174,7 @@ public class AudioEngine implements Closeable {
                 if (!this.audioLineRunning) {
                     try {
                         this.audioThreadLock.wait();
-                    } catch (InterruptedException e) {}
+                    } catch (InterruptedException _) {}
                 }
             }
             if (this.audioLineRunning) {
@@ -188,32 +189,23 @@ public class AudioEngine implements Closeable {
             callback = this.sampleFrameCallback;
         }
         byte[] writtenSamples = callback == null ? this.emptySamples : callback.get();
+        SourceDataLine line;
         synchronized (this.currentLineLock) {
             if (this.currentSourceDataLine == null) {
                 return;
             }
-
+            line = this.currentSourceDataLine;
             if (!this.audioLineFirstFrame) {
-                this.currentSourceDataLine.flush();
-                this.currentSourceDataLine.start();
                 this.audioLineFirstFrame = true;
-                byte[] emptySamples = new byte[this.currentSourceDataLine.getBufferSize()];
-                this.currentSourceDataLine.write(emptySamples, 0, emptySamples.length);
-                return;
-            }
-
-            if (this.paused) {
-                this.currentSourceDataLine.write(this.emptySamples, 0, this.emptySamples.length);
-                return;
-            }
-
-            if (writtenSamples == null) {
+                line.flush();
+                line.start();
+                writtenSamples = new byte[line.getBufferSize()];
+            } else if (this.paused || writtenSamples == null) {
                 writtenSamples = this.emptySamples;
             }
-
             writtenSamples = this.ensureBufferLength(writtenSamples);
-            this.currentSourceDataLine.write(writtenSamples, 0, writtenSamples.length);
         }
+        line.write(writtenSamples, 0, writtenSamples.length);
     }
 
     private int getBytesPerOutputSample() {

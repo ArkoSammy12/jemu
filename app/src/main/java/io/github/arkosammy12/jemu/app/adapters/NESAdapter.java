@@ -11,6 +11,7 @@ import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESHost;
 import org.jetbrains.annotations.Nullable;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.Map;
@@ -32,7 +33,7 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
             XInput.B, NESController.Actions.JOY1_B
     );
 
-    public NESAdapter(Jemu jemu, EmulatorInitializer initializer) {
+    public NESAdapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
         super(jemu, initializer);
     }
 
@@ -84,7 +85,7 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
     }
 
     @Override
-    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) {
+    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
         this.system = System.NES;
         super.initialize(jemu, initializer, tryReset);
