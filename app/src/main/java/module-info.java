@@ -7,7 +7,6 @@ module app {
     requires org.jetbrains.annotations;
     requires org.tinylog.api;
     requires core;
-    requires input4j;
     requires org.apache.commons.io;
 
     opens io.github.arkosammy12.jemu.app.io to info.picocli;

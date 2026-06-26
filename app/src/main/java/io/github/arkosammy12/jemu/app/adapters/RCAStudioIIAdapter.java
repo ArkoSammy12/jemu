@@ -1,11 +1,9 @@
 package io.github.arkosammy12.jemu.app.adapters;
 
-import de.gurkenlabs.input4j.InputComponent;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.rca.studioii.RCAStudioIIEmulator;
 import io.github.arkosammy12.jemu.core.rca.studioii.RCAStudioIIKeypad;
 import org.jetbrains.annotations.Nullable;
@@ -57,12 +55,6 @@ public class RCAStudioIIAdapter extends AbstractSystemAdapter {
             case KeyEvent.VK_COMMA, KeyEvent.VK_NUMPAD0 -> RCAStudioIIKeypad.Actions.KEYPADB_0;
             default -> null;
         };
-    }
-
-    @Override
-    @Nullable
-    public SystemController.Action getActionForJoypadEvent(InputComponent.ID id) {
-        return null;
     }
 
     @Override

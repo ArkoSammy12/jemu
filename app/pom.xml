@@ -38,10 +38,6 @@
             <groupId>org.tinylog</groupId>
             <artifactId>tinylog-impl</artifactId>
         </dependency>
-        <dependency>
-            <groupId>de.gurkenlabs</groupId>
-            <artifactId>input4j</artifactId>
-        </dependency>
     </dependencies>
 
     <profiles>

@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.app.adapters;
 
-import de.gurkenlabs.input4j.InputComponent;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
@@ -32,8 +31,6 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
 
     private Emulator emulator;
     private DefaultAudioRendererDriver audioDriver;
-    //private JoypadDriver joypadDriver;
-    private KeyListener keyListener;
 
     @Nullable
     private DefaultSystemVideoDriver videoDriver;
@@ -47,9 +44,6 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
 
     @Nullable
     protected abstract SystemController.Action getActionForKeyCode(int keyCode);
-
-    @Nullable
-    public abstract SystemController.Action getActionForJoypadEvent(InputComponent.ID id);
 
     @Override
     public Optional<byte[]> getRom() {
@@ -83,7 +77,6 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         if (this.audioDriver != null) {
             this.audioDriver.onFrame();
         }
-        //this.joypadDriver.poll();
     }
 
     public void reset(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
@@ -106,12 +99,11 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
             this.emulator = this.createEmulator();
         }
 
-        //this.joypadDriver = new JoypadDriver(this);
         if (this.emulator != null) {
             this.audioDriver = this.emulator.getAudioGenerator().isStereo() ? new StereoAudioRendererDriver(jemu, this.emulator) : new MonoAudioRendererDriver(jemu, this.emulator);
         }
 
-        this.keyListener = new KeyAdapter() {
+        KeyListener keyListener = new KeyAdapter() {
 
             @Override
             public void keyPressed(KeyEvent e) {
@@ -137,7 +129,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
             this.videoDriver = new DefaultSystemVideoDriver(this.emulator.getVideoGenerator());
             return this.videoDriver;
         });
-        jemu.getMainWindow().getSystemViewport().setSystemKeyListener(this.keyListener);
+        jemu.getMainWindow().getSystemViewport().setSystemKeyListener(keyListener);
     }
 
     @Override
@@ -149,7 +141,6 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
             this.audioDriver.close();
         }
         try {
-            //this.joypadDriver.close();
             if (this.emulator != null) {
                 this.emulator.close();
             }
