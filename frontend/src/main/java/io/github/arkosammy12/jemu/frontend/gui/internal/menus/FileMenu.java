@@ -2,8 +2,7 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
-import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.FileManager;
@@ -31,11 +30,6 @@ public class FileMenu extends MenuBarMenu implements FileManager {
 
     @Nullable
     private volatile Path currentRomPath;
-
-    @Nullable
-    private Path currentDirectory;
-
-    private volatile boolean resetOnFileSelect = true;
 
     private final JMenu openRecentMenu;
     private final JMenuItem clearRecentsButton;
@@ -68,14 +62,12 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         openItem.addActionListener(_ -> {
             SystemFileChooser chooser = new SystemFileChooser();
             chooser.setFileFilter(new SystemFileChooser.FileNameExtensionFilter("ROMs", this.fileExtensions));
-            if (this.currentDirectory != null) {
-                chooser.setCurrentDirectory(this.currentDirectory.toFile());
-            }
+            this.mainWindow.getConfig().getState().getFileState().getCurrentDirectoryPath().ifPresent(path -> chooser.setCurrentDirectory(path.toFile()));
             if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this.jMenu)) == JFileChooser.APPROVE_OPTION) {
                 Path selectedRomPath = chooser.getSelectedFile().toPath();
                 this.loadFile(selectedRomPath);
                 this.addRecentFilePath(selectedRomPath);
-                this.currentDirectory = selectedRomPath.getParent();
+                this.mainWindow.getConfig().getState().getFileState().setCurrentDirectoryPath(selectedRomPath.getParent());
             }
         });
 
@@ -125,8 +117,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         });
 
         JRadioButtonMenuItem resetOnROMFileSelect = new JRadioButtonMenuItem("Reset on ROM file select");
-        resetOnROMFileSelect.setSelected(true);
-        resetOnROMFileSelect.addChangeListener(_ -> this.resetOnFileSelect = resetOnROMFileSelect.isSelected());
+        resetOnROMFileSelect.addActionListener(_ -> this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().setResetOnRomFileSelect(resetOnROMFileSelect.isSelected()));
 
         JMenuItem exitButton = new JMenuItem("Exit");
         exitButton.addActionListener(_ -> jFrame.dispatchEvent(new WindowEvent(jFrame, WindowEvent.WINDOW_CLOSING)));
@@ -140,18 +131,9 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         this.jMenu.addSeparator();
         this.jMenu.add(exitButton);
 
-        for (int i = 0; i < RECENT_FILES_SIZE; i++) {
-            int finalI = i;
-            mainWindow.registerStateProperty(new SerializedEntry("file.recent_file_" + i, () -> finalI < this.recentFilePaths.size() ? this.recentFilePaths.get(finalI).toString() : "", s -> {
-                Path path = Path.of(s);
-                if (!this.recentFilePaths.contains(path) && !s.isBlank()) {
-                    this.addRecentFilePath(path);
-                }
-            }));
-        }
+        this.mainWindow.getConfig().getState().getFileState().getRecentFilePaths().forEach(this::addRecentFilePath);
 
-        mainWindow.registerStateProperty(new SerializedEntry("file.current_directory", () -> this.currentDirectory == null ? "" : this.currentDirectory.toString(), s -> this.currentDirectory = Path.of(s)));
-        mainWindow.registerSettingProperty(new SerializedEntry("file.reset_on_rom_file_select", () -> String.valueOf(resetOnROMFileSelect.isSelected()), s -> resetOnROMFileSelect.setSelected(Boolean.parseBoolean(s))));
+        resetOnROMFileSelect.setSelected(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect());
     }
 
     @Override
@@ -164,7 +146,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         SwingUtilities.invokeLater(() -> {
             this.currentRomPath = filePath;
             this.ejectRomButton.setEnabled(true);
-            if (this.resetOnFileSelect) {
+            if (this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect()) {
                 mainWindow.getMainMenuBar().getEmulatorMenu().restartEmulator();
             }
         });
@@ -175,6 +157,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
             return;
         }
         this.recentFilePaths.offer(filePath);
+        this.mainWindow.getConfig().getState().getFileState().setRecentFilePaths(this.recentFilePaths);
         this.rebuildOpenRecentMenu();
     }
 

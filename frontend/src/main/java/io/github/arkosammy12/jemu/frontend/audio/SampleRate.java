@@ -1,17 +1,12 @@
 package io.github.arkosammy12.jemu.frontend.audio;
 
+import com.google.gson.annotations.SerializedName;
+
 public enum SampleRate {
-    HZ_44100(0),
-    HZ_48000(1);
+    @SerializedName("44100_hz")
+    HZ_44100,
 
-    private final int id;
-
-    SampleRate(int id) {
-        this.id = id;
-    }
-
-    public int getId() {
-        return this.id;
-    }
+    @SerializedName("48000_hz")
+    HZ_48000
 
 }

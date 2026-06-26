@@ -2,22 +2,20 @@ package io.github.arkosammy12.jemu.app;
 
 import io.github.arkosammy12.jemu.app.adapters.AbstractSystemAdapter;
 import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
-import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.io.CLIArgs;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.GitProperties;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
-import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.audio.AudioChannels;
+import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.audio.SampleRate;
 import io.github.arkosammy12.jemu.frontend.gui.swing.PendingEmulatorCommand;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.MuteEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.SampleRateChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.VolumeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.Event;
+import io.github.arkosammy12.jemu.frontend.events.MuteEvent;
+import io.github.arkosammy12.jemu.frontend.events.SampleRateChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.VolumeChangedEvent;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.HelpManager;
@@ -26,6 +24,7 @@ import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.imageio.ImageIO;
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -65,6 +64,7 @@ public final class Jemu {
             this.initMainWindow();
 
             this.audioEngine = new AudioEngine("%s-audio-callback-thread".formatted(MavenProperties.ARTIFACT_ID));
+            this.initAudioEngine();
 
             this.coreThread = new Thread(this::coreLoop, "%s-core-thread".formatted(MavenProperties.ARTIFACT_ID));
             this.uiEventListenerThread = new Thread(this::eventListenerLoop, "%s-event-listener-thread".formatted(MavenProperties.ARTIFACT_ID));
@@ -344,6 +344,12 @@ public final class Jemu {
             }
         }
         this.mainWindow.setIcons(icons);
+    }
+
+    private void initAudioEngine() throws LineUnavailableException {
+        this.audioEngine.setMuted(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getMute());
+        this.audioEngine.setVolume(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getVolume());
+        this.audioEngine.setSampleRate(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getSampleRate());
     }
 
     private void onEmulatorException(Exception e) {

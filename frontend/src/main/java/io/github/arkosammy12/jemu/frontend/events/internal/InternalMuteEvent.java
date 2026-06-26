@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.frontend.gui.internal.events;
+package io.github.arkosammy12.jemu.frontend.events.internal;
 
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.MuteEvent;
+import io.github.arkosammy12.jemu.frontend.events.MuteEvent;
 
 public record InternalMuteEvent(boolean mute) implements InternalEvent {
 

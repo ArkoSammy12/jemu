@@ -6,11 +6,10 @@ import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
-import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import picocli.CommandLine;
 
 import java.util.Optional;
-import java.util.function.Function;
 
 public enum System implements DisplayNameProvider, SystemDescriptor {
     COSMAC_VIP("cosmac-vip", "COSMAC-VIP", new String[] {"cos", "bin"}, args -> new CosmacVIPAdapter(args.jemu(), args.emulatorInitializer(), CosmacVIPHost.Chip8Interpreter.NONE)),

@@ -13,7 +13,7 @@ public abstract class MenuBarMenu {
     }
 
     @ApiStatus.Internal
-    protected JMenu getJMenu() {
+    public JMenu getJMenu() {
         return this.jMenu;
     }
 

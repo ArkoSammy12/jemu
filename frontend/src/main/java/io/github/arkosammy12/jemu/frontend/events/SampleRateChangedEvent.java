@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.gui.swing.events;
+package io.github.arkosammy12.jemu.frontend.events;
 
 import io.github.arkosammy12.jemu.frontend.audio.SampleRate;
 

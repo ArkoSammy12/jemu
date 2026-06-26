@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend;
+package io.github.arkosammy12.jemu.frontend.config;
 
 import java.util.Optional;
 

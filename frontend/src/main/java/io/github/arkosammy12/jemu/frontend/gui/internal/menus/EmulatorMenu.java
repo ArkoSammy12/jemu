@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
-import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PauseCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
@@ -37,7 +36,6 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
     private volatile boolean emulatorStopped = true;
 
     public EmulatorMenu(MainWindow mainWindow) {
-
         this.mainWindow = mainWindow;
 
         this.jMenu.setText("Emulator");
@@ -47,7 +45,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         ButtonGroup buttonGroup = new ButtonGroup();
         this.automaticItem = new JRadioButtonMenuItem("Automatic");
-        this.automaticItem.addChangeListener(_ -> currentSystemDescriptor = null);
+        this.automaticItem.addActionListener(_ -> this.setSystemDescriptor(null));
         this.automaticItem.setSelected(true);
         buttonGroup.add(this.automaticItem);
         systemMenu.add(this.automaticItem);
@@ -56,7 +54,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
-            item.addChangeListener(_ -> this.currentSystemDescriptor = systemDescriptor);
+            item.addActionListener(_ -> this.setSystemDescriptor(systemDescriptor));
             buttonGroup.add(item);
             systemMenu.add(item);
             this.systemDescriptorButtonMap.put(systemDescriptor, item);
@@ -110,14 +108,14 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         this.jMenu.add(systemMenu);
 
-        mainWindow.registerSettingProperty(new SerializedEntry("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
+        mainWindow.getConfig().getInternalPreferenceSettings().getInternalEmulatorSettings().getSelectedSystemId().ifPresent(systemId -> {
             for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : this.systemDescriptorButtonMap.entrySet()) {
-                if (button.getKey().getId().equals(s)) {
+                if (button.getKey().getId().equals(systemId)) {
                     button.getValue().doClick();
                     break;
                 }
             }
-        }));
+        });
 
         mainWindow.<PowerCycleCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
             boolean paused = this.pauseButton.isSelected();
@@ -157,6 +155,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             mainWindow.getSystemViewport().setSystemKeyListener(null);
             emulatorStopped = true;
         }));
+
     }
 
     @Override
@@ -173,6 +172,11 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
                 }
             }
         });
+    }
+
+    private void setSystemDescriptor(@Nullable SystemDescriptor systemDescriptor) {
+        this.currentSystemDescriptor = systemDescriptor;
+        mainWindow.getConfig().getInternalPreferenceSettings().getInternalEmulatorSettings().setSelectedSystemId(systemDescriptor == null ? null : systemDescriptor.getId());
     }
 
     private void submitPowerCycle() {

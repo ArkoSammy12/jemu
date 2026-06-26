@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.frontend.gui.internal.menus.EmulatorMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.FileMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.HelpMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.SettingsMenu;
+import org.jetbrains.annotations.ApiStatus;
 
 import javax.swing.*;
 
@@ -35,20 +36,19 @@ public class MainMenuBar {
         return this.jMenuBar;
     }
 
+    @ApiStatus.Internal
     public FileMenu getFileMenu() {
         return this.fileMenu;
     }
 
+    @ApiStatus.Internal
     public EmulatorMenu getEmulatorMenu() {
         return this.emulatorMenu;
     }
 
+    @ApiStatus.Internal
     public HelpMenu getHelpMenu() {
         return this.helpMenu;
-    }
-
-    public SettingsMenu getSettingsMenu() {
-        return this.settingsMenu;
     }
 
 }

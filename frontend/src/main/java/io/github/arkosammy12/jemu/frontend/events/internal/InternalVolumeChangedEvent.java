@@ -1,6 +1,6 @@
-package io.github.arkosammy12.jemu.frontend.gui.internal.events;
+package io.github.arkosammy12.jemu.frontend.events.internal;
 
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.VolumeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.VolumeChangedEvent;
 
 public record InternalVolumeChangedEvent(int newVolume) implements InternalEvent {
 
