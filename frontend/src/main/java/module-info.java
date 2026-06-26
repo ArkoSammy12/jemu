@@ -14,6 +14,7 @@ module frontend {
     exports io.github.arkosammy12.jemu.frontend.gui.swing.commands;
     exports io.github.arkosammy12.jemu.frontend.gui.swing.managers;
     exports io.github.arkosammy12.jemu.frontend.events;
+    exports io.github.arkosammy12.jemu.frontend.events.audio;
     exports io.github.arkosammy12.jemu.frontend.audio;
     exports io.github.arkosammy12.jemu.frontend.config;
     exports io.github.arkosammy12.jemu.frontend.config.settings;

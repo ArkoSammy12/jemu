@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings;
 
 import io.github.arkosammy12.jemu.frontend.audio.SampleRate;
-import io.github.arkosammy12.jemu.frontend.events.internal.InternalMuteEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.InternalSampleRateChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.InternalVolumeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalMuteEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalSampleRateChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalVolumeChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 

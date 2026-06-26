@@ -1,5 +1,10 @@
 package io.github.arkosammy12.jemu.frontend.audio;
 
+import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.audio.MuteEvent;
+import io.github.arkosammy12.jemu.frontend.events.audio.SampleRateChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.audio.VolumeChangedEvent;
+
 import javax.sound.sampled.*;
 import java.io.Closeable;
 import java.util.function.Supplier;
@@ -125,6 +130,15 @@ public class AudioEngine implements Closeable {
 
     public int getBytesPerFrame() {
         return this.bytesPerFrame;
+    }
+
+    public void onAudioSettingChanged(AudioSettingChangeEvent event) throws LineUnavailableException {
+        switch (event) {
+            case MuteEvent(boolean mute) -> this.setMuted(mute);
+            case VolumeChangedEvent(int newVolume) -> this.setVolume(newVolume);
+            case SampleRateChangedEvent(SampleRate newRate) -> this.setSampleRate(newRate);
+            case null, default -> {}
+        }
     }
 
     public void start() throws LineUnavailableException {
