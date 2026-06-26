@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.nintendo.nes.mappers;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
 import io.github.arkosammy12.jemu.core.util.ToIntBiIntFunction;
@@ -23,19 +24,19 @@ public class VRC4Cartridge<E extends NESEmulator> extends VRC2Cartridge<E> {
             case 21 -> switch (this.iNESFile.getSubmapperNumber()) {
                 case 1 -> 1;
                 case 2 -> 6;
-                default -> throw new EmulatorException("Invalid submapper number %d for VRC4!".formatted(this.iNESFile.getSubmapperNumber()));
+                default -> throw new ROMInitializationException("Invalid submapper number %d for VRC4!".formatted(this.iNESFile.getSubmapperNumber()));
             };
             case 23 -> switch (this.iNESFile.getSubmapperNumber()) {
                 case 1 -> 0;
                 case 2 -> 2;
-                default -> throw new EmulatorException("Invalid submapper number %d for VRC4!".formatted(this.iNESFile.getSubmapperNumber()));
+                default -> throw new ROMInitializationException("Invalid submapper number %d for VRC4!".formatted(this.iNESFile.getSubmapperNumber()));
             };
             case 25 -> switch (this.iNESFile.getSubmapperNumber()) {
                 case 1 -> 1;
                 case 2 -> 3;
-                default -> throw new EmulatorException("Invalid submapper number %d for VRC4!".formatted(this.iNESFile.getSubmapperNumber()));
+                default -> throw new ROMInitializationException("Invalid submapper number %d for VRC4!".formatted(this.iNESFile.getSubmapperNumber()));
             };
-            default -> throw new EmulatorException("Invalid mapper number %d for VRC4!".formatted(this.iNESFile.getMapperNumber()));
+            default -> throw new ROMInitializationException("Invalid mapper number %d for VRC4!".formatted(this.iNESFile.getMapperNumber()));
         };
     }
 

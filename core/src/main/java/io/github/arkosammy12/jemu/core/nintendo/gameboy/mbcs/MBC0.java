@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyCartridge;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyEmulator;
 import org.jetbrains.annotations.Nullable;
@@ -27,7 +28,7 @@ public class MBC0 extends GameBoyCartridge {
                 case 0x00 -> OptionalInt.empty();
                 case 0x01 -> OptionalInt.of(0x800);
                 case 0x02 -> OptionalInt.of(0x2000);
-                default -> throw new EmulatorException("Incompatible RAM size header $%02X for MBC0 GameBoy cartridge type!".formatted(this.ramSizeHeader));
+                default -> throw new ROMInitializationException("Incompatible RAM size header $%02X for MBC0 GameBoy cartridge type!".formatted(this.ramSizeHeader));
             };
         } else {
             return OptionalInt.empty();

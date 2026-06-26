@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.core.rca.cosmacvip;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -276,9 +277,9 @@ public class CosmacVIPBus implements Bus {
                 System.arraycopy(rom, 0, this.ram, 0, rom.length);
             }
         } catch (ArrayIndexOutOfBoundsException e) {
-            throw new EmulatorException("ROM size too big for Cosmac VIP system!");
+            throw new ROMInitializationException("ROM size too big for Cosmac VIP system!");
         } catch (Exception e) {
-            throw new RuntimeException("Failed to initialize memory for Cosmac VIP system: " + e.getMessage(), e);
+            throw new ROMInitializationException("Failed to initialize memory for Cosmac VIP system: " + e.getMessage(), e);
         }
     }
 

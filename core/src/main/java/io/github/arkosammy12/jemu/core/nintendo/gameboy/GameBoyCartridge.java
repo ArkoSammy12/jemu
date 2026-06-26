@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs.*;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
@@ -55,9 +56,9 @@ public abstract class GameBoyCartridge implements Bus {
         try {
             System.arraycopy(romImage, 0, rom, 0, rom.length);
         } catch (ArrayIndexOutOfBoundsException e) {
-            throw new EmulatorException("ROM file size mismatch: expected %d bytes, got %d bytes!".formatted(rom.length, romImage.length));
+            throw new ROMInitializationException("ROM file size mismatch: expected %d bytes, got %d bytes!".formatted(rom.length, romImage.length));
         } catch (Exception e) {
-            throw new EmulatorException("Error initializing GameBoy cartridge ROM!", e);
+            throw new ROMInitializationException("Error initializing GameBoy cartridge ROM!", e);
         }
 
         if (this.hasBattery()) {
@@ -80,7 +81,7 @@ public abstract class GameBoyCartridge implements Bus {
             case 0x0F, 0x10 -> new RTCMBC3(emulator, cartridgeType, rom);
             case 0x11, 0x12, 0x13 -> new MBC3(emulator, cartridgeType, rom);
             case 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E -> new MBC5(emulator, cartridgeType, rom);
-            default -> throw new EmulatorException("Unimplemented GameBoy cartridge type %04X!".formatted(cartridgeType));
+            default -> throw new ROMInitializationException("Unimplemented GameBoy cartridge type %04X!".formatted(cartridgeType));
         };
     }
 

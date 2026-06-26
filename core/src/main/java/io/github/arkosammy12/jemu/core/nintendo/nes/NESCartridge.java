@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.core.nintendo.nes;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.NES20File;
 import io.github.arkosammy12.jemu.core.nintendo.nes.mappers.*;
@@ -55,24 +56,24 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
             // TODO: For VRC2 and VRC4 iNES compatibility, place registers in two places to satisfy both submapper possibilities for a single iNES mapper
             case 21 -> switch (subMapperNumber) {
                 case 1, 2 -> new VRC4Cartridge<>(emulator, iNESFile);
-                default -> throw new EmulatorException("Invalid iNES mapper %d and submapper number %d combination!".formatted(mapperNumber, subMapperNumber));
+                default -> throw new ROMInitializationException("Invalid iNES mapper %d and submapper number %d combination!".formatted(mapperNumber, subMapperNumber));
             };
             case 22 -> {
                 if (subMapperNumber == 0) {
                     yield new VRC2Cartridge<>(emulator, iNESFile);
                 } else {
-                    throw new EmulatorException("Invalid iNES mapper %d and submapper number %d combination!".formatted(mapperNumber, subMapperNumber));
+                    throw new ROMInitializationException("Invalid iNES mapper %d and submapper number %d combination!".formatted(mapperNumber, subMapperNumber));
                 }
             }
             case 23, 25 -> switch (subMapperNumber) {
                 case 1, 2 -> new VRC4Cartridge<>(emulator, iNESFile);
                 case 3 -> new VRC2Cartridge<>(emulator, iNESFile);
-                default -> throw new EmulatorException("Invalid iNES mapper %d and submapper number %d combination!".formatted(mapperNumber, subMapperNumber));
+                default -> throw new ROMInitializationException("Invalid iNES mapper %d and submapper number %d combination!".formatted(mapperNumber, subMapperNumber));
             };
             case 24, 26 -> new VRC6Cartridge<>(emulator, iNESFile);
             case 71 -> new INESMapper71Cartridge<>(emulator, iNESFile);
             case 218 -> new INESMapper218Cartridge<>(emulator, iNESFile);
-            default -> throw new EmulatorException("Unimplemented iNES mapper number %d!".formatted(mapperNumber));
+            default -> throw new ROMInitializationException("Unimplemented iNES mapper number %d!".formatted(mapperNumber));
         };
     }
 
