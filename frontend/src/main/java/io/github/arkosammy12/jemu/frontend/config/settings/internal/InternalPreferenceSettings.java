@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.frontend.config.settings.internal;
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.frontend.config.settings.AudioSettings;
 import io.github.arkosammy12.jemu.frontend.config.settings.PreferenceSettings;
+import io.github.arkosammy12.jemu.frontend.config.settings.SpeedSettings;
 import io.github.arkosammy12.jemu.frontend.config.settings.WindowSettings;
 
 public class InternalPreferenceSettings implements PreferenceSettings {
@@ -18,6 +19,9 @@ public class InternalPreferenceSettings implements PreferenceSettings {
 
     @SerializedName("audio")
     private final InternalAudioSettings audioSettings = new InternalAudioSettings();
+
+    @SerializedName("speed")
+    private final InternalSpeedSettings speedSettings = new InternalSpeedSettings();
 
     public InternalFileSettings getInternalFileSettings() {
         return this.fileSettings;
@@ -43,6 +47,15 @@ public class InternalPreferenceSettings implements PreferenceSettings {
 
     public InternalAudioSettings getInternalAudioSettings() {
         return this.audioSettings;
+    }
+
+    @Override
+    public SpeedSettings getSpeedSettings() {
+        return this.speedSettings;
+    }
+
+    public InternalSpeedSettings getInternalSpeedSettings() {
+        return this.speedSettings;
     }
 
 }

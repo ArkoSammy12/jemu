@@ -10,6 +10,7 @@ import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.PendingEmulatorCommand;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
 import io.github.arkosammy12.jemu.frontend.events.Event;
@@ -114,6 +115,15 @@ public final class Jemu {
                 Event uiEvent = this.mainWindow.waitEvent();
                 switch (uiEvent) {
                     case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
+                    case CoreSettingChangeEvent coreSettingChangeEvent -> {
+                        AbstractSystemAdapter currentSystem;
+                        synchronized (this.systemLock) {
+                            currentSystem = this.currentSystem;
+                        }
+                        if (currentSystem != null) {
+                            currentSystem.onCoreSettingEvent(coreSettingChangeEvent);
+                        }
+                    }
                     case null, default -> {}
                 }
             } catch (InterruptedException _) {

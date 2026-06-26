@@ -21,7 +21,7 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
         this.jemu = jemu;
         this.audioGenerator = emulator.getAudioGenerator();
         this.jemu.getAudioEngine().setSampleFrameCallback(this.audioBuffer::poll);
-        this.jemu.getAudioEngine().setFramerate(emulator.getFramerate());
+        this.jemu.getAudioEngine().setFramerate(jemu.getMainWindow().getConfigurations().getSettings().getSpeedSettings().getSpeedMode().scaleFramerate(emulator.getFramerate()));
         this.jemu.getAudioEngine().setAudioChannels(this.audioGenerator.isStereo() ? AudioChannels.STEREO : AudioChannels.MONO);
     }
 
@@ -45,9 +45,13 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
 
     protected abstract byte[] convertBitDepthIfNecessary(byte[] buf);
 
+    public void clearAudioBuffer() {
+        this.audioBuffer.clear();
+    }
+
     @Override
     public void close() {
-        this.audioBuffer.clear();
+        this.clearAudioBuffer();
     }
 
 }

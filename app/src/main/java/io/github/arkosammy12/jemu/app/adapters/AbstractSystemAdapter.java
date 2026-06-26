@@ -10,6 +10,9 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
+import io.github.arkosammy12.jemu.frontend.config.settings.SpeedMode;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -76,6 +79,16 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         }
         if (this.audioDriver != null) {
             this.audioDriver.onFrame();
+        }
+    }
+
+    public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
+        switch (coreSettingChangeEvent) {
+            case SpeedModeSettingChangedEvent(SpeedMode speedMode) -> {
+                this.audioDriver.clearAudioBuffer();
+                this.jemu.getAudioEngine().setFramerate(speedMode.scaleFramerate(emulator.getFramerate()));
+            }
+            case null, default -> {}
         }
     }
 

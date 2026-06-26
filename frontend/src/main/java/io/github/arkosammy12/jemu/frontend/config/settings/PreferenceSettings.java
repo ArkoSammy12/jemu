@@ -6,4 +6,6 @@ public interface PreferenceSettings {
 
     AudioSettings getAudioSettings();
 
+    SpeedSettings getSpeedSettings();
+
 }
