@@ -118,10 +118,7 @@ public class AudioEngine implements Closeable {
     }
 
     public int getSampleRate() {
-        return switch (this.sampleRate) {
-            case HZ_44100 -> 44100;
-            case HZ_48000 -> 48000;
-        };
+        return this.sampleRate.getIntValue();
     }
 
     public int getSamplesPerFrame() {
