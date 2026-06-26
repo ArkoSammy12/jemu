@@ -45,22 +45,19 @@ public class SoundSettings extends MenuBarMenu {
 
         JMenu sampleRateMenu = new JMenu("Sample Rate");
         ButtonGroup sampleRateButtonGroup = new ButtonGroup();
-        JRadioButtonMenuItem kHz44100Button = new JRadioButtonMenuItem("44100 Hz");
-        kHz44100Button.addActionListener(_ -> {
-            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSampleRate(SampleRate.HZ_44100);
-            mainWindow.pushEvent(new InternalSampleRateChangedEvent(SampleRate.HZ_44100));
-        });
-        sampleRateButtonGroup.add(kHz44100Button);
+        SampleRate selectedSampleRate = mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getSampleRate();
 
-        JRadioButtonMenuItem kHz48000Button = new JRadioButtonMenuItem("48000 Hz");
-        kHz48000Button.addActionListener(_ -> {
-            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSampleRate(SampleRate.HZ_48000);
-            mainWindow.pushEvent(new InternalSampleRateChangedEvent(SampleRate.HZ_48000));
-        });
-        sampleRateButtonGroup.add(kHz48000Button);
+        for (SampleRate sampleRate : SampleRate.values()) {
+            JRadioButtonMenuItem sampleRateButton = new JRadioButtonMenuItem(sampleRate.getDisplayName());
+            sampleRateButton.addActionListener(_ -> {
+                mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSampleRate(sampleRate);
+                mainWindow.pushEvent(new InternalSampleRateChangedEvent(sampleRate));
+            });
+            sampleRateButtonGroup.add(sampleRateButton);
+            sampleRateMenu.add(sampleRateButton);
 
-        sampleRateMenu.add(kHz44100Button);
-        sampleRateMenu.add(kHz48000Button);
+            sampleRateButton.setSelected(sampleRate == selectedSampleRate);
+        }
 
         this.getJMenu().add(volumeMenu);
         this.getJMenu().add(muteButton);
@@ -68,11 +65,6 @@ public class SoundSettings extends MenuBarMenu {
 
         this.volumeSlider.setValue(mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getVolume());
         this.muteButton.setSelected(mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getMute());
-
-        switch (mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getSampleRate()) {
-            case HZ_44100 -> kHz44100Button.setSelected(true);
-            case HZ_48000 -> kHz48000Button.setSelected(true);
-        }
     }
 
 }
