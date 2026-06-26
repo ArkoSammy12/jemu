@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.SoundSettings;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.SpeedSettings;
+import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.VideoSettings;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.WindowSettings;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
@@ -22,6 +23,7 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         this.getJMenu().setMnemonic(KeyEvent.VK_S);
 
         WindowSettings windowSettings = new WindowSettings(mainWindow, jFrame);
+        VideoSettings videoSettings = new VideoSettings(mainWindow);
         SoundSettings soundSettings = new SoundSettings(mainWindow);
         SpeedSettings speedSettings = new SpeedSettings(mainWindow);
 
@@ -50,6 +52,7 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         });
 
         this.getJMenu().add(windowSettings.getJMenu());
+        this.getJMenu().add(videoSettings.getJMenu());
         this.getJMenu().add(soundSettings.getJMenu());
         this.getJMenu().add(speedSettings.getJMenu());
         this.getJMenu().addSeparator();

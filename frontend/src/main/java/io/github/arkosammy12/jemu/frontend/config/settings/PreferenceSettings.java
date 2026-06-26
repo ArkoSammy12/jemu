@@ -4,6 +4,8 @@ public interface PreferenceSettings {
 
     WindowSettings getWindowSettings();
 
+    VideoSettings getVideoSettings();
+
     AudioSettings getAudioSettings();
 
     SpeedSettings getSpeedSettings();

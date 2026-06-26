@@ -13,6 +13,7 @@ import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.frontend.config.settings.SpeedMode;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -88,6 +89,12 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
                 this.audioDriver.clearAudioBuffer();
                 this.jemu.getAudioEngine().setFramerate(speedMode.scaleFramerate(emulator.getFramerate()));
             }
+            case VideoSettingChangedEvent videoSettingChangedEvent -> {
+                DefaultSystemVideoDriver videoDriver = this.videoDriver;
+                if (videoDriver != null) {
+                    videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent);
+                }
+            }
             case null, default -> {}
         }
     }
@@ -139,7 +146,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         };
 
         jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
-            this.videoDriver = new DefaultSystemVideoDriver(this.emulator.getVideoGenerator());
+            this.videoDriver = new DefaultSystemVideoDriver(jemu, this.emulator.getVideoGenerator());
             return this.videoDriver;
         });
         jemu.getMainWindow().getSystemViewport().setSystemKeyListener(keyListener);

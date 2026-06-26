@@ -1,10 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.config.settings.internal;
 
 import com.google.gson.annotations.SerializedName;
-import io.github.arkosammy12.jemu.frontend.config.settings.AudioSettings;
-import io.github.arkosammy12.jemu.frontend.config.settings.PreferenceSettings;
-import io.github.arkosammy12.jemu.frontend.config.settings.SpeedSettings;
-import io.github.arkosammy12.jemu.frontend.config.settings.WindowSettings;
+import io.github.arkosammy12.jemu.frontend.config.settings.*;
 
 public class InternalPreferenceSettings implements PreferenceSettings {
 
@@ -16,6 +13,9 @@ public class InternalPreferenceSettings implements PreferenceSettings {
 
     @SerializedName("window")
     private final InternalWindowSettings windowSettings = new InternalWindowSettings();
+
+    @SerializedName("video")
+    private final InternalVideoSettings videoSettings = new InternalVideoSettings();
 
     @SerializedName("audio")
     private final InternalAudioSettings audioSettings = new InternalAudioSettings();
@@ -38,6 +38,15 @@ public class InternalPreferenceSettings implements PreferenceSettings {
 
     public InternalWindowSettings getInternalWindowSettings() {
         return this.windowSettings;
+    }
+
+    @Override
+    public VideoSettings getVideoSettings() {
+        return this.videoSettings;
+    }
+
+    public InternalVideoSettings getInternalVideoSettings() {
+        return this.videoSettings;
     }
 
     @Override
