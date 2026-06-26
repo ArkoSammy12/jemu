@@ -94,6 +94,31 @@
                 <version>5.10.1</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>info.picocli</groupId>
+                <artifactId>picocli</artifactId>
+                <version>4.7.7</version>
+            </dependency>
+            <dependency>
+                <groupId>net.harawata</groupId>
+                <artifactId>appdirs</artifactId>
+                <version>1.5.0</version>
+            </dependency>
+            <dependency>
+                <groupId>de.gurkenlabs</groupId>
+                <artifactId>input4j</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.miglayout</groupId>
+                <artifactId>miglayout-swing</artifactId>
+                <version>11.4.2</version>
+            </dependency>
+            <dependency>
+                <groupId>com.formdev</groupId>
+                <artifactId>flatlaf</artifactId>
+                <version>3.7</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
