@@ -41,6 +41,16 @@ import java.util.concurrent.LinkedBlockingDeque;
 public class MainWindow implements Closeable {
 
     @Nullable
+    private final Path dataDirectory;
+    private final ConfigurationManager configurationManager;
+
+    private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<SystemDescriptor> systemDescriptors;
+
+    private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
+
+    @Nullable
     private JFrame appFrame;
 
     @Nullable
@@ -51,19 +61,6 @@ public class MainWindow implements Closeable {
 
     @Nullable
     private TitleManager titleManager;
-
-    private final ConfigurationManager configurationManager;
-
-    private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
-    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
-
-    private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
-
-    private final Collection<SystemDescriptor> systemDescriptors;
-
-
-    @Nullable
-    private final Path dataDirectory;
 
     public MainWindow(String title, @Nullable Path dataDirectory, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
 
@@ -107,17 +104,17 @@ public class MainWindow implements Closeable {
         System.setProperty("flatlaf.menuBarEmbedded", Boolean.FALSE.toString());
 
         SwingUtilities.invokeAndWait(() -> {
-            Toolkit.getDefaultToolkit()
-                    .getSystemEventQueue()
-                    .push(new SafeEventQueue());
-
-            FlatDarkLaf.setup();
+            Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SafeEventQueue());
 
             UIManager.put("TitlePane.useWindowDecorations", false);
             UIManager.put("Component.hideMnemonics", false);
             UIManager.put("FileChooser.readOnly", true);
             UIManager.put("Component.arc", 8);
             UIManager.put("Button.arc", 8);
+            UIManager.put("MenuBar.itemMargins", new Insets(5, 10, 5, 10));
+            UIManager.put("MenuItem.margin", new Insets(4, 8, 4, 8));
+
+            FlatDarkLaf.setup();
 
             ToolTipManager toolTipManager = ToolTipManager.sharedInstance();
             toolTipManager.setLightWeightPopupEnabled(false);
@@ -130,9 +127,8 @@ public class MainWindow implements Closeable {
             Toolkit.getDefaultToolkit().setDynamicLayout(true);
 
             this.appFrame = new JFrame(title);
-            MigLayout appFrameLayout = new MigLayout(new LC().insets("0"), new AC(), new AC().gap("0"));
-            this.appFrame.setLayout(appFrameLayout);
-            appFrame.setBackground(Color.BLACK);
+            this.appFrame.setLayout(new MigLayout(new LC().insets("0"), new AC(), new AC().gap("0")));
+            this.appFrame.setBackground(Color.BLACK);
             this.appFrame.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
 
             this.systemViewport = new SystemViewport();
@@ -144,20 +140,20 @@ public class MainWindow implements Closeable {
 
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-            appFrame.requestFocusInWindow();
-            appFrame.setResizable(true);
-            appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
-            appFrame.pack();
-            appFrame.setLocationRelativeTo(null);
+            this.appFrame.requestFocusInWindow();
+            this.appFrame.setResizable(true);
+            this.appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
+            this.appFrame.pack();
+            this.appFrame.setLocationRelativeTo(null);
 
-            appFrame.addWindowStateListener(e -> {
+            this.appFrame.addWindowStateListener(e -> {
                 this.getConfig().getState().getWindowState().setExtendedState(e.getNewState());
                 if ((e.getNewState() & Frame.MAXIMIZED_BOTH) == 0) {
                     this.getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                 }
             });
 
-            appFrame.addComponentListener(new ComponentAdapter() {
+            this.appFrame.addComponentListener(new ComponentAdapter() {
 
                 @Override
                 public void componentMoved(ComponentEvent e) {
@@ -174,11 +170,11 @@ public class MainWindow implements Closeable {
                 }
             });
 
-            this.getConfig().getState().getWindowState().getBounds().getX().ifPresent(x -> appFrame.setLocation(x, appFrame.getY()));
-            this.getConfig().getState().getWindowState().getBounds().getY().ifPresent(y -> appFrame.setLocation(appFrame.getX(), y));
-            this.getConfig().getState().getWindowState().getBounds().getWidth().ifPresent(width -> appFrame.setSize(width, appFrame.getHeight()));
-            this.getConfig().getState().getWindowState().getBounds().getHeight().ifPresent(height -> appFrame.setSize(appFrame.getWidth(), height));
-            this.getConfig().getState().getWindowState().getExtendedState().ifPresent(extendedState -> appFrame.setExtendedState(extendedState));
+            this.getConfig().getState().getWindowState().getBounds().getX().ifPresent(x -> this.appFrame.setLocation(x, this.appFrame.getY()));
+            this.getConfig().getState().getWindowState().getBounds().getY().ifPresent(y -> this.appFrame.setLocation(this.appFrame.getX(), y));
+            this.getConfig().getState().getWindowState().getBounds().getWidth().ifPresent(width -> this.appFrame.setSize(width, this.appFrame.getHeight()));
+            this.getConfig().getState().getWindowState().getBounds().getHeight().ifPresent(height -> this.appFrame.setSize(this.appFrame.getWidth(), height));
+            this.getConfig().getState().getWindowState().getExtendedState().ifPresent(extendedState -> this.appFrame.setExtendedState(extendedState));
 
         });
 
@@ -244,7 +240,7 @@ public class MainWindow implements Closeable {
     }
 
     public void showDialog(String title, String message, DialogType dialogType) {
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getjOptionPaneMessageTypeId()));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getJOptionPaneMessageTypeId()));
     }
 
     public void submitEmulatorCommand(EmulatorCommand emulatorCommand) {
@@ -326,7 +322,6 @@ public class MainWindow implements Closeable {
         this.eventQueue.offer(internalEvent.getEvent());
     }
 
-
     @ApiStatus.Internal
     public MainMenuBar getMainMenuBar() {
         return Objects.requireNonNull(this.menuBar);
@@ -364,7 +359,7 @@ public class MainWindow implements Closeable {
             this.jOptionPaneMessageTypeId = jOptionPaneMessageTypeId;
         }
 
-        private int getjOptionPaneMessageTypeId() {
+        private int getJOptionPaneMessageTypeId() {
             return this.jOptionPaneMessageTypeId;
         }
 
