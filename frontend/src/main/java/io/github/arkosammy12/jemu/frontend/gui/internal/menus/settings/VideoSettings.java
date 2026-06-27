@@ -1,14 +1,14 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings;
 
-import io.github.arkosammy12.jemu.frontend.config.settings.SpeedMode;
 import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalAspectRatioSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalSpeedModeSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalUseIntegerScalingSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 
 import javax.swing.*;
 import java.util.Arrays;
+
+import static io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio;
 
 public class VideoSettings extends MenuBarMenu {
 
@@ -21,23 +21,24 @@ public class VideoSettings extends MenuBarMenu {
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setUseIntegerScaling(useIntegerScaling);
             mainWindow.pushEvent(new InternalUseIntegerScalingSettingChangedEvent(useIntegerScaling));
         });
+        useIntegerScalingButton.setSelected(mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getUseIntegerScaling());
 
         JMenu aspectRatioMenu = new JMenu("Aspect Ratio");
         ButtonGroup aspectRatioButtonGroup = new ButtonGroup();
-        io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio selectedAspectRatio =  mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getAspectRatio();
+        AspectRatio selectedAspectRatio =  mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getAspectRatio();
 
-        JRadioButtonMenuItem autoAspectRatioButton = new JRadioButtonMenuItem(io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio.AUTO.getDisplayName());
+        JRadioButtonMenuItem autoAspectRatioButton = new JRadioButtonMenuItem(AspectRatio.AUTO.getDisplayName());
         autoAspectRatioButton.addActionListener(_ -> {
-            mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setAspectRatio(io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio.AUTO);
-            mainWindow.pushEvent(new InternalAspectRatioSettingChangedEvent(io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio.AUTO));
+            mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setAspectRatio(AspectRatio.AUTO);
+            mainWindow.pushEvent(new InternalAspectRatioSettingChangedEvent(AspectRatio.AUTO));
         });
         aspectRatioButtonGroup.add(autoAspectRatioButton);
-        autoAspectRatioButton.setSelected(selectedAspectRatio == io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio.AUTO);
+        autoAspectRatioButton.setSelected(selectedAspectRatio == AspectRatio.AUTO);
 
         aspectRatioMenu.add(autoAspectRatioButton);
         aspectRatioMenu.addSeparator();
 
-        Arrays.stream(io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio.values()).filter(aspectRatio -> aspectRatio != io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings.AspectRatio.AUTO).forEach(aspectRatio -> {
+        Arrays.stream(AspectRatio.values()).filter(aspectRatio -> aspectRatio != AspectRatio.AUTO).forEach(aspectRatio -> {
             JRadioButtonMenuItem aspectRatioButton = new JRadioButtonMenuItem(aspectRatio.getDisplayName());
             aspectRatioButton.addActionListener(_ -> {
                 mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setAspectRatio(aspectRatio);

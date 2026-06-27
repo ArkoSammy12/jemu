@@ -116,10 +116,7 @@ public final class Jemu {
                 switch (uiEvent) {
                     case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
                     case CoreSettingChangeEvent coreSettingChangeEvent -> {
-                        AbstractSystemAdapter currentSystem;
-                        synchronized (this.systemLock) {
-                            currentSystem = this.currentSystem;
-                        }
+                        AbstractSystemAdapter currentSystem = this.currentSystem;
                         if (currentSystem != null) {
                             currentSystem.onCoreSettingEvent(coreSettingChangeEvent);
                         }
