@@ -43,4 +43,3 @@ bin/
 .DS_Store
 
 core/src/test/resources/ssts/
-ppu.log
