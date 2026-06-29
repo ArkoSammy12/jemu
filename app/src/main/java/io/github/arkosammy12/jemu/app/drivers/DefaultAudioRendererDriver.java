@@ -49,9 +49,9 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
     }
 
     public void onFrame() {
-        this.audioGenerator.getSampleFrame().ifPresent(samples -> {
+        this.audioGenerator.getSampleFrame().ifPresent(sampleFrame -> {
             try {
-                this.inputSampleFrameBuffer.put(samples);
+                this.inputSampleFrameBuffer.put(sampleFrame);
             } catch (InterruptedException _) {}
         });
     }
