@@ -113,6 +113,9 @@ public final class Jemu {
         while (this.running) {
             try {
                 Event uiEvent = this.mainWindow.waitEvent();
+                if (!this.running) {
+                    break;
+                }
                 switch (uiEvent) {
                     case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
                     case CoreSettingChangeEvent coreSettingChangeEvent -> {
@@ -135,6 +138,9 @@ public final class Jemu {
         while (this.running) {
             try {
                 this.updateState(this.currentSystem == null);
+                if (!this.running) {
+                    break;
+                }
                 synchronized (this.systemLock) {
                     switch (this.currentState) {
                         case STOPPED, PAUSED, PAUSE_STOPPED -> this.onEmulatorIdle();
@@ -160,6 +166,9 @@ public final class Jemu {
 
     private void updateState(boolean take) throws Exception {
         PendingEmulatorCommand enqueuedEmulatorCommand = take ? this.mainWindow.waitEmulatorCommand() : this.mainWindow.pollEmulatorCommand();
+        if (!this.running) {
+            return;
+        }
         if (enqueuedEmulatorCommand == null) {
             return;
         }

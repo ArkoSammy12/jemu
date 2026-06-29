@@ -188,7 +188,7 @@ public class AudioEngine implements Closeable {
                     } catch (InterruptedException _) {}
                 }
             }
-            if (this.audioLineRunning) {
+            if (this.running && this.audioLineRunning) {
                 this.pushAudioFrame();
             }
         }

@@ -67,6 +67,9 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
         while (this.running) {
             try {
                 AudioGenerator.SampleFrame sampleFrame = this.inputSampleFrameBuffer.take();
+                if (!this.running) {
+                    break;
+                }
                 Optional<byte[]> sampleBuffer = this.audioGenerator.getSampleFrameResampler().resample(this.getSampleRate(), this.getSamplesPerFrame(), sampleFrame);
                 if (sampleBuffer.isPresent()) {
                     this.outputSampleFrameBuffer.put(this.convertBitDepthIfNecessary(sampleBuffer.get()));
