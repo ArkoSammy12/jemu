@@ -5,6 +5,8 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboycolor.GameBoyColorEmulator;
+import io.github.arkosammy12.jemu.core.util.HighPassFilter;
+import io.github.arkosammy12.jemu.core.util.LowPassFilter;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
@@ -50,8 +52,6 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
 
     private static final double MAX_VOLUME = 15.0f;
     private static final double SAMPLE_SCALE = Short.MAX_VALUE;
-    private static final double HIGH_PASS_CAPACITOR_CONSTANT = 0.999958;
-    private static final double LOW_PASS_CAPACITOR_CONSTANT = 0.01664;
 
     private final E emulator;
     private final SampleFrameResampler resampler;
@@ -82,57 +82,47 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
         this.channel3 = this.createChannel3();
         this.resampler = new SampleFrameResampler() {
 
-            private double leftHighPassFilterCapacitor = 0;
-            private double rightHighPassFilterCapacitor = 0;
+            private final LowPassFilter leftLpf = new LowPassFilter();
+            private final HighPassFilter leftHpf = new HighPassFilter();
 
-            private double leftLowPassFilterCapacitor = 0;
-            private double rightLowPassFilterCapacitor = 0;
+            private final LowPassFilter rightLpf = new LowPassFilter();
+            private final HighPassFilter rightHpf = new HighPassFilter();
 
-            private double leftBandPass(double in, boolean dacEnable) {
-                if (dacEnable) {
-                    this.leftHighPassFilterCapacitor = in - (in - this.leftHighPassFilterCapacitor) * HIGH_PASS_CAPACITOR_CONSTANT;
-                    double out = this.leftLowPassFilterCapacitor + LOW_PASS_CAPACITOR_CONSTANT * ((in - this.leftHighPassFilterCapacitor) - this.leftLowPassFilterCapacitor);
-                    this.leftLowPassFilterCapacitor = out;
-                    return out;
-                } else {
-                    this.leftLowPassFilterCapacitor = 0;
-                    this.leftHighPassFilterCapacitor = 0;
-                    return 0;
-                }
-            }
-
-            private double rightBandPass(double in, boolean dacEnable) {
-                if (dacEnable) {
-                    this.rightHighPassFilterCapacitor = in - (in - this.rightHighPassFilterCapacitor) * HIGH_PASS_CAPACITOR_CONSTANT;
-                    double out = this.rightLowPassFilterCapacitor + LOW_PASS_CAPACITOR_CONSTANT * ((in - this.rightHighPassFilterCapacitor) - this.rightLowPassFilterCapacitor);
-                    this.rightLowPassFilterCapacitor = out;
-                    return out;
-                } else {
-                    this.rightLowPassFilterCapacitor = 0;
-                    this.rightHighPassFilterCapacitor = 0;
-                    return 0;
-                }
+            {
+                this.leftLpf.createLpf(22000, GameBoyEmulator.T_CYCLES_PER_FRAME * emulator.getFramerate());
+                this.rightLpf.createLpf(22000, GameBoyEmulator.T_CYCLES_PER_FRAME * emulator.getFramerate());
             }
 
             @Override
             public Optional<byte[]> resample(int outputSampleRate, int outputSamplesPerFrame, AudioGenerator.SampleFrame inputSampleFrame) {
                 if (inputSampleFrame instanceof SampleFrame(double[] leftChannelSampleFrame, double[] rightChannelSampleFrame, boolean[] dacEnableSampleFrame)) {
                     for (int i = 0; i < GameBoyColorEmulator.T_CYCLES_PER_FRAME; i++) {
-                        boolean dacSample = dacEnableSampleFrame[i];
-                        leftChannelSampleFrame[i] = this.leftBandPass(leftChannelSampleFrame[i], dacSample);
-                        rightChannelSampleFrame[i] = this.rightBandPass(rightChannelSampleFrame[i], dacSample);
+                        if (!dacEnableSampleFrame[i]) {
+                            this.leftLpf.resetState();
+                            this.rightLpf.resetState();
+                        }
+                        leftChannelSampleFrame[i] = this.leftLpf.process(leftChannelSampleFrame[i]);
+                        rightChannelSampleFrame[i] = this.rightLpf.process(rightChannelSampleFrame[i]);
                     }
 
                     byte[] out = new byte[outputSamplesPerFrame * 4];
                     double step = (double) GameBoyEmulator.T_CYCLES_PER_FRAME / (double) outputSamplesPerFrame;
                     double pos = 0.0;
 
+                    this.leftHpf.createHpf(28, outputSampleRate);
+                    this.rightHpf.createHpf(28, outputSampleRate);
+
                     for (int i = 0; i < outputSamplesPerFrame; i++) {
                         int index = Math.toIntExact(Math.round(pos));
                         int nextIndex = Math.min(index + 1, GameBoyEmulator.T_CYCLES_PER_FRAME - 1);
 
-                        short left = (short) Math.clamp((long) (leftChannelSampleFrame[nextIndex] * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
-                        short right = (short) Math.clamp((long) (rightChannelSampleFrame[nextIndex] * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
+                        if (!dacEnableSampleFrame[nextIndex]) {
+                            this.leftHpf.resetState();
+                            this.rightHpf.resetState();
+                        }
+
+                        short left = (short) Math.clamp((long) (this.leftHpf.process(leftChannelSampleFrame[nextIndex]) * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
+                        short right = (short) Math.clamp((long) (this.rightHpf.process(rightChannelSampleFrame[nextIndex]) * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
 
                         out[i * 4] = (byte) ((int) left & 0xFF);
                         out[(i * 4) + 1] = (byte) (((int) left >> 8) & 0xFF);
@@ -398,8 +388,8 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
                 right += ch4;
             }
 
-            left *= (double) -1 * (double) (this.leftVolume + 1) / 8.0f;
-            right *= (double) -1 * (double) (this.rightVolume + 1) / 8.0f;
+            left *= -1.0 * (this.leftVolume + 1.0) / 8.0f;
+            right *= -1.0 * (this.rightVolume + 1.0) / 8.0f;
 
             left /= 4.0f;
             right /= 4.0f;
