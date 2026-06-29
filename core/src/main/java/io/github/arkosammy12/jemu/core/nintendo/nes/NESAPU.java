@@ -967,8 +967,6 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
         // LENGTH register
         private int sampleLength;
 
-        //private int length;
-
         private boolean interruptFlag;
 
         private int timer;
