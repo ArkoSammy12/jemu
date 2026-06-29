@@ -119,6 +119,9 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         }
 
         if (this.emulator != null) {
+            if (this.audioDriver != null) {
+                this.audioDriver.close();
+            }
             this.audioDriver = this.emulator.getAudioGenerator().isStereo() ? new StereoAudioRendererDriver(jemu, this.emulator) : new MonoAudioRendererDriver(jemu, this.emulator);
         }
 
@@ -145,6 +148,9 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
         };
 
         jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
+            if (this.videoDriver != null) {
+                this.videoDriver.close();
+            }
             this.videoDriver = new DefaultSystemVideoDriver(jemu, this.emulator.getVideoGenerator());
             return this.videoDriver;
         });

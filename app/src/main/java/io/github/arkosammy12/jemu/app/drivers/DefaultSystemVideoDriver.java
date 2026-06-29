@@ -180,7 +180,9 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
                     }
                     this.frameRequested = false;
                 }
-                this.renderFrame();
+                if (this.running) {
+                    this.renderFrame();
+                }
             } catch (Exception e) {
                 Logger.warn("Render thread encountered an unexpected error, continuing: {}", e.getMessage());
             }
