@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.frontend.config.ConfigurationManager;
 import io.github.arkosammy12.jemu.frontend.config.Configurations;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.config.internal.InternalConfigurations;
+import io.github.arkosammy12.jemu.frontend.events.internal.ExposableEvent;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.*;
 import io.github.arkosammy12.jemu.frontend.events.internal.InternalEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
+import java.util.function.Consumer;
 
 public class MainWindow implements Closeable {
 
@@ -45,6 +47,7 @@ public class MainWindow implements Closeable {
     private final ConfigurationManager configurationManager;
 
     private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<PushedEventConsumer<?>> pushedEventConsumers = new CopyOnWriteArrayList<>();
     private final Collection<SystemDescriptor> systemDescriptors;
 
     private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
@@ -131,9 +134,9 @@ public class MainWindow implements Closeable {
             this.appFrame.setBackground(Color.BLACK);
             this.appFrame.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
 
-            this.systemViewport = new SystemViewport();
-            this.menuBar = new MainMenuBar(this, this.appFrame);
-            this.titleManager = new TitleManager(this, this.appFrame);
+            this.systemViewport = new SystemViewport(this);
+            this.menuBar = new MainMenuBar(this);
+            this.titleManager = new TitleManager(this);
 
             this.appFrame.setJMenuBar(this.menuBar.getJMenuBar());
             this.appFrame.add(this.systemViewport.getJPanel(), new CC().grow().push().wrap());
@@ -313,13 +316,30 @@ public class MainWindow implements Closeable {
     }
 
     @ApiStatus.Internal
-    public <T extends EmulatorCommandCallback> void addEmulatorCommandCallback(T callback) {
+    public <T extends EmulatorCommandCallback> void onEmulatorCommand(T callback) {
         this.emulatorCommandCallbacks.add(callback);
     }
 
     @ApiStatus.Internal
     public void pushEvent(InternalEvent internalEvent) {
-        this.eventQueue.offer(internalEvent.getEvent());
+        if (internalEvent instanceof ExposableEvent exposableEvent) {
+            this.eventQueue.offer(exposableEvent.getEvent());
+        }
+        for (PushedEventConsumer<?> pushedEventConsumer : this.pushedEventConsumers) {
+            if (pushedEventConsumer.eventType().isInstance(internalEvent)) {
+                this.dispatchToConsumer(pushedEventConsumer, internalEvent);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends InternalEvent> void dispatchToConsumer(PushedEventConsumer<T> consumer, InternalEvent event) {
+        consumer.action().accept((T) event);
+    }
+
+    @ApiStatus.Internal
+    public <T extends InternalEvent> void onEvent(Class<T> eventType, Consumer<T> action) {
+        this.pushedEventConsumers.add(new PushedEventConsumer<>(eventType, action));
     }
 
     @ApiStatus.Internal
@@ -411,5 +431,7 @@ public class MainWindow implements Closeable {
         }
 
     }
+
+    private record PushedEventConsumer<T extends InternalEvent>(Class<T> eventType, Consumer<T> action) {}
 
 }

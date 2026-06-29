@@ -8,6 +8,8 @@ import io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings;
 import io.github.arkosammy12.jemu.frontend.events.core.AspectRatioSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.UseIntegerScalingSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.gui.swing.SystemDisplayComponent;
+import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
 
 import java.awt.*;
@@ -21,7 +23,7 @@ import java.util.function.DoubleSupplier;
 
 import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
 
-public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Closeable {
+public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, SystemDisplayComponent, Closeable {
 
     private final VideoGenerator videoGenerator;
     private final int[] renderBuffer;
@@ -75,6 +77,21 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
         synchronized (this.renderBufferLock) {
             System.arraycopy(rgb, 0, this.renderBuffer, 0, rgb.length);
         }
+    }
+
+    @Override
+    public int getSystemDisplayWidth() {
+        return this.displayWidth;
+    }
+
+    @Override
+    public int getSystemDisplayHeight() {
+        return this.displayHeight;
+    }
+
+    @Override
+    public @NotNull Component getComponent() {
+        return this;
     }
 
     public void requestFrame() {

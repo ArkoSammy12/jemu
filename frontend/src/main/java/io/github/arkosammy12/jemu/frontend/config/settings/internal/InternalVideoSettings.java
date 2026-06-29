@@ -3,6 +3,9 @@ package io.github.arkosammy12.jemu.frontend.config.settings.internal;
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Optional;
 
 public class InternalVideoSettings implements VideoSettings {
 
@@ -11,6 +14,10 @@ public class InternalVideoSettings implements VideoSettings {
 
     @SerializedName("aspect_ratio")
     private volatile AspectRatio aspectRatio = AspectRatio.AUTO;
+
+    @Nullable
+    @SerializedName("video_size")
+    private volatile VideoSize videoSize = null;
 
     public void setUseIntegerScaling(boolean useIntegerScaling) {
         this.useIntegerScaling = useIntegerScaling;
@@ -28,6 +35,14 @@ public class InternalVideoSettings implements VideoSettings {
     @Override
     public AspectRatio getAspectRatio() {
         return this.aspectRatio;
+    }
+
+    public void setVideoSize(@Nullable VideoSize videoSize) {
+        this.videoSize = videoSize;
+    }
+
+    public Optional<VideoSize> getVideoSize() {
+        return Optional.ofNullable(this.videoSize);
     }
 
 }

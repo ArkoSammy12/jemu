@@ -3,6 +3,8 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.FileManager;
@@ -112,8 +114,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         this.ejectRomButton.addActionListener(_ -> {
             this.currentRomPath = null;
             this.ejectRomButton.setEnabled(false);
-            mainWindow.getMainMenuBar().getEmulatorMenu().submitStop();
-
+            mainWindow.pushEvent(new InternalROMEjectedEvent());
         });
 
         JRadioButtonMenuItem resetOnROMFileSelect = new JRadioButtonMenuItem("Reset on ROM file select");
@@ -146,9 +147,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         SwingUtilities.invokeLater(() -> {
             this.currentRomPath = filePath;
             this.ejectRomButton.setEnabled(true);
-            if (this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect()) {
-                mainWindow.getMainMenuBar().getEmulatorMenu().restartEmulator();
-            }
+            this.mainWindow.pushEvent(new InternalFileLoadedEvent());
         });
     }
 

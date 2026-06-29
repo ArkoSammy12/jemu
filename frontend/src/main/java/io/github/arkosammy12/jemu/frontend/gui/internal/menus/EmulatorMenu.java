@@ -1,6 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PauseCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
@@ -117,7 +119,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             }
         });
 
-        mainWindow.<PowerCycleCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<PowerCycleCommandCallback>onEmulatorCommand(_ -> SwingUtilities.invokeLater(() -> {
             boolean paused = this.pauseButton.isSelected();
             resetButton.setEnabled(true);
             stopButton.setEnabled(true);
@@ -126,7 +128,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             emulatorStopped = false;
         }));
 
-        mainWindow.<PauseCommandCallback>addEmulatorCommandCallback(pauseCommand -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<PauseCommandCallback>onEmulatorCommand(pauseCommand -> SwingUtilities.invokeLater(() -> {
             if (pauseCommand.pause()) {
                 this.pauseButton.setSelected(true);
                 if (emulatorStopped) {
@@ -145,7 +147,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             }
         }));
 
-        mainWindow.<StopCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<StopCommandCallback>onEmulatorCommand(_ -> SwingUtilities.invokeLater(() -> {
             resetButton.setEnabled(false);
             this.stopButton.setEnabled(false);
             this.pauseButton.setSelected(false);
@@ -155,6 +157,16 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             mainWindow.getSystemViewport().setSystemKeyListener(null);
             emulatorStopped = true;
         }));
+
+        mainWindow.onEvent(InternalFileLoadedEvent.class, _ -> {
+            if (this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect()) {
+                this.restartEmulator();
+            }
+        });
+
+        mainWindow.onEvent(InternalROMEjectedEvent.class, _ -> {
+            this.submitStop();
+        });
 
     }
 
@@ -189,7 +201,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         }
     }
 
-    void restartEmulator() {
+    private void restartEmulator() {
         if (this.emulatorStopped) {
             this.submitPowerCycle();
         } else {
@@ -201,7 +213,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(this.getCurrentSystemDescriptor().systemDescriptor(), this.pauseButton.isSelected()));
     }
 
-    void submitStop() {
+    private void submitStop() {
         this.mainWindow.submitEmulatorCommand(new StopEmulatorCommand());
     }
 
