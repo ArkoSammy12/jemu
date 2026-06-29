@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.app.drivers;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.core.common.AudioGenerator;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 
 import javax.sound.sampled.LineUnavailableException;

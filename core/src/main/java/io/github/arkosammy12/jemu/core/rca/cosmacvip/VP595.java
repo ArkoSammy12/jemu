@@ -11,12 +11,37 @@ import static io.github.arkosammy12.jemu.core.rca.ToneGenerator.SQUARE_WAVE_AMPL
 public class VP595<E extends CosmacVIPEmulator> implements AudioGenerator {
 
     private final E emulator;
+    private final SampleFrameResampler resampler;
 
     private double frequencyLatch = 27535.0 / (0x80 + 1);
-    private double phase = 0.0;
 
     public VP595(E emulator) {
         this.emulator = emulator;
+        this.resampler = new SampleFrameResampler() {
+
+            private double phase = 0.0;
+
+            @Override
+            public Optional<byte[]> resample(int outputSampleRate, int outputSamplesPerFrame, AudioGenerator.SampleFrame inputSampleFrame) {
+                if (inputSampleFrame instanceof SampleFrame(boolean q, double frequency)) {
+                    byte[] data = new byte[outputSamplesPerFrame];
+                    double step = frequency / (double) outputSampleRate;
+                    if (q) {
+                        for (int i = 0; i < data.length; i++) {
+                            data[i] = (byte) ((phase < 0.5) ? SQUARE_WAVE_AMPLITUDE : -SQUARE_WAVE_AMPLITUDE);
+                            phase = (phase + step) % 1.0;
+                        }
+                    } else {
+                        this.phase = 0.0;
+                    }
+                    return Optional.of(data);
+                } else {
+                    this.phase = 0.0;
+                    return Optional.empty();
+                }
+            }
+
+        };
     }
 
     @Override
@@ -35,21 +60,19 @@ public class VP595<E extends CosmacVIPEmulator> implements AudioGenerator {
     }
 
     @Override
-    public Optional<byte[]> getSampleFrame() {
-        double frequency = frequencyLatch;
+    public Optional<AudioGenerator.SampleFrame> getSampleFrame() {
         Optional<? extends AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
-        if (!this.emulator.getCpu().getQ() || optionalAudioDriver.isEmpty()) {
-            phase = 0.0;
+        if (optionalAudioDriver.isEmpty()) {
             return Optional.empty();
         }
-        AudioDriver audioDriver = optionalAudioDriver.get();
-        byte[] data = new byte[audioDriver.getSamplesPerFrame()];
-        double step = frequency / (double) audioDriver.getSampleRate();
-        for (int i = 0; i < data.length; i++) {
-            data[i] = (byte) ((phase < 0.5) ? SQUARE_WAVE_AMPLITUDE : -SQUARE_WAVE_AMPLITUDE);
-            phase = (phase + step) % 1.0;
-        }
-        return Optional.of(data);
+        return Optional.of(new SampleFrame(this.emulator.getCpu().getQ(), this.frequencyLatch));
     }
+
+    @Override
+    public SampleFrameResampler getSampleFrameResampler() {
+        return this.resampler;
+    }
+
+    private record SampleFrame(boolean q, double frequencyLatch) implements AudioGenerator.SampleFrame {}
 
 }

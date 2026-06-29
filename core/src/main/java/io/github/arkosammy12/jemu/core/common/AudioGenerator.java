@@ -11,11 +11,23 @@ public interface AudioGenerator {
     @NotNull
     SampleSize getBytesPerSample();
 
-    Optional<byte[]> getSampleFrame();
+    Optional<SampleFrame> getSampleFrame();
+
+    SampleFrameResampler getSampleFrameResampler();
 
     enum SampleSize {
         BYTES_1,
         BYTES_2
+    }
+
+    interface SampleFrame {
+
+    }
+
+    interface SampleFrameResampler {
+
+        Optional<byte[]> resample(int outputSampleRate, int outputSamplesPerFrame, SampleFrame inputSampleFrame);
+
     }
 
 }

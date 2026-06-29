@@ -18,7 +18,6 @@ import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;
-import java.awt.*;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -86,7 +85,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
     public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
         switch (coreSettingChangeEvent) {
             case SpeedModeSettingChangedEvent(SpeedMode speedMode) -> {
-                this.audioDriver.clearAudioBuffer();
+                this.audioDriver.clearAudioBuffers();
                 this.jemu.getAudioEngine().setFramerate(speedMode.scaleFramerate(emulator.getFramerate()));
             }
             case VideoSettingChangedEvent videoSettingChangedEvent -> {

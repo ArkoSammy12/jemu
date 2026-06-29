@@ -4,8 +4,10 @@ import io.github.arkosammy12.jemu.core.common.AudioGenerator;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.nintendo.gameboycolor.GameBoyColorEmulator;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
@@ -52,9 +54,11 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
     private static final double LOW_PASS_CAPACITOR_CONSTANT = 0.01664;
 
     private final E emulator;
+    private final SampleFrameResampler resampler;
 
-    private final short[] leftChannelSamples = new short[GameBoyEmulator.T_CYCLES_PER_FRAME];
-    private final short[] rightChannelSamples = new short[GameBoyEmulator.T_CYCLES_PER_FRAME];
+    private final double[] leftChannelSamples = new double[GameBoyEmulator.T_CYCLES_PER_FRAME];
+    private final double[] rightChannelSamples = new double[GameBoyEmulator.T_CYCLES_PER_FRAME];
+    private final boolean[] dacEnableSamples = new boolean[GameBoyEmulator.T_CYCLES_PER_FRAME];
     private int currentSampleIndex = 0;
 
     private int frameSequencerStep;
@@ -73,15 +77,76 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
     protected final DMGAPU<?>.Channel3 channel3;
     protected final Channel4 channel4 = new Channel4();
 
-    private double leftHighPassFilterCapacitor = 0;
-    private double rightHighPassFilterCapacitor = 0;
-
-    private double leftLowPassFilterCapacitor = 0;
-    private double rightLowPassFilterCapacitor = 0;
-
     public DMGAPU(E emulator) {
         this.emulator = emulator;
         this.channel3 = this.createChannel3();
+        this.resampler = new SampleFrameResampler() {
+
+            private double leftHighPassFilterCapacitor = 0;
+            private double rightHighPassFilterCapacitor = 0;
+
+            private double leftLowPassFilterCapacitor = 0;
+            private double rightLowPassFilterCapacitor = 0;
+
+            private double leftBandPass(double in, boolean dacEnable) {
+                if (dacEnable) {
+                    this.leftHighPassFilterCapacitor = in - (in - this.leftHighPassFilterCapacitor) * HIGH_PASS_CAPACITOR_CONSTANT;
+                    double out = this.leftLowPassFilterCapacitor + LOW_PASS_CAPACITOR_CONSTANT * ((in - this.leftHighPassFilterCapacitor) - this.leftLowPassFilterCapacitor);
+                    this.leftLowPassFilterCapacitor = out;
+                    return out;
+                } else {
+                    this.leftLowPassFilterCapacitor = 0;
+                    this.leftHighPassFilterCapacitor = 0;
+                    return 0;
+                }
+            }
+
+            private double rightBandPass(double in, boolean dacEnable) {
+                if (dacEnable) {
+                    this.rightHighPassFilterCapacitor = in - (in - this.rightHighPassFilterCapacitor) * HIGH_PASS_CAPACITOR_CONSTANT;
+                    double out = this.rightLowPassFilterCapacitor + LOW_PASS_CAPACITOR_CONSTANT * ((in - this.rightHighPassFilterCapacitor) - this.rightLowPassFilterCapacitor);
+                    this.rightLowPassFilterCapacitor = out;
+                    return out;
+                } else {
+                    this.rightLowPassFilterCapacitor = 0;
+                    this.rightHighPassFilterCapacitor = 0;
+                    return 0;
+                }
+            }
+
+            @Override
+            public Optional<byte[]> resample(int outputSampleRate, int outputSamplesPerFrame, AudioGenerator.SampleFrame inputSampleFrame) {
+                if (inputSampleFrame instanceof SampleFrame(double[] leftChannelSampleFrame, double[] rightChannelSampleFrame, boolean[] dacEnableSampleFrame)) {
+                    for (int i = 0; i < GameBoyColorEmulator.T_CYCLES_PER_FRAME; i++) {
+                        boolean dacSample = dacEnableSampleFrame[i];
+                        leftChannelSampleFrame[i] = this.leftBandPass(leftChannelSampleFrame[i], dacSample);
+                        rightChannelSampleFrame[i] = this.rightBandPass(rightChannelSampleFrame[i], dacSample);
+                    }
+
+                    byte[] out = new byte[outputSamplesPerFrame * 4];
+                    double step = (double) GameBoyEmulator.T_CYCLES_PER_FRAME / (double) outputSamplesPerFrame;
+                    double pos = 0.0;
+
+                    for (int i = 0; i < outputSamplesPerFrame; i++) {
+                        int index = Math.toIntExact(Math.round(pos));
+                        int nextIndex = Math.min(index + 1, GameBoyEmulator.T_CYCLES_PER_FRAME - 1);
+
+                        short left = (short) Math.clamp((long) (leftChannelSampleFrame[nextIndex] * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
+                        short right = (short) Math.clamp((long) (rightChannelSampleFrame[nextIndex] * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
+
+                        out[i * 4] = (byte) ((int) left & 0xFF);
+                        out[(i * 4) + 1] = (byte) (((int) left >> 8) & 0xFF);
+                        out[(i * 4) + 2] = (byte) ((int) right & 0xFF);
+                        out[(i * 4) + 3] = (byte) (((int) right >> 8) & 0xFF);
+
+                        pos += step;
+                    }
+                    return Optional.of(out);
+                } else {
+                    return Optional.empty();
+                }
+            }
+        };
     }
 
     protected DMGAPU<?>.Channel3 createChannel3() {
@@ -256,35 +321,18 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
     }
 
     @Override
-    public Optional<byte[]> getSampleFrame() {
+    public Optional<AudioGenerator.SampleFrame> getSampleFrame() {
+        this.currentSampleIndex = 0;
         Optional<? extends AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
         if (optionalAudioDriver.isEmpty()) {
             return Optional.empty();
         }
+        return Optional.of(new SampleFrame(Arrays.copyOf(this.leftChannelSamples, this.leftChannelSamples.length), Arrays.copyOf(this.rightChannelSamples, this.rightChannelSamples.length), Arrays.copyOf(this.dacEnableSamples, this.dacEnableSamples.length)));
+    }
 
-        AudioDriver audioDriver = optionalAudioDriver.get();
-        int samplesPerFrame = audioDriver.getSamplesPerFrame();
-
-        byte[] out = new byte[samplesPerFrame * 4];
-        double step = (double) GameBoyEmulator.T_CYCLES_PER_FRAME / (double) samplesPerFrame;
-        double pos = 0.0;
-
-        for (int i = 0; i < samplesPerFrame; i++) {
-            int index = Math.toIntExact(Math.round(pos));
-            int nextIndex = Math.min(index + 1, GameBoyEmulator.T_CYCLES_PER_FRAME - 1);
-
-            short left = this.leftChannelSamples[nextIndex];
-            short right = this.rightChannelSamples[nextIndex];
-
-            out[i * 4] = (byte) ((int) left & 0xFF);
-            out[(i * 4) + 1] = (byte) (((int) left >> 8) & 0xFF);
-            out[(i * 4) + 2] = (byte) ((int) right & 0xFF);
-            out[(i * 4) + 3] = (byte) (((int) right >> 8) & 0xFF);
-
-            pos += step;
-        }
-        this.currentSampleIndex = 0;
-        return Optional.of(out);
+    @Override
+    public SampleFrameResampler getSampleFrameResampler() {
+        return this.resampler;
     }
 
     public void cycle(boolean tickFrameSequencer) {
@@ -358,35 +406,10 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
 
             boolean dacEnable = this.channel1.getDacEnable() || this.channel2.getDacEnable() || this.channel3.getDacEnable() || this.channel4.getDacEnable();
 
-            this.leftChannelSamples[this.currentSampleIndex] = (short) Math.clamp((long)(this.leftBandPass(left, dacEnable) * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
-            this.rightChannelSamples[this.currentSampleIndex] = (short) Math.clamp((long)(this.rightBandPass(right, dacEnable) * SAMPLE_SCALE), -Short.MAX_VALUE, Short.MAX_VALUE);
+            this.leftChannelSamples[this.currentSampleIndex] = left;
+            this.rightChannelSamples[this.currentSampleIndex] = right;
+            this.dacEnableSamples[this.currentSampleIndex] = dacEnable;
             this.currentSampleIndex = (this.currentSampleIndex + 1) % GameBoyEmulator.T_CYCLES_PER_FRAME;
-        }
-    }
-
-    private double leftBandPass(double in, boolean dacEnable) {
-        if (dacEnable) {
-            this.leftHighPassFilterCapacitor = in - (in - this.leftHighPassFilterCapacitor) * HIGH_PASS_CAPACITOR_CONSTANT;
-            double out = this.leftLowPassFilterCapacitor + LOW_PASS_CAPACITOR_CONSTANT * ((in - this.leftHighPassFilterCapacitor) - this.leftLowPassFilterCapacitor);
-            this.leftLowPassFilterCapacitor = out;
-            return out;
-        } else {
-            this.leftLowPassFilterCapacitor = 0;
-            this.leftHighPassFilterCapacitor = 0;
-            return 0;
-        }
-    }
-
-    private double rightBandPass(double in, boolean dacEnable) {
-        if (dacEnable) {
-            this.rightHighPassFilterCapacitor = in - (in - this.rightHighPassFilterCapacitor) * HIGH_PASS_CAPACITOR_CONSTANT;
-            double out = this.rightLowPassFilterCapacitor + LOW_PASS_CAPACITOR_CONSTANT * ((in - this.rightHighPassFilterCapacitor) - this.rightLowPassFilterCapacitor);
-            this.rightLowPassFilterCapacitor = out;
-            return out;
-        } else {
-            this.rightLowPassFilterCapacitor = 0;
-            this.rightHighPassFilterCapacitor = 0;
-            return 0;
         }
     }
 
@@ -425,6 +448,8 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
     private boolean getMasterAudioEnable() {
         return this.masterAudioEnable;
     }
+
+    private record SampleFrame(double[] leftChannelSampleFrame, double[] rightChannelSampleFrame, boolean[] dacEnableSampleFrame) implements AudioGenerator.SampleFrame {}
 
     protected abstract class AudioChannel {
 
