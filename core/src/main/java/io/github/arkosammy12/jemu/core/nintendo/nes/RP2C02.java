@@ -5,7 +5,9 @@ import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.util.ActionSignal;
 import io.github.arkosammy12.jemu.core.util.ActionSignalDispatcher;
+import io.github.arkosammy12.jemu.core.util.BiBooleanConsumer;
 import io.github.arkosammy12.jemu.core.util.ShiftRegister;
+import it.unimi.dsi.fastutil.booleans.BooleanConsumer;
 
 import java.util.Arrays;
 
@@ -198,6 +200,9 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     private final int vblScanline;
     private final boolean doOddFrameDotSkipping;
 
+    private final Runnable[] firstHalfDotScanlineFunctions;
+    private final Runnable[] secondHalfDotScanlineFunctions;
+
     private final int[] primaryOAM = new int[256];
     private final int[] secondaryOAM = new int[32];
     private final int[] paletteRam = new int[0x20];
@@ -329,6 +334,10 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                 shifter.refreshXPositionCounters();
             }
         });
+
+        this.firstHalfDotScanlineFunctions = new Runnable[this.scanlinesPerFrame];
+        this.secondHalfDotScanlineFunctions = new Runnable[this.scanlinesPerFrame];
+        this.initializeFunctionPointerTable();
 
         this.reset();
 
@@ -621,15 +630,27 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     }
 
     private boolean isPreRenderScanline() {
-        return this.scanlineNumber == this.scanlinesPerFrame - 1;
+        return this.isPreRenderScanline(this.scanlineNumber);
+    }
+
+    private boolean isPreRenderScanline(int scanlineNumber) {
+        return scanlineNumber == this.scanlinesPerFrame - 1;
     }
 
     private boolean isVisibleScanline() {
-        return this.scanlineNumber < this.visibleScanlines;
+        return this.isVisibleScanline(scanlineNumber);
+    }
+
+    private boolean isVisibleScanline(int scanlineNumber) {
+        return scanlineNumber < this.visibleScanlines;
     }
 
     private boolean isRenderScanline() {
-        return this.isPreRenderScanline() || this.isVisibleScanline();
+        return this.isRenderScanline(this.scanlineNumber);
+    }
+
+    private boolean isRenderScanline(int scanlineNumber) {
+        return this.isPreRenderScanline(scanlineNumber) || this.isVisibleScanline(scanlineNumber);
     }
 
     private boolean isVisibleDot() {
@@ -673,7 +694,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     }
 
     public void cycleHalfDot() {
-
         this.signalDispatcher.tick();
         this.emulator.getCartridge().onPPUHalfDot();
 
@@ -684,181 +704,287 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
             }
         }
 
-        boolean isRenderScanline = this.isRenderScanline();
-
         switch (this.currentDotHalf) {
-            case FIRST -> {
-                this.refreshSpriteShiftersSignal.tick();
-
-                if (isRenderScanline) {
-                    boolean isRenderingEnabled = this.isRenderingEnabled();
-                    boolean isPreRenderScanline = this.isPreRenderScanline();
-
-                    if (this.dotNumber == SPRITE_EVAL_START || this.dotNumber == SPRITE_FETCH_START || (!isPreRenderScanline && ((this.dotSkipped && this.dotNumber == 1) || (!this.dotSkipped && this.dotNumber == 0)))) {
-                        if (isRenderingEnabled) {
-                            this.secondaryOAMAddress = 0;
-                            this.spriteEvaluationSecondaryOamAddressOverflowed = false;
-                            this.spriteEvaluationOverflowMode = 0;
-                        }
-                    }
-
-                    if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
-                        this.spriteEvaluationStep = 0;
-                        this.spriteEvaluationOamReadingCounter = 0;
-                        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
-						this.spriteEvaluationOverflowMode = 0;
-                        if (isRenderingEnabled) {
-                            this.primaryOAMAddress = 0;
-                            this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
-                            this.sprite0OnThisScanline = this.sprite0OnNextScanline;
-                        }
-                    }
-
-                    if (isPreRenderScanline) {
-                        if (this.dotNumber == 0) {
-                            this.checkOAMCorruption(isRenderingEnabled);
-                        } else if (this.dotNumber == 1) {
-                            this.setSprite0HitFlag(false);
-                            this.setSpriteOverflowFlag(false);
-                        }
-                    }
-
-                    if (this.dotNumber == SPRITE_FETCH_START) {
-						this.blockSpriteHBlankReload = !isRenderingEnabled;
-					} else if (this.dotNumber > SPRITE_FETCH_START && this.dotNumber <= 339) {
-						if (!isRenderingEnabled) {
-							this.blockSpriteHBlankReload = true;
-						}
-					}
-
-					if (this.dotNumber == 339) {
-						if (isRenderingEnabled && !this.blockSpriteHBlankReload) {
-							this.refreshSpriteShiftersSignal.trigger(4, 0);
-						}
-					}
-                }
-            }
-            case SECOND -> {
-                if (isRenderScanline) {
-                    boolean isRenderingEnabled = this.isRenderingEnabled();
-                    boolean isVisibleDot = this.isVisibleDot();
-                    boolean isVisibleScanline = this.isVisibleScanline();
-
-                    if (isRenderingEnabled && !(isVisibleScanline && this.dotNumber >= SPRITE_EVAL_START && this.dotNumber <= SPRITE_EVAL_END)) {
-                        this.oamDataReadBuffer = this.oamBuffer;
-                    }
-
-                    if (isVisibleDot) {
-                        this.tickPixelShifter(isRenderingEnabled, true, isVisibleScanline);
-                        this.tickBgFetcher(isRenderingEnabled);
-                    }
-
-                    this.refreshSpriteShiftersSignal.tick();
-
-                    if (isVisibleScanline) {
-						if (this.dotNumber == 0) {
-							if (isRenderingEnabled) {
-								this.oamDataReadBuffer = this.secondaryOAM[0];
-								this.readBytePPU(this.getBackgroundPatternByteAddress(false));
-							}
-						} else if (this.dotNumber >= OAM2_INIT_START && this.dotNumber <= OAM2_INIT_END) {
-							this.tickSecondaryOamClear();
-						} else if (this.dotNumber >= SPRITE_EVAL_START && this.dotNumber <= SPRITE_EVAL_END) {
-							this.tickSpriteEvaluation(isRenderingEnabled);
-						}
-					}
-
-                    if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
-                        this.tickSpriteFetcher(isRenderingEnabled);
-                        this.spriteEvaluationStep = 0;
-                        this.spriteEvaluationOamReadingCounter = 0;
-                        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
-						this.spriteEvaluationOverflowMode = 0;
-                        if (isRenderingEnabled) {
-                            this.primaryOAMAddress = 0;
-                            this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
-                        }
-                    } else if (this.dotNumber == SPRITE_FETCH_END + 1) {
-                        // Extra OAM2ADDR increment that occurs 321 as a result of a timing hazard. Critical for games.
-                        this.incrementSecondaryOAMAddress();
-                    }
-
-                    if (this.isPreRenderScanline()) {
-                        if (this.dotNumber == 0) {
-                            this.vBlankFlagForNMI = false;
-                        } else if (this.dotNumber == 1) {
-                            this.setVBlankFlag(false);
-                            if (this.ppuInit) {
-                                this.ppuInit = false;
-                            }
-                        } else if (this.dotNumber >= 280 && this.dotNumber <= 304) {
-                            if (isRenderingEnabled) {
-                                this.copyVerticalPositionBitsToV();
-                            }
-                        } else if (this.dotNumber == 340) {
-                            this.skipDot0NextFrame = this.frameParity == FrameParity.ODD && isRenderingEnabled && this.doOddFrameDotSkipping;
-                        }
-                    }
-
-                    if (this.dotNumber == SPRITE_EVAL_END) {
-                        if (isRenderingEnabled) {
-                            this.incrementVerticalPosition();
-                        }
-                    } else if (this.dotNumber == SPRITE_FETCH_START) {
-                        if (isRenderingEnabled) {
-                            this.copyHorizontalPositionBitsToV();
-                        }
-                    } else if (this.dotNumber >= 321 && this.dotNumber <= 336) {
-                        this.tickPixelShifter(isRenderingEnabled, isVisibleDot, isVisibleScanline);
-                        this.tickBgFetcher(isRenderingEnabled);
-                    } else if (this.dotNumber == 337) {
-                        if (isRenderingEnabled) {
-                            this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
-                        }
-                    } else if (this.dotNumber == 339) {
-                        if (isRenderingEnabled) {
-                            this.readBytePPU(this.getNametableFetchAddress());
-                        }
-                    }
-
-                } else if (this.scanlineNumber == this.vblScanline - 1) {
-                    if (this.dotNumber == 0) {
-                        if (this.isRenderingEnabled()) {
-                            this.readBytePPU(this.getBackgroundPatternByteAddress(false));
-                        }
-                    }
-                } else if (this.scanlineNumber == this.vblScanline) {
-                    if (this.dotNumber == 0) {
-                        this.vBlankFlagForNMI = true;
-                    } else if (this.dotNumber == 1) {
-                        this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.video));
-                        this.setVBlankFlag(true);
-                    }
-                }
-
-                if (this.dotNumber == SPRITE_FETCH_START) {
-                    this.spriteShifterInitIndex = 0;
-                }
-
-				this.dotNumber++;
-				if (this.dotNumber >= DOTS_PER_SCANLINE) {
-					this.dotSkipped = false;
-					this.dotNumber = 0;
-					this.scanlineNumber++;
-					if (this.scanlineNumber >= this.scanlinesPerFrame) {
-						this.scanlineNumber = 0;
-						this.frameParity = this.frameParity.getOpposite();
-
-						if (this.skipDot0NextFrame) {
-							this.dotNumber = 1;
-							this.dotSkipped = true;
-						}
-						this.skipDot0NextFrame = false;
-					}
-				}
-            }
+            case FIRST -> this.firstHalfDotScanlineFunctions[this.scanlineNumber].run();
+            case SECOND -> this.secondHalfDotScanlineFunctions[this.scanlineNumber].run();
         }
         this.currentDotHalf = this.currentDotHalf.getOpposite();
+    }
+
+    private void initializeFunctionPointerTable() {
+
+        // Re-usable functions
+
+        Runnable onFirstHalfDotBeginFunction = this.refreshSpriteShiftersSignal::tick;
+
+        Runnable onSecondHalfDotEndFunction = () -> {
+            if (this.dotNumber == SPRITE_FETCH_START) {
+                this.spriteShifterInitIndex = 0;
+            }
+
+            this.dotNumber++;
+            if (this.dotNumber >= DOTS_PER_SCANLINE) {
+                this.dotSkipped = false;
+                this.dotNumber = 0;
+                this.scanlineNumber++;
+                if (this.scanlineNumber >= this.scanlinesPerFrame) {
+                    this.scanlineNumber = 0;
+                    this.frameParity = this.frameParity.getOpposite();
+
+                    if (this.skipDot0NextFrame) {
+                        this.dotNumber = 1;
+                        this.dotSkipped = true;
+                    }
+                    this.skipDot0NextFrame = false;
+                }
+            }
+        };
+
+        BooleanConsumer onFirstHalfDotRenderScanlineBegin = isRenderingEnabled -> {
+            onFirstHalfDotBeginFunction.run();
+
+            if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
+                this.spriteEvaluationStep = 0;
+                this.spriteEvaluationOamReadingCounter = 0;
+                this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
+                this.spriteEvaluationOverflowMode = 0;
+                if (isRenderingEnabled) {
+                    this.primaryOAMAddress = 0;
+                    this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
+                    this.sprite0OnThisScanline = this.sprite0OnNextScanline;
+                }
+            }
+        };
+
+        BooleanConsumer onFirstHalfDotRenderScanlineEnd = isRenderingEnabled -> {
+            if (this.dotNumber == SPRITE_FETCH_START) {
+                this.blockSpriteHBlankReload = !isRenderingEnabled;
+            } else if (this.dotNumber > SPRITE_FETCH_START && this.dotNumber <= 339) {
+                if (!isRenderingEnabled) {
+                    this.blockSpriteHBlankReload = true;
+                }
+            }
+
+            if (this.dotNumber == 339) {
+                if (isRenderingEnabled && !this.blockSpriteHBlankReload) {
+                    this.refreshSpriteShiftersSignal.trigger(4, 0);
+                }
+            }
+        };
+
+        BiBooleanConsumer onSecondHalfDotRenderScanlineEnd = (isRenderingEnabled, isVisibleDot) -> {
+            if (this.dotNumber == SPRITE_EVAL_END) {
+                if (isRenderingEnabled) {
+                    this.incrementVerticalPosition();
+                }
+            } else if (this.dotNumber == SPRITE_FETCH_START) {
+                if (isRenderingEnabled) {
+                    this.copyHorizontalPositionBitsToV();
+                }
+            } else if (this.dotNumber >= 321 && this.dotNumber <= 336) {
+                this.tickPixelShifter(isRenderingEnabled, isVisibleDot, true);
+                this.tickBgFetcher(isRenderingEnabled);
+            } else if (this.dotNumber == 337) {
+                if (isRenderingEnabled) {
+                    this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
+                }
+            } else if (this.dotNumber == 339) {
+                if (isRenderingEnabled) {
+                    this.readBytePPU(this.getNametableFetchAddress());
+                }
+            }
+
+            onSecondHalfDotEndFunction.run();
+        };
+
+        // Visible scanlines
+
+        Runnable firstHalfDotVisibleScanlineFunction = () -> {
+            boolean isRenderingEnabled = this.isRenderingEnabled();
+
+            onFirstHalfDotRenderScanlineBegin.accept(isRenderingEnabled);
+
+            if (this.dotNumber == SPRITE_EVAL_START || this.dotNumber == SPRITE_FETCH_START || ((this.dotSkipped && this.dotNumber == 1) || (!this.dotSkipped && this.dotNumber == 0))) {
+                if (isRenderingEnabled) {
+                    this.secondaryOAMAddress = 0;
+                    this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+                    this.spriteEvaluationOverflowMode = 0;
+                }
+            }
+
+            onFirstHalfDotRenderScanlineEnd.accept(isRenderingEnabled);
+
+        };
+
+
+        Runnable secondHalfDotVisibleScanlineFunction = () -> {
+            boolean isRenderingEnabled = this.isRenderingEnabled();
+            boolean isVisibleDot = this.isVisibleDot();
+
+            if (isRenderingEnabled && !(this.dotNumber >= SPRITE_EVAL_START && this.dotNumber <= SPRITE_EVAL_END)) {
+                this.oamDataReadBuffer = this.oamBuffer;
+            }
+
+            if (isVisibleDot) {
+                this.tickPixelShifter(isRenderingEnabled, true, true);
+                this.tickBgFetcher(isRenderingEnabled);
+            }
+
+            this.refreshSpriteShiftersSignal.tick();
+
+            if (this.dotNumber == 0) {
+                if (isRenderingEnabled) {
+                    this.oamDataReadBuffer = this.secondaryOAM[0];
+                    this.readBytePPU(this.getBackgroundPatternByteAddress(false));
+                }
+            } else if (this.dotNumber >= OAM2_INIT_START && this.dotNumber <= OAM2_INIT_END) {
+                this.tickSecondaryOamClear();
+            } else if (this.dotNumber >= SPRITE_EVAL_START && this.dotNumber <= SPRITE_EVAL_END) {
+                this.tickSpriteEvaluation(isRenderingEnabled);
+            }
+
+            if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
+                this.tickSpriteFetcher(isRenderingEnabled);
+                this.spriteEvaluationStep = 0;
+                this.spriteEvaluationOamReadingCounter = 0;
+                this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
+                this.spriteEvaluationOverflowMode = 0;
+                if (isRenderingEnabled) {
+                    this.primaryOAMAddress = 0;
+                    this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
+                }
+            } else if (this.dotNumber == SPRITE_FETCH_END + 1) {
+                // Extra OAM2ADDR increment that occurs 321 as a result of a timing hazard. Critical for games.
+                this.incrementSecondaryOAMAddress();
+            }
+
+            onSecondHalfDotRenderScanlineEnd.accept(isRenderingEnabled, isVisibleDot);
+        };
+
+        // Pre-render scanline
+
+        Runnable firstHalfDotPreRenderScanlineFunction = () -> {
+            boolean isRenderingEnabled = this.isRenderingEnabled();
+
+            onFirstHalfDotRenderScanlineBegin.accept(isRenderingEnabled);
+
+            if (this.dotNumber == SPRITE_EVAL_START || this.dotNumber == SPRITE_FETCH_START) {
+                if (isRenderingEnabled) {
+                    this.secondaryOAMAddress = 0;
+                    this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+                    this.spriteEvaluationOverflowMode = 0;
+                }
+            }
+
+            if (this.dotNumber == 0) {
+                this.checkOAMCorruption(isRenderingEnabled);
+            } else if (this.dotNumber == 1) {
+                this.setSprite0HitFlag(false);
+                this.setSpriteOverflowFlag(false);
+            }
+
+            onFirstHalfDotRenderScanlineEnd.accept(isRenderingEnabled);
+        };
+
+        Runnable secondHalfDotPreRenderScanlineFunction = () -> {
+            boolean isRenderingEnabled = this.isRenderingEnabled();
+            boolean isVisibleDot = this.isVisibleDot();
+
+            if (isRenderingEnabled) {
+                this.oamDataReadBuffer = this.oamBuffer;
+            }
+
+            if (isVisibleDot) {
+                this.tickPixelShifter(isRenderingEnabled, true, false);
+                this.tickBgFetcher(isRenderingEnabled);
+            }
+
+            this.refreshSpriteShiftersSignal.tick();
+
+            if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
+                this.tickSpriteFetcher(isRenderingEnabled);
+                this.spriteEvaluationStep = 0;
+                this.spriteEvaluationOamReadingCounter = 0;
+                this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
+                this.spriteEvaluationOverflowMode = 0;
+                if (isRenderingEnabled) {
+                    this.primaryOAMAddress = 0;
+                    this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
+                }
+            } else if (this.dotNumber == SPRITE_FETCH_END + 1) {
+                // Extra OAM2ADDR increment that occurs 321 as a result of a timing hazard. Critical for games.
+                this.incrementSecondaryOAMAddress();
+            }
+
+            if (this.dotNumber == 0) {
+                this.vBlankFlagForNMI = false;
+            } else if (this.dotNumber == 1) {
+                this.setVBlankFlag(false);
+                if (this.ppuInit) {
+                    this.ppuInit = false;
+                }
+            } else if (this.dotNumber >= 280 && this.dotNumber <= 304) {
+                if (isRenderingEnabled) {
+                    this.copyVerticalPositionBitsToV();
+                }
+            } else if (this.dotNumber == 340) {
+                this.skipDot0NextFrame = this.frameParity == FrameParity.ODD && isRenderingEnabled && this.doOddFrameDotSkipping;
+            }
+
+            onSecondHalfDotRenderScanlineEnd.accept(isRenderingEnabled, isVisibleDot);
+        };
+
+        // Post render scanline
+
+        Runnable firstHalfDotPostRenderScanlineFunction = onFirstHalfDotBeginFunction::run;
+
+        Runnable secondHalfDotPostRenderScanlineFunction = () -> {
+            if (this.dotNumber == 0) {
+                if (this.isRenderingEnabled()) {
+                    this.readBytePPU(this.getBackgroundPatternByteAddress(false));
+                }
+            }
+            onSecondHalfDotEndFunction.run();
+        };
+
+        // First VBlank scanline
+
+        Runnable firstHalfDotFirstVBlankScanlineFunction = onFirstHalfDotBeginFunction::run;
+
+        Runnable secondHalfDotFirstVBlankScanlineFunction = () -> {
+            if (this.dotNumber == 0) {
+                this.vBlankFlagForNMI = true;
+            } else if (this.dotNumber == 1) {
+                this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.video));
+                this.setVBlankFlag(true);
+            }
+            onSecondHalfDotEndFunction.run();
+        };
+
+        // VBlank scanlines
+
+        Runnable firstHalfDotVBlankScanlinesFunction = onFirstHalfDotBeginFunction::run;
+
+        Runnable secondHalfDotVBlankScanlinesFunction = onSecondHalfDotEndFunction::run;
+
+        for (int i = 0; i < this.scanlinesPerFrame; i++) {
+            if (this.isVisibleScanline(i)) {
+                this.firstHalfDotScanlineFunctions[i] = firstHalfDotVisibleScanlineFunction;
+                this.secondHalfDotScanlineFunctions[i] = secondHalfDotVisibleScanlineFunction;
+            } else if (this.isPreRenderScanline(i)) {
+                this.firstHalfDotScanlineFunctions[i] = firstHalfDotPreRenderScanlineFunction;
+                this.secondHalfDotScanlineFunctions[i] = secondHalfDotPreRenderScanlineFunction;
+            } else if (i == this.vblScanline - 1) {
+                this.firstHalfDotScanlineFunctions[i] = firstHalfDotPostRenderScanlineFunction;
+                this.secondHalfDotScanlineFunctions[i] = secondHalfDotPostRenderScanlineFunction;
+            } else if (i == this.vblScanline) {
+                this.firstHalfDotScanlineFunctions[i] = firstHalfDotFirstVBlankScanlineFunction;
+                this.secondHalfDotScanlineFunctions[i] = secondHalfDotFirstVBlankScanlineFunction;
+            } else {
+                this.firstHalfDotScanlineFunctions[i] = firstHalfDotVBlankScanlinesFunction;
+                this.secondHalfDotScanlineFunctions[i] = secondHalfDotVBlankScanlinesFunction;
+            }
+        }
     }
 
     private void incrementVerticalPosition() {
@@ -898,9 +1024,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     }
 
     // Assumes called once per full dot, on the second half
-    // TODO: Half-dot step this
     private void tickPixelShifter(boolean isRenderingEnabled, boolean isVisibleDot, boolean isVisibleScanline) {
-
         int paletteRamIndex;
         if (!isRenderingEnabled) {
             int currentVRAMAddress = this.getV() & 0x3FFF;
@@ -982,7 +1106,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     }
 
     // Assumes called once per full dot, on the second half
-    // TODO: Half-dot step this
     private void tickBgFetcher(boolean isRenderingEnabled) {
         switch (this.bgFetcherStep) {
             case 0 -> {
@@ -1042,7 +1165,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     }
 
     // Assumes called once per full dot, on the second half
-    // TODO: Half-dot step this
     private void tickSecondaryOamClear() {
 		switch (this.secondaryOamClearStep) {
 			case 0 -> {
@@ -1130,7 +1252,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
 	}
 
     // Assumes called once per full dot, on the second half
-    // TODO: Half-dot step this
     private void tickSpriteEvaluation(boolean isRenderingEnabled) {
         switch (this.spriteEvaluationStep) {
             case 0 -> { // Read cycle
@@ -1227,7 +1348,6 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     }
 
     // Assumes called once per full dot, on the second half
-    // TODO: Half-dot step this
     private void tickSpriteFetcher(boolean isRenderingEnabled) {
 		switch (this.spriteFetcherStep) {
 			case 0 -> {
