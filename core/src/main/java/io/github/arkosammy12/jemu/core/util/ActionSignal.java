@@ -1,41 +1,44 @@
 package io.github.arkosammy12.jemu.core.util;
 
-import it.unimi.dsi.fastutil.longs.Long2IntMap;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongHeapPriorityQueue;
-import it.unimi.dsi.fastutil.longs.LongPriorityQueue;
+import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
 
 import java.util.function.IntConsumer;
 
 public final class ActionSignal {
 
     private final IntConsumer action;
-    private final Long2IntMap pendingValues = new Long2IntOpenHashMap();
-    private final LongPriorityQueue timers = new LongHeapPriorityQueue();
-    private long ticks;
 
-    public ActionSignal(IntConsumer action) {
+    private final int delay;
+    private final IntArrayFIFOQueue[] buffer;
+    private int position;
+
+    public ActionSignal(int delay, IntConsumer action) {
         this.action = action;
+        this.delay = delay;
+        this.buffer = new IntArrayFIFOQueue[delay + 1];
+        for (int i = 0; i < this.buffer.length; i++) {
+            this.buffer[i] = new IntArrayFIFOQueue();
+        }
     }
 
-    public void trigger(int delay, int value) {
-        long fireAt = this.ticks + (long) delay;
-        this.timers.enqueue(fireAt);
-        this.pendingValues.put(fireAt, value);
+    public void trigger(int value) {
+        int index = (this.position + this.delay) % this.buffer.length;
+        this.buffer[index].enqueue(value);
     }
 
     public void tick() {
-        this.ticks++;
-        while (!this.timers.isEmpty() && this.timers.firstLong() <= this.ticks) {
-            long fireAt = this.timers.dequeueLong();
-            this.action.accept(this.pendingValues.remove(fireAt));
+        this.position = (this.position + 1) % this.buffer.length;
+        IntArrayFIFOQueue queue = this.buffer[this.position];
+        while (!queue.isEmpty()) {
+            this.action.accept(queue.dequeueInt());
         }
     }
 
     public void reset() {
-        this.pendingValues.clear();
-        this.timers.clear();
-        this.ticks = 0;
+        for (IntArrayFIFOQueue queue : this.buffer) {
+            queue.clear();
+        }
+        this.position = 0;
     }
 
 }

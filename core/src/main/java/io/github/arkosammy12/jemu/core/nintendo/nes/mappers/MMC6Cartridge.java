@@ -115,7 +115,7 @@ public class MMC6Cartridge<E extends NESEmulator> extends MMC3Cartridge<E> {
                 }
                 boolean decrementedToZero = !reloadIrqCounter && this.irqCounter == 0;
                 if ((reloadedToZero || decrementedToZero) && this.irqEnabled) {
-                    this.setIRQSignal.trigger(4, 0);
+                    this.setIRQSignal.trigger(0);
                 }
             }
             this.previousPPUAddress = address & 0xFFFF;

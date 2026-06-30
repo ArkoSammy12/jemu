@@ -11,6 +11,7 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.IntConsumer;
 
 import static io.github.arkosammy12.jemu.core.nintendo.nes.RP2A03.*;
 
@@ -52,10 +53,12 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private int frameCounterCycleCounter;
 
     private final ActionSignalDispatcher signalDispatcher = new ActionSignalDispatcher();
-    private final int frameCounterControlUpdateSignalId;
     private final int clockHalfFrameSignalId;
     private final int clockQuarterFrameSignalId;
-    private final int clearFrameInterruptFlagSignalId;
+    private final int frameCounterControlUpdateOnGetCycleId;
+    private final int frameCounterControlUpdateOnPutCycleId;
+    private final int clearFrameInterruptFlagSignalIdOnGetCycleId;
+    private final int clearFrameInterruptFlagSignalIdOnPutCycleId;
 
     private final Runnable frameCounterClocker;
 
@@ -68,7 +71,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
         this.emulator = emulator;
         this.sampleBuffer = new double[samplesPerFrame];
 
-        this.frameCounterControlUpdateSignalId = this.signalDispatcher.addSignal(newJoy2Value -> {
+        IntConsumer frameCounterControlUpdateAction = newJoy2Value -> {
             this.frameCounterStepMode = (newJoy2Value & (1 << 7)) != 0 ? FrameCounterStepMode.STEP_5 : FrameCounterStepMode.STEP_4;
             this.frameCounterInterruptInhibitFlag = (newJoy2Value & (1 << 6)) != 0;
             this.frameCounterCycleCounter = 0;
@@ -76,13 +79,21 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
                 this.frameInterruptFlag = false;
                 this.frameInterruptFlagForIRQSignal = false;
             }
-        });
-        this.clockHalfFrameSignalId = this.signalDispatcher.addSignal(_ -> this.clockHalfFrame());
-        this.clockQuarterFrameSignalId = this.signalDispatcher.addSignal(_ -> this.clockQuarterFrame());
-        this.clearFrameInterruptFlagSignalId = this.signalDispatcher.addSignal(_ -> {
+        };
+
+        this.frameCounterControlUpdateOnGetCycleId = this.signalDispatcher.addSignal(5, frameCounterControlUpdateAction);
+        this.frameCounterControlUpdateOnPutCycleId = this.signalDispatcher.addSignal(4, frameCounterControlUpdateAction);
+
+        IntConsumer clearFrameInterruptFlagAction = _ -> {
             this.frameInterruptFlag = false;
             this.frameInterruptFlagForIRQSignal = false;
-        });
+        };
+
+        this.clearFrameInterruptFlagSignalIdOnGetCycleId = this.signalDispatcher.addSignal(2, clearFrameInterruptFlagAction);
+        this.clearFrameInterruptFlagSignalIdOnPutCycleId = this.signalDispatcher.addSignal(1, clearFrameInterruptFlagAction);
+
+        this.clockHalfFrameSignalId = this.signalDispatcher.addSignal(1, _ -> this.clockHalfFrame());
+        this.clockQuarterFrameSignalId = this.signalDispatcher.addSignal(1, _ -> this.clockQuarterFrame());
 
         this.pulseChannel1 = new PulseChannel1();
         this.pulseChannel2 = new PulseChannel2();
@@ -94,7 +105,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
             this.frameCounterClocker = () -> {
                 switch (this.frameCounterStepMode) {
                     case STEP_4 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 switch (this.frameCounterCycleCounter) {
                                     case 16626 -> {
@@ -126,7 +137,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
                         }
                     }
                     case STEP_5 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 if (this.frameCounterCycleCounter == 20783) {
                                     this.frameCounterCycleCounter = 0;
@@ -150,7 +161,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
             this.frameCounterClocker = () -> {
                 switch (this.frameCounterStepMode) {
                     case STEP_4 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 switch (this.frameCounterCycleCounter) {
                                     case 14914 -> {
@@ -182,7 +193,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
                         }
                     }
                     case STEP_5 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 if (this.frameCounterCycleCounter == 18641) {
                                     this.frameCounterCycleCounter = 0;
@@ -324,10 +335,10 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
                 ret |= this.pulseChannel2.getLengthCounter() > 0 ? 1 << 1 : 0;
                 ret |= this.pulseChannel1.getLengthCounter() > 0 ? 1 : 0;
 
-                this.signalDispatcher.trigger(this.clearFrameInterruptFlagSignalId, switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 2;
-                    case PUT -> 1;
-                }, 0);
+                switch (this.getCurrentAPUHalfCycleType()) {
+                    case GET -> this.signalDispatcher.trigger(this.clearFrameInterruptFlagSignalIdOnGetCycleId, 0);
+                    case PUT -> this.signalDispatcher.trigger(this.clearFrameInterruptFlagSignalIdOnPutCycleId, 0);
+                }
 
                 yield ret;
             }
@@ -366,10 +377,10 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
             }
             case JOY2_ADDR -> { // Frame counter control
 
-                this.signalDispatcher.trigger(this.frameCounterControlUpdateSignalId, switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 5;
-                    case PUT -> 4;
-                }, value & 0xFF);
+                switch (this.getCurrentAPUHalfCycleType()) {
+                    case GET -> this.signalDispatcher.trigger(this.frameCounterControlUpdateOnGetCycleId, value & 0xFF);
+                    case PUT -> this.signalDispatcher.trigger(this.frameCounterControlUpdateOnPutCycleId, value & 0xFF);
+                }
 
                 if ((value & 0x80) != 0) {
                     this.clockHalfFrame();
@@ -413,7 +424,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
         // Clock the noise and dmc channels' timers in both APU halves to line up with the CPU cycles period amount
         this.noiseChannel.clockTimer();
         this.dmcChannel.clockTimer();
-        if (this.getCurrentApuHalfCycleType() == APUHalfCycleType.PUT) {
+        if (this.getCurrentAPUHalfCycleType() == APUHalfCycleType.PUT) {
             this.pulseChannel1.clockTimer();
             this.pulseChannel2.clockTimer();
         }
@@ -438,11 +449,11 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     }
 
     private void signalHalfFrameClock() {
-        this.signalDispatcher.trigger(this.clockHalfFrameSignalId, 1, 0);
+        this.signalDispatcher.trigger(this.clockHalfFrameSignalId, 0);
     }
 
     private void signalQuarterFrameClock() {
-        this.signalDispatcher.trigger(this.clockQuarterFrameSignalId, 1, 0);
+        this.signalDispatcher.trigger(this.clockQuarterFrameSignalId, 0);
     }
 
     private void trySetFrameCounterIRQFlag() {
@@ -474,7 +485,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
         return this.dmcChannel.getInterruptFlag() || (this.frameInterruptFlagForIRQSignal && !this.frameCounterInterruptInhibitFlag);
     }
 
-    private APUHalfCycleType getCurrentApuHalfCycleType() {
+    private APUHalfCycleType getCurrentAPUHalfCycleType() {
         return this.emulator.getRicohCore().getCurrentApuHalfCycleType();
     }
 

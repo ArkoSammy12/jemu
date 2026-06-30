@@ -314,17 +314,17 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
         // This is not necessarily hardware accurate.
         Arrays.fill(this.secondaryOAM, 0xFF);
 
-        this.copyTtoVSignalId = this.signalDispatcher.addSignal(_ -> this.setV(this.getT()));
-        this.toggleRenderingSignalId = this.signalDispatcher.addSignal(_ -> this.isRendering = !this.isRendering);
-        this.clearVisibleVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(_ -> this.setVBlankFlag(false));
-        this.clearInternalVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(_ -> this.vBlankFlagForNMI = false);
-        this.setSprite0HItSignalId = this.signalDispatcher.addSignal(_ -> {
+        this.copyTtoVSignalId = this.signalDispatcher.addSignal(3, _ -> this.setV(this.getT()));
+        this.toggleRenderingSignalId = this.signalDispatcher.addSignal(5, _ -> this.isRendering = !this.isRendering);
+        this.clearVisibleVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(2, _ -> this.setVBlankFlag(false));
+        this.clearInternalVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(1, _ -> this.vBlankFlagForNMI = false);
+        this.setSprite0HItSignalId = this.signalDispatcher.addSignal(6, _ -> {
             if (this.isRenderingEnabled()) {
                 this.setSprite0HitFlag(true);
             }
         });
 
-        this.refreshSpriteShiftersSignal = new ActionSignal(_ -> {
+        this.refreshSpriteShiftersSignal = new ActionSignal(4, _ -> {
             for (SpriteShifter shifter : this.spriteShifters) {
                 shifter.refreshXPositionCounters();
             }
@@ -458,8 +458,8 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                 // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.setVBlankFlag(false);
                 this.vBlankFlagForNMI = false;
-                this.signalDispatcher.trigger(this.clearVisibleVblOnPpuStatusReadSignalId, 2, 0);
-                this.signalDispatcher.trigger(this.clearInternalVblOnPpuStatusReadSignalId, 1, 0);
+                this.signalDispatcher.trigger(this.clearVisibleVblOnPpuStatusReadSignalId, 0);
+                this.signalDispatcher.trigger(this.clearInternalVblOnPpuStatusReadSignalId, 0);
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.dataBus & 0b00011111);
                 this.setDataBus(ret);
@@ -549,7 +549,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                 this.emphasisBits = (value >>> 5) & 0b111;
 
                 if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
-                    this.signalDispatcher.trigger(this.toggleRenderingSignalId, 5, 0);
+                    this.signalDispatcher.trigger(this.toggleRenderingSignalId, 0);
                 }
             }
             case PPUSTATUS_ADDR -> {}
@@ -577,7 +577,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                     this.setT(T);
                     this.setV(T);
                     // Copying of t to v is continuous during the write
-                    this.signalDispatcher.trigger(this.copyTtoVSignalId, 3, 0);
+                    this.signalDispatcher.trigger(this.copyTtoVSignalId, 0);
 
                     // TODO: Use this to let cartridges observe the address before the read occurs
                     // TODO: Place instantaneous reads back on the second dot
@@ -733,7 +733,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
 
                     if (this.dotNumber == 339) {
                         if (isRenderingEnabled && !this.blockSpriteHBlankReload) {
-                            this.refreshSpriteShiftersSignal.trigger(4, 0);
+                            this.refreshSpriteShiftersSignal.trigger(0);
                         }
                     }
                 }
@@ -935,7 +935,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                         }
 
                         if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
-                            this.signalDispatcher.trigger(this.setSprite0HItSignalId, 6, 0);
+                            this.signalDispatcher.trigger(this.setSprite0HItSignalId, 0);
                         }
 
                         if (!opaqueSpritePixelFound && spriteColor != 0) {
