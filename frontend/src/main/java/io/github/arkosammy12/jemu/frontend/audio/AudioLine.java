@@ -13,10 +13,10 @@ public class AudioLine implements Closeable {
     private final SourceDataLine sourceDataLine;
 
     @Nullable
-    private final FloatControl volumeControl;
+    private FloatControl volumeControl;
 
     @Nullable
-    private final BooleanControl muteControl;
+    private BooleanControl muteControl;
 
     private volatile int volume;
     private volatile boolean muted;
@@ -39,10 +39,14 @@ public class AudioLine implements Closeable {
 
     public void open() throws LineUnavailableException {
         this.sourceDataLine.open();
+        this.volumeControl = this.createVolumeControl();
+        this.muteControl = this.createMuteControl();
     }
 
     public void open(int bufferSize) throws LineUnavailableException {
         this.sourceDataLine.open(this.audioFormat, bufferSize);
+        this.volumeControl = this.createVolumeControl();
+        this.muteControl = this.createMuteControl();
     }
 
     public void setVolume(int volume) {
