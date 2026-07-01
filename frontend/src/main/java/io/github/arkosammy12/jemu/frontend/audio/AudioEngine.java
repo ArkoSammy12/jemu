@@ -3,10 +3,13 @@ package io.github.arkosammy12.jemu.frontend.audio;
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.MuteEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.SampleRateChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.audio.SoundDeviceChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.VolumeChangedEvent;
+import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.*;
 import java.io.Closeable;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class AudioEngine implements Closeable {
@@ -17,23 +20,23 @@ public class AudioEngine implements Closeable {
     private int bytesPerFrame;
     private byte[] emptySamples = new byte[0];
 
-    private SourceDataLine currentSourceDataLine;
-    private FloatControl volumeControl;
-    private BooleanControl muteControl;
+    private AudioLine audioLine;
 
     private final Thread audioThread;
     private final Object audioThreadLock = new Object();
-    private final Object currentLineLock = new Object();
+    private final Object audioLineLock = new Object();
     private volatile boolean running;
     private volatile boolean audioLineRunning;
 
+    @Nullable
+    private SoundDevice soundDevice;
     private AudioChannels audioChannels = AudioChannels.MONO;
     private SampleRate sampleRate = SampleRate.HZ_44100;
     private volatile int volume;
     private volatile int framerate;
-    private volatile boolean paused = true;
     private volatile boolean muted;
 
+    private volatile boolean paused = true;
     private boolean audioLineFirstFrame;
 
     private volatile Supplier<byte[]> sampleFrameCallback;
@@ -50,42 +53,28 @@ public class AudioEngine implements Closeable {
     }
 
     public void setSampleFrameCallback(Supplier<byte[]> sampleFrameCallback) {
-        synchronized (this.currentLineLock) {
+        synchronized (this.audioLineLock) {
             this.sampleFrameCallback = sampleFrameCallback;
         }
     }
 
-    public void setPaused(boolean paused) {
-        this.paused = paused;
-    }
-
-    public void setMuted(boolean muted) {
-        synchronized (this.currentLineLock) {
-            this.muted = muted;
-            synchronized (this.currentLineLock) {
-                if (this.muteControl != null) {
-                    this.muteControl.setValue(muted);
-                }
-            }
-        }
-    }
-
-    public void setVolume(int volume) {
-        synchronized (this.currentLineLock) {
-            this.volume = volume;
-            synchronized (this.currentLineLock) {
-                if (this.volumeControl != null) {
-                    this.volumeControl.setValue(20.0f * (float) Math.log10(this.volume / 100.0));
-                }
-            }
-        }
-    }
-
-    public void setFramerate(int framerate) throws LineUnavailableException {
-        synchronized (this.currentLineLock) {
+    public void soundDevice(@Nullable SoundDevice soundDevice) throws LineUnavailableException {
+        synchronized (this.audioLineLock) {
             boolean audioLineWasRunning = this.audioLineRunning;
             this.stop();
-            this.framerate = framerate;
+            this.soundDevice = soundDevice;
+            this.recalculateFrameMetrics();
+            if (audioLineWasRunning) {
+                this.start();
+            }
+        }
+    }
+
+    public void setAudioChannels(AudioChannels audioChannels) throws LineUnavailableException {
+        synchronized (this.audioLineLock) {
+            boolean audioLineWasRunning = this.audioLineRunning;
+            this.stop();
+            this.audioChannels = audioChannels;
             this.recalculateFrameMetrics();
             if (audioLineWasRunning) {
                 this.start();
@@ -94,7 +83,7 @@ public class AudioEngine implements Closeable {
     }
 
     public void setSampleRate(SampleRate sampleRate) throws LineUnavailableException {
-        synchronized (this.currentLineLock) {
+        synchronized (this.audioLineLock) {
             boolean audioLineWasRunning = this.audioLineRunning;
             this.stop();
             this.sampleRate = sampleRate;
@@ -105,16 +94,38 @@ public class AudioEngine implements Closeable {
         }
     }
 
-    public void setAudioChannels(AudioChannels audioChannels) throws LineUnavailableException {
-        synchronized (this.currentLineLock) {
+    public void setMuted(boolean muted) {
+        synchronized (this.audioLineLock) {
+            this.muted = muted;
+            if (this.audioLine != null) {
+                this.audioLine.setMuted(muted);
+            }
+        }
+    }
+
+    public void setVolume(int volume) {
+        synchronized (this.audioLineLock) {
+            this.volume = volume;
+            if (this.audioLine != null) {
+                this.audioLine.setVolume(volume);
+            }
+        }
+    }
+
+    public void setFramerate(int framerate) throws LineUnavailableException {
+        synchronized (this.audioLineLock) {
             boolean audioLineWasRunning = this.audioLineRunning;
             this.stop();
-            this.audioChannels = audioChannels;
+            this.framerate = framerate;
             this.recalculateFrameMetrics();
             if (audioLineWasRunning) {
                 this.start();
             }
         }
+    }
+
+    public void setPaused(boolean paused) {
+        this.paused = paused;
     }
 
     public int getSampleRate() {
@@ -131,24 +142,34 @@ public class AudioEngine implements Closeable {
 
     public void onAudioSettingChanged(AudioSettingChangeEvent event) throws LineUnavailableException {
         switch (event) {
+            case SoundDeviceChangedEvent(SoundDevice newSoundDevice) -> this.soundDevice(newSoundDevice);
+            case SampleRateChangedEvent(SampleRate newRate) -> this.setSampleRate(newRate);
             case MuteEvent(boolean mute) -> this.setMuted(mute);
             case VolumeChangedEvent(int newVolume) -> this.setVolume(newVolume);
-            case SampleRateChangedEvent(SampleRate newRate) -> this.setSampleRate(newRate);
             case null, default -> {}
         }
     }
 
     public void start() throws LineUnavailableException {
-        synchronized (this.currentLineLock) {
-            if (this.currentSourceDataLine != null) {
+        synchronized (this.audioLineLock) {
+            if (this.audioLine != null) {
                 this.stop();
             }
 
             AudioFormat format = new AudioFormat((float) this.getSampleRate(), 16, this.audioChannels == AudioChannels.STEREO ? 2 : 1, true, false);
-            this.currentSourceDataLine = AudioSystem.getSourceDataLine(format);
-            this.currentSourceDataLine.open(format, this.bytesPerFrame * (TARGET_FRAME_LATENCY + 1));
-            this.volumeControl = (FloatControl) this.currentSourceDataLine.getControl(FloatControl.Type.MASTER_GAIN);
-            this.muteControl = (BooleanControl) this.currentSourceDataLine.getControl(BooleanControl.Type.MUTE);
+
+            if (this.soundDevice == null) {
+                this.audioLine = new AudioLine(format);
+            } else {
+                Optional<Mixer.Info> mixerInfo = this.soundDevice.toMixerInfo();
+                if (mixerInfo.isEmpty()) {
+                    this.audioLine = new AudioLine(format);
+                } else {
+                    this.audioLine = new AudioLine(format, mixerInfo.get());
+                }
+            }
+
+            this.audioLine.open(this.bytesPerFrame * (TARGET_FRAME_LATENCY + 1));
 
             this.setVolume(this.volume);
             this.setMuted(this.muted);
@@ -160,19 +181,13 @@ public class AudioEngine implements Closeable {
         synchronized (this.audioThreadLock) {
             this.audioThreadLock.notify();
         }
-
     }
 
     public void stop() {
-        synchronized (this.currentLineLock) {
-            if (this.currentSourceDataLine != null) {
-                this.currentSourceDataLine.stop();
-                this.currentSourceDataLine.flush();
-                this.currentSourceDataLine.close();
-                this.currentSourceDataLine = null;
-
-                this.volumeControl = null;
-                this.muteControl = null;
+        synchronized (this.audioLineLock) {
+            if (this.audioLine != null) {
+                this.audioLine.close();
+                this.audioLine = null;
                 this.audioLineRunning = false;
                 this.audioLineFirstFrame = false;
             }
@@ -196,27 +211,26 @@ public class AudioEngine implements Closeable {
 
     private void pushAudioFrame() {
         Supplier<byte[]> callback;
-        synchronized (this.currentLineLock) {
+        synchronized (this.audioLineLock) {
             callback = this.sampleFrameCallback;
         }
         byte[] writtenSamples = callback == null ? this.emptySamples : callback.get();
-        SourceDataLine line;
-        synchronized (this.currentLineLock) {
-            if (this.currentSourceDataLine == null) {
+        AudioLine line;
+        synchronized (this.audioLineLock) {
+            if (this.audioLine == null) {
                 return;
             }
-            line = this.currentSourceDataLine;
+            line = this.audioLine;
             if (!this.audioLineFirstFrame) {
                 this.audioLineFirstFrame = true;
-                line.flush();
-                line.start();
+                line.flushAndStart();
                 writtenSamples = new byte[line.getBufferSize()];
             } else if (this.paused || writtenSamples == null) {
                 writtenSamples = this.emptySamples;
             }
             writtenSamples = this.ensureBufferLength(writtenSamples);
         }
-        line.write(writtenSamples, 0, writtenSamples.length);
+        line.write(writtenSamples);
     }
 
     private int getBytesPerOutputSample() {
@@ -264,14 +278,7 @@ public class AudioEngine implements Closeable {
             } catch (InterruptedException _) {}
         }
 
-        synchronized (this.currentLineLock) {
-            if (this.currentSourceDataLine != null) {
-                this.currentSourceDataLine.stop();
-                this.currentSourceDataLine.flush();
-                this.currentSourceDataLine.close();
-                this.currentSourceDataLine = null;
-            }
-        }
+        this.stop();
     }
 
 }

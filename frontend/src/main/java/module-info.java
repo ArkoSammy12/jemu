@@ -20,6 +20,7 @@ module frontend {
     exports io.github.arkosammy12.jemu.frontend.config;
     exports io.github.arkosammy12.jemu.frontend.config.settings;
 
+    opens io.github.arkosammy12.jemu.frontend.audio to com.google.gson;
     opens io.github.arkosammy12.jemu.frontend.config.internal to com.google.gson;
     opens io.github.arkosammy12.jemu.frontend.config.settings.internal to com.google.gson;
     opens io.github.arkosammy12.jemu.frontend.config.state to com.google.gson;

@@ -358,9 +358,10 @@ public final class Jemu {
     }
 
     private void initAudioEngine() throws LineUnavailableException {
+        this.audioEngine.soundDevice(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getSoundDevice().orElse(null));
+        this.audioEngine.setSampleRate(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getSampleRate());
         this.audioEngine.setMuted(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getMute());
         this.audioEngine.setVolume(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getVolume());
-        this.audioEngine.setSampleRate(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getSampleRate());
     }
 
     private void onEmulatorException(Exception e) {
