@@ -85,7 +85,7 @@ public abstract class AbstractSystemAdapter implements SystemAdapter {
     public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
         switch (coreSettingChangeEvent) {
             case SpeedModeSettingChangedEvent(SpeedMode speedMode) -> {
-                this.audioDriver.clearAudioBuffers();
+                this.audioDriver.clearAudioBuffer();
                 this.jemu.getAudioEngine().setFramerate(speedMode.scaleFramerate(emulator.getFramerate()));
             }
             case VideoSettingChangedEvent videoSettingChangedEvent -> {
