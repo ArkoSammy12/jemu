@@ -97,8 +97,8 @@ public class SoundSettings extends MenuBarMenu {
             mainWindow.pushEvent(new InternalSoundDeviceChangedEvent(null));
         });
 
-        this.getJMenu().add(volumeMenu);
         this.getJMenu().add(muteButton);
+        this.getJMenu().add(volumeMenu);
         this.getJMenu().add(sampleRateMenu);
         this.getJMenu().add(soundDeviceMenu);
 
@@ -111,7 +111,7 @@ public class SoundSettings extends MenuBarMenu {
         ButtonGroup buttonGroup = new ButtonGroup();
         SoundDevice selectedSoundDevice = this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getSoundDevice().orElse(null);
 
-        boolean soundDeviceMatch = false;
+        boolean soundDeviceMatch;
         this.soundDeviceMenu.add(this.autoSoundDeviceButton);
         buttonGroup.add(this.autoSoundDeviceButton);
         this.autoSoundDeviceButton.setSelected(selectedSoundDevice == null);
