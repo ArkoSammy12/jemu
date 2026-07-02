@@ -5,8 +5,9 @@ import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.frontend.events.audio.SampleRateChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ExposableEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.InternalAudioSettingChangeEvent;
+import org.jetbrains.annotations.NotNull;
 
-public record InternalSampleRateChangedEvent(SampleRate sampleRate) implements InternalAudioSettingChangeEvent, ExposableEvent {
+public record InternalSampleRateChangedEvent(@NotNull SampleRate sampleRate) implements InternalAudioSettingChangeEvent, ExposableEvent {
 
     @Override
     public Event getEvent() {

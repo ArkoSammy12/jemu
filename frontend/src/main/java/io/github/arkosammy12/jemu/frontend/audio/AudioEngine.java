@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.frontend.events.audio.MuteEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.SampleRateChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.SoundDeviceChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.VolumeChangedEvent;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.*;
@@ -14,13 +15,26 @@ import java.util.function.Supplier;
 
 public class AudioEngine implements Closeable {
 
+    private static final int BYTES_PER_SAMPLE = 2;
+    private static final boolean SIGNED_SAMPLES = true;
+    private static final boolean BIG_ENDIAN_SAMPLES = false;
     private static final int TARGET_FRAME_LATENCY = 2;
 
-    private int samplesPerFrame;
-    private int bytesPerFrame;
-    private byte[] emptySamples = new byte[0];
+    private volatile AudioLine audioLine;
+    private volatile Supplier<byte @Nullable []> sampleFrameCallback;
 
-    private AudioLine audioLine;
+    @Nullable
+    private SoundDevice soundDevice;
+    private AudioChannels audioChannels = AudioChannels.MONO;
+    private SampleRate sampleRate = SampleRate.HZ_44100;
+    private volatile boolean muted;
+    private volatile int volume;
+    private volatile int framerate;
+    private volatile boolean paused;
+
+    private volatile int samplesPerFrame;
+    private volatile int bytesPerFrame;
+    private volatile byte[] emptySamples = new byte[0];
 
     private final Thread audioThread;
     private final Object audioThreadLock = new Object();
@@ -28,18 +42,8 @@ public class AudioEngine implements Closeable {
     private volatile boolean running;
     private volatile boolean audioLineRunning;
 
-    @Nullable
-    private SoundDevice soundDevice;
-    private AudioChannels audioChannels = AudioChannels.MONO;
-    private SampleRate sampleRate = SampleRate.HZ_44100;
-    private volatile int volume;
-    private volatile int framerate;
-    private volatile boolean muted;
-
-    private volatile boolean paused = true;
     private boolean audioLineFirstFrame;
-
-    private volatile Supplier<byte[]> sampleFrameCallback;
+    private byte @Nullable [] lastWrittenBuffer;
 
     public AudioEngine(String threadName) throws LineUnavailableException {
         this.running = true;
@@ -52,7 +56,7 @@ public class AudioEngine implements Closeable {
         this.setVolume(50);
     }
 
-    public void setSampleFrameCallback(Supplier<byte[]> sampleFrameCallback) {
+    public void setSampleFrameCallback(Supplier<byte @Nullable []> sampleFrameCallback) {
         synchronized (this.audioLineLock) {
             this.sampleFrameCallback = sampleFrameCallback;
         }
@@ -156,7 +160,7 @@ public class AudioEngine implements Closeable {
                 this.stop();
             }
 
-            AudioFormat format = new AudioFormat((float) this.getSampleRate(), 16, this.audioChannels == AudioChannels.STEREO ? 2 : 1, true, false);
+            AudioFormat format = new AudioFormat((float) this.getSampleRate(), BYTES_PER_SAMPLE * 8, this.audioChannels.getChannelCount(), SIGNED_SAMPLES, BIG_ENDIAN_SAMPLES);
 
             if (this.soundDevice == null) {
                 this.audioLine = new AudioLine(format);
@@ -176,6 +180,7 @@ public class AudioEngine implements Closeable {
 
             this.audioLineFirstFrame = false;
             this.audioLineRunning = true;
+            this.lastWrittenBuffer = null;
         }
 
         synchronized (this.audioThreadLock) {
@@ -190,6 +195,7 @@ public class AudioEngine implements Closeable {
                 this.audioLine = null;
                 this.audioLineRunning = false;
                 this.audioLineFirstFrame = false;
+                this.lastWrittenBuffer = null;
             }
         }
     }
@@ -225,7 +231,7 @@ public class AudioEngine implements Closeable {
                 this.audioLineFirstFrame = true;
                 line.flushAndStart();
                 writtenSamples = new byte[line.getBufferSize()];
-            } else if (this.paused || writtenSamples == null) {
+            } else if (this.paused) {
                 writtenSamples = this.emptySamples;
             }
             writtenSamples = this.ensureBufferLength(writtenSamples);
@@ -233,33 +239,84 @@ public class AudioEngine implements Closeable {
         line.write(writtenSamples);
     }
 
-    private int getBytesPerOutputSample() {
-        return switch (this.audioChannels) {
-            case MONO -> 2;
-            case STEREO -> 4;
-        };
+    private int getBytesPerSample() {
+        return this.audioChannels.getChannelCount() * BYTES_PER_SAMPLE;
     }
 
-    private byte[] ensureBufferLength(byte[] buf) {
-        if (buf.length == this.bytesPerFrame) {
-            return buf;
-        }
-        byte[] actualBuf = new byte[this.bytesPerFrame];
-        int copyLength = Math.min(buf.length, this.bytesPerFrame);
-        System.arraycopy(buf, 0, actualBuf, 0, copyLength);
-        if (copyLength < this.bytesPerFrame) {
-            int frameSize = this.getBytesPerOutputSample();
-            int alignedLength = (copyLength / frameSize) * frameSize;
-            for (int i = alignedLength; i < actualBuf.length; i += frameSize) {
-                System.arraycopy(buf, alignedLength - frameSize, actualBuf, i, frameSize);
+    private byte @NotNull [] ensureBufferLength(byte @Nullable [] buf) {
+        byte[] ret;
+        if (buf == null) {
+            if (this.lastWrittenBuffer == null) {
+                // If no cached previous sample frame, send a full frame of silence
+                ret = this.emptySamples;
+            } else {
+                // If we have a cached sample frame, then create a new sample frame by repeating the last sample of the previous frame
+                int bytesPerSample = this.getBytesPerSample();
+                int lastSampleBeginIndex = Math.max(0, this.lastWrittenBuffer.length - bytesPerSample);
+                ret = new byte[this.getBytesPerFrame()];
+                for (int i = 0; i < ret.length; i += bytesPerSample) {
+                    System.arraycopy(this.lastWrittenBuffer, lastSampleBeginIndex, ret, i, bytesPerSample);
+                }
             }
+        } else if (buf.length == this.getBytesPerFrame()) {
+            // If the lengths match, we just return the buffer
+            ret = buf;
+        } else {
+            // If the lengths don't match, create a new sample frame with the intended length
+            ret = new byte[this.getBytesPerFrame()];
+
+            // Copy the contents of the original buffer to the new buffer, truncating if attempting to write more bytes than
+            // necessary
+            int copyLength = Math.min(buf.length, ret.length);
+            System.arraycopy(buf, 0, ret, 0, copyLength);
+            if (copyLength < ret.length) {
+                int bytesPerSample = this.getBytesPerSample();
+
+                // Determine how far we are along we are in the middle of a possible cutoff sample made up of multiple bytes
+                int sampleByteOffset = buf.length % bytesPerSample;
+
+                if (this.lastWrittenBuffer == null) {
+                    // If no cached previous sample frame, then first determine where to begin completing the sample frame
+                    int paddingBeginOffset = buf.length - sampleByteOffset;
+
+                    // Then, determine the index of the last fully formed, valid sample
+                    int lastValidSampleBeginOffset = Math.max(0, paddingBeginOffset - bytesPerSample);
+
+                    // Repeat the last sample across the rest of the returned sample buffer, overwriting the partially formed sample if any
+                    for (int i = paddingBeginOffset; i < ret.length; i += bytesPerSample) {
+                        System.arraycopy(buf, lastValidSampleBeginOffset, ret, i, bytesPerSample);
+                    }
+
+                } else {
+                    // If we have a cached previous sample frame, then first determine how many bytes are needed to complete the last sample of the original buffer
+                    int misalignedBytes = bytesPerSample - sampleByteOffset;
+
+                    // Then, determine the index where to begin repeating the last written sample
+                    int paddingBeginOffset = buf.length + misalignedBytes;
+
+                    // Then, calculate the index of the last written sample in the previous sample frame buffer
+                    int lastSampleBeginIndex = Math.max(0, this.lastWrittenBuffer.length - bytesPerSample);
+
+                    // Complete the possibly cutoff sample by filling out the bytes with the corresponding bytes from the last written sample
+                    for (int i = buf.length; i < paddingBeginOffset; i++) {
+                        ret[i] = this.lastWrittenBuffer[lastSampleBeginIndex + sampleByteOffset + (i - buf.length)];
+                    }
+
+                    // Then, for the remaining length, repeat the entire last written sample
+                    for (int i = paddingBeginOffset; i < ret.length; i += bytesPerSample) {
+                        System.arraycopy(this.lastWrittenBuffer, lastSampleBeginIndex, ret, i, bytesPerSample);
+                    }
+                }
+            }
+
         }
-        return actualBuf;
+        this.lastWrittenBuffer = ret;
+        return ret;
     }
 
     private void recalculateFrameMetrics() {
         this.samplesPerFrame = this.getSampleRate() / this.framerate;
-        this.bytesPerFrame = this.samplesPerFrame * this.getBytesPerOutputSample();
+        this.bytesPerFrame = this.samplesPerFrame * this.getBytesPerSample();
         this.emptySamples = new byte[this.bytesPerFrame];
     }
 
