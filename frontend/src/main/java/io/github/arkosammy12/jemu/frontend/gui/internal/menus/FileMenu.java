@@ -5,10 +5,12 @@ import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalTriggerOpenFileEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.FileManager;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -135,6 +137,8 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         this.mainWindow.getConfig().getState().getFileState().getRecentFilePaths().forEach(this::addRecentFilePath);
 
         resetOnROMFileSelect.setSelected(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect());
+
+        mainWindow.onEvent(InternalTriggerOpenFileEvent.class, _ -> openItem.doClick());
     }
 
     @Override
@@ -143,11 +147,11 @@ public class FileMenu extends MenuBarMenu implements FileManager {
     }
 
     @Override
-    public void loadFile(Path filePath) {
+    public void loadFile(@NotNull Path filePath) {
         SwingUtilities.invokeLater(() -> {
             this.currentRomPath = filePath;
             this.ejectRomButton.setEnabled(true);
-            this.mainWindow.pushEvent(new InternalFileLoadedEvent());
+            this.mainWindow.pushEvent(new InternalFileLoadedEvent(filePath));
         });
     }
 

@@ -387,19 +387,27 @@ public final class Jemu {
         this.shutdownStarted = true;
 
         try {
-            if (this.audioEngine != null) {
-                this.audioEngine.close();
+            AudioEngine audioEngine = this.audioEngine;
+            if (audioEngine != null) {
+                audioEngine.close();
             }
 
-            if (this.mainWindow != null) {
-                this.mainWindow.close();
+            MainWindow mainWindow = this.mainWindow;
+            if (mainWindow != null) {
+                mainWindow.close();
             }
 
-            this.coreThread.interrupt();
-            tryJoinSafely(this.coreThread);
+            Thread coreThread = this.coreThread;
+            if (coreThread != null) {
+                coreThread.interrupt();
+                tryJoinSafely(coreThread);
+            }
 
-            this.uiEventListenerThread.interrupt();
-            tryJoinSafely(this.uiEventListenerThread);
+            Thread uiEventListenerThread = this.uiEventListenerThread;
+            if (uiEventListenerThread != null) {
+                uiEventListenerThread.interrupt();
+                tryJoinSafely(uiEventListenerThread);
+            }
 
             synchronized (this.systemLock) {
                 if (this.currentSystem != null) {

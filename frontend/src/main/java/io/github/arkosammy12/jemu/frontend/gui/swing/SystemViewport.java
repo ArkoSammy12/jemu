@@ -1,7 +1,13 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing;
 
 import io.github.arkosammy12.jemu.frontend.config.settings.internal.VideoSize;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalTriggerOpenFileEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalVideoSizeChangedEvent;
+import net.miginfocom.layout.AlignX;
+import net.miginfocom.layout.AlignY;
+import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.ApiStatus;
@@ -11,11 +17,13 @@ import org.jetbrains.annotations.Nullable;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import java.nio.file.Path;
 import java.util.function.Supplier;
 
 public class SystemViewport {
 
     private final MainWindow mainWindow;
+    private final IdleViewport idleViewport;
     private final JPanel viewportPanel;
 
     @Nullable
@@ -26,6 +34,7 @@ public class SystemViewport {
 
     public SystemViewport(MainWindow mainWindow) {
         this.mainWindow = mainWindow;
+        this.idleViewport = new IdleViewport(mainWindow);
         MigLayout viewportPanelLayout = new MigLayout(new LC().insets("0"));
         this.viewportPanel = new JPanel(viewportPanelLayout);
         this.viewportPanel.setFocusable(true);
@@ -41,6 +50,7 @@ public class SystemViewport {
         });
         this.systemKeyListener = new SystemKeyListener();
         this.viewportPanel.addKeyListener(this.systemKeyListener);
+        this.viewportPanel.add(this.idleViewport.getJPanel(), "grow, push");
 
         mainWindow.onEvent(InternalVideoSizeChangedEvent.class, internalVideoSizeChangedEvent -> {
             VideoSize newVideoSize = internalVideoSizeChangedEvent.videoSize();
@@ -56,6 +66,7 @@ public class SystemViewport {
                 }
             }
         });
+
 
         mainWindow.getJFrame().addWindowStateListener(e -> {
             // Clear the video size selection if there's a system running and the window is maximized
@@ -75,6 +86,7 @@ public class SystemViewport {
             }
 
         });
+
     }
 
     @ApiStatus.Internal
@@ -111,6 +123,7 @@ public class SystemViewport {
                         SwingUtilities.invokeLater(component::requestFocusInWindow);
                     }
                 });
+                this.viewportPanel.remove(this.idleViewport.getJPanel());
                 this.viewportPanel.add(component, "grow, push");
                 SwingUtilities.invokeLater(() -> {
                     component.requestFocusInWindow();
@@ -120,6 +133,8 @@ public class SystemViewport {
                         this.resizeWindowToFitDisplay(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getVideoSize().orElse(null));
                     }
                 });
+            } else {
+                this.viewportPanel.add(this.idleViewport.getJPanel(), "grow, push");
             }
 
             this.viewportPanel.revalidate();
@@ -188,6 +203,58 @@ public class SystemViewport {
             if (this.delegate != null) {
                 this.delegate.keyReleased(e);
             }
+        }
+
+    }
+
+    private static class IdleViewport {
+
+        private static final String NO_ROM_FILE_SELECTED_TEXT = "No ROM file selected.";
+        private static final String ROM_FILE_SELECTED_TEXT = "Selected ROM file: %s";
+
+        private static final String IDLE_PROMPT_TEXT = "Double-click or drag and drop to select a ROM file...";
+
+        private final JPanel jPanel;
+        private final JLabel idleTextLabel;
+
+        private IdleViewport(MainWindow mainWindow) {
+            this.jPanel = new JPanel();
+            MigLayout layout = new MigLayout();
+            layout.setLayoutConstraints(new LC().fill());
+            this.jPanel.setLayout(layout);
+
+            this.idleTextLabel = new JLabel();
+            this.jPanel.add(this.idleTextLabel, new CC().alignX(AlignX.CENTER).alignY(AlignY.CENTER));
+            this.setSelectedRomFile(null);
+
+            MouseListener mouseListener = new MouseAdapter() {
+
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2) {
+                        mainWindow.pushEvent(new InternalTriggerOpenFileEvent());
+                    }
+                }
+
+            };
+
+            this.idleTextLabel.addMouseListener(mouseListener);
+            this.getJPanel().addMouseListener(mouseListener);
+
+            mainWindow.onEvent(InternalFileLoadedEvent.class, internalFileLoadedEvent -> this.setSelectedRomFile(internalFileLoadedEvent.loadedFilePath()));
+
+            mainWindow.onEvent(InternalROMEjectedEvent.class, _ -> this.setSelectedRomFile(null));
+        }
+
+        private JPanel getJPanel() {
+            return this.jPanel;
+        }
+
+        private void setSelectedRomFile(@Nullable Path path) {
+            String topText = path == null ? NO_ROM_FILE_SELECTED_TEXT : ROM_FILE_SELECTED_TEXT.formatted(path.toString());
+            this.idleTextLabel.setText("<html><center>%s</center><br><center>%s</center></html>".formatted(topText, IDLE_PROMPT_TEXT));
+            this.jPanel.revalidate();
+            this.jPanel.repaint();
         }
 
     }
