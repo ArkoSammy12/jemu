@@ -2,6 +2,8 @@ package io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyEmulator;
+import org.jetbrains.annotations.Nullable;
+import org.tinylog.Logger;
 
 import java.util.Optional;
 
@@ -33,17 +35,14 @@ public class RTCMBC3 extends MBC3 {
     private int subSecondCounter;
     private int cycles;
 
-    public RTCMBC3(GameBoyEmulator emulator, int cartridgeType) {
-        super(emulator, cartridgeType);
+    public RTCMBC3(GameBoyEmulator emulator, int cartridgeType, byte[] romImage) {
+        super(emulator, cartridgeType, romImage);
+    }
 
-        if (this.saveData != null) {
-            int rtcDataStart = switch (this.ramSizeHeader) {
-                  case 0x01 -> 0x800;
-                  case 0x02 -> 0x2000;
-                  case 0x03 -> 4 * 0x2000;
-                  case 0x05 -> 8 * 0x2000;
-                  default -> 0;
-            };
+    protected void restoreSaveData(byte[] saveData) {
+        super.restoreSaveData(saveData);
+        try {
+            int rtcDataStart = this.getSRAMLength().orElse(0);
             if (rtcDataStart + 36 >= saveData.length) {
                 return;
             }
@@ -57,15 +56,16 @@ public class RTCMBC3 extends MBC3 {
             this.hours = (int) saveData[rtcDataStart + 28] & 0xFF;
             this.daysLower = (int) saveData[rtcDataStart + 32] & 0xFF;
             this.daysUpperAndControl |= ((int) saveData[rtcDataStart + 36] != 0) ? 1 : 0;
-
+        } catch (Exception e) {
+            Logger.error("Failed to read saved RTC data for GameBoy cartridge: {}", e);
         }
     }
 
     @Override
     public int readByte(int address) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramEnable == 0x0A) {
-                return switch (this.ramBankNumber) {
+            if (this.ramBank >= 0x08 && this.ramBank <= 0x0C && this.ramRTCEnable) {
+                return switch (this.ramBank) {
                     case RTC_S_ADDR -> this.seconds;
                     case RTC_M_ADDR -> this.minutes;
                     case RTC_H_ADDR -> this.hours;
@@ -81,8 +81,8 @@ public class RTCMBC3 extends MBC3 {
     @Override
     public void writeByte(int address, int value) {
         if (address >= 0xA000 && address <= 0xBFFF) {
-            if (this.ramBankNumber >= 0x08 && this.ramBankNumber <= 0x0C && this.ramEnable == 0x0A) {
-                switch (this.ramBankNumber) {
+            if (this.ramBank >= 0x08 && this.ramBank <= 0x0C && this.ramRTCEnable) {
+                switch (this.ramBank) {
                     case RTC_S_ADDR -> {
                         this.internalSeconds = value & 0x3F;
                         this.subSecondCounter = 0;
@@ -161,36 +161,43 @@ public class RTCMBC3 extends MBC3 {
 
     @Override
     protected Optional<byte[]> getSaveData() {
-        return super.getSaveData().map(data -> {
-
-            // VBA-M format 48-byte version. We write 7fffffff7fffffff in little-endian as we do not care about the UNIX timestamp
-            byte[] dataWithRtc = new byte[data.length + 48];
-
-            System.arraycopy(data, 0, dataWithRtc, 0, data.length);
-
-            dataWithRtc[data.length] = (byte) (this.internalSeconds & 0xFF);
-            dataWithRtc[data.length + 4] = (byte) (this.internalMinutes & 0xFF);
-            dataWithRtc[data.length + 8] = (byte) (this.internalHours & 0xFF);
-            dataWithRtc[data.length + 12] = (byte) (this.internalDays & 0xFF);
-            dataWithRtc[data.length + 16] = (byte) ((this.internalDays >>> 8) & 1);
-            dataWithRtc[data.length + 20] = (byte) (this.seconds & 0xFF);
-            dataWithRtc[data.length + 24] = (byte) (this.minutes & 0xFF);
-            dataWithRtc[data.length + 28] = (byte) (this.hours & 0xFF);
-            dataWithRtc[data.length + 32] = (byte) (this.daysLower & 0xFF);
-            dataWithRtc[data.length + 36] = (byte) (this.daysUpperAndControl & 1);
-            dataWithRtc[data.length + 40] = (byte) 0xFF;
-            dataWithRtc[data.length + 41] = (byte) 0xFF;
-            dataWithRtc[data.length + 42] = (byte) 0xFF;
-            dataWithRtc[data.length + 43] = (byte) 0x7F;
-            dataWithRtc[data.length + 44] = (byte) 0xFF;
-            dataWithRtc[data.length + 45] = (byte) 0xFF;
-            dataWithRtc[data.length + 46] = (byte) 0xFF;
-            dataWithRtc[data.length + 47] = (byte) 0x7F;
-
-            return dataWithRtc;
-
-        });
+        return super.getSaveData().map(this::getSaveDataWithRtc).or(() -> Optional.ofNullable(this.hasBattery() ? this.getSaveDataWithRtc(null) : null));
     }
 
+    private byte[] getSaveDataWithRtc(byte @Nullable [] precedingData) {
+        int rtcBeginOffset = 0;
+
+        // VBA-M format 48-byte version. We write 7fffffff7fffffff in little-endian as we do not care about the UNIX timestamp
+        final int rtcDataLength = 48;
+        byte[] dataWithRtc;
+        if (precedingData == null) {
+            dataWithRtc = new byte[rtcDataLength];
+        } else {
+            dataWithRtc = new byte[precedingData.length + rtcDataLength];
+            rtcBeginOffset = precedingData.length;
+            System.arraycopy(precedingData, 0, dataWithRtc, 0, precedingData.length);
+        }
+
+        dataWithRtc[rtcBeginOffset] = (byte) (this.internalSeconds & 0xFF);
+        dataWithRtc[rtcBeginOffset + 4] = (byte) (this.internalMinutes & 0xFF);
+        dataWithRtc[rtcBeginOffset + 8] = (byte) (this.internalHours & 0xFF);
+        dataWithRtc[rtcBeginOffset + 12] = (byte) (this.internalDays & 0xFF);
+        dataWithRtc[rtcBeginOffset + 16] = (byte) ((this.internalDays >>> 8) & 1);
+        dataWithRtc[rtcBeginOffset + 20] = (byte) (this.seconds & 0xFF);
+        dataWithRtc[rtcBeginOffset + 24] = (byte) (this.minutes & 0xFF);
+        dataWithRtc[rtcBeginOffset + 28] = (byte) (this.hours & 0xFF);
+        dataWithRtc[rtcBeginOffset + 32] = (byte) (this.daysLower & 0xFF);
+        dataWithRtc[rtcBeginOffset + 36] = (byte) (this.daysUpperAndControl & 1);
+        dataWithRtc[rtcBeginOffset + 40] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 41] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 42] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 43] = (byte) 0x7F;
+        dataWithRtc[rtcBeginOffset + 44] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 45] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 46] = (byte) 0xFF;
+        dataWithRtc[rtcBeginOffset + 47] = (byte) 0x7F;
+
+        return dataWithRtc;
+    }
 
 }

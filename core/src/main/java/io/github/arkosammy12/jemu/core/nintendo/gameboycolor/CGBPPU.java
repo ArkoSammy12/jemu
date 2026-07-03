@@ -10,9 +10,9 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
 
     public static final int VBK_ADDR = 0xFF4F;
     public static final int BGPI_ADDR = 0xFF68;
-    public static final int BGPD = 0xFF69;
-    public static final int OBPI = 0xFF6A;
-    public static final int OBPD = 0xFF6B;
+    public static final int BGPD_ADDR = 0xFF69;
+    public static final int OBPI_ADDR = 0xFF6A;
+    public static final int OBPD_ADDR = 0xFF6B;
     public static final int OPRI_ADDR = 0xFF6C;
 
     private VRAMBank vramBank = VRAMBank.BANK_0;
@@ -48,7 +48,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
     @Override
     public int readByte(int address) {
         if (address >= VRAM_START && address <= VRAM_END) {
-            if (!Mode.MODE_3_DRAWING.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
+            if (!Mode.DRAWING_3.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
                 return switch (this.vramBank) {
                     case BANK_0 -> (int) this.vram[address - VRAM_START] & 0xFF;
                     case BANK_1 -> (int) this.vramBank1[address - VRAM_START] & 0xFF;
@@ -63,16 +63,16 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                     case BANK_1 -> 0xFF;
                 };
                 case BGPI_ADDR -> this.backgroundPaletteIndex | 0b01000000;
-                case BGPD -> {
-                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
+                case BGPD_ADDR -> {
+                    if (!Mode.DRAWING_3.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
                         yield (int) this.bgPaletteRAM[this.getBgPaletteAddress()] & 0xFF;
                     } else {
                         yield 0xFF;
                     }
                 }
-                case OBPI -> this.objectPaletteIndex | 0b01000000;
-                case OBPD -> {
-                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
+                case OBPI_ADDR -> this.objectPaletteIndex | 0b01000000;
+                case OBPD_ADDR -> {
+                    if (!Mode.DRAWING_3.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
                         yield (int) this.objPaletteRAM[this.getObjPaletteAddress()] & 0xFF;
                     } else {
                         yield 0xFF;
@@ -87,7 +87,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
     @Override
     public void writeByte(int address, int value) {
         if (address >= VRAM_START && address <= VRAM_END) {
-            if (!Mode.MODE_3_DRAWING.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
+            if (!Mode.DRAWING_3.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
                 switch (this.vramBank) {
                     case BANK_0 -> this.vram[address - VRAM_START] = (byte) value;
                     case BANK_1 -> this.vramBank1[address - VRAM_START] = (byte) value;
@@ -100,20 +100,20 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
                     this.backgroundPaletteIndex = value & 0xFF;
                     this.bgPaletteAddressAutoIncrement = (value & 0b10000000) != 0;
                 }
-                case BGPD -> {
-                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
+                case BGPD_ADDR -> {
+                    if (!Mode.DRAWING_3.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
                         this.bgPaletteRAM[this.getBgPaletteAddress()] = (byte) value;
                     }
                     if (this.getBgPaletteAddressAutoIncrement()) {
                         this.incrementBgPaletteAddress();
                     }
                 }
-                case OBPI -> {
+                case OBPI_ADDR -> {
                     this.objectPaletteIndex = value & 0xFF;
                     this.objPaletteAddressAutoIncrement = (value & 0b10000000) != 0;
                 }
-                case OBPD -> {
-                    if (!Mode.MODE_3_DRAWING.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
+                case OBPD_ADDR -> {
+                    if (!Mode.DRAWING_3.matchesValue(this.getPPUMode()) || !this.getLCDPPUEnable()) {
                         this.objPaletteRAM[this.getObjPaletteAddress()] = (byte) value;
                     }
                     if (this.getObjPaletteAddressAutoIncrement()) {
@@ -131,22 +131,29 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         // No STAT write bug on CGB
     }
 
+    @Override
     public void checkArmOAMBugRead(int address) {
-        // No oam bug on CGB
+        // No OAM bug on CGB
     }
 
+    @Override
     public void checkArmOAMBugWrite(int address) {
-        // No oam bug on CGB
+        // No OAM bug on CGB
+    }
+
+    @Override
+    protected void checkOAMBugTrigger(int tCycle) {
+        // No OAM bug on CGB
     }
 
     @Override
     protected void doOAMBugRead() {
-        // No oam bug on CGB
+        // No OAM bug on CGB
     }
 
     @Override
     protected void doOAMBugWrite() {
-        // No oam bug on CGB
+        // No OAM bug on CGB
     }
 
     @Override

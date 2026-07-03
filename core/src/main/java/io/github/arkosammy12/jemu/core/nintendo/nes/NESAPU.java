@@ -9,11 +9,13 @@ import io.github.arkosammy12.jemu.core.util.HighPassFilter;
 import io.github.arkosammy12.jemu.core.util.LowPassFilter;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Arrays;
 import java.util.Optional;
+import java.util.function.IntConsumer;
 
 import static io.github.arkosammy12.jemu.core.nintendo.nes.RP2A03.*;
 
-public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements Bus {
+public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
 
     private static final double OUTPUT_GAIN = Short.MAX_VALUE;
 
@@ -30,6 +32,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     }
 
     private final E emulator;
+    private final SampleFrameResampler sampleFrameResampler;
 
     private final double[] sampleBuffer;
     private int currentSampleIndex;
@@ -40,18 +43,22 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private final NoiseChannel noiseChannel;
     private final DMCChannel dmcChannel;
 
-    private final LowPassFilter lpf = new LowPassFilter();
-    private final HighPassFilter hpf0 = new HighPassFilter();
-    private final HighPassFilter hpf1 = new HighPassFilter();
-    private final HighPassFilter hpf2 = new HighPassFilter();
+    // =============================================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // If adding or changing the initial value of a field here,
+    // consider adding the correspond initialization code in reset()
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // =============================================================
 
     private int frameCounterCycleCounter;
 
     private final ActionSignalDispatcher signalDispatcher = new ActionSignalDispatcher();
-    private final int frameCounterControlUpdateSignalId;
     private final int clockHalfFrameSignalId;
     private final int clockQuarterFrameSignalId;
-    private final int clearFrameInterruptFlagSignalId;
+    private final int frameCounterControlUpdateOnGetCycleId;
+    private final int frameCounterControlUpdateOnPutCycleId;
+    private final int clearFrameInterruptFlagSignalIdOnGetCycleId;
+    private final int clearFrameInterruptFlagSignalIdOnPutCycleId;
 
     private final Runnable frameCounterClocker;
 
@@ -61,13 +68,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     private boolean frameCounterInterruptInhibitFlag;
 
     public NESAPU(E emulator, int samplesPerFrame) {
-        super(emulator);
         this.emulator = emulator;
         this.sampleBuffer = new double[samplesPerFrame];
 
-        this.lpf.createLpf(17000.0, (double) (samplesPerFrame * emulator.getFramerate()));
-
-        this.frameCounterControlUpdateSignalId = this.signalDispatcher.addSignal(newJoy2Value -> {
+        IntConsumer frameCounterControlUpdateAction = newJoy2Value -> {
             this.frameCounterStepMode = (newJoy2Value & (1 << 7)) != 0 ? FrameCounterStepMode.STEP_5 : FrameCounterStepMode.STEP_4;
             this.frameCounterInterruptInhibitFlag = (newJoy2Value & (1 << 6)) != 0;
             this.frameCounterCycleCounter = 0;
@@ -75,13 +79,21 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 this.frameInterruptFlag = false;
                 this.frameInterruptFlagForIRQSignal = false;
             }
-        });
-        this.clockHalfFrameSignalId = this.signalDispatcher.addSignal(_ -> this.clockHalfFrame());
-        this.clockQuarterFrameSignalId = this.signalDispatcher.addSignal(_ -> this.clockQuarterFrame());
-        this.clearFrameInterruptFlagSignalId = this.signalDispatcher.addSignal(_ -> {
+        };
+
+        this.frameCounterControlUpdateOnGetCycleId = this.signalDispatcher.addSignal(5, frameCounterControlUpdateAction);
+        this.frameCounterControlUpdateOnPutCycleId = this.signalDispatcher.addSignal(4, frameCounterControlUpdateAction);
+
+        IntConsumer clearFrameInterruptFlagAction = _ -> {
             this.frameInterruptFlag = false;
             this.frameInterruptFlagForIRQSignal = false;
-        });
+        };
+
+        this.clearFrameInterruptFlagSignalIdOnGetCycleId = this.signalDispatcher.addSignal(2, clearFrameInterruptFlagAction);
+        this.clearFrameInterruptFlagSignalIdOnPutCycleId = this.signalDispatcher.addSignal(1, clearFrameInterruptFlagAction);
+
+        this.clockHalfFrameSignalId = this.signalDispatcher.addSignal(1, _ -> this.clockHalfFrame());
+        this.clockQuarterFrameSignalId = this.signalDispatcher.addSignal(1, _ -> this.clockQuarterFrame());
 
         this.pulseChannel1 = new PulseChannel1();
         this.pulseChannel2 = new PulseChannel2();
@@ -93,7 +105,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             this.frameCounterClocker = () -> {
                 switch (this.frameCounterStepMode) {
                     case STEP_4 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 switch (this.frameCounterCycleCounter) {
                                     case 16626 -> {
@@ -125,7 +137,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                         }
                     }
                     case STEP_5 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 if (this.frameCounterCycleCounter == 20783) {
                                     this.frameCounterCycleCounter = 0;
@@ -149,7 +161,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             this.frameCounterClocker = () -> {
                 switch (this.frameCounterStepMode) {
                     case STEP_4 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 switch (this.frameCounterCycleCounter) {
                                     case 14914 -> {
@@ -181,7 +193,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                         }
                     }
                     case STEP_5 -> {
-                        switch (this.getCurrentApuHalfCycleType()) {
+                        switch (this.getCurrentAPUHalfCycleType()) {
                             case GET -> {
                                 if (this.frameCounterCycleCounter == 18641) {
                                     this.frameCounterCycleCounter = 0;
@@ -203,6 +215,81 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             };
         }
 
+        this.sampleFrameResampler = new SampleFrameResampler() {
+
+            private final LowPassFilter lpf = new LowPassFilter();
+            private final HighPassFilter hpf0 = new HighPassFilter();
+            private final HighPassFilter hpf1 = new HighPassFilter();
+            private final HighPassFilter hpf2 = new HighPassFilter();
+
+            {
+                this.lpf.createLpf(17000.0, samplesPerFrame * emulator.getFramerate());
+            }
+
+            @Override
+            public Optional<byte[]> resample(int outputSampleRate, int outputSamplesPerFrame, AudioGenerator.SampleFrame inputSampleFrame) {
+                if (inputSampleFrame instanceof SampleFrame(double[] sampleFrame)) {
+                    for (int i = 0; i < sampleFrame.length; i++) {
+                        sampleFrame[i] = this.lpf.process(sampleFrame[i]);
+                    }
+
+                    this.hpf0.createHpf(285.17092929859564, outputSampleRate);
+                    this.hpf1.createHpf(85.509330674952423, outputSampleRate);
+                    this.hpf2.createHpf(7.3617262313390981, outputSampleRate);
+
+                    byte[] out = new byte[outputSamplesPerFrame * 2];
+                    double step = (double) sampleFrame.length / (double) outputSamplesPerFrame;
+                    double pos = 0.0;
+
+                    for (int i = 0; i < outputSamplesPerFrame; i++) {
+                        int index = Math.min((int) Math.round(pos), sampleFrame.length - 1);
+                        short sample = (short) Math.clamp((long)(this.hpf2.process(this.hpf1.process(this.hpf0.process(sampleFrame[index]))) * OUTPUT_GAIN), -Short.MAX_VALUE, Short.MAX_VALUE);
+                        out[i * 2] = (byte) ((int) sample & 0xFF);
+                        out[i * 2 + 1] = (byte) (((int) sample >>> 8) & 0xFF);
+                        pos += step;
+                    }
+
+                    return Optional.of(out);
+                } else {
+                    return Optional.empty();
+                }
+            }
+
+        };
+
+        this.reset();
+
+    }
+
+    public void reset() {
+        // =============================================================
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // If changing the reset value of a field here, consider changing
+        // it in the field declaration and initialization up in the fields
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // =============================================================
+
+        // Values on reset provided explicitly by the nesdev wiki in https://www.nesdev.org/wiki/CPU_power_up_state
+
+        // See TriangleChannel class for the reasoning as to why we reset the sequencer step to 15 instead of 0
+        this.triangleChannel.sequencerStep = 15;
+        this.dmcChannel.outputLevel &= 1;
+
+        this.pulseChannel1.setEnabled(false);
+        this.pulseChannel2.setEnabled(false);
+        this.triangleChannel.setEnabled(false);
+        this.noiseChannel.setEnabled(false);
+        this.dmcChannel.setEnabled(false);
+
+        this.frameCounterCycleCounter = 0;
+
+        // Internal state resetting
+
+        this.signalDispatcher.reset();
+
+        // The frame counter IRQ flag being clear is expected by blargg's apu_reset tests
+        this.frameInterruptFlag = false;
+        this.frameInterruptFlagForIRQSignal = false;
     }
 
     @Override
@@ -216,34 +303,19 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
     }
 
     @Override
-    public Optional<byte[]> getSampleFrame() {
+    public Optional<AudioGenerator.SampleFrame> getSampleFrame() {
+        this.currentSampleIndex = 0;
         Optional<? extends AudioDriver> optionalAudioDriver = this.emulator.getHost().getAudioDriver();
         if (optionalAudioDriver.isEmpty()) {
             return Optional.empty();
         }
 
-        AudioDriver audioDriver = optionalAudioDriver.get();
-        int samplesPerFrame = audioDriver.getSamplesPerFrame();
-        int sampleRate = audioDriver.getSampleRate();
+        return Optional.of(new SampleFrame(Arrays.copyOf(this.sampleBuffer, this.sampleBuffer.length)));
+    }
 
-        this.hpf0.createHpf(285.17092929859564, (double) sampleRate);
-        this.hpf1.createHpf(85.509330674952423, (double) sampleRate);
-        this.hpf2.createHpf(7.3617262313390981, (double) sampleRate);
-
-        byte[] out = new byte[samplesPerFrame * 2];
-        double step = (double) this.sampleBuffer.length / (double) samplesPerFrame;
-        double pos = 0.0;
-
-        for (int i = 0; i < samplesPerFrame; i++) {
-            int index = Math.min((int) Math.round(pos), this.sampleBuffer.length - 1);
-            short sample = (short) Math.clamp((long)(this.hpf2.process(this.hpf1.process(this.hpf0.process(this.sampleBuffer[index]))) * OUTPUT_GAIN), -Short.MAX_VALUE, Short.MAX_VALUE);
-            out[i * 2] = (byte) ((int) sample & 0xFF);
-            out[i * 2 + 1] = (byte) (((int) sample >>> 8) & 0xFF);
-            pos += step;
-        }
-
-        this.currentSampleIndex = 0;
-        return Optional.of(out);
+    @Override
+    public SampleFrameResampler getSampleFrameResampler() {
+        return this.sampleFrameResampler;
     }
 
     @Override
@@ -263,10 +335,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 ret |= this.pulseChannel2.getLengthCounter() > 0 ? 1 << 1 : 0;
                 ret |= this.pulseChannel1.getLengthCounter() > 0 ? 1 : 0;
 
-                this.signalDispatcher.trigger(this.clearFrameInterruptFlagSignalId, switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 2;
-                    case PUT -> 1;
-                }, 0);
+                switch (this.getCurrentAPUHalfCycleType()) {
+                    case GET -> this.signalDispatcher.trigger(this.clearFrameInterruptFlagSignalIdOnGetCycleId, 0);
+                    case PUT -> this.signalDispatcher.trigger(this.clearFrameInterruptFlagSignalIdOnPutCycleId, 0);
+                }
 
                 yield ret;
             }
@@ -305,10 +377,10 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
             }
             case JOY2_ADDR -> { // Frame counter control
 
-                this.signalDispatcher.trigger(this.frameCounterControlUpdateSignalId, switch (this.getCurrentApuHalfCycleType()) {
-                    case GET -> 5;
-                    case PUT -> 4;
-                }, value & 0xFF);
+                switch (this.getCurrentAPUHalfCycleType()) {
+                    case GET -> this.signalDispatcher.trigger(this.frameCounterControlUpdateOnGetCycleId, value & 0xFF);
+                    case PUT -> this.signalDispatcher.trigger(this.frameCounterControlUpdateOnPutCycleId, value & 0xFF);
+                }
 
                 if ((value & 0x80) != 0) {
                     this.clockHalfFrame();
@@ -352,7 +424,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         // Clock the noise and dmc channels' timers in both APU halves to line up with the CPU cycles period amount
         this.noiseChannel.clockTimer();
         this.dmcChannel.clockTimer();
-        if (this.getCurrentApuHalfCycleType() == APUHalfCycleType.PUT) {
+        if (this.getCurrentAPUHalfCycleType() == APUHalfCycleType.PUT) {
             this.pulseChannel1.clockTimer();
             this.pulseChannel2.clockTimer();
         }
@@ -372,16 +444,16 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         // Apparently my final waveform is inverted compared to hardware, so we revert it right back here
         output *= -1;
-        this.sampleBuffer[this.currentSampleIndex] = this.lpf.process(output);
+        this.sampleBuffer[this.currentSampleIndex] = output;
         this.currentSampleIndex = (this.currentSampleIndex + 1) % this.sampleBuffer.length;
     }
 
     private void signalHalfFrameClock() {
-        this.signalDispatcher.trigger(this.clockHalfFrameSignalId, 1, 0);
+        this.signalDispatcher.trigger(this.clockHalfFrameSignalId, 0);
     }
 
     private void signalQuarterFrameClock() {
-        this.signalDispatcher.trigger(this.clockQuarterFrameSignalId, 1, 0);
+        this.signalDispatcher.trigger(this.clockQuarterFrameSignalId, 0);
     }
 
     private void trySetFrameCounterIRQFlag() {
@@ -413,7 +485,7 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         return this.dmcChannel.getInterruptFlag() || (this.frameInterruptFlagForIRQSignal && !this.frameCounterInterruptInhibitFlag);
     }
 
-    private APUHalfCycleType getCurrentApuHalfCycleType() {
+    private APUHalfCycleType getCurrentAPUHalfCycleType() {
         return this.emulator.getRicohCore().getCurrentApuHalfCycleType();
     }
 
@@ -421,6 +493,8 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         STEP_4,
         STEP_5
     }
+
+    private record SampleFrame(double[] sampleFrame) implements AudioGenerator.SampleFrame {}
 
     private abstract static class AudioChannel {
 
@@ -460,13 +534,11 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
         private int lengthCounter;
         private boolean lengthCounterReloadPending;
         private int lengthCounterReloadValue;
-        private boolean haltFlagPending;
 
         // TODO: Delay on the halt flag. Writes to $4000 and equivalent for pulse1, pulse2, triangle and noise have a delay when changing the halt flag
 
         protected void setVolume(int value) {
             this.haltLengthCounter = (value & (1 << 5)) != 0;
-            this.haltFlagPending = true;
         }
 
         protected void setLO(int value) {
@@ -504,10 +576,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 didClock = true;
             }
 
-            if (this.haltFlagPending) {
-                this.haltFlagPending = false;
-            }
-
             if (this.lengthCounterReloadPending) {
                 this.lengthCounterReloadPending = false;
                 if (!didClock || this.lengthCounter == 0) {
@@ -526,7 +594,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
                 this.lengthCounterReloadPending = false;
                 this.lengthCounter = this.lengthCounterReloadValue;
             }
-            this.haltFlagPending = false;
         }
 
     }
@@ -934,8 +1001,6 @@ public class NESAPU<E extends NESEmulator> extends AudioGenerator<E> implements 
 
         // LENGTH register
         private int sampleLength;
-
-        //private int length;
 
         private boolean interruptFlag;
 

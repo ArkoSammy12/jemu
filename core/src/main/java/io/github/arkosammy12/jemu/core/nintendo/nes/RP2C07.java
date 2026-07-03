@@ -151,6 +151,11 @@ public class RP2C07<E extends NESEmulator> extends RP2C02<E> {
     }
 
     @Override
+    public double getPixelAspectRatio() {
+        return 18.0 / 13.0;
+    }
+
+    @Override
     protected int getScanlinesPerFrame() {
         return PAL_SCANLINES_PER_FRAME;
     }
@@ -171,13 +176,20 @@ public class RP2C07<E extends NESEmulator> extends RP2C02<E> {
     }
 
     @Override
-    protected int[] getCompactPalette() {
-        return PALETTE_2C07_COMPACT;
+    protected void checkOAMCorruption(boolean renderingEnabled) {
+        //  No OAM corruption on PAL
     }
 
     @Override
-    protected void checkOAMCorruption(boolean renderingEnabled) {
-        //  No OAM corruption on PAL
+    protected int getRGBFromPaletteByte(int paletteByte) {
+        if (this.scanlineNumber == 0) {
+            return PALETTE_2C07_COMPACT[0xF];
+        }
+        int column = this.dotNumber - 1;
+        if (column <= 1 || column >= 254) {
+            return PALETTE_2C07_COMPACT[0xF];
+        }
+        return PALETTE_2C07_COMPACT[(this.getEmphasisBits() << 6) | (paletteByte & 0b111111)];
     }
 
 }

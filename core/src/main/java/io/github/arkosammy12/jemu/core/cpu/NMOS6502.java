@@ -57,6 +57,9 @@ public abstract class NMOS6502 implements Processor {
 
     public NMOS6502(SystemBus systemBus) {
         this.systemBus = systemBus;
+
+        // Trigger the initial resetting of the CPU
+        this.brkSource = BRKSource.RESET;
     }
 
     public Phase getHalfCyclePhase() {
@@ -404,6 +407,14 @@ public abstract class NMOS6502 implements Processor {
                     setBRKVector(originalBrkVector);
                     this.pushB = originalPushB;
                 }
+
+                if (systemBus.getRES()) {
+                    setIR(0x00);
+                    subCycleIndex = 0;
+                    brkSource = BRKSource.RESET;
+                    pushB = true;
+                    disablePCWrites = true;
+                }
             }
         }
         this.phase = this.phase.getOpposite();
@@ -417,11 +428,7 @@ public abstract class NMOS6502 implements Processor {
         if (systemBus.getRDY() && this.readWriteCycle == ReadWriteCycle.READ) {
             return;
         }
-        // TODO: The RES line is most likely actually polled on every PHI2, and can hijack the CPU at any time during
-        // the execution of an instruction.
-        if (systemBus.getRES()) {
-            this.brkSource = BRKSource.RESET;
-        } else if (this.nmiEdgeLatch) {
+        if (this.nmiEdgeLatch) {
             this.brkSource = BRKSource.NMI;
         } else if (systemBus.getIRQ() && !getFI()) {
             this.brkSource = BRKSource.IRQ;

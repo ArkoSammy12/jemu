@@ -12,7 +12,7 @@ import java.util.Arrays;
 import static io.github.arkosammy12.jemu.core.nintendo.nes.NESCPUBus.PPU_END;
 import static io.github.arkosammy12.jemu.core.nintendo.nes.NESCPUBus.PPU_START;
 
-public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements Bus {
+public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
 
     private static final int[] PALETTE_2C02G_WIKI = {
             0x62, 0x62, 0x62, 0x00, 0x1c, 0x95, 0x19, 0x04, 0xac, 0x42, 0x00, 0x9d,
@@ -190,8 +190,9 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
     private static final int SPRITE_FETCH_START = 257;
     private static final int SPRITE_FETCH_END = 320;
 
+    private final E emulator;
+
     private final int[] video;
-    private final int[] compactPalette;
     private final int scanlinesPerFrame;
     private final int visibleScanlines;
     private final int vblScanline;
@@ -201,12 +202,19 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
     private final int[] secondaryOAM = new int[32];
     private final int[] paletteRam = new int[0x20];
 
+    // =============================================================
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // If adding or changing the initial value of a field here,
+    // consider adding the correspond initialization code in reset()
+    // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    // =============================================================
+
     // PPUCTRL registers
     private int vramAddressIncrement = 1;
     private int spritePatternTableAddress8x8 = 0x0000;
     private int backgroundPatternTableAddress = 0x0000;
     private boolean spriteSize;
-    private boolean vblankNMIEnable;
+    private boolean vBlankNMIEnable;
 
     // PPUMASK registers
     private boolean useGreyscaleColors;
@@ -229,20 +237,19 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int secondaryOAMAddress;
 
     private int oamBuffer;
-	private int oamDataReadBuffer;
+    private int oamDataReadBuffer;
 
     private DotHalf currentDotHalf = DotHalf.FIRST;
-    private int dotNumber;
-    private int scanlineNumber;
+    protected int dotNumber;
+    protected int scanlineNumber;
     private boolean vBlankFlagForNMI;
-    private boolean nmiOutput;
     private boolean ppuInit = true;
     private boolean isRendering;
 
     private FrameParity frameParity = FrameParity.EVEN;
     private boolean dotSkipped;
-	private boolean skipDot0NextFrame;
-	private boolean blockSpriteHBlankReload;
+    private boolean skipDot0NextFrame;
+    private boolean blockSpriteHBlankReload;
     private int ppuDataReadBuffer;
     private boolean sprite0OnNextScanline;
     private boolean sprite0OnThisScanline;
@@ -277,7 +284,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
     private boolean spriteEvaluationOriginalPrimaryOamAddressOverflowed;
     private boolean spriteEvaluationPrimaryOAMAddressOverflowed;
     private boolean spriteEvaluationSecondaryOamAddressOverflowed;
-	private int spriteEvaluationOverflowMode = 0;
+    private int spriteEvaluationOverflowMode = 0;
 
     private final SpriteShifter[] spriteShifters = new SpriteShifter[8];
     private int spriteShifterInitIndex;
@@ -289,15 +296,14 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
     private int spriteFetcherPatternTableHigh;
 
     public RP2C02(E emulator) {
-        super(emulator);
+        this.emulator = emulator;
 
         this.scanlinesPerFrame = this.getScanlinesPerFrame();
         this.visibleScanlines = this.getVisibleScanlines();
         this.vblScanline = this.getVblScanline();
         this.doOddFrameDotSkipping = this.doDotSkipping();
-        this.compactPalette = this.getCompactPalette();
 
-        this.video = new int[WIDTH * this.visibleScanlines];
+        this.video = new int[this.getImageWidth() * this.getImageHeight()];
 
         for (int i = 0; i < 8; i++) {
             this.spriteShifters[i] = new SpriteShifter();
@@ -308,22 +314,103 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         // This is not necessarily hardware accurate.
         Arrays.fill(this.secondaryOAM, 0xFF);
 
-        this.copyTtoVSignalId = this.signalDispatcher.addSignal(_ -> this.setV(this.getT()));
-        this.toggleRenderingSignalId = this.signalDispatcher.addSignal(_ -> this.isRendering = !this.isRendering);
-        this.clearVisibleVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(_ -> this.setVBlankFlag(false));
-        this.clearInternalVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(_ -> this.vBlankFlagForNMI = false);
-        this.setSprite0HItSignalId = this.signalDispatcher.addSignal(_ -> {
+        this.copyTtoVSignalId = this.signalDispatcher.addSignal(3, _ -> this.setV(this.getT()));
+        this.toggleRenderingSignalId = this.signalDispatcher.addSignal(5, _ -> this.isRendering = !this.isRendering);
+        this.clearVisibleVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(2, _ -> this.setVBlankFlag(false));
+        this.clearInternalVblOnPpuStatusReadSignalId = this.signalDispatcher.addSignal(1, _ -> this.vBlankFlagForNMI = false);
+        this.setSprite0HItSignalId = this.signalDispatcher.addSignal(6, _ -> {
             if (this.isRenderingEnabled()) {
                 this.setSprite0HitFlag(true);
             }
         });
 
-        this.refreshSpriteShiftersSignal = new ActionSignal(_ -> {
+        this.refreshSpriteShiftersSignal = new ActionSignal(4, _ -> {
             for (SpriteShifter shifter : this.spriteShifters) {
                 shifter.refreshXPositionCounters();
             }
         });
 
+        this.reset();
+
+    }
+
+    public void reset() {
+        // =============================================================
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // If changing the reset value of a field here, consider changing
+        // it in the field declaration and initialization up in the fields
+        // !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+        // =============================================================
+
+
+        // The reset signal, if implemented, is set on reset and cleared on the pre-render scanline dot
+        // that clears the vblank, sprite 0 and sprite overflow flags. During that time writes to registers are ignored
+
+        // Values on reset provided explicitly by the nesdev wiki in https://www.nesdev.org/wiki/PPU_power_up_state
+
+        // PPUCTRL
+        this.vramAddressIncrement = 1;
+        this.spritePatternTableAddress8x8 = 0x0000;
+        this.backgroundPatternTableAddress = 0x0000;
+        this.spriteSize = false;
+        this.vBlankNMIEnable = false;
+
+        // PPUMASK
+        this.useGreyscaleColors = false;
+        this.showBackgroundInLeftmost8Pixels = false;
+        this.showSpritesInLeftmost8Pixels = false;
+        this.enableBackgroundRendering = false;
+        this.enableSpriteRendering = false;
+        this.emphasisBits = 0b000;
+
+        // PPUSTATUS: U??x xxxx
+        this.ppuStatus &= 0x80;
+
+        // $2005 / $2006 latch
+        this.clearW();
+
+        // PPUSCROLL
+        this.setT(0);
+        this.setX(0);
+
+        // PPUDATA read buffer
+        this.ppuDataReadBuffer = 0;
+
+        // odd frame: no
+        this.frameParity = FrameParity.EVEN;
+
+        // Internal state resetting
+
+        // The PPU comes out of power and reset at the top of the picture
+        this.ppuInit = true;
+
+        this.currentDotHalf = DotHalf.FIRST;
+        this.dotNumber = 0;
+        this.scanlineNumber = 0;
+        this.isRendering = false;
+
+        this.dotSkipped = false;
+        this.skipDot0NextFrame = false;
+        this.blockSpriteHBlankReload = false;
+        this.sprite0OnNextScanline = false;
+        this.sprite0OnThisScanline = false;
+
+        this.signalDispatcher.reset();
+        this.refreshSpriteShiftersSignal.reset();
+
+        this.bgFetcherStep = 0;
+
+        this.secondaryOamClearStep = 0;
+
+        this.spriteEvaluationStep = 0;
+        this.spriteEvaluationOamReadingCounter = 0;
+        this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
+        this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
+        this.spriteEvaluationSecondaryOamAddressOverflowed = false;
+        this.spriteEvaluationOverflowMode = 0;
+
+        this.spriteShifterInitIndex = 0;
+        this.spriteFetcherStep = 0;
     }
 
     @Override
@@ -334,6 +421,11 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
     @Override
     public int getImageHeight() {
         return this.visibleScanlines;
+    }
+
+    @Override
+    public double getPixelAspectRatio() {
+        return 8.0 / 7.0;
     }
 
     protected int getScanlinesPerFrame() {
@@ -352,10 +444,6 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         return true;
     }
 
-    protected int[] getCompactPalette() {
-        return PALETTE_2C02G_COMPACT;
-    }
-
     @Override
     public int readByte(int address) {
         if (!(address >= PPU_START && address <= PPU_END)) {
@@ -370,37 +458,37 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 // VBL flag is continuously reset during the read window of PPUSTATUS, between 1.0 and 1.5 dots
                 this.setVBlankFlag(false);
                 this.vBlankFlagForNMI = false;
-                this.signalDispatcher.trigger(this.clearVisibleVblOnPpuStatusReadSignalId, 2, 0);
-                this.signalDispatcher.trigger(this.clearInternalVblOnPpuStatusReadSignalId, 1, 0);
+                this.signalDispatcher.trigger(this.clearVisibleVblOnPpuStatusReadSignalId, 0);
+                this.signalDispatcher.trigger(this.clearInternalVblOnPpuStatusReadSignalId, 0);
                 this.clearW();
                 int ret = (value & 0b11100000) | (this.dataBus & 0b00011111);
                 this.setDataBus(ret);
                 yield ret;
             }
             case OAMDATA_ADDR -> {
-				int ret;
+                int ret;
 
-				if (this.isVisibleScanline() && this.isRenderingEnabled()) {
-					if (this.dotNumber == 0) {
-						ret = this.maskOAMDataRead(this.secondaryOAM[0], 0, true);
-					} else if (this.dotNumber == SPRITE_FETCH_END + 1) {
-						ret = this.oamDataReadBuffer;
-					} else if (this.dotNumber > SPRITE_FETCH_END + 1 && this.dotNumber < DOTS_PER_SCANLINE) {
-						ret = this.maskOAMDataRead(this.secondaryOAM[0], 0, true);
-					} else if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
-						int addr = this.secondaryOAMAddress;
-						boolean copiedSpriteByte = addr < 8;
-						ret = this.maskOAMDataRead(this.oamDataReadBuffer, addr, copiedSpriteByte);
-					} else {
-						ret = this.oamDataReadBuffer;
-					}
-				} else {
-					ret = this.maskOAMDataRead(this.primaryOAM[this.primaryOAMAddress], this.primaryOAMAddress, true);
-				}
+                if (this.isVisibleScanline() && this.isRenderingEnabled()) {
+                    if (this.dotNumber == 0) {
+                        ret = this.maskOAMDataRead(this.secondaryOAM[0], 0, true);
+                    } else if (this.dotNumber == SPRITE_FETCH_END + 1) {
+                        ret = this.oamDataReadBuffer;
+                    } else if (this.dotNumber > SPRITE_FETCH_END + 1 && this.dotNumber < DOTS_PER_SCANLINE) {
+                        ret = this.maskOAMDataRead(this.secondaryOAM[0], 0, true);
+                    } else if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
+                        int addr = this.secondaryOAMAddress;
+                        boolean copiedSpriteByte = addr < 8;
+                        ret = this.maskOAMDataRead(this.oamDataReadBuffer, addr, copiedSpriteByte);
+                    } else {
+                        ret = this.oamDataReadBuffer;
+                    }
+                } else {
+                    ret = this.maskOAMDataRead(this.primaryOAM[this.primaryOAMAddress], this.primaryOAMAddress, true);
+                }
 
-				this.setDataBus(ret);
-				yield ret;
-			}
+                this.setDataBus(ret);
+                yield ret;
+            }
             // TODO: 5 dot (?) delay between $2007 access and the memory access happening. Ask 100th Coin for more details.
             case PPUDATA_ADDR -> {
                 int readAddress = this.getV() & 0x3FFF;
@@ -445,26 +533,25 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                 this.spritePatternTableAddress8x8 = (value & (1 << 3)) != 0 ? 0x1000 : 0x0000;
                 this.backgroundPatternTableAddress = (value & (1 << 4)) != 0 ? 0x1000 : 0x0000;
                 this.spriteSize = (value & (1 << 5)) != 0;
-                this.vblankNMIEnable = (value & (1 << 7)) != 0;
+                this.vBlankNMIEnable = (value & (1 << 7)) != 0;
 
                 setT((getT() &  ~0xC00) | ((value & 0b11) << 10));
-                this.setNMISignal(this.getVBlankNMIEnable());
             }
             // TODO: Greyscale flag has a delay and stuff. Check out https://forums.nesdev.org/viewtopic.php?p=256737#p256737
-			case PPUMASK_ADDR -> {
-				boolean originalEnableRendering = this.enableBackgroundRendering() || this.enableSpriteRendering();
+            case PPUMASK_ADDR -> {
+                boolean originalEnableRendering = this.enableBackgroundRendering() || this.enableSpriteRendering();
 
-				this.useGreyscaleColors = (value & 1) != 0;
+                this.useGreyscaleColors = (value & 1) != 0;
                 this.showBackgroundInLeftmost8Pixels = (value & (1 << 1)) != 0;
                 this.showSpritesInLeftmost8Pixels = (value & (1 << 2)) != 0;
                 this.enableBackgroundRendering = (value & (1 << 3)) != 0;
                 this.enableSpriteRendering = (value & (1 << 4)) != 0;
                 this.emphasisBits = (value >>> 5) & 0b111;
 
-				if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
-					this.signalDispatcher.trigger(this.toggleRenderingSignalId, 5, 0);
-				}
-			}
+                if (originalEnableRendering != (this.enableBackgroundRendering() || this.enableSpriteRendering())) {
+                    this.signalDispatcher.trigger(this.toggleRenderingSignalId, 0);
+                }
+            }
             case PPUSTATUS_ADDR -> {}
             case OAMADDR_ADDR -> this.primaryOAMAddress = value & 0xFF;
             case OAMDATA_ADDR -> {
@@ -490,7 +577,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.setT(T);
                     this.setV(T);
                     // Copying of t to v is continuous during the write
-                    this.signalDispatcher.trigger(this.copyTtoVSignalId, 3, 0);
+                    this.signalDispatcher.trigger(this.copyTtoVSignalId, 0);
 
                     // TODO: Use this to let cartridges observe the address before the read occurs
                     // TODO: Place instantaneous reads back on the second dot
@@ -525,12 +612,8 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         this.decayPPUDataBusCountdown = 40000 * 2;
     }
 
-    private void setNMISignal(boolean value) {
-        this.nmiOutput = value;
-    }
-
     public boolean getNMISignal() {
-        return this.nmiOutput && vBlankFlagForNMI;
+        return this.vBlankNMIEnable && this.vBlankFlagForNMI;
     }
 
     private boolean isRenderingEnabled() {
@@ -623,7 +706,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                         this.spriteEvaluationStep = 0;
                         this.spriteEvaluationOamReadingCounter = 0;
                         this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
-						this.spriteEvaluationOverflowMode = 0;
+                        this.spriteEvaluationOverflowMode = 0;
                         if (isRenderingEnabled) {
                             this.primaryOAMAddress = 0;
                             this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
@@ -641,18 +724,18 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                     }
 
                     if (this.dotNumber == SPRITE_FETCH_START) {
-						this.blockSpriteHBlankReload = !isRenderingEnabled;
-					} else if (this.dotNumber > SPRITE_FETCH_START && this.dotNumber <= 339) {
-						if (!isRenderingEnabled) {
-							this.blockSpriteHBlankReload = true;
-						}
-					}
+                        this.blockSpriteHBlankReload = !isRenderingEnabled;
+                    } else if (this.dotNumber > SPRITE_FETCH_START && this.dotNumber <= 339) {
+                        if (!isRenderingEnabled) {
+                            this.blockSpriteHBlankReload = true;
+                        }
+                    }
 
-					if (this.dotNumber == 339) {
-						if (isRenderingEnabled && !this.blockSpriteHBlankReload) {
-							this.refreshSpriteShiftersSignal.trigger(4, 0);
-						}
-					}
+                    if (this.dotNumber == 339) {
+                        if (isRenderingEnabled && !this.blockSpriteHBlankReload) {
+                            this.refreshSpriteShiftersSignal.trigger(0);
+                        }
+                    }
                 }
             }
             case SECOND -> {
@@ -673,24 +756,24 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.refreshSpriteShiftersSignal.tick();
 
                     if (isVisibleScanline) {
-						if (this.dotNumber == 0) {
-							if (isRenderingEnabled) {
-								this.oamDataReadBuffer = this.secondaryOAM[0];
-								this.readBytePPU(this.getBackgroundPatternByteAddress(false));
-							}
-						} else if (this.dotNumber >= OAM2_INIT_START && this.dotNumber <= OAM2_INIT_END) {
-							this.tickSecondaryOamClear();
-						} else if (this.dotNumber >= SPRITE_EVAL_START && this.dotNumber <= SPRITE_EVAL_END) {
-							this.tickSpriteEvaluation(isRenderingEnabled);
-						}
-					}
+                        if (this.dotNumber == 0) {
+                            if (isRenderingEnabled) {
+                                this.oamDataReadBuffer = this.secondaryOAM[0];
+                                this.readBytePPU(this.getBackgroundPatternByteAddress(false));
+                            }
+                        } else if (this.dotNumber >= OAM2_INIT_START && this.dotNumber <= OAM2_INIT_END) {
+                            this.tickSecondaryOAMClear();
+                        } else if (this.dotNumber >= SPRITE_EVAL_START && this.dotNumber <= SPRITE_EVAL_END) {
+                            this.tickSpriteEvaluation(isRenderingEnabled);
+                        }
+                    }
 
                     if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
                         this.tickSpriteFetcher(isRenderingEnabled);
                         this.spriteEvaluationStep = 0;
                         this.spriteEvaluationOamReadingCounter = 0;
                         this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = false;
-						this.spriteEvaluationOverflowMode = 0;
+                        this.spriteEvaluationOverflowMode = 0;
                         if (isRenderingEnabled) {
                             this.primaryOAMAddress = 0;
                             this.spriteEvaluationPrimaryOAMAddressOverflowed = false;
@@ -757,23 +840,22 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                     this.spriteShifterInitIndex = 0;
                 }
 
-				this.dotNumber++;
-				if (this.dotNumber >= DOTS_PER_SCANLINE) {
-					this.dotSkipped = false;
-					this.dotNumber = 0;
-					this.scanlineNumber++;
-					if (this.scanlineNumber >= this.scanlinesPerFrame) {
-						this.scanlineNumber = 0;
-						this.frameParity = this.frameParity.getOpposite();
+                this.dotNumber++;
+                if (this.dotNumber >= DOTS_PER_SCANLINE) {
+                    this.dotSkipped = false;
+                    this.dotNumber = 0;
+                    this.scanlineNumber++;
+                    if (this.scanlineNumber >= this.scanlinesPerFrame) {
+                        this.scanlineNumber = 0;
+                        this.frameParity = this.frameParity.getOpposite();
 
-						if (this.skipDot0NextFrame) {
-							this.dotNumber = 1;
-							this.dotSkipped = true;
-						}
-
-						this.skipDot0NextFrame = false;
-					}
-				}
+                        if (this.skipDot0NextFrame) {
+                            this.dotNumber = 1;
+                            this.dotSkipped = true;
+                        }
+                        this.skipDot0NextFrame = false;
+                    }
+                }
             }
         }
         this.currentDotHalf = this.currentDotHalf.getOpposite();
@@ -853,7 +935,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
                         }
 
                         if (i == 0 && this.sprite0OnThisScanline && pixelColor != 0 && spriteColor != 0 && this.dotNumber != 256) {
-                            this.signalDispatcher.trigger(this.setSprite0HItSignalId, 6, 0);
+                            this.signalDispatcher.trigger(this.setSprite0HItSignalId, 0);
                         }
 
                         if (!opaqueSpritePixelFound && spriteColor != 0) {
@@ -880,7 +962,11 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
             paletteByte &= 0x30;
         }
 
-        this.video[(this.scanlineNumber * WIDTH) + (this.dotNumber - 1)] = this.compactPalette[(this.getEmphasisBits() << 6) | (paletteByte & 0b111111)];
+        this.video[(this.scanlineNumber * WIDTH) + (this.dotNumber - 1)] = this.getRGBFromPaletteByte(paletteByte);
+    }
+
+    protected int getRGBFromPaletteByte(int paletteByte) {
+        return PALETTE_2C02G_COMPACT[(this.getEmphasisBits() << 6) | (paletteByte & 0b111111)];
     }
 
     private int shiftBackgroundRegister(int select) {
@@ -957,22 +1043,22 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
 
     // Assumes called once per full dot, on the second half
     // TODO: Half-dot step this
-    private void tickSecondaryOamClear() {
-		switch (this.secondaryOamClearStep) {
-			case 0 -> {
-				this.oamBuffer = 0xFF;
-				this.oamDataReadBuffer = 0xFF;
-				this.secondaryOamClearStep = 1;
-			}
-			case 1 -> {
-				this.oamBuffer = 0xFF;
-				this.oamDataReadBuffer = 0xFF;
-				this.secondaryOAM[this.secondaryOAMAddress] = 0xFF;
-				this.incrementSecondaryOAMAddress();
-				this.secondaryOamClearStep = 0;
-			}
-		}
-	}
+    private void tickSecondaryOAMClear() {
+        switch (this.secondaryOamClearStep) {
+            case 0 -> {
+                this.oamBuffer = 0xFF;
+                this.oamDataReadBuffer = 0xFF;
+                this.secondaryOamClearStep = 1;
+            }
+            case 1 -> {
+                this.oamBuffer = 0xFF;
+                this.oamDataReadBuffer = 0xFF;
+                this.secondaryOAM[this.secondaryOAMAddress] = 0xFF;
+                this.incrementSecondaryOAMAddress();
+                this.secondaryOamClearStep = 0;
+            }
+        }
+    }
 
     private boolean isSpriteYInRange(int spriteY) {
         int difference = (this.scanlineNumber & 0xFF) - spriteY;
@@ -1032,16 +1118,16 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         }
     }
 
-	private void incrementPrimaryOAMAddressHighClearLowAfterOverflow() {
-		if (!this.isRenderingEnabled()) {
-			return;
-		}
+    private void incrementPrimaryOAMAddressHighClearLowAfterOverflow() {
+        if (!this.isRenderingEnabled()) {
+            return;
+        }
 
-		int originalPrimaryOamAddress = this.primaryOAMAddress;
-		this.primaryOAMAddress = (this.primaryOAMAddress + 4) & 0xFF;
-		this.primaryOAMAddress &= ~0b11;
-		this.spriteEvaluationPrimaryOAMAddressOverflowed = this.spriteEvaluationPrimaryOAMAddressOverflowed || this.primaryOAMAddress < originalPrimaryOamAddress;
-	}
+        int originalPrimaryOamAddress = this.primaryOAMAddress;
+        this.primaryOAMAddress = (this.primaryOAMAddress + 4) & 0xFF;
+        this.primaryOAMAddress &= ~0b11;
+        this.spriteEvaluationPrimaryOAMAddressOverflowed = this.spriteEvaluationPrimaryOAMAddressOverflowed || this.primaryOAMAddress < originalPrimaryOamAddress;
+    }
 
     // Assumes called once per full dot, on the second half
     // TODO: Half-dot step this
@@ -1049,188 +1135,188 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         switch (this.spriteEvaluationStep) {
             case 0 -> { // Read cycle
                 this.spriteEvaluationOriginalPrimaryOamAddressOverflowed = this.spriteEvaluationPrimaryOAMAddressOverflowed;
-				this.oamBuffer = this.primaryOAM[this.primaryOAMAddress];
+                this.oamBuffer = this.primaryOAM[this.primaryOAMAddress];
 
-				int evalOamValue = this.maskOAMDataRead(this.oamBuffer, this.primaryOAMAddress, true);
-				if (this.spriteEvaluationSecondaryOamAddressOverflowed && this.spriteEvaluationOverflowMode == 2 && (this.primaryOAMAddress & 0x03) == 0x03) {
-					this.oamDataReadBuffer = this.secondaryOAM[0];
-				} else {
-					this.oamDataReadBuffer = evalOamValue;
-				}
-			
-				if (this.spriteEvaluationPrimaryOAMAddressOverflowed && this.secondaryOAMAddress == 0x08 && this.dotNumber >= 204 && this.dotNumber < SPRITE_EVAL_END) {
-					this.incrementPrimaryOAMAddressHighClearLowAfterOverflow();
-					this.spriteEvaluationStep = 1;
-					break;
-				}
-				
+                int evalOamValue = this.maskOAMDataRead(this.oamBuffer, this.primaryOAMAddress, true);
+                if (this.spriteEvaluationSecondaryOamAddressOverflowed && this.spriteEvaluationOverflowMode == 2 && (this.primaryOAMAddress & 0x03) == 0x03) {
+                    this.oamDataReadBuffer = this.secondaryOAM[0];
+                } else {
+                    this.oamDataReadBuffer = evalOamValue;
+                }
+
+                if (this.spriteEvaluationPrimaryOAMAddressOverflowed && this.secondaryOAMAddress == 0x08 && this.dotNumber >= 204 && this.dotNumber < SPRITE_EVAL_END) {
+                    this.incrementPrimaryOAMAddressHighClearLowAfterOverflow();
+                    this.spriteEvaluationStep = 1;
+                    break;
+                }
+
                 if (this.dotNumber == SPRITE_EVAL_START && isRenderingEnabled) {
-					this.sprite0OnNextScanline = this.isSpriteYInRange(evalOamValue);
-				}
+                    this.sprite0OnNextScanline = this.isSpriteYInRange(evalOamValue);
+                }
                 if (this.spriteEvaluationOamReadingCounter > 0) {
-					this.spriteEvaluationOamReadingCounter--;
+                    this.spriteEvaluationOamReadingCounter--;
 
-					if (this.spriteEvaluationSecondaryOamAddressOverflowed) {
-						this.spriteEvaluationOverflowMode = 1;
+                    if (this.spriteEvaluationSecondaryOamAddressOverflowed) {
+                        this.spriteEvaluationOverflowMode = 1;
 
-						if ((this.primaryOAMAddress & 0x03) != 0x03) {
-							this.incrementPrimaryOamAddressLow();
-						} else {
-							this.incrementPrimaryOamAddressHighClearLow();
-						}
+                        if ((this.primaryOAMAddress & 0x03) != 0x03) {
+                            this.incrementPrimaryOamAddressLow();
+                        } else {
+                            this.incrementPrimaryOamAddressHighClearLow();
+                        }
 
-						if (this.spriteEvaluationOamReadingCounter == 0) {
-							this.spriteEvaluationOverflowMode = 2;
-						}
-					} else {
-						this.incrementPrimaryOamAddressLow();
-					}
-				} else {
-					if (this.isSpriteYInRange(evalOamValue) && !this.spriteEvaluationPrimaryOAMAddressOverflowed) {
-						this.spriteEvaluationOamReadingCounter = this.spriteEvaluationSecondaryOamAddressOverflowed ? 3 : 7;
-						this.incrementPrimaryOamAddressLow();
+                        if (this.spriteEvaluationOamReadingCounter == 0) {
+                            this.spriteEvaluationOverflowMode = 2;
+                        }
+                    } else {
+                        this.incrementPrimaryOamAddressLow();
+                    }
+                } else {
+                    if (this.isSpriteYInRange(evalOamValue) && !this.spriteEvaluationPrimaryOAMAddressOverflowed) {
+                        this.spriteEvaluationOamReadingCounter = this.spriteEvaluationSecondaryOamAddressOverflowed ? 3 : 7;
+                        this.incrementPrimaryOamAddressLow();
 
-						if (this.spriteEvaluationSecondaryOamAddressOverflowed && isRenderingEnabled) {
-							this.setSpriteOverflowFlag(true);
-							this.spriteEvaluationOverflowMode = 1;
-						}
-					} else {
-						if (this.spriteEvaluationSecondaryOamAddressOverflowed) {
-							if (this.spriteEvaluationOverflowMode == 2) {
-								this.incrementPrimaryOAMAddressHighClearLowAfterOverflow();
-							} else if (this.isSpriteYInRange(evalOamValue) && !this.spriteEvaluationPrimaryOAMAddressOverflowed) {
-								this.spriteEvaluationOamReadingCounter = 3;
-								this.incrementPrimaryOamAddressLow();
-								if (isRenderingEnabled) {
-									this.setSpriteOverflowFlag(true);
-									this.spriteEvaluationOverflowMode = 1;
-								}
-							} else {
-								this.incrementPrimaryOamAddressHighAndLowAfterSecondaryOverflowSearch();
-							}
-						} else {
-							if (this.isSpriteYInRange(evalOamValue) && !this.spriteEvaluationPrimaryOAMAddressOverflowed) {
-								this.spriteEvaluationOamReadingCounter = 7;
-								this.incrementPrimaryOamAddressLow();
-							} else {
-								this.incrementPrimaryOamAddressHighClearLow();
-							}
-						}
-					}
-				}
+                        if (this.spriteEvaluationSecondaryOamAddressOverflowed && isRenderingEnabled) {
+                            this.setSpriteOverflowFlag(true);
+                            this.spriteEvaluationOverflowMode = 1;
+                        }
+                    } else {
+                        if (this.spriteEvaluationSecondaryOamAddressOverflowed) {
+                            if (this.spriteEvaluationOverflowMode == 2) {
+                                this.incrementPrimaryOAMAddressHighClearLowAfterOverflow();
+                            } else if (this.isSpriteYInRange(evalOamValue) && !this.spriteEvaluationPrimaryOAMAddressOverflowed) {
+                                this.spriteEvaluationOamReadingCounter = 3;
+                                this.incrementPrimaryOamAddressLow();
+                                if (isRenderingEnabled) {
+                                    this.setSpriteOverflowFlag(true);
+                                    this.spriteEvaluationOverflowMode = 1;
+                                }
+                            } else {
+                                this.incrementPrimaryOamAddressHighAndLowAfterSecondaryOverflowSearch();
+                            }
+                        } else {
+                            if (this.isSpriteYInRange(evalOamValue) && !this.spriteEvaluationPrimaryOAMAddressOverflowed) {
+                                this.spriteEvaluationOamReadingCounter = 7;
+                                this.incrementPrimaryOamAddressLow();
+                            } else {
+                                this.incrementPrimaryOamAddressHighClearLow();
+                            }
+                        }
+                    }
+                }
                 this.spriteEvaluationStep = 1;
             }
             case 1 -> { // Write cycle
-				if (!this.spriteEvaluationOriginalPrimaryOamAddressOverflowed && !this.spriteEvaluationSecondaryOamAddressOverflowed) {
+                if (!this.spriteEvaluationOriginalPrimaryOamAddressOverflowed && !this.spriteEvaluationSecondaryOamAddressOverflowed) {
 
-					int readbackAddress = (this.primaryOAMAddress - 1) & 0xFF;
-					this.oamDataReadBuffer = this.maskOAMDataRead(this.oamBuffer, readbackAddress, true);
+                    int readbackAddress = (this.primaryOAMAddress - 1) & 0xFF;
+                    this.oamDataReadBuffer = this.maskOAMDataRead(this.oamBuffer, readbackAddress, true);
 
-					this.secondaryOAM[this.secondaryOAMAddress] = this.oamBuffer;
-					if (this.spriteEvaluationOamReadingCounter > 0) {
-						this.spriteEvaluationOamReadingCounter--;
-						this.incrementSecondaryOAMAddress();
-					}
-				} else {
-					this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
-					this.oamDataReadBuffer = this.oamBuffer;
-				}
-				this.spriteEvaluationStep = 0;
-			}
+                    this.secondaryOAM[this.secondaryOAMAddress] = this.oamBuffer;
+                    if (this.spriteEvaluationOamReadingCounter > 0) {
+                        this.spriteEvaluationOamReadingCounter--;
+                        this.incrementSecondaryOAMAddress();
+                    }
+                } else {
+                    this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                    this.oamDataReadBuffer = this.oamBuffer;
+                }
+                this.spriteEvaluationStep = 0;
+            }
         }
     }
 
     // Assumes called once per full dot, on the second half
     // TODO: Half-dot step this
     private void tickSpriteFetcher(boolean isRenderingEnabled) {
-		switch (this.spriteFetcherStep) {
-			case 0 -> {
-				if (isRenderingEnabled) {
-					this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
-				}
+        switch (this.spriteFetcherStep) {
+            case 0 -> {
+                if (isRenderingEnabled) {
+                    this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
+                }
 
-				if (this.dotNumber != SPRITE_FETCH_START) {
-					this.incrementSecondaryOAMAddress();
-				}
+                if (this.dotNumber != SPRITE_FETCH_START) {
+                    this.incrementSecondaryOAMAddress();
+                }
 
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 1;
-			}
-			case 1 -> {
-				this.spriteFetcherYPosition = this.oamBuffer;
+            }
+            case 1 -> {
+                this.spriteFetcherYPosition = this.oamBuffer;
 
-				this.incrementSecondaryOAMAddress();
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                this.incrementSecondaryOAMAddress();
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 2;
-			}
-			case 2 -> {
-				if (isRenderingEnabled) {
-					this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
-				}
+            }
+            case 2 -> {
+                if (isRenderingEnabled) {
+                    this.bgFetcherTileNumber = this.readBytePPU(this.getNametableFetchAddress());
+                }
 
-				this.spriteFetcherTileNumber = this.oamBuffer;
+                this.spriteFetcherTileNumber = this.oamBuffer;
 
-				this.incrementSecondaryOAMAddress();
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                this.incrementSecondaryOAMAddress();
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 3;
-			}
-			case 3 -> {
-				this.spriteFetcherAttributeByte = this.oamBuffer;
+            }
+            case 3 -> {
+                this.spriteFetcherAttributeByte = this.oamBuffer;
 
-				this.incrementSecondaryOAMAddress();
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                this.incrementSecondaryOAMAddress();
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 4;
-			}
-			case 4 -> {
-				if (isRenderingEnabled) {
-					this.spriteFetcherPatternTableLow = this.readBytePPU(this.getSpritePatternByteAddress(false));
-				}
+            }
+            case 4 -> {
+                if (isRenderingEnabled) {
+                    this.spriteFetcherPatternTableLow = this.readBytePPU(this.getSpritePatternByteAddress(false));
+                }
 
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 5;
-			}
-			case 5 -> {
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+            }
+            case 5 -> {
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 6;
-			}
-			case 6 -> {
-				if (isRenderingEnabled) {
-					this.spriteFetcherPatternTableHigh = this.readBytePPU(this.getSpritePatternByteAddress(true));
-				}
+            }
+            case 6 -> {
+                if (isRenderingEnabled) {
+                    this.spriteFetcherPatternTableHigh = this.readBytePPU(this.getSpritePatternByteAddress(true));
+                }
 
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 this.spriteFetcherStep = 7;
-			}
-			case 7 -> {
-				this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
+            }
+            case 7 -> {
+                this.oamBuffer = this.secondaryOAM[this.secondaryOAMAddress];
                 this.oamDataReadBuffer = this.oamBuffer;
 
                 int spriteFetcherXPosition = this.oamBuffer;
 
-				if (isRenderingEnabled) {
-					boolean inRange = this.isSpriteYInRange(this.spriteFetcherYPosition);
-					this.spriteShifters[this.spriteShifterInitIndex].initialize(inRange ? this.spriteFetcherPatternTableLow : 0, inRange ? this.spriteFetcherPatternTableHigh : 0, spriteFetcherXPosition, this.spriteFetcherAttributeByte);
-				}
+                if (isRenderingEnabled) {
+                    boolean inRange = this.isSpriteYInRange(this.spriteFetcherYPosition);
+                    this.spriteShifters[this.spriteShifterInitIndex].initialize(inRange ? this.spriteFetcherPatternTableLow : 0, inRange ? this.spriteFetcherPatternTableHigh : 0, spriteFetcherXPosition, this.spriteFetcherAttributeByte);
+                }
 
-				this.spriteShifterInitIndex++;
-				this.spriteFetcherStep = 0;
-			}
-		}
-	}
+                this.spriteShifterInitIndex++;
+                this.spriteFetcherStep = 0;
+            }
+        }
+    }
 
     private int getNametableFetchAddress() {
         return 0x2000 | (this.getV() & 0x0FFF);
@@ -1279,10 +1365,6 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         return this.spriteSize;
     }
 
-    private boolean getVBlankNMIEnable() {
-        return this.vblankNMIEnable;
-    }
-
     private boolean useGrayscaleColors() {
         return this.useGreyscaleColors;
     }
@@ -1303,7 +1385,7 @@ public class RP2C02<E extends NESEmulator> extends VideoGenerator<E> implements 
         return this.enableSpriteRendering;
     }
 
-    private int getEmphasisBits() {
+    protected int getEmphasisBits() {
         return this.emphasisBits;
     }
 

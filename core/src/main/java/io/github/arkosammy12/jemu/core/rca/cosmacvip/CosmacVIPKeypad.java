@@ -4,28 +4,23 @@ import io.github.arkosammy12.jemu.core.common.SystemController;
 
 import java.util.function.BooleanSupplier;
 
-public class CosmacVIPKeypad<E extends CosmacVIPEmulator> extends SystemController<E> {
+public class CosmacVIPKeypad implements SystemController {
 
     private final boolean[] keys = new boolean[16];
     private int latchedKey = 0;
 
-    private BooleanSupplier efxFunction;
+    private final BooleanSupplier regularEfxSupplier = () -> this.keys[this.latchedKey];
+    private BooleanSupplier efxSupplier = this.regularEfxSupplier;
 
-    public CosmacVIPKeypad(E emulator, boolean forceCKeyOnStartup) {
-        super(emulator);
-        BooleanSupplier regularEfxFunction = () -> this.keys[this.latchedKey];
-        if (forceCKeyOnStartup) {
-            this.efxFunction = () -> {
-                if (this.latchedKey == 0xC) {
-                    this.efxFunction = regularEfxFunction;
-                    return true;
-                } else {
-                    return this.keys[this.latchedKey];
-                }
-            };
-        } else {
-            this.efxFunction = regularEfxFunction;
-        }
+    public void forceCKeyPressOnFirstPoll() {
+        this.efxSupplier = () -> {
+            if (this.latchedKey == 0xC) {
+                this.efxSupplier = this.regularEfxSupplier;
+                return true;
+            } else {
+                return this.keys[this.latchedKey];
+            }
+        };
     }
 
     @Override
@@ -45,7 +40,7 @@ public class CosmacVIPKeypad<E extends CosmacVIPEmulator> extends SystemControll
     }
 
     public boolean getEFX() {
-        return this.efxFunction.getAsBoolean();
+        return this.efxSupplier.getAsBoolean();
     }
 
     public void setLatchedKey(int value) {

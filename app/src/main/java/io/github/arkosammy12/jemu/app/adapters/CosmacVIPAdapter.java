@@ -1,8 +1,7 @@
 package io.github.arkosammy12.jemu.app.adapters;
 
-import de.gurkenlabs.input4j.InputComponent;
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.io.initializers.CoreInitializer;
+import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPKeypad;
@@ -10,6 +9,7 @@ import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPEmulator;
 import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPHost;
 import org.jetbrains.annotations.Nullable;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.util.Optional;
 
@@ -21,7 +21,7 @@ public class CosmacVIPAdapter extends AbstractSystemAdapter implements CosmacVIP
     private final System system;
     private final Chip8Interpreter chip8Interpreter;
 
-    public CosmacVIPAdapter(Jemu jemu, CoreInitializer initializer, Chip8Interpreter chip8Interpreter) {
+    public CosmacVIPAdapter(Jemu jemu, EmulatorInitializer initializer, Chip8Interpreter chip8Interpreter) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
         this.system = initializer.getSystem().orElse(COSMAC_VIP);
         this.chip8Interpreter = chip8Interpreter;
@@ -55,12 +55,6 @@ public class CosmacVIPAdapter extends AbstractSystemAdapter implements CosmacVIP
             case KeyEvent.VK_V -> CosmacVIPKeypad.Actions.KEY_F;
             default -> null;
         };
-    }
-
-    @Override
-    @Nullable
-    public CosmacVIPKeypad.Actions getActionForJoypadEvent(InputComponent.ID id) {
-        return null;
     }
 
     @Override

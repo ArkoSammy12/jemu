@@ -91,7 +91,10 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             this.nametableArrangementSupplier = () -> this.nametableArrangement;
         }
 
-        this.setIRQSignal = new ActionSignal(_ -> this.irqSignal = true);
+        this.setIRQSignal = new ActionSignal(4, _ -> this.irqSignal = true);
+
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
     @Override
@@ -310,7 +313,7 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
                 }
 
                 if (this.irqCounter <= 0 && this.irqEnabled) {
-                    this.setIRQSignal.trigger(4, 0);
+                    this.setIRQSignal.trigger(0);
                 }
             }
             this.previousPPUAddress = address & 0xFFFF;
@@ -320,6 +323,16 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
     @Override
     public boolean getIRQSignal() {
         return this.irqSignal;
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatilePrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatileChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

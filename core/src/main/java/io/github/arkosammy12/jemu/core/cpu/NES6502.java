@@ -4,9 +4,6 @@ public class NES6502 extends NMOS6502 {
 
     public NES6502(SystemBus systemBus) {
         super(systemBus);
-
-        // Trigger the initial resetting of the CPU
-        this.brkSource = BRKSource.RESET;
     }
 
     public boolean isHalted() {

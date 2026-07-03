@@ -7,32 +7,55 @@ import io.github.arkosammy12.jemu.core.rca.CDP1802System;
 import io.github.arkosammy12.jemu.core.rca.CDP1861;
 import io.github.arkosammy12.jemu.core.rca.ToneGenerator;
 
-public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
+import java.nio.file.Path;
+import java.util.Optional;
+import java.util.function.BooleanSupplier;
+
+public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Resetable {
 
     private final CosmacVIPHost host;
     private final CosmacVIPHost.Chip8Interpreter chip8Interpreter;
+    private String loadedRomFileName = "";
 
     private final CDP1802 cpu;
     private final CosmacVIPBus bus;
     private final CDP1861<?> vdp;
-    private final AudioGenerator<?> audioGenerator;
-    private final CosmacVIPKeypad<?> keypad;
+    private final AudioGenerator audioGenerator;
+    private final CosmacVIPKeypad keypad;
 
     private final int frameRate;
+
+    private final Runnable runCycleFunction;
+    private final Runnable resetRunCycleFunction;
+    private Runnable currentRunCycleFunction;
+
+    private final BooleanSupplier deassertCLEARSupplier;
+    private final BooleanSupplier assertCLEARSupplier;
+    private BooleanSupplier clearLineLevelSupplier;
 
     public CosmacVIPEmulator(CosmacVIPHost host) {
         try {
             this.host = host;
             this.chip8Interpreter = host.getChip8Interpreter();
-            this.keypad = new CosmacVIPKeypad<>(this, host.getRom().isEmpty());
             this.cpu = new CDP1802(this);
+
+            Optional<byte[]> rom = host.getRom();
+            this.bus = new CosmacVIPBus(this);
+            this.bus.initializeROM(rom.orElse(null));
+            host.getRomPath().ifPresent(path -> {
+                this.loadedRomFileName = path.getFileName().toString();
+            });
+
+            this.keypad = new CosmacVIPKeypad();
+            if (rom.isEmpty()) {
+                this.keypad.forceCKeyPressOnFirstPoll();
+            }
+
             if (this.chip8Interpreter == CosmacVIPHost.Chip8Interpreter.CHIP_8X) {
-                this.bus = new HybridChip8XBus(this);
                 this.vdp = new VP590<>(this);
                 this.audioGenerator = new VP595<>(this);
                 this.frameRate = 61;
             } else {
-                this.bus = new CosmacVIPBus(this);
                 this.vdp = new CDP1861<>(this);
                 this.audioGenerator = new ToneGenerator<>(this);
                 this.frameRate = 60;
@@ -40,6 +63,39 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
         } catch (Exception e) {
             throw new EmulatorException(e);
         }
+
+        this.runCycleFunction = () -> {
+            this.cpu.cycle();
+            this.vdp.cycle();
+            this.cpu.nextState();
+        };
+
+        this.resetRunCycleFunction = () -> {
+            Path path = host.getRomPath().orElse(null);
+            String romPathFileName = path == null ? "" : path.getFileName().toString();
+            Optional<byte[]> rom = host.getRom();
+            if (!this.loadedRomFileName.equals(romPathFileName)) {
+                this.loadedRomFileName = romPathFileName;
+                this.bus.initializeROM(rom.orElse(null));
+            }
+            if (rom.isEmpty()) {
+                this.keypad.forceCKeyPressOnFirstPoll();
+            }
+
+            this.bus.reset();
+            this.vdp.reset();
+            this.runCycleFunction.run();
+            this.currentRunCycleFunction = this.runCycleFunction;
+        };
+
+        this.currentRunCycleFunction = this.runCycleFunction;
+
+        this.deassertCLEARSupplier = () -> false;
+        this.assertCLEARSupplier = () -> {
+            this.clearLineLevelSupplier = this.deassertCLEARSupplier;
+            return true;
+        };
+        this.clearLineLevelSupplier = this.deassertCLEARSupplier;
     }
 
     @Override
@@ -63,12 +119,12 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     @Override
-    public AudioGenerator<?> getAudioGenerator() {
+    public AudioGenerator getAudioGenerator() {
         return this.audioGenerator;
     }
 
     @Override
-    public SystemController<?> getSystemController() {
+    public SystemController getSystemController() {
         return this.keypad;
     }
 
@@ -94,14 +150,22 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     private void runCycle() {
-        this.cpu.cycle();
-        this.vdp.cycle();
-        this.cpu.nextState();
+        this.currentRunCycleFunction.run();
     }
 
     @Override
     public void close() {
 
+    }
+
+    @Override
+    public boolean getCLEAR() {
+        return this.clearLineLevelSupplier.getAsBoolean();
+    }
+
+    @Override
+    public boolean getWAIT() {
+        return false;
     }
 
     @Override
@@ -111,7 +175,12 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
 
     @Override
     public boolean getDMAOUT() {
-        return this.vdp.getDMAOUTSignal();
+        return this.vdp.getDMAO();
+    }
+
+    @Override
+    public boolean getINT() {
+        return this.vdp.getINT();
     }
 
     @Override
@@ -135,18 +204,13 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     @Override
-    public boolean getINT() {
-        return this.vdp.getInterruptSignal();
-    }
-
-    @Override
     public int readDMAIN(int dmaInAddress) {
         return 0xFF;
     }
 
     @Override
     public void writeDMAOUT(int dmaOutAddress, int value) {
-        if (this.vdp.getDMAOUTSignal()) {
+        if (this.vdp.getDMAO()) {
             this.vdp.onDMAOUT(dmaOutAddress, value);
         }
     }
@@ -160,7 +224,7 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
 
     public void writeIO(int ioPort, int value) {
         if ((ioPort & 4) != 0) {
-            this.bus.unlatchAddressMsb();
+            this.bus.unlatchAddressMSB();
         }
         switch (ioPort) {
             case 1 -> this.vdp.setDisplayEnable(false);
@@ -176,6 +240,12 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus {
                 }
             }
         }
+    }
+
+    @Override
+    public void reset() {
+        this.currentRunCycleFunction = this.resetRunCycleFunction;
+        this.clearLineLevelSupplier = this.assertCLEARSupplier;
     }
 
 }

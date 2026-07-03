@@ -17,7 +17,7 @@ public class GitProperties {
         } catch (IOException e) {
             // git.properties unavailable, falls back to "unknown"
         }
-        COMMIT_ID = props.getProperty("git.commit.id", "unknown");
+        COMMIT_ID = props.getProperty("git.commit.id.full", "unknown");
     }
 
 }

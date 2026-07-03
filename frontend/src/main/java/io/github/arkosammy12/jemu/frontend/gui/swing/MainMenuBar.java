@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.frontend.gui.internal.menus.EmulatorMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.FileMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.HelpMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.SettingsMenu;
+import org.jetbrains.annotations.ApiStatus;
 
 import javax.swing.*;
 
@@ -16,13 +17,13 @@ public class MainMenuBar {
     private final SettingsMenu settingsMenu;
     private final HelpMenu helpMenu;
 
-    public MainMenuBar(MainWindow mainWindow, JFrame jFrame) {
+    public MainMenuBar(MainWindow mainWindow) {
 
         this.jMenuBar = new JMenuBar();
 
-        this.fileMenu = new FileMenu(mainWindow, jFrame);
+        this.fileMenu = new FileMenu(mainWindow, mainWindow.getJFrame());
         this.emulatorMenu = new EmulatorMenu(mainWindow);
-        this.settingsMenu = new SettingsMenu(mainWindow, jFrame);
+        this.settingsMenu = new SettingsMenu(mainWindow, mainWindow.getJFrame());
         this.helpMenu = new HelpMenu(mainWindow);
 
         this.jMenuBar.add(this.fileMenu.getJMenu());
@@ -35,20 +36,19 @@ public class MainMenuBar {
         return this.jMenuBar;
     }
 
+    @ApiStatus.Internal
     public FileMenu getFileMenu() {
         return this.fileMenu;
     }
 
+    @ApiStatus.Internal
     public EmulatorMenu getEmulatorMenu() {
         return this.emulatorMenu;
     }
 
+    @ApiStatus.Internal
     public HelpMenu getHelpMenu() {
         return this.helpMenu;
-    }
-
-    public SettingsMenu getSettingsMenu() {
-        return this.settingsMenu;
     }
 
 }

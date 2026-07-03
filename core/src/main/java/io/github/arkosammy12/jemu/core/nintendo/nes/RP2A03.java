@@ -64,6 +64,10 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         this.controller = new NESController<>(emulator);
     }
 
+    public void reset() {
+        this.apu.reset();
+    }
+
     public NES6502 getCpu() {
         return this.cpu;
     }
@@ -224,6 +228,10 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     protected void onCPUPHI2() {
         boolean isHalted = this.cpu.isHalted();
 
+        // We cycle the cartridge before the CPU to avoid any potential CPU writes to PPU registers from messing up
+        // MMC3's PPU address tracking between a dot step and the cartridge being cycled, fixing MMC3's double IRQ counter clocking
+        this.emulator.getCartridge().cycle();
+
         this.cpu.cycle();
 
         if (this.dmcDmaHaltOnly) {
@@ -234,7 +242,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         }
 
         this.controller.cycle();
-        this.emulator.getCartridge().cycle();
 
         if (this.scheduleDmcDmaHaltCountdown > 0) {
             this.scheduleDmcDmaHaltCountdown--;

@@ -6,23 +6,70 @@ import io.github.arkosammy12.jemu.core.rca.CDP1861;
 import io.github.arkosammy12.jemu.core.rca.ToneGenerator;
 import io.github.arkosammy12.jemu.core.cpu.CDP1802;
 
-public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
+import java.nio.file.Path;
+import java.util.function.BooleanSupplier;
+
+public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Resetable {
 
     private final SystemHost systemHost;
+    private String loadedRomFileName = "";
 
     private final CDP1802 cpu;
     private final RCAStudioIIBus bus;
     private final CDP1861<?> vdp;
-    private final AudioGenerator<?> audioGenerator;
-    private final RCAStudioIIKeypad<?> keypad;
+    private final AudioGenerator audioGenerator;
+    private final RCAStudioIIKeypad keypad;
+
+    private final Runnable runCycleFunction;
+    private final Runnable resetRunCycleFunction;
+    private Runnable currentRunCycleFunction;
+
+    private final BooleanSupplier deassertCLEARSupplier;
+    private final BooleanSupplier assertCLEARSupplier;
+    private BooleanSupplier clearLineLevelSupplier;
 
     public RCAStudioIIEmulator(SystemHost systemHost) {
         this.systemHost = systemHost;
         this.cpu = new CDP1802(this);
-        this.bus = new RCAStudioIIBus(this);
         this.vdp = new CDP1861<>(this);
         this.audioGenerator = new ToneGenerator<>(this);
-        this.keypad = new RCAStudioIIKeypad<>(this);
+        this.keypad = new RCAStudioIIKeypad();
+
+        this.bus = new RCAStudioIIBus();
+
+        Path romPath = systemHost.getRomPath().orElse(null);
+        this.bus.initializeCartridge(romPath, systemHost.getRom().orElse(null));
+        if (romPath != null) {
+            this.loadedRomFileName = romPath.getFileName().toString();
+        }
+
+        this.runCycleFunction = () -> {
+            this.cpu.cycle();
+            this.vdp.cycle();
+            this.cpu.nextState();
+        };
+
+        this.resetRunCycleFunction = () -> {
+            Path path = systemHost.getRomPath().orElse(null);
+            String romPathFileName = path == null ? "" : path.getFileName().toString();
+            if (!this.loadedRomFileName.equals(romPathFileName)) {
+                this.loadedRomFileName = romPathFileName;
+                this.bus.initializeCartridge(path, systemHost.getRom().orElse(null));
+            }
+
+            this.vdp.reset();
+            this.runCycleFunction.run();
+            this.currentRunCycleFunction = this.runCycleFunction;
+        };
+
+        this.currentRunCycleFunction = this.runCycleFunction;
+
+        this.deassertCLEARSupplier = () -> false;
+        this.assertCLEARSupplier = () -> {
+            this.clearLineLevelSupplier = this.deassertCLEARSupplier;
+            return true;
+        };
+        this.clearLineLevelSupplier = this.deassertCLEARSupplier;
     }
 
     @Override
@@ -41,17 +88,17 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     @Override
-    public VideoGenerator<?> getVideoGenerator() {
+    public VideoGenerator getVideoGenerator() {
         return this.vdp;
     }
 
     @Override
-    public AudioGenerator<?> getAudioGenerator() {
+    public AudioGenerator getAudioGenerator() {
         return this.audioGenerator;
     }
 
     @Override
-    public SystemController<?> getSystemController() {
+    public SystemController getSystemController() {
         return this.keypad;
     }
 
@@ -68,9 +115,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     private void runCycle() {
-        this.cpu.cycle();
-        this.vdp.cycle();
-        this.cpu.nextState();
+        this.currentRunCycleFunction.run();
     }
 
     @Override
@@ -84,13 +129,28 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     @Override
+    public boolean getCLEAR() {
+        return this.clearLineLevelSupplier.getAsBoolean();
+    }
+
+    @Override
+    public boolean getWAIT() {
+        return false;
+    }
+
+    @Override
     public boolean getDMAIN() {
         return false;
     }
 
     @Override
+    public boolean getINT() {
+        return this.vdp.getINT();
+    }
+
+    @Override
     public boolean getDMAOUT() {
-        return this.vdp.getDMAOUTSignal();
+        return this.vdp.getDMAO();
     }
 
     @Override
@@ -114,18 +174,13 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
     }
 
     @Override
-    public boolean getINT() {
-        return this.vdp.getInterruptSignal();
-    }
-
-    @Override
     public int readDMAIN(int dmaInAddress) {
         return 0xFF;
     }
 
     @Override
     public void writeDMAOUT(int dmaOutAddress, int value) {
-        if (this.vdp.getDMAOUTSignal()) {
+        if (this.vdp.getDMAO()) {
             this.vdp.onDMAOUT(dmaOutAddress, value);
         }
     }
@@ -144,6 +199,12 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus {
         if ((ioPort & 0b10) != 0) {
             this.keypad.setLatchedKey(value);
         }
+    }
+
+    @Override
+    public void reset() {
+        this.currentRunCycleFunction = this.resetRunCycleFunction;
+        this.clearLineLevelSupplier = this.assertCLEARSupplier;
     }
 
 }

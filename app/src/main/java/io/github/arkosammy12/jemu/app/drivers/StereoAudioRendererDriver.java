@@ -1,16 +1,18 @@
 package io.github.arkosammy12.jemu.app.drivers;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.core.common.AudioGenerator;
+import io.github.arkosammy12.jemu.core.common.Emulator;
+
+import javax.sound.sampled.LineUnavailableException;
 
 public class StereoAudioRendererDriver extends DefaultAudioRendererDriver {
 
-    public StereoAudioRendererDriver(Jemu jemu, AudioGenerator<?> audioGenerator) {
-        super(jemu, audioGenerator);
+    public StereoAudioRendererDriver(Jemu jemu, Emulator emulator) throws LineUnavailableException {
+        super(jemu, emulator);
     }
 
     @Override
-    protected byte[] convertBitDepthIfNecessary(byte[] buf) {
+    protected byte[] ensureBitDepth(byte[] buf) {
         return switch (this.audioGenerator.getBytesPerSample()) {
             case BYTES_1 -> {
                 byte[] buf16 = new byte[this.jemu.getAudioEngine().getBytesPerFrame()];

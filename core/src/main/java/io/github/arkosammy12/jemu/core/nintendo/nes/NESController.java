@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.nintendo.nes;
 
 import io.github.arkosammy12.jemu.core.common.SystemController;
 
-public class NESController<E extends NESEmulator> extends SystemController<E> {
+public class NESController<E extends NESEmulator> implements SystemController {
 
     private static final int A_MASK = 1;
     private static final int B_MASK = 1 << 1;
@@ -13,6 +13,7 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
     private static final int LEFT_MASK = 1 << 6;
     private static final int RIGHT_MASK = 1 << 7;
 
+    private final E emulator;
 
     private boolean strobeSignal;
 
@@ -25,8 +26,9 @@ public class NESController<E extends NESEmulator> extends SystemController<E> {
     private int joy2ShiftRegister;
 
     public NESController(E emulator) {
-        super(emulator);
+        this.emulator = emulator;
     }
+
     @Override
     public void onActionPressed(Action action) {
         if (!(action instanceof Actions joypadAction)) {

@@ -58,6 +58,9 @@ public class MMC1Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
             this.characterRAM = null;
         }
+
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
     @Override
@@ -129,7 +132,11 @@ public class MMC1Cartridge<E extends NESEmulator> extends NESCartridge<E> {
                 this.loadRegister = 0;
                 this.loadRegisterWriteCounter = 0;
                 this.control |= 0xC;
-            } else {
+                this.loadRegisterIgnoreWrites = true;
+                this.loadRegisterWrittenOnThisCycle = true;
+            } else if (!this.loadRegisterIgnoreWrites) {
+                this.loadRegisterWrittenOnThisCycle = true;
+                this.loadRegisterIgnoreWrites = true;
                 if (this.loadRegisterWriteCounter >= 4) {
                     int writeValue = ((value & 1) << 4) | (this.loadRegister & 0xF);
                     switch (address & 0x6000) {
@@ -141,12 +148,8 @@ public class MMC1Cartridge<E extends NESEmulator> extends NESCartridge<E> {
                     this.loadRegister = 0;
                     this.loadRegisterWriteCounter = 0;
                 } else {
-                    this.loadRegisterWrittenOnThisCycle = true;
-                    if (!this.loadRegisterIgnoreWrites) {
-                        this.loadRegisterIgnoreWrites = true;
-                        this.loadRegister = ((value & 1) << 3) | (this.loadRegister >>> 1);
-                        this.loadRegisterWriteCounter++;
-                    }
+                    this.loadRegister = ((value & 1) << 3) | (this.loadRegister >>> 1);
+                    this.loadRegisterWriteCounter++;
                 }
             }
         }
@@ -225,6 +228,16 @@ public class MMC1Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             bankBits >>>= 1;
         }
         return address | (bankBits << 13);
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatilePrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatileChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

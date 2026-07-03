@@ -1,15 +1,13 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing;
 
-import io.github.arkosammy12.jemu.frontend.gui.internal.commands.ResetCommandCallback;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
 
 import javax.swing.*;
-import java.util.Objects;
 
 public class TitleManager {
 
     private final MainWindow mainWindow;
-    private final JFrame jFrame;
 
     private volatile String projectNameString = "unknown";
     private volatile String romTitleString = "No title";
@@ -20,11 +18,10 @@ public class TitleManager {
     private int framesSinceLastUpdate = 0;
     private double totalFrameTimeSinceLastUpdate = 0;
 
-    public TitleManager(MainWindow mainWindow, JFrame jFrame) {
+    public TitleManager(MainWindow mainWindow) {
         this.mainWindow = mainWindow;
-        this.jFrame = jFrame;
 
-        mainWindow.<StopCommandCallback>addEmulatorCommandCallback(_ -> {
+        mainWindow.<StopCommandCallback>onEmulatorCommand(_ -> {
             lastWindowTitleUpdate = 0;
             lastFrameTime = System.nanoTime();
             framesSinceLastUpdate = 0;
@@ -33,11 +30,11 @@ public class TitleManager {
                 this.romTitleString = "";
                 this.fpsString = "";
                 this.projectNameString = this.mainWindow.getMainMenuBar().getHelpMenu().getProjectName();
-                jFrame.setTitle(this.projectNameString);
+                this.mainWindow.getJFrame().setTitle(this.projectNameString);
             });
         });
 
-        mainWindow.<ResetCommandCallback>addEmulatorCommandCallback(_ -> {
+        mainWindow.<PowerCycleCommandCallback>onEmulatorCommand(_ -> {
             this.projectNameString = this.mainWindow.getMainMenuBar().getHelpMenu().getProjectName();
         });
 
@@ -79,7 +76,7 @@ public class TitleManager {
                 this.fpsString = fpsSnapshot;
             }
 
-            SwingUtilities.invokeLater(() -> this.jFrame.setTitle(fullTitle));
+            SwingUtilities.invokeLater(() -> this.mainWindow.getJFrame().setTitle(fullTitle));
         }
     }
 

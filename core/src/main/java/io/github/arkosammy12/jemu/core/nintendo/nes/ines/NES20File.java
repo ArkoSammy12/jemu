@@ -21,7 +21,7 @@ public class NES20File extends ExtendedINESFile {
         if (programRomMsb == 0xF) {
             int multiplier = (programRomLsb & 0b11) * 2 + 1;
             int exponent = (programRomLsb >>> 2) & 0b111111;
-            return (int) (Math.pow(2, (double) exponent) * (double) multiplier);
+            return (int) (Math.pow(2, exponent) * (double) multiplier);
         } else {
             return ((programRomMsb << 8) | programRomLsb) * KB_16;
         }
@@ -33,7 +33,7 @@ public class NES20File extends ExtendedINESFile {
         if (characterRomMsb == 0xF) {
             int multiplier = (characterRomLsb & 0b11) * 2 + 1;
             int exponent = (characterRomMsb >>> 2) & 0b111111;
-            return (int) (Math.pow(2, (double) exponent) * (double) multiplier);
+            return (int) (Math.pow(2, exponent) * (double) multiplier);
         } else {
             return ((characterRomMsb << 8) | characterRomLsb) * KB_8;
         }

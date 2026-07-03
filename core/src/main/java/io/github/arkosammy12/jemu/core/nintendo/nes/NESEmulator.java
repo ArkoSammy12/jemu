@@ -5,10 +5,12 @@ import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
+import java.util.function.BooleanSupplier;
 
-public class NESEmulator implements Emulator, NMOS6502.SystemBus {
+public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
 
     private static final int NTSC_MASTER_CLOCK_FREQUENCY_HZ = 236_250_000 / 11;
     private static final int NTSC_CPU_CLOCK_DIVISOR = 12;
@@ -20,16 +22,25 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private static final int PAL_PPU_CLOCK_DIVISOR = 5;
     private static final int PAL_FRAMERATE = 50;
 
-    private final SystemHost systemHost;
+    private final NESHost systemHost;
+    private String loadedRomFileName = "";
 
     private final RP2A03<?> ricohCore;
     private final RP2C02<?> ppu;
     private final NESCPUBus<?> cpuBus;
-    private final NESCartridge<?> cartridge;
+
+    private NESCartridge<?> cartridge;
 
     private final TVSystem tvSystem;
     private final int iterationsPerFrame;
+
     private final Runnable runCycleFunction;
+    private final Runnable resetRunCycleFunction;
+    private Runnable currentRunCycleFunction;
+
+    private final BooleanSupplier deassertRESSupplier;
+    private final BooleanSupplier assertRESSupplier;
+    private BooleanSupplier resLineLevelSupplier;
 
     private final int framerate;
 
@@ -39,14 +50,18 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     private final int ppuSubCycleDivisor;
     private int ppuDivisorCounter;
 
-    public NESEmulator(SystemHost systemHost) {
+    public NESEmulator(NESHost systemHost) {
         this.systemHost = systemHost;
         Optional<byte[]> optionalROM = systemHost.getRom();
         if (optionalROM.isEmpty()) {
             throw new MissingROMException(systemHost.getSystemName());
         }
+
         byte[] rom = optionalROM.get();
         this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(rom));
+        systemHost.getRomPath().ifPresent(path -> {
+            this.loadedRomFileName = path.getFileName().toString();
+        });
 
         // TODO: Detect TV system properly with the nes20 xml database
         this.tvSystem = this.cartridge.getINESFile().getTVSystem();
@@ -107,10 +122,41 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
                 this.ppu.cycleHalfDot();
             };
         }
+
+        this.resetRunCycleFunction = () -> {
+
+            // Hotswap cartridge of ROM filename changed
+            systemHost.getRomPath().ifPresent(path -> systemHost.getRom().ifPresent(newRom -> {
+                String romPathFilename = path.getFileName().toString();
+                if (!this.loadedRomFileName.equals(romPathFilename)) {
+                    if (this.cartridge != null) {
+                        this.cartridge.save();
+                    }
+                    this.loadedRomFileName = romPathFilename;
+                    this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(newRom));
+                }
+            }));
+
+            this.ricohCore.reset();
+            this.ppu.reset();
+            this.runCycleFunction.run();
+            this.currentRunCycleFunction = this.runCycleFunction;
+        };
+
+        this.currentRunCycleFunction = this.runCycleFunction;
+
+        this.deassertRESSupplier = () -> false;
+        this.assertRESSupplier = () -> {
+            if (this.getRicohCore().getCpu().getHalfCyclePhase() == NMOS6502.Phase.PHI_2) {
+                this.resLineLevelSupplier = this.deassertRESSupplier;
+            }
+            return true;
+        };
+        this.resLineLevelSupplier = this.deassertRESSupplier;
     }
 
     @Override
-    public SystemHost getHost() {
+    public NESHost getHost() {
         return this.systemHost;
     }
 
@@ -157,13 +203,13 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     @Override
     public void executeFrame() {
         for (int i = 0; i < this.iterationsPerFrame; i++) {
-            this.runCycleFunction.run();
+            this.currentRunCycleFunction.run();
         }
     }
 
     @Override
     public void executeCycle() {
-        this.runCycleFunction.run();
+        this.currentRunCycleFunction.run();
     }
 
     @Override
@@ -183,7 +229,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
 
     @Override
     public boolean getRES() {
-        return false;
+        return this.resLineLevelSupplier.getAsBoolean();
     }
 
     @Override
@@ -192,8 +238,20 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus {
     }
 
     @Override
-    public void close() throws Exception {
+    public void reset() {
+        this.currentRunCycleFunction = this.resetRunCycleFunction;
+        this.resLineLevelSupplier = this.assertRESSupplier;
+    }
 
+    @Override
+    public void close() {
+        try {
+            if (this.cartridge != null) {
+                this.cartridge.save();
+            }
+        } catch (Exception e) {
+            throw new EmulatorException("Error releasing emulator resources!", e);
+        }
     }
 
     public enum TVSystem {

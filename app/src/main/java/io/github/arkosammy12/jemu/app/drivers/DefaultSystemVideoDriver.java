@@ -1,21 +1,31 @@
 package io.github.arkosammy12.jemu.app.drivers;
 
+import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
+import io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings;
+import io.github.arkosammy12.jemu.frontend.events.core.AspectRatioSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.core.UseIntegerScalingSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.gui.swing.SystemDisplayComponent;
+import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
 
 import java.awt.*;
-import java.awt.event.KeyListener;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.io.Closeable;
 
 import java.awt.image.BufferStrategy;
+import java.util.function.DoubleSupplier;
 
-public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Closeable {
+import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
 
+public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, SystemDisplayComponent, Closeable {
+
+    private final VideoGenerator videoGenerator;
     private final int[] renderBuffer;
 
     private final int displayWidth;
@@ -23,6 +33,7 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
 
     private final BufferedImage bufferedImage;
     private final AffineTransform drawTransform = new AffineTransform();
+    private final ScaleSupplier scaleSupplier;
 
     private final Thread renderThread;
     private final Object renderLock = new Object();
@@ -31,12 +42,27 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
     private volatile boolean running = true;
     private boolean frameRequested = false;
 
-    private int lastWidth = -1;
-    private int lastHeight = -1;
+    private ScaleSupplier currentScaleSupplier;
+    private DoubleSupplier pixelAspectRatioSupplier;
 
-    public DefaultSystemVideoDriver(VideoGenerator<?> videoGenerator) {
+    private int lastWidth;
+    private int lastHeight;
+
+    private double lastPixelAspectRatio;
+    private volatile boolean forceTransformUpdate = false;
+
+    public DefaultSystemVideoDriver(Jemu jemu, VideoGenerator videoGenerator) {
+        this.videoGenerator = videoGenerator;
         this.displayWidth = videoGenerator.getImageWidth();
         this.displayHeight = videoGenerator.getImageHeight();
+        this.scaleSupplier = (windowWidth, windowHeight, logicalWidth, logicalHeight) -> Math.min(windowWidth / logicalWidth, windowHeight / logicalHeight);
+
+        this.setScaleSupplier(jemu.getMainWindow().getConfigurations().getSettings().getVideoSettings().getUseIntegerScaling());
+        this.setPixelAspectRatioSupplier(jemu.getMainWindow().getConfigurations().getSettings().getVideoSettings().getAspectRatio());
+
+        this.lastWidth = this.getWidth();
+        this.lastHeight = this.getHeight();
+        this.lastPixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
 
         this.renderBuffer = new int[displayWidth * displayHeight];
         this.bufferedImage = new BufferedImage(displayWidth, displayHeight, BufferedImage.TYPE_INT_RGB);
@@ -53,24 +79,82 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
         }
     }
 
+    @Override
+    public int getSystemDisplayWidth() {
+        return this.displayWidth;
+    }
+
+    @Override
+    public int getSystemDisplayHeight() {
+        return this.displayHeight;
+    }
+
+    @Override
+    public @NotNull Component getComponent() {
+        return this;
+    }
+
     public void requestFrame() {
+        this.requestFrame(false);
+    }
+
+    private void requestFrame(boolean forceTransformUpdate) {
+        this.forceTransformUpdate = forceTransformUpdate;
         synchronized (this.renderLock) {
             this.frameRequested = true;
             this.renderLock.notify();
         }
     }
 
+    public void onVideoSettingChangedEvent(VideoSettingChangedEvent videoSettingChangedEvent) {
+        switch (videoSettingChangedEvent) {
+            case UseIntegerScalingSettingChangedEvent(boolean useIntegerScaling) -> {
+                this.setScaleSupplier(useIntegerScaling);
+                this.requestFrame(true);
+            }
+            case AspectRatioSettingChangedEvent(VideoSettings.AspectRatio aspectRatio) -> {
+                this.setPixelAspectRatioSupplier(aspectRatio);
+                this.requestFrame(true);
+            }
+            case null, default -> {}
+        }
+    }
+
+    private void setScaleSupplier(boolean useIntegerScaling) {
+        if (useIntegerScaling) {
+            this.currentScaleSupplier = (windowWidth, windowHeight, logicalWidth, logicalHeight) -> Math.max(1, Math.floor(this.scaleSupplier.getScale(windowWidth, windowHeight, logicalWidth, logicalHeight)));
+        } else {
+            this.currentScaleSupplier = this.scaleSupplier;
+        }
+    }
+
+    private void setPixelAspectRatioSupplier(VideoSettings.AspectRatio aspectRatio) {
+        if (aspectRatio == VideoSettings.AspectRatio.AUTO) {
+            this.pixelAspectRatioSupplier = this.videoGenerator::getPixelAspectRatio;
+        } else {
+            this.pixelAspectRatioSupplier = aspectRatio::getPixelAspectRatio;
+        }
+    }
+
     private void updateTransformIfNeeded() {
         int w = this.getWidth();
         int h = this.getHeight();
+        double pixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
 
-        if (w == this.lastWidth && h == this.lastHeight) {
+        boolean forceUpdate = this.forceTransformUpdate;
+        this.forceTransformUpdate = false;
+
+        if (!forceUpdate && w == this.lastWidth && h == this.lastHeight && pixelAspectRatio == this.lastPixelAspectRatio) {
             return;
         }
 
-        double scale = Math.min((double) w / (double) this.displayWidth, (double) h / (double) this.displayHeight);
+        double logicalWidth = (double) this.displayWidth * pixelAspectRatio;
 
-        double scaledWidth = (double) this.displayWidth * scale;
+        double scale = this.currentScaleSupplier.getScale(w, h, logicalWidth, this.displayHeight);
+
+        double scaleX = scale * pixelAspectRatio;
+
+        double scaledWidth  = (double) this.displayWidth * scaleX;
         double scaledHeight = (double) this.displayHeight * scale;
 
         double offsetX = ((double) w - scaledWidth) / 2.0;
@@ -78,10 +162,11 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
 
         this.drawTransform.setToIdentity();
         this.drawTransform.translate(offsetX, offsetY);
-        this.drawTransform.scale(scale, scale);
+        this.drawTransform.scale(scaleX, scale);
 
         this.lastWidth = w;
         this.lastHeight = h;
+        this.lastPixelAspectRatio = pixelAspectRatio;
     }
 
     private void renderLoop() {
@@ -95,7 +180,9 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
                     }
                     this.frameRequested = false;
                 }
-                this.renderFrame();
+                if (this.running) {
+                    this.renderFrame();
+                }
             } catch (Exception e) {
                 Logger.warn("Render thread encountered an unexpected error, continuing: {}", e.getMessage());
             }
@@ -121,6 +208,7 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
             g.setColor(Color.BLACK);
             g.fillRect(0, 0, getWidth(), getHeight());
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+            g.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
             g.drawImage(this.bufferedImage, this.drawTransform, null);
             g.dispose();
             bufferStrategy.show();
@@ -136,11 +224,13 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Clo
         synchronized (this.renderLock) {
             this.renderLock.notifyAll();
         }
-        if (this.renderThread != null) {
-            try {
-                this.renderThread.join();
-            } catch (InterruptedException _) {}
-        }
+        tryJoinSafely(this.renderThread);
+    }
+
+    private interface ScaleSupplier {
+
+        double getScale(double windowWidth, double windowHeight, double logicalWidth, double logicalHeight);
+
     }
 
 }

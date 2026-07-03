@@ -17,7 +17,7 @@ public final class CLIArgs {
 
     @CommandLine.Option(
             names = {"--rom", "-r"},
-            required = true,
+            defaultValue = CommandLine.Option.NULL_VALUE,
             description = "The path of the file containing the raw binary ROM data."
     )
     private Path romPath;
@@ -45,8 +45,8 @@ public final class CLIArgs {
     }
 
 
-    public Path getRomPath() {
-        return this.romPath;
+    public Optional<Path> getRomPath() {
+        return Optional.ofNullable(this.romPath);
     }
 
     public Optional<System> getSystem() {

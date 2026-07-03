@@ -2,20 +2,18 @@ package io.github.arkosammy12.jemu.frontend.gui.swing;
 
 import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
-import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.config.ConfigurationManager;
+import io.github.arkosammy12.jemu.frontend.config.Configurations;
+import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.config.internal.InternalConfigurations;
+import io.github.arkosammy12.jemu.frontend.events.internal.ExposableEvent;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.*;
-import io.github.arkosammy12.jemu.frontend.gui.internal.events.InternalEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.InternalEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
-import io.github.arkosammy12.jemu.frontend.gui.swing.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.EmulatorMenu;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.FileMenu;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.HelpMenu;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.SettingsMenu;
+import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.EmulatorManager;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.FileManager;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.HelpManager;
-import io.github.arkosammy12.jemu.frontend.gui.swing.managers.SettingsManager;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -34,7 +32,6 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
 import java.util.List;
@@ -42,10 +39,19 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
-// TODO: The big GUI feature update
 public class MainWindow implements Closeable {
+
+    @Nullable
+    private final Path dataDirectory;
+    private final ConfigurationManager configurationManager;
+
+    private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
+    private final Collection<PushedEventConsumer<?>> pushedEventConsumers = new CopyOnWriteArrayList<>();
+    private final Collection<SystemDescriptor> systemDescriptors;
+
+    private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
+    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
 
     @Nullable
     private JFrame appFrame;
@@ -59,19 +65,7 @@ public class MainWindow implements Closeable {
     @Nullable
     private TitleManager titleManager;
 
-    private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
-    private final BlockingQueue<Event> eventQueue = new LinkedBlockingDeque<>();
-
-    private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
-
-    private final Collection<SystemDescriptor> systemDescriptors;
-
-    private Rectangle unmaximizedBounds;
-    private final Path dataDirectory;
-    private final Collection<PropertyEntry> stateProperties = new CopyOnWriteArrayList<>();
-    private final Collection<PropertyEntry> settingProperties = new CopyOnWriteArrayList<>();
-
-    public MainWindow(String title, Path dataDirectory, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
+    public MainWindow(String title, @Nullable Path dataDirectory, Collection<? extends SystemDescriptor> systemDescriptors) throws InterruptedException, InvocationTargetException {
 
         List<? extends SystemDescriptor> descriptors = new ArrayList<>(systemDescriptors);
 
@@ -90,6 +84,13 @@ public class MainWindow implements Closeable {
         this.systemDescriptors = List.copyOf(systemDescriptors);
         this.dataDirectory = dataDirectory;
 
+        this.configurationManager = new ConfigurationManager(dataDirectory);
+        this.configurationManager.read();
+
+        if (this.dataDirectory == null) {
+            Logger.warn("No data directory was provided to the UI. Settings and state will not be saved or restored!");
+        }
+
         if (SystemInfo.isMacOS) {
             System.setProperty("apple.awt.application.appearance", "system");
             System.setProperty("apple.awt.application.name", "jemu");
@@ -106,17 +107,17 @@ public class MainWindow implements Closeable {
         System.setProperty("flatlaf.menuBarEmbedded", Boolean.FALSE.toString());
 
         SwingUtilities.invokeAndWait(() -> {
-            Toolkit.getDefaultToolkit()
-                    .getSystemEventQueue()
-                    .push(new SafeEventQueue());
-
-            FlatDarkLaf.setup();
+            Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SafeEventQueue());
 
             UIManager.put("TitlePane.useWindowDecorations", false);
             UIManager.put("Component.hideMnemonics", false);
             UIManager.put("FileChooser.readOnly", true);
             UIManager.put("Component.arc", 8);
             UIManager.put("Button.arc", 8);
+            UIManager.put("MenuBar.itemMargins", new Insets(5, 10, 5, 10));
+            UIManager.put("MenuItem.margin", new Insets(4, 8, 4, 8));
+
+            FlatDarkLaf.setup();
 
             ToolTipManager toolTipManager = ToolTipManager.sharedInstance();
             toolTipManager.setLightWeightPopupEnabled(false);
@@ -129,93 +130,69 @@ public class MainWindow implements Closeable {
             Toolkit.getDefaultToolkit().setDynamicLayout(true);
 
             this.appFrame = new JFrame(title);
-            MigLayout appFrameLayout = new MigLayout(new LC().insets("0"), new AC(), new AC().gap("0"));
-            this.appFrame.setLayout(appFrameLayout);
-            appFrame.setBackground(Color.BLACK);
+            this.appFrame.setLayout(new MigLayout(new LC().insets("0"), new AC(), new AC().gap("0")));
+            this.appFrame.setBackground(Color.BLACK);
             this.appFrame.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
 
-            this.systemViewport = new SystemViewport();
-            this.menuBar = new MainMenuBar(this, this.appFrame);
-            this.titleManager = new TitleManager(this, this.appFrame);
+            this.systemViewport = new SystemViewport(this);
+            this.menuBar = new MainMenuBar(this);
+            this.titleManager = new TitleManager(this);
 
             this.appFrame.setJMenuBar(this.menuBar.getJMenuBar());
             this.appFrame.add(this.systemViewport.getJPanel(), new CC().grow().push().wrap());
 
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
 
-            appFrame.requestFocusInWindow();
-            appFrame.setResizable(true);
-            appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
-            appFrame.pack();
-            appFrame.setLocationRelativeTo(null);
+            this.appFrame.requestFocusInWindow();
+            this.appFrame.setResizable(true);
+            this.appFrame.setPreferredSize(new Dimension((int) (screenSize.getWidth() / 1.5), (int) (screenSize.getHeight() / 1.5)));
+            this.appFrame.pack();
+            this.appFrame.setLocationRelativeTo(null);
 
-            unmaximizedBounds = appFrame.getBounds();
-
-            appFrame.addWindowStateListener(e -> {
+            this.appFrame.addWindowStateListener(e -> {
+                this.getConfig().getState().getWindowState().setExtendedState(e.getNewState());
                 if ((e.getNewState() & Frame.MAXIMIZED_BOTH) == 0) {
-                    unmaximizedBounds = appFrame.getBounds();
+                    this.getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                 }
             });
 
-            appFrame.addComponentListener(new ComponentAdapter() {
+            this.appFrame.addComponentListener(new ComponentAdapter() {
 
                 @Override
                 public void componentMoved(ComponentEvent e) {
                     if ((appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) == 0) {
-                        unmaximizedBounds = appFrame.getBounds();
+                        getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                     }
                 }
 
                 @Override
                 public void componentResized(ComponentEvent e) {
                     if ((appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) == 0) {
-                        unmaximizedBounds = appFrame.getBounds();
+                        getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                     }
                 }
             });
 
-            this.registerStateProperty(new SerializedEntry("frame.x", () -> Integer.toString(unmaximizedBounds.x), s -> tryParseInt(s).ifPresent(x -> appFrame.setLocation(x, appFrame.getY()))));
-            this.registerStateProperty(new SerializedEntry("frame.y", () -> Integer.toString(unmaximizedBounds.y), s -> tryParseInt(s).ifPresent(y -> appFrame.setLocation(appFrame.getX(), y))));
-            this.registerStateProperty(new SerializedEntry("frame.width", () -> Integer.toString(unmaximizedBounds.width), s -> tryParseInt(s).ifPresent(width -> appFrame.setSize(new Dimension(width, appFrame.getHeight())))));
-            this.registerStateProperty(new SerializedEntry("frame.height", () -> Integer.toString(unmaximizedBounds.height), s -> tryParseInt(s).ifPresent(height -> appFrame.setSize(new Dimension(appFrame.getWidth(), height)))));
-            this.registerStateProperty(new SerializedEntry("frame.extended_state", () -> Integer.toString(appFrame.getExtendedState()), s -> tryParseInt(s).ifPresent(extendedState -> appFrame.setExtendedState(extendedState))));
-
-            try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-state.properties").toFile())) {
-                Properties stateProperties = new Properties();
-                stateProperties.load(input);
-                for (PropertyEntry entry : this.stateProperties) {
-                    String property = stateProperties.getProperty(entry.key());
-                    if (property != null) {
-                        entry.deserializer().accept(property);
-                    }
-                }
-            } catch (FileNotFoundException e) {
-                Logger.warn("swing-state-ui.properties file not found!");
-            } catch (IOException e) {
-                Logger.error("Error restoring swing ui state from properties file: {}", e);
-            }
-
-            try (FileInputStream input = new FileInputStream(this.dataDirectory.resolve("swing-ui-settings.properties").toFile())) {
-                Properties settingProperties = new Properties();
-                settingProperties.load(input);
-                for (PropertyEntry entry : this.settingProperties) {
-                    String property = settingProperties.getProperty(entry.key());
-                    if (property != null) {
-                        entry.deserializer().accept(property);
-                    }
-                }
-            } catch (FileNotFoundException e) {
-                Logger.warn("swing-state-settings.properties file not found!");
-            } catch (IOException e) {
-                Logger.error("Error restoring swing ui settings from properties file: {}", e);
-            }
+            this.getConfig().getState().getWindowState().getBounds().getX().ifPresent(x -> this.appFrame.setLocation(x, this.appFrame.getY()));
+            this.getConfig().getState().getWindowState().getBounds().getY().ifPresent(y -> this.appFrame.setLocation(this.appFrame.getX(), y));
+            this.getConfig().getState().getWindowState().getBounds().getWidth().ifPresent(width -> this.appFrame.setSize(width, this.appFrame.getHeight()));
+            this.getConfig().getState().getWindowState().getBounds().getHeight().ifPresent(height -> this.appFrame.setSize(this.appFrame.getWidth(), height));
+            this.getConfig().getState().getWindowState().getExtendedState().ifPresent(extendedState -> this.appFrame.setExtendedState(extendedState));
 
         });
 
     }
 
+    public Configurations getConfigurations() {
+        return this.configurationManager.getConfig();
+    }
+
     public Collection<SystemDescriptor> getSystemDescriptors() {
         return this.systemDescriptors;
+    }
+
+    public Optional<Path> getDataDirectoryPath() {
+        return Optional.ofNullable(this.dataDirectory);
     }
 
     public SystemViewport getSystemViewport() {
@@ -230,10 +207,6 @@ public class MainWindow implements Closeable {
         return this.getMainMenuBar().getEmulatorMenu();
     }
 
-    public SettingsManager getSettingsManager() {
-        return this.getMainMenuBar().getSettingsMenu();
-    }
-
     public HelpManager getHelpManager() {
         return this.getMainMenuBar().getHelpMenu();
     }
@@ -244,6 +217,14 @@ public class MainWindow implements Closeable {
 
     public void show() {
         SwingUtilities.invokeLater(() -> this.getJFrame().setVisible(true));
+    }
+
+    public void setIcons(List<Image> icons) {
+        SwingUtilities.invokeLater(() -> {
+            if (this.appFrame != null) {
+                this.appFrame.setIconImages(icons);
+            }
+        });
     }
 
     public void setClosingHook(Runnable runnable) {
@@ -262,7 +243,7 @@ public class MainWindow implements Closeable {
     }
 
     public void showDialog(String title, String message, DialogType dialogType) {
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getjOptionPaneMessageTypeId()));
+        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getJOptionPaneMessageTypeId()));
     }
 
     public void submitEmulatorCommand(EmulatorCommand emulatorCommand) {
@@ -289,14 +270,19 @@ public class MainWindow implements Closeable {
             return null;
         }
         Runnable acknowledgeFunction = switch (emulatorCommand) {
-            case PauseEmulatorCommand command -> () -> this.emulatorCommandCallbacks.forEach(c -> {
-                if (c instanceof PauseCommandCallback pauseCallback) {
-                    pauseCallback.onPause(command);
+            case PowerCycleCommand command -> () -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof PowerCycleCommandCallback powerCycleCallback) {
+                    powerCycleCallback.onReset(command);
                 }
             });
             case ResetEmulatorCommand command -> () -> this.emulatorCommandCallbacks.forEach(c -> {
-                if (c instanceof ResetCommandCallback resetCallback) {
+                if (c instanceof ResetEmulatorCommandCallback resetCallback) {
                     resetCallback.onReset(command);
+                }
+            });
+            case PauseEmulatorCommand command -> () -> this.emulatorCommandCallbacks.forEach(c -> {
+                if (c instanceof PauseCommandCallback pauseCallback) {
+                    pauseCallback.onPause(command);
                 }
             });
             case StepCycleEmulatorCommand command -> () -> this.emulatorCommandCallbacks.forEach(c -> {
@@ -318,6 +304,11 @@ public class MainWindow implements Closeable {
         return new PendingEmulatorCommandImpl(emulatorCommand, acknowledgeFunction);
     }
 
+    @ApiStatus.Internal
+    public InternalConfigurations getConfig() {
+        return this.configurationManager.getConfig();
+    }
+
     @NotNull
     @ApiStatus.Internal
     JFrame getJFrame() {
@@ -325,23 +316,30 @@ public class MainWindow implements Closeable {
     }
 
     @ApiStatus.Internal
-    public <T extends EmulatorCommandCallback> void addEmulatorCommandCallback(T callback) {
+    public <T extends EmulatorCommandCallback> void onEmulatorCommand(T callback) {
         this.emulatorCommandCallbacks.add(callback);
     }
 
     @ApiStatus.Internal
     public void pushEvent(InternalEvent internalEvent) {
-        this.eventQueue.offer(internalEvent.getEvent());
+        if (internalEvent instanceof ExposableEvent exposableEvent) {
+            this.eventQueue.offer(exposableEvent.getEvent());
+        }
+        for (PushedEventConsumer<?> pushedEventConsumer : this.pushedEventConsumers) {
+            if (pushedEventConsumer.eventType().isInstance(internalEvent)) {
+                this.dispatchToConsumer(pushedEventConsumer, internalEvent);
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private <T extends InternalEvent> void dispatchToConsumer(PushedEventConsumer<T> consumer, InternalEvent event) {
+        consumer.action().accept((T) event);
     }
 
     @ApiStatus.Internal
-    public void registerStateProperty(SerializedEntry serializedEntry) {
-        this.stateProperties.add(new PropertyEntry(serializedEntry.key(), serializedEntry.serializer(), serializedEntry.deserializer()));
-    }
-
-    @ApiStatus.Internal
-    public void registerSettingProperty(SerializedEntry serializedEntry) {
-        this.settingProperties.add(new PropertyEntry(serializedEntry.key(), serializedEntry.serializer(), serializedEntry.deserializer()));
+    public <T extends InternalEvent> void onEvent(Class<T> eventType, Consumer<T> action) {
+        this.pushedEventConsumers.add(new PushedEventConsumer<>(eventType, action));
     }
 
     @ApiStatus.Internal
@@ -352,54 +350,12 @@ public class MainWindow implements Closeable {
     @Override
     public void close() {
         Runnable closer = () -> {
-            if (this.appFrame != null) {
-                Path statePropertiesFile = this.dataDirectory.resolve("swing-ui-state.properties");
-                try {
-                    if (!Files.exists(this.dataDirectory)) {
-                        Files.createDirectory(this.dataDirectory);
-                    }
-                    if (!Files.exists(statePropertiesFile)) {
-                        Files.createFile(statePropertiesFile);
-                    }
-                    try (FileOutputStream output = new FileOutputStream(statePropertiesFile.toFile())) {
-                        if (!Files.exists(this.dataDirectory)) {
-                            Files.createDirectory(this.dataDirectory);
-                        }
-                        if (!Files.exists(statePropertiesFile)) {
-                            Files.createFile(statePropertiesFile);
-                        }
-                        Properties stateProperties = new Properties();
-                        for (PropertyEntry entry : this.stateProperties) {
-                            stateProperties.setProperty(entry.key(), entry.serializer().get());
-                        }
-                        stateProperties.store(output, "Swing GUI state properties");
-                    }
-                } catch (IOException e) {
-                    Logger.error("Error storing swing ui state to properties file: {}", e);
-                }
-
-                Path settingsPropertiesFile = this.dataDirectory.resolve("swing-ui-settings.properties");
-                try {
-                    if (!Files.exists(this.dataDirectory)) {
-                        Files.createDirectory(this.dataDirectory);
-                    }
-                    if (!Files.exists(settingsPropertiesFile)) {
-                        Files.createFile(settingsPropertiesFile);
-                    }
-                    try (FileOutputStream output = new FileOutputStream(settingsPropertiesFile.toFile())) {
-                        Properties settingProperties = new Properties();
-                        for (PropertyEntry entry : this.settingProperties) {
-                            settingProperties.setProperty(entry.key(), entry.serializer().get());
-                        }
-                        settingProperties.store(output, "Swing GUI setting properties");
-                    }
-                } catch (IOException e) {
-                    Logger.error("Error storing swing ui settings to properties file: {}", e);
-                }
-                this.appFrame.dispose();
+            this.configurationManager.save();
+            JFrame frame = this.appFrame;
+            if (frame != null) {
+                frame.dispose();
             }
         };
-
         if (SwingUtilities.isEventDispatchThread()) {
             closer.run();
         } else {
@@ -423,23 +379,13 @@ public class MainWindow implements Closeable {
             this.jOptionPaneMessageTypeId = jOptionPaneMessageTypeId;
         }
 
-        private int getjOptionPaneMessageTypeId() {
+        private int getJOptionPaneMessageTypeId() {
             return this.jOptionPaneMessageTypeId;
         }
 
     }
 
-    public static Optional<Integer> tryParseInt(String s) {
-        try {
-            return Optional.of(Integer.valueOf(s));
-        } catch (NumberFormatException e) {
-            return Optional.empty();
-        }
-    }
-
-    private record PropertyEntry(String key, Supplier<String> serializer, Consumer<String> deserializer) {}
-
-    public class SafeEventQueue extends EventQueue {
+    private class SafeEventQueue extends EventQueue {
 
         @Override
         protected void dispatchEvent(AWTEvent event) {
@@ -483,6 +429,9 @@ public class MainWindow implements Closeable {
         public void acknowledge() {
             this.acknowledgeFunction.run();
         }
+
     }
+
+    private record PushedEventConsumer<T extends InternalEvent>(Class<T> eventType, Consumer<T> action) {}
 
 }

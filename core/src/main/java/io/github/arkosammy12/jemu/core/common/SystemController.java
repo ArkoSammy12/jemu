@@ -1,18 +1,12 @@
 package io.github.arkosammy12.jemu.core.common;
 
-public abstract class SystemController<E extends Emulator> {
+public interface SystemController {
 
-    protected final E emulator;
+    void onActionPressed(Action action);
 
-    public SystemController(E emulator) {
-        this.emulator = emulator;
-    }
+    void onActionReleased(Action action);
 
-    abstract public void onActionPressed(Action action);
-
-    abstract public void onActionReleased(Action action);
-
-    public interface Action {
+    interface Action {
 
         String getLabel();
 

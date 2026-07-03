@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.nintendo.nes.mappers;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
@@ -48,7 +49,7 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
     private int R6;
     private int R7;
 
-    //private int frequencyControl;
+    // Frequency control registers
     private boolean halt;
     private boolean frequency16x;
     private boolean frequency256x;
@@ -83,14 +84,16 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
         this.a0Bit = switch (iNESFile.getMapperNumber()) {
             case 24 -> 0;
             case 26 -> 1;
-            default -> throw new EmulatorException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
+            default -> throw new ROMInitializationException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
         };
 
         this.a1Bit = switch (iNESFile.getMapperNumber()) {
             case 24 -> 1;
             case 26 -> 0;
-            default -> throw new EmulatorException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
+            default -> throw new ROMInitializationException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
         };
+
+        this.restoreSaveData(this.programRAM, this.characterRAM);
 
     }
 
@@ -476,6 +479,16 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     private boolean getFrequency256x() {
         return this.frequency256x;
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatilePrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatileChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
     private abstract class WaveformChannel {

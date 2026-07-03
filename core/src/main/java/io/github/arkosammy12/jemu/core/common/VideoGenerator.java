@@ -1,20 +1,13 @@
 package io.github.arkosammy12.jemu.core.common;
 
-public abstract class VideoGenerator<E extends Emulator> {
+public interface VideoGenerator {
 
-    protected final E emulator;
+    int getImageWidth();
 
-    protected final int imageWidth;
-    protected final int imageHeight;
+    int getImageHeight();
 
-    public VideoGenerator(E emulator) {
-        this.emulator = emulator;
-        this.imageWidth = this.getImageWidth();
-        this.imageHeight = this.getImageHeight();
+    default double getPixelAspectRatio() {
+        return 1.0;
     }
-
-    public abstract int getImageWidth();
-
-    public abstract int getImageHeight();
 
 }

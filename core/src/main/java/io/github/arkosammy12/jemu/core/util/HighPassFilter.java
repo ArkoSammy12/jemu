@@ -106,4 +106,14 @@ public class HighPassFilter {
         return this.enabled;
     }
 
+    /**
+     * Resets the state of the HPF without resetting the parameters.
+     */
+    public void resetState() {
+        this.output = 0.0;
+        this.previousOutput = 0.0;
+        this.prevInput = 0.0;
+        this.delta = 0.0;
+    }
+
 }

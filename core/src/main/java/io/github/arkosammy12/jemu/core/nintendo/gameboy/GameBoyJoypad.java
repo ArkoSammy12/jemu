@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.core.nintendo.gameboy;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.cpu.SM83;
 
-public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E> {
+public class GameBoyJoypad<E extends GameBoyEmulator> implements SystemController {
 
     public static final int JOYP_ADDR = 0xFF00;
 
@@ -14,6 +14,8 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     private static final int SELECT_UP_MASK = 1 << 2;
     private static final int B_LEFT_MASK = 1 << 1;
     private static final int A_RIGHT_MASK = 1;
+
+    private final E emulator;
 
     private boolean upPhysical;
     private boolean downPhysical;
@@ -34,7 +36,7 @@ public class GameBoyJoypad<E extends GameBoyEmulator> extends SystemController<E
     private int joyP = 0xFF;
 
     public GameBoyJoypad(E emulator) {
-        super(emulator);
+        this.emulator = emulator;
     }
 
     public boolean isButtonHeld() {

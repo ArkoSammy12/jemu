@@ -9,8 +9,9 @@ public class DMGSerialController<E extends GameBoyEmulator> implements Bus {
     public static final int SB_ADDR = 0xFF01;
     public static final int SC_ADDR = 0xFF02;
 
-    private static final int BIT_2_MASK = 1 << 2;
-    private static final int BIT_7_MASK = 1 << 7;
+    // Shift the masks once to the left to account for extra clocking caused by falling edge bit 2/7
+    private static final int FREQUENCY_BIT_2_MASK = 1 << (2 + 1);
+    private static final int FREQUENCY_BIT_7_MASK = 1 << (7 + 1);
 
     protected final E emulator;
 
@@ -58,7 +59,7 @@ public class DMGSerialController<E extends GameBoyEmulator> implements Bus {
     }
 
     private void cycleSerial() {
-        boolean frequencyBit = ((this.getClockSpeed() ? BIT_2_MASK : BIT_7_MASK) & this.emulator.getTimerController().getSystemClock()) != 0;
+        boolean frequencyBit = ((this.getClockSpeed() ? FREQUENCY_BIT_2_MASK : FREQUENCY_BIT_7_MASK) & this.emulator.getTimerController().getSystemClock()) != 0;
         boolean serialInput = frequencyBit && this.getClockSelect();
 
         if (this.oldSerialInput && !serialInput && this.transferring) {

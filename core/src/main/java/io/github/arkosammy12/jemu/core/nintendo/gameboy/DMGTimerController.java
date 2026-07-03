@@ -105,11 +105,14 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
         }
 
         this.oldTimerInput = timerInput;
+        return this.getAPUFrameSequencerTick();
+    }
 
+    protected boolean getAPUFrameSequencerTick() {
         boolean divBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
-        boolean apuFrameSequencerTick = this.oldDivBit4 && !divBit4;
+        boolean tick = this.oldDivBit4 && !divBit4;
         this.oldDivBit4 = divBit4;
-        return apuFrameSequencerTick;
+        return tick;
     }
 
     protected void tickPendingReloadIfPresent() {

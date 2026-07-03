@@ -173,7 +173,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
                 this.cartridge.save();
             }
         } catch (Exception e) {
-            throw new EmulatorException("Error releasing emulator resources: ", e);
+            throw new EmulatorException("Error releasing emulator resources!", e);
         }
     }
 

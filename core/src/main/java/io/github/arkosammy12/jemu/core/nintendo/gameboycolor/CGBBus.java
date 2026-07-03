@@ -6,6 +6,10 @@ import io.github.arkosammy12.jemu.core.nintendo.gameboy.DMGBus;
 import io.github.arkosammy12.jemu.core.nintendo.gameboy.DMGPPU;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.function.IntUnaryOperator;
+
+import static io.github.arkosammy12.jemu.core.nintendo.gameboycolor.CGBAPU.PCM12_ADDR;
+import static io.github.arkosammy12.jemu.core.nintendo.gameboycolor.CGBAPU.PCM34_ADDR;
 import static io.github.arkosammy12.jemu.core.nintendo.gameboycolor.CGBPPU.*;
 
 public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
@@ -225,6 +229,7 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
     public static final int UNK_3_ADDR = 0xFF74;
     public static final int UNK_4_ADDR = 0xFF75;
 
+    private int rWBKValue = 0;
     private int workRAMBank = 1;
 
     private int infraredPort;
@@ -257,17 +262,19 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         return new byte[8 * 0x1000];
     }
 
-    public boolean haltCPU() {
-        return this.haltCPU;
+    @Override
+    protected IntUnaryOperator getBootRomEnabledCartridgeReadFunction() {
+        return address -> {
+            if ((address >= 0x0000 && address <= 0x00FF) || (address >= 0x0200 && address <= 0x08FF)) {
+                return SAMEBOY_CGB_BOOT_ROM[address];
+            } else {
+                return this.emulator.getCartridge().readByte(address);
+            }
+        };
     }
 
-    @Override
-    protected int readByteCartridge(int address) {
-        if (this.enableBootRom && ((address >= 0x0000 && address <= 0x00FF) || (address >= 0x0200 && address <= 0x08FF))) {
-            return SAMEBOY_CGB_BOOT_ROM[address];
-        } else {
-            return this.emulator.getCartridge().readByte(address);
-        }
+    public boolean haltCPU() {
+        return this.haltCPU;
     }
 
     @Override
@@ -281,8 +288,9 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
         return switch (address) {
             case KEY_0_ADDR -> this.emulator.readKEY0();
             case KEY_1_ADDR -> this.emulator.readKEY1();
-            case WBK_ADDR -> this.workRAMBank | 0b11111000;
-            case RP_ADDR -> this.infraredPort | 0b00111100;
+            case WBK_ADDR -> this.emulator.isDMGCompatibilityMode() ? 0xFF : this.rWBKValue | 0b11111000;
+            case RP_ADDR -> this.infraredPort | 0b00111100 | (0b10 /*Not receiving IR signal*/);
+            case PCM12_ADDR, PCM34_ADDR -> this.emulator.getAudioGenerator().readByte(address);
             case UNK_1_ADDR -> this.unknownRegister1;
             case UNK_2_ADDR -> this.unknownRegister2;
             case UNK_3_ADDR -> this.emulator.isDMGCompatibilityMode() ? 0xFF : this.unknownRegister3;
@@ -311,9 +319,12 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             case KEY_0_ADDR -> this.emulator.writeKey0(value);
             case KEY_1_ADDR -> this.emulator.writeKEY1(value);
             case WBK_ADDR -> {
-                this.workRAMBank = value & 0b111;
-                if (this.workRAMBank == 0) {
-                    this.workRAMBank = 1;
+                if (!this.emulator.isDMGCompatibilityMode() || !this.enableBootRom) {
+                    this.rWBKValue = value & 0b111;
+                    this.workRAMBank = this.rWBKValue;
+                    if (this.workRAMBank == 0) {
+                        this.workRAMBank = 1;
+                    }
                 }
             }
             case RP_ADDR -> this.infraredPort = (this.infraredPort & 0b10) | (value & 0b11111101);
@@ -436,7 +447,7 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
                 }
                 case HBLANK -> {
                     int ppuMode = this.emulator.getVideoGenerator().getMode().getValue();
-                    if (!DMGPPU.Mode.MODE_0_HBLANK.matchesValue(this.oldPpuMode) && DMGPPU.Mode.MODE_0_HBLANK.matchesValue(ppuMode)) {
+                    if (!DMGPPU.Mode.HBLANK_0.matchesValue(this.oldPpuMode) && DMGPPU.Mode.HBLANK_0.matchesValue(ppuMode)) {
                         this.vdmaCopyingBlock = true;
                         this.haltCPU = true;
                     }
@@ -464,16 +475,8 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
     }
 
     private int readByteVDMA(int address) {
-        if (this.enableBootRom && address >= 0x0000 && address <= 0x08FF) {
-            if (address <= 0x00FF) {
-                return SAMEBOY_CGB_BOOT_ROM[address];
-            } else if (address <= 0x01FF) {
-                return super.readByteOAMDMA(address);
-            } else {
-                return SAMEBOY_CGB_BOOT_ROM[address];
-            }
-        } else if ((address >= ROM0_START && address <= ROMX_END) || (address >= SRAM_START && address <= SRAM_END)) {
-            return this.emulator.getCartridge().readByte(address);
+        if ((address >= ROM0_START && address <= ROMX_END) || (address >= SRAM_START && address <= SRAM_END)) {
+            return this.currentReadCartridgeFunction.applyAsInt(address);
         } else if (address >= VRAM_START && address <= VRAM_END) {
             return 0xFF;
         } else if (address >= WRAM0_START && address <= WRAMX_END) {
@@ -487,20 +490,16 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
     }
 
     @Override
-    protected int readByteOAMDMA(int address) {
-        if (this.enableBootRom) {
-            if (address >= 0x0000 && address <= 0x00FF) {
-                return SAMEBOY_CGB_BOOT_ROM[address];
-            } else if (address >= 0x0100 && address <= 0x01FF) {
-                return super.readByteOAMDMA(address);
-            } else if (address >= 0x0200 && address <= 0x08FF) {
-                return SAMEBOY_CGB_BOOT_ROM[address];
-            } else {
-                return super.readByteOAMDMA(address);
-            }
-        } else {
-            return super.readByteOAMDMA(address);
-        }
+    protected boolean areUsingSameBuses(int address1, int address2) {
+        return (isExternalBus(address1) && isExternalBus(address2)) || (isVRAMBus(address1) && isVRAMBus(address2)) || (isWRAMBus(address1) && isWRAMBus(address2));
+    }
+
+    private static boolean isExternalBus(int address) {
+        return (address >= 0x0000 && address <= 0x7FFF) || (address >= 0xA000 && address <= 0xBFFF);
+    }
+
+    private static boolean isWRAMBus(int address) {
+        return address >= WRAM0_START && address <= ECHO_END;
     }
 
     private enum VDMAType {

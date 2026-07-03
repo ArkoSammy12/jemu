@@ -4,6 +4,9 @@ import io.github.arkosammy12.jemu.core.nintendo.gameboy.DMGAPU;
 
 public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
 
+    public static final int PCM12_ADDR = 0xFF76;
+    public static final int PCM34_ADDR = 0xFF77;
+
     public CGBAPU(E emulator) {
         super(emulator);
     }
@@ -11,6 +14,15 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
     @Override
     protected CGBAPU<?>.Channel3 createChannel3() {
         return this.new Channel3();
+    }
+
+    @Override
+    public int readByte(int address) {
+        return switch (address) {
+            case PCM12_ADDR -> (this.channel2.getDigitalOutput() << 4) | this.channel1.getDigitalOutput();
+            case PCM34_ADDR -> (this.channel4.getDigitalOutput() << 4) | this.channel3.getDigitalOutput();
+            default -> super.readByte(address);
+        };
     }
 
     @Override
@@ -52,18 +64,12 @@ public class CGBAPU<E extends GameBoyColorEmulator> extends DMGAPU<E> {
         }
 
         @Override
-        protected int tick() {
+        protected void tick() {
             if (!this.getEnabled() || this.triggeredThisCycle) {
                 this.triggeredThisCycle = false;
-                int amplitude;
-                if (this.waveRamIndex % 2 == 0) {
-                    amplitude = (this.waveSampleBuffer >>> 4) & 0xF;
-                } else {
-                    amplitude = this.waveSampleBuffer & 0xF;
-                }
-                return amplitude >>> this.getShiftAmount();
+                return;
             }
-            return super.tick();
+            super.tick();
         }
 
         @Override

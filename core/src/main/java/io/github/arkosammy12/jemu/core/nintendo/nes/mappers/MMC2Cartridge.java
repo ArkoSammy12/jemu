@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
+import io.github.arkosammy12.jemu.core.nintendo.nes.ines.NES20File;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -36,7 +37,7 @@ public class MMC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
     public MMC2Cartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
 
-        int programRamSize = Math.clamp((long) iNESFile.getProgramRamSize(), 0, KB_8);
+        int programRamSize = Math.clamp(iNESFile.getProgramRamSize(), 0, KB_8);
         this.programRAM = programRamSize > 0 ? new byte[programRamSize] : null;
 
         byte[] programRomData = iNESFile.getProgramRom();
@@ -45,12 +46,19 @@ public class MMC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
         Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
         if (characterRomOptional.isEmpty()) {
             this.characterROM = null;
-            this.characterRAM = new byte[iNESFile.getCharacterRamSize()];
+            int characterRamSize = iNESFile.getCharacterRamSize();
+            if (iNESFile instanceof NES20File nes20File) {
+                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
+            }
+            this.characterRAM = new byte[characterRamSize];
         } else {
             byte[] characterRomData = characterRomOptional.get();
             this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
             this.characterRAM = null;
         }
+
+        this.restoreSaveData(this.programRAM, this.characterRAM);
+
     }
 
     @Override
@@ -165,6 +173,16 @@ public class MMC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
             }
         }
         return mappedAddress;
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatilePrgRam() {
+        return Optional.ofNullable(this.programRAM);
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatileChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
     protected enum CHRBankLatch {

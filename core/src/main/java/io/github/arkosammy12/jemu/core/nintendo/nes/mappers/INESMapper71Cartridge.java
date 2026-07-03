@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
+import io.github.arkosammy12.jemu.core.nintendo.nes.ines.NES20File;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -36,7 +37,11 @@ public class INESMapper71Cartridge<E extends NESEmulator> extends NESCartridge<E
         Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
         if (characterRomOptional.isEmpty()) {
             this.characterROM = null;
-            this.characterRAM = new byte[iNESFile.getCharacterRamSize()];
+            int characterRamSize = iNESFile.getCharacterRamSize();
+            if (iNESFile instanceof NES20File nes20File) {
+                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
+            }
+            this.characterRAM = new byte[characterRamSize];
         } else {
             byte[] characterRomData = characterRomOptional.get();
             this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
@@ -48,6 +53,8 @@ public class INESMapper71Cartridge<E extends NESEmulator> extends NESCartridge<E
         } else {
             this.nametableArrangementSupplier = () -> this.iNESFileNametableArrangement;
         }
+
+        this.restoreSaveData(null, this.characterRAM);
 
     }
 

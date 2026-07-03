@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="jemu logo" width="200"/>
+</p>
+
 # jemu
 
 Multi-system emulator written in Java.
@@ -39,20 +43,20 @@ Multi-system emulator written in Java.
 ## RCA Studio II
 
 
-| Keypad 1 | Keyboard key |
+| Keypad A | Keyboard key |
 |----------|--------------|
-| `1 2 3`  | `Q W E`      |
-| `4 5 6`  | `A S D`      |
-| `7 8 9`  | `Z X C`      |
-| `- 0 -`  | `- Alt -`    |
+| `1 2 3`  | `1 2 3`      |
+| `4 5 6`  | `Q W E`      |
+| `7 8 9`  | `A S D`      |
+| `- 0 -`  | `- X -`      |
 
 
-| Keypad 2 | Keyboard or numpad key |
-|----------|------------------------|
-| `1 2 3`  | `1 2 3`                |
-| `4 5 6`  | `4 5 6`                |
-| `7 8 9`  | `7 9 9`                |
-| `- 0 -`  | `- 0 -`                |
+| Keypad B | Numpad key | Keyboard key |
+|----------|------------|--------------|
+| `1 2 3`  | `7 8 9`    | `7 8 9`      |
+| `4 5 6`  | `4 5 6`    | `U I O`      |
+| `7 8 9`  | `1 2 3`    | `J K L`      |
+| `- 0 -`  | `- 0 -`    | `- , -`      |
 
 ### Game Boy / Game Boy Color / Nintendo Entertainment System
 
@@ -77,13 +81,14 @@ Usage:
 jemu [-hV] -r=<romPath> [-s=<system>]
 ```
 
-| Argument                    | Description                                                                                                                                     | Default |
-|-----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------|---------|
-| `-r, --rom <path>`          | **Required.** Path to the ROM file.                                                                                                             | —       |
-| `-s, --system <identifier>` | Launch with the specified system selected, or omit to use the saved setting. See [supported systems](#supported-systems) for valid identifiers. | —       |
-| `-h, --help`                | Show the help message and exit.                                                                                                                 | —       |
-| `-V, --version`             | Print version information and exit.                                                                                                             | —       |
+| Argument                    | Description                                                                                                                                                                                              | Default |
+|-----------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|---------|
+| `-r, --rom <path>`          | Path to the ROM file.                                                                                                                                                                                    | —       |
+| `-s, --system <identifier>` | Launch with the specified system selected, or omit to use the saved setting or system detected from ROM file extension, if specified. See [supported systems](#supported-systems) for valid identifiers. | —       |
+| `-h, --help`                | Show the help message and exit.                                                                                                                                                                          | —       |
+| `-V, --version`             | Print version information and exit.                                                                                                                                                                      | —       |
 
+On startup **jemu** will attempt to perform a power-cycle with the provided, detected, or saved system and specified ROM file, if any.
 
 ## Dev Builds
 
@@ -93,17 +98,25 @@ These builds are not well tested and may have bugs.
 
 ## Building
 
-A Java Development Kit targeting Java version 25 or later is required to build this project.
+A Java Development Kit targeting Java 25 or later is required to build this project.
 
-Clone the repository and run the following command on the top level directory:
+This repository contains git submodules. When cloning, use the `--recurse-submodules` flag to ensure they are all downloaded correctly.
 
+Once cloned, run the following from the top-level directory:
+
+**Windows:**
 ```
-mvnw clean package
+.\mvnw clean package
 ```
 
-An executable `.jar` file should have then been generated in `/target/jemu-x.y.z.jar`.
+**macOS/Linux:**
+```
+./mvnw clean package
+```
 
-Run with the `-DskipTests` flag to omit running the automated unit tests.
+An executable `.jar` file will be generated at `target/jemu-x.y.z.jar`.
+
+To skip the automated unit tests, append `-DskipTests` to the build command.
 
 ## License
 
@@ -113,4 +126,5 @@ This project is licensed under the [MIT License](LICENSE).
 
 - [Mathew "theklap" Sutton](https://github.com/theklap): Significant accuracy improvements to the NES core.
 - [dtabacaru](https://github.com/dtabacaru/): Providing audio filtering logic to system's audio processing units.
-- [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output.
+- [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output, and the amazing [Ricoh 2A03 instruction reference](https://github.com/L-Spiro/BeesNES/tree/main/Research/Instructions).
+- [Andrew "ajoneil" O'Neil](https://github.com/ajoneil): Significant accuracy improvements to the DMG/CGB cores.

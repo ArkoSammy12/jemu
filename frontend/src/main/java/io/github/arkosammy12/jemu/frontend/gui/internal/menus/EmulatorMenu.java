@@ -1,9 +1,10 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
-import io.github.arkosammy12.jemu.frontend.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.internal.SerializedEntry;
+import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PauseCommandCallback;
-import io.github.arkosammy12.jemu.frontend.gui.internal.commands.ResetCommandCallback;
+import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
@@ -37,7 +38,6 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
     private volatile boolean emulatorStopped = true;
 
     public EmulatorMenu(MainWindow mainWindow) {
-
         this.mainWindow = mainWindow;
 
         this.jMenu.setText("Emulator");
@@ -47,7 +47,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         ButtonGroup buttonGroup = new ButtonGroup();
         this.automaticItem = new JRadioButtonMenuItem("Automatic");
-        this.automaticItem.addChangeListener(_ -> currentSystemDescriptor = null);
+        this.automaticItem.addActionListener(_ -> this.setSystemDescriptor(null));
         this.automaticItem.setSelected(true);
         buttonGroup.add(this.automaticItem);
         systemMenu.add(this.automaticItem);
@@ -56,15 +56,20 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
-            item.addChangeListener(_ -> this.currentSystemDescriptor = systemDescriptor);
+            item.addActionListener(_ -> this.setSystemDescriptor(systemDescriptor));
             buttonGroup.add(item);
             systemMenu.add(item);
             this.systemDescriptorButtonMap.put(systemDescriptor, item);
         }
 
+        JMenuItem powerCycleButton = new JMenuItem("Power Cycle");
+        powerCycleButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_T, InputEvent.CTRL_DOWN_MASK, true));
+        powerCycleButton.setEnabled(true);
+        powerCycleButton.addActionListener(_ -> this.submitPowerCycle());
+
         JMenuItem resetButton = new JMenuItem("Reset");
         resetButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_R, InputEvent.CTRL_DOWN_MASK, true));
-        resetButton.setEnabled(true);
+        resetButton.setEnabled(false);
         resetButton.addActionListener(_ -> this.submitReset());
 
         this.pauseButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_P, InputEvent.CTRL_DOWN_MASK, true));
@@ -74,7 +79,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         this.stopButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, InputEvent.CTRL_DOWN_MASK, true));
         this.stopButton.setEnabled(false);
-        this.stopButton.addActionListener(_ -> mainWindow.submitEmulatorCommand(new StopEmulatorCommand()));
+        this.stopButton.addActionListener(_ -> this.submitStop());
 
         this.stepFrameButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F, InputEvent.CTRL_DOWN_MASK, true));
         this.stepFrameButton.setEnabled(false);
@@ -94,6 +99,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             mainWindow.submitEmulatorCommand(new StepCycleEmulatorCommand());
         });
 
+        this.jMenu.add(powerCycleButton);
         this.jMenu.add(resetButton);
         this.jMenu.add(pauseButton);
         this.jMenu.add(stopButton);
@@ -104,57 +110,64 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         this.jMenu.add(systemMenu);
 
-        mainWindow.registerSettingProperty(new SerializedEntry("settings.selected_system", () -> this.currentSystemDescriptor == null ? "" : this.currentSystemDescriptor.getId(), s -> {
+        mainWindow.getConfig().getInternalPreferenceSettings().getInternalEmulatorSettings().getSelectedSystemId().ifPresent(systemId -> {
             for (Map.Entry<SystemDescriptor, JRadioButtonMenuItem> button : this.systemDescriptorButtonMap.entrySet()) {
-                if (button.getKey().getId().equals(s)) {
+                if (button.getKey().getId().equals(systemId)) {
                     button.getValue().doClick();
                     break;
                 }
             }
-        }));
+        });
 
-        mainWindow.<PauseCommandCallback>addEmulatorCommandCallback(pauseCommand -> SwingUtilities.invokeLater(() -> {
-            if (pauseCommand.pause()) {
-                if (emulatorStopped) {
-                    this.stepFrameButton.setEnabled(false);
-                    this.stepCycleButton.setEnabled(false);
-                } else {
-                    stopButton.setEnabled(true);
-                    this.stepFrameButton.setEnabled(true);
-                    this.stepCycleButton.setEnabled(true);
-                }
-
-            } else {
-                if (emulatorStopped) {
-                    stopButton.setEnabled(false);
-                    pauseButton.setSelected(false);
-                    stepFrameButton.setEnabled(false);
-                    stepCycleButton.setEnabled(false);
-                } else {
-                    stopButton.setEnabled(true);
-                    stepFrameButton.setEnabled(false);
-                    stepCycleButton.setEnabled(false);
-                }
-            }
-        }));
-
-        mainWindow.<ResetCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
+        mainWindow.<PowerCycleCommandCallback>onEmulatorCommand(_ -> SwingUtilities.invokeLater(() -> {
             boolean paused = this.pauseButton.isSelected();
+            resetButton.setEnabled(true);
             stopButton.setEnabled(true);
             stepFrameButton.setEnabled(paused);
             stepCycleButton.setEnabled(paused);
             emulatorStopped = false;
         }));
 
-        mainWindow.<StopCommandCallback>addEmulatorCommandCallback(_ -> SwingUtilities.invokeLater(() -> {
-            stopButton.setEnabled(false);
-            pauseButton.setSelected(false);
-            stepFrameButton.setEnabled(false);
-            stepCycleButton.setEnabled(false);
-            mainWindow.getSystemViewport().setSystemDisplay(null);
+        mainWindow.<PauseCommandCallback>onEmulatorCommand(pauseCommand -> SwingUtilities.invokeLater(() -> {
+            if (pauseCommand.pause()) {
+                this.pauseButton.setSelected(true);
+                if (emulatorStopped) {
+                    this.stepFrameButton.setEnabled(false);
+                    this.stepCycleButton.setEnabled(false);
+                } else {
+                    this.stopButton.setEnabled(true);
+                    this.stepFrameButton.setEnabled(true);
+                    this.stepCycleButton.setEnabled(true);
+                }
+            } else {
+                this.pauseButton.setSelected(false);
+                this.stopButton.setEnabled(!emulatorStopped);
+                this.stepFrameButton.setEnabled(false);
+                this.stepCycleButton.setEnabled(false);
+            }
+        }));
+
+        mainWindow.<StopCommandCallback>onEmulatorCommand(_ -> SwingUtilities.invokeLater(() -> {
+            resetButton.setEnabled(false);
+            this.stopButton.setEnabled(false);
+            this.pauseButton.setSelected(false);
+            this.stepFrameButton.setEnabled(false);
+            this.stepCycleButton.setEnabled(false);
+            this.mainWindow.getSystemViewport().setSystemDisplay(null);
             mainWindow.getSystemViewport().setSystemKeyListener(null);
             emulatorStopped = true;
         }));
+
+        mainWindow.onEvent(InternalFileLoadedEvent.class, _ -> {
+            if (this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect()) {
+                this.restartEmulator();
+            }
+        });
+
+        mainWindow.onEvent(InternalROMEjectedEvent.class, _ -> {
+            this.submitStop();
+        });
+
     }
 
     @Override
@@ -173,28 +186,50 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         });
     }
 
-    void submitStop() {
+    private void setSystemDescriptor(@Nullable SystemDescriptor systemDescriptor) {
+        this.currentSystemDescriptor = systemDescriptor;
+        mainWindow.getConfig().getInternalPreferenceSettings().getInternalEmulatorSettings().setSelectedSystemId(systemDescriptor == null ? null : systemDescriptor.getId());
+    }
+
+    private void submitPowerCycle() {
+        SystemDescriptorResult systemDescriptorResult = this.getCurrentSystemDescriptor();
+        Optional<SystemDescriptor> systemDescriptor = systemDescriptorResult.getSystemDescriptor();
+        if (systemDescriptor.isPresent()) {
+            this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(systemDescriptor.get(), this.pauseButton.isSelected()));
+        } else {
+            this.mainWindow.showDialog("Error attempting to power cycle", systemDescriptorResult.errorMessage(), MainWindow.DialogType.ERROR);
+        }
+    }
+
+    private void restartEmulator() {
+        if (this.emulatorStopped) {
+            this.submitPowerCycle();
+        } else {
+            this.submitReset();
+        }
+    }
+
+    private void submitReset() {
+        mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(this.getCurrentSystemDescriptor().systemDescriptor(), this.pauseButton.isSelected()));
+    }
+
+    private void submitStop() {
         this.mainWindow.submitEmulatorCommand(new StopEmulatorCommand());
     }
 
-    void submitReset() {
+    private SystemDescriptorResult getCurrentSystemDescriptor() {
         SystemDescriptor systemDescriptor = this.currentSystemDescriptor;
         if (systemDescriptor != null) {
-            this.mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
-            return;
+            return new SystemDescriptorResult(systemDescriptor, null);
         }
-
         Optional<Path> optionalRomPath = this.mainWindow.getMainMenuBar().getFileMenu().getSelectedRomPath();
         if (optionalRomPath.isEmpty()) {
-            this.mainWindow.showDialog("Error attempting to restart", "No selected ROM path to determine system from!", MainWindow.DialogType.ERROR);
-            return;
+            return new SystemDescriptorResult(null, "No selected ROM path to determine system from!");
         }
         String fileExtension = FilenameUtils.getExtension(optionalRomPath.get().toString());
         if (fileExtension.isBlank()) {
-            this.mainWindow.showDialog("Error attempting to restart", "The file extension of the selected ROM path is blank!", MainWindow.DialogType.ERROR);
-            return;
+            return new SystemDescriptorResult(null, "The file extension of the selected ROM path is blank!");
         }
-
         outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemDescriptors()) {
             Optional<String[]> optionalFileExtensions = descriptor.getFileExtensions();
             if (optionalFileExtensions.isEmpty()) {
@@ -210,11 +245,23 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         }
 
         if (systemDescriptor == null) {
-            this.mainWindow.showDialog("Error attempting to restart", "File extension of selected ROM path does not match of system descriptors!", MainWindow.DialogType.ERROR);
-            return;
+            return new SystemDescriptorResult(null, "File extension of selected ROM path does not match of system descriptors!");
         }
 
-        this.mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptor, this.pauseButton.isSelected()));
+        return new SystemDescriptorResult(systemDescriptor, null);
+    }
+
+    private record SystemDescriptorResult(@Nullable SystemDescriptor systemDescriptor, @Nullable String errorMessage) {
+
+        private Optional<SystemDescriptor> getSystemDescriptor() {
+            return Optional.ofNullable(this.systemDescriptor);
+        }
+
+        @Override
+        public String errorMessage() {
+            return Optional.ofNullable(this.errorMessage).orElse("No error message provided!");
+        }
+
     }
 
 }

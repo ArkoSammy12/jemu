@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile;
+import io.github.arkosammy12.jemu.core.nintendo.nes.ines.NES20File;
 
 import java.util.Arrays;
 import java.util.Optional;
@@ -34,7 +35,11 @@ public class UxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
         if (characterRomOptional.isEmpty()) {
             this.characterROM = null;
-            this.characterRAM = new byte[iNESFile.getCharacterRamSize()];
+            int characterRamSize = iNESFile.getCharacterRamSize();
+            if (iNESFile instanceof NES20File nes20File) {
+                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
+            }
+            this.characterRAM = new byte[characterRamSize];
         } else {
             byte[] characterRomData = characterRomOptional.get();
             this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
@@ -45,6 +50,8 @@ public class UxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
             case 0, 2 -> true;
             default -> false;
         };
+
+        this.restoreSaveData(null, this.characterRAM);
 
     }
 
@@ -105,6 +112,11 @@ public class UxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         } else {
             return (this.bankSelect << 14) | (address & 0x3FFF);
         }
+    }
+
+    @Override
+    protected Optional<byte[]> getNonVolatileChrRam() {
+        return Optional.ofNullable(this.characterRAM);
     }
 
 }

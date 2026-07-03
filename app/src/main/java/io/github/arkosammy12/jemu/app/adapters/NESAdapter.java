@@ -1,38 +1,25 @@
 package io.github.arkosammy12.jemu.app.adapters;
 
-import de.gurkenlabs.input4j.InputComponent;
-import de.gurkenlabs.input4j.components.XInput;
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.io.initializers.CoreInitializer;
+import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESController;
 import io.github.arkosammy12.jemu.core.nintendo.nes.NESEmulator;
+import io.github.arkosammy12.jemu.core.nintendo.nes.NESHost;
 import org.jetbrains.annotations.Nullable;
 
+import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
-import java.util.Map;
+import java.nio.file.Path;
 import java.util.Optional;
 
-public class NESAdapter extends AbstractSystemAdapter {
+public class NESAdapter extends AbstractSystemAdapter implements NESHost {
 
-    private final String romTitle;
-    private final System system;
+    private String romTitle;
+    private System system;
 
-    private static final Map<InputComponent.ID, NESController.Actions> XINPUT_MAPPINGS = Map.of(
-            XInput.DPAD_UP, NESController.Actions.JOY1_UP,
-            XInput.DPAD_DOWN, NESController.Actions.JOY1_DOWN,
-            XInput.DPAD_LEFT, NESController.Actions.JOY1_LEFT,
-            XInput.DPAD_RIGHT, NESController.Actions.JOY1_RIGHT,
-            XInput.START, NESController.Actions.JOY1_START,
-            XInput.BACK, NESController.Actions.JOY1_SELECT,
-            XInput.A, NESController.Actions.JOY1_A,
-            XInput.B, NESController.Actions.JOY1_B
-    );
-
-    public NESAdapter(Jemu jemu, CoreInitializer initializer) {
-        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
-        this.system = System.NES;
+    public NESAdapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
         super(jemu, initializer);
     }
 
@@ -58,12 +45,6 @@ public class NESAdapter extends AbstractSystemAdapter {
     }
 
     @Override
-    @Nullable
-    public NESController.Actions getActionForJoypadEvent(InputComponent.ID id) {
-        return XINPUT_MAPPINGS.get(id);
-    }
-
-    @Override
     public String getSystemName() {
         return this.system.getName();
     }
@@ -76,6 +57,18 @@ public class NESAdapter extends AbstractSystemAdapter {
     @Override
     public System getSystem() {
         return this.system;
+    }
+
+    @Override
+    public Optional<Path> getSaveDataDirectory() {
+        return this.jemu.getSavesDirectory();
+    }
+
+    @Override
+    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
+        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+        this.system = System.NES;
+        super.initialize(jemu, initializer, tryReset);
     }
 
 }

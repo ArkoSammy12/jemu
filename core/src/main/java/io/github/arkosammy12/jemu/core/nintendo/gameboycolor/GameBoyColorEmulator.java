@@ -13,11 +13,95 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
 
     private CGBTimerController<?> timerController;
 
+    private final Runnable singleSpeedRunCycleFunction;
+    private final Runnable doubleSpeedRunCycleFunction;
+
     private boolean dmgCompatibilityMode;
     private int key1;
+    private Runnable currentRunCycleFunction;
 
     public GameBoyColorEmulator(GameBoyHost host) {
         super(host);
+
+        this.singleSpeedRunCycleFunction = () -> {
+            CGBSM83<?> cpu = this.getCpu();
+            CGBBus<?> bus = this.getBus();
+
+            this.mCycleDot = 0;
+            this.cpuMCycleDotBase = 0;
+            this.cpuMCycleDotSpan = 4;
+            boolean apuFrameSequencerTick = false;
+            if (bus.haltCPU()) {
+                if (cpu.getMode() != SM83.Mode.STOPPED) {
+                    apuFrameSequencerTick = this.getTimerController().cycle();
+                }
+            } else {
+                this.cpuOnBus = true;
+                cpu.cycle();
+                this.cpuOnBus = false;
+                if (cpu.getMode() != SM83.Mode.STOPPED) {
+                    apuFrameSequencerTick = this.getTimerController().cycle();
+                }
+                cpu.nextState();
+            }
+
+            this.syncPPUToDot(4);
+            this.getAudioGenerator().cycle(apuFrameSequencerTick);
+            this.getSerialController().cycle();
+            this.getCartridge().cycle();
+            bus.cycleOAMDMA();
+            bus.cycleVDMA();
+        };
+
+        this.doubleSpeedRunCycleFunction = () -> {
+            CGBSM83<?> cpu = this.getCpu();
+            CGBBus<?> bus = this.getBus();
+            CGBTimerController<?> timerController = this.getTimerController();
+            DMGSerialController<?> serialController = this.getSerialController();
+
+            this.mCycleDot = 0;
+            this.cpuMCycleDotSpan = 2;
+            boolean apuFrameSequencerTick = false;
+            if (bus.haltCPU()) {
+                if (cpu.getMode() != SM83.Mode.STOPPED) {
+                    apuFrameSequencerTick |= timerController.cycle();
+                    apuFrameSequencerTick |= timerController.cycle();
+                }
+            } else {
+                this.cpuMCycleDotBase = 0;
+                this.cpuOnBus = true;
+                cpu.cycle();
+                this.cpuOnBus = false;
+                if (cpu.getMode() != SM83.Mode.STOPPED) {
+                    apuFrameSequencerTick |= timerController.cycle();
+                }
+                cpu.nextState();
+
+                this.cpuMCycleDotBase = 2;
+                this.cpuOnBus = true;
+                cpu.cycle();
+                this.cpuOnBus = false;
+                if (cpu.getMode() != SM83.Mode.STOPPED) {
+                    apuFrameSequencerTick |= timerController.cycle();
+                }
+                cpu.nextState();
+            }
+
+            this.syncPPUToDot(4);
+            this.getAudioGenerator().cycle(apuFrameSequencerTick);
+
+            serialController.cycle();
+            serialController.cycle();
+
+            this.getCartridge().cycle();
+
+            bus.cycleOAMDMA();
+            bus.cycleOAMDMA();
+
+            bus.cycleVDMA();
+        };
+
+        this.currentRunCycleFunction = this.singleSpeedRunCycleFunction;
     }
 
     @Override
@@ -90,80 +174,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
 
     @Override
     protected void runCycle() {
-        CGBSM83<?> cpu = this.getCpu();
-        CGBAPU<?> apu = this.getAudioGenerator();
-        GameBoyCartridge cartridge = this.getCartridge();
-        CGBBus<?> bus = this.getBus();
-        CGBTimerController<?> timerController = this.getTimerController();
-        DMGSerialController<?> serialController = this.getSerialController();
-
-        if ((this.key1 & 0x80) == 0) {
-            this.mCycleDot = 0;
-            this.cpuMCycleDotBase = 0;
-            this.cpuMCycleDotSpan = 4;
-            boolean apuFrameSequencerTick = false;
-            if (bus.haltCPU()) {
-                if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick = timerController.cycle();
-                }
-            } else {
-                this.cpuOnBus = true;
-                cpu.cycle();
-                this.cpuOnBus = false;
-                if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick = timerController.cycle();
-                }
-                cpu.nextState();
-            }
-
-            this.syncPPUToDot(4);
-            apu.cycle(apuFrameSequencerTick);
-            serialController.cycle();
-            cartridge.cycle();
-            bus.cycleOAMDMA();
-            bus.cycleVDMA();
-        } else {
-            this.mCycleDot = 0;
-            this.cpuMCycleDotSpan = 2;
-            boolean apuFrameSequencerTick = false;
-            if (bus.haltCPU()) {
-                if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick |= timerController.cycle();
-                    apuFrameSequencerTick |= timerController.cycle();
-                }
-            } else {
-                this.cpuMCycleDotBase = 0;
-                this.cpuOnBus = true;
-                cpu.cycle();
-                this.cpuOnBus = false;
-                if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick |= timerController.cycle();
-                }
-                cpu.nextState();
-
-                this.cpuMCycleDotBase = 2;
-                this.cpuOnBus = true;
-                cpu.cycle();
-                this.cpuOnBus = false;
-                if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick |= timerController.cycle();
-                }
-                cpu.nextState();
-            }
-
-            this.syncPPUToDot(4);
-            apu.cycle(apuFrameSequencerTick);
-
-            serialController.cycle();
-            serialController.cycle();
-
-            cartridge.cycle();
-
-            bus.cycleOAMDMA();
-            bus.cycleOAMDMA();
-
-            bus.cycleVDMA();
-        }
+        this.currentRunCycleFunction.run();
     }
 
     @Override
@@ -176,6 +187,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
         this.onStopInstruction(resetDiv);
         if (this.isSwitchSpeedArmed()) {
             this.key1 = (this.key1 ^ 0x80) & 0xFE;
+            this.currentRunCycleFunction = (this.key1 & 0x80) != 0 ? this.doubleSpeedRunCycleFunction : this.singleSpeedRunCycleFunction;
         }
     }
 
@@ -190,11 +202,15 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     }
 
     public int readKEY0() {
-        return this.dmgCompatibilityMode ? 0xFF : 0xFB;
+        return 0xFF;
     }
 
     public int readKEY1() {
-        return this.key1 | 0b01111110;
+        if (this.dmgCompatibilityMode) {
+            return 0xFF;
+        } else {
+            return this.key1 | 0b01111110;
+        }
     }
 
     public boolean isSwitchSpeedArmed() {

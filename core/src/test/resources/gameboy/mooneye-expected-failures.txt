@@ -9,6 +9,3 @@ serial/boot_sclk_align-dmgABCmgb.gb (DMG)
 # PPU timing
 ppu/lcdon_timing-GS.gb (DMG)
 ppu/lcdon_write_timing-GS.gb (DMG)
-
-# Timer
-timer/rapid_toggle.gb (CGB)
