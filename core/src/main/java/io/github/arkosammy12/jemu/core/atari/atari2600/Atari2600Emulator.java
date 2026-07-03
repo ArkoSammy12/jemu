@@ -47,17 +47,17 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
     }
 
     @Override
-    public VideoGenerator<?> getVideoGenerator() {
+    public VideoGenerator getVideoGenerator() {
         return this.tia.getVideo();
     }
 
     @Override
-    public AudioGenerator<?> getAudioGenerator() {
+    public AudioGenerator getAudioGenerator() {
         return this.tia.getAudio();
     }
 
     @Override
-    public SystemController<?> getSystemController() {
+    public SystemController getSystemController() {
         return this.controller;
     }
 

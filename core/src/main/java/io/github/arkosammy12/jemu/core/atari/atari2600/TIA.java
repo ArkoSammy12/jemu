@@ -182,7 +182,7 @@ public class TIA<E extends Atari2600Emulator> implements Bus {
         return this.video.getRDYSignal();
     }
 
-    public class Video extends VideoGenerator<E> {
+    public class Video implements VideoGenerator {
 
         private static final int[] TIA_PALETTE = {
                     0x000000, 0x444400, 0x702800, 0x841800,
@@ -247,7 +247,6 @@ public class TIA<E extends Atari2600Emulator> implements Bus {
         private int clockNumber;
 
         public Video(E emulator) {
-            super(emulator);
             this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
             this.kernalScanlines = NTSC_KERNAL_SCANLINES;
             this.vblankEndScanline = NTSC_VBLANK_SCANLINES;
@@ -287,10 +286,10 @@ public class TIA<E extends Atari2600Emulator> implements Bus {
 
     }
 
-    public class Audio extends AudioGenerator<E> {
+    public class Audio implements AudioGenerator {
 
         public Audio(E emulator) {
-            super(emulator);
+
         }
 
         @Override
@@ -304,11 +303,20 @@ public class TIA<E extends Atari2600Emulator> implements Bus {
         }
 
         @Override
-        public Optional<byte[]> getSampleFrame() {
+        public Optional<AudioGenerator.SampleFrame> getSampleFrame() {
             return Optional.empty();
         }
 
+        @Override
+        public SampleFrameResampler getSampleFrameResampler() {
+            return null;
+        }
+
         private void clock() {
+
+        }
+
+        private interface SampleFrame extends AudioGenerator.SampleFrame {
 
         }
 
