@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/logo.png" alt="jemu logo" width="200"/>
+</p>
+
 # jemu
 
 Multi-system emulator written in Java.
@@ -122,5 +126,5 @@ This project is licensed under the [MIT License](LICENSE).
 
 - [Mathew "theklap" Sutton](https://github.com/theklap): Significant accuracy improvements to the NES core.
 - [dtabacaru](https://github.com/dtabacaru/): Providing audio filtering logic to system's audio processing units.
-- [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output.
+- [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output, and the amazing [Ricoh 2A03 instruction reference](https://github.com/L-Spiro/BeesNES/tree/main/Research/Instructions).
 - [Andrew "ajoneil" O'Neil](https://github.com/ajoneil): Significant accuracy improvements to the DMG/CGB cores.

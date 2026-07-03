@@ -47,6 +47,13 @@ jobs:
           mvn -B clean package
           mvn -B org.panteleyev:jpackage-maven-plugin:1.7.4:jpackage -pl app
 
+      - name: Copy license files
+        shell: bash
+        run: |
+          cp LICENSE target/dist/
+          cp CHANGELOG.md target/dist/
+          cp THIRD_PARTY_LICENSES target/dist/
+
       - name: Upload artifact
         uses: actions/upload-artifact@v5.0.0
         with:
