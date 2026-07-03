@@ -12,7 +12,7 @@ public class StereoAudioRendererDriver extends DefaultAudioRendererDriver {
     }
 
     @Override
-    protected byte[] convertBitDepthIfNecessary(byte[] buf) {
+    protected byte[] ensureBitDepth(byte[] buf) {
         return switch (this.audioGenerator.getBytesPerSample()) {
             case BYTES_1 -> {
                 byte[] buf16 = new byte[this.jemu.getAudioEngine().getBytesPerFrame()];

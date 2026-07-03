@@ -23,7 +23,7 @@
 
     <!-- Change this for everything else (and in the child submodules too of course) -->
     <!-- Change MacOS version property too! -->
-    <version>0.2.0</version>
+    <version>1.0.0</version>
     <packaging>pom</packaging>
     <modules>
         <module>core</module>

@@ -28,7 +28,7 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
             if (sampleFrame == null) {
                 return null;
             }
-            return this.audioGenerator.getSampleFrameResampler().resample(this.getSampleRate(), this.getSamplesPerFrame(), sampleFrame).map(this::convertBitDepthIfNecessary).orElse(null);
+            return this.audioGenerator.getSampleFrameResampler().resample(this.getSampleRate(), this.getSamplesPerFrame(), sampleFrame).map(this::ensureBitDepth).orElse(null);
         });
         this.jemu.getAudioEngine().setFramerate(jemu.getMainWindow().getConfigurations().getSettings().getSpeedSettings().getSpeedMode().scaleFramerate(emulator.getFramerate()));
         this.jemu.getAudioEngine().setAudioChannels(this.audioGenerator.isStereo() ? AudioChannels.STEREO : AudioChannels.MONO);
@@ -52,7 +52,7 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
         });
     }
 
-    protected abstract byte[] convertBitDepthIfNecessary(byte[] buf);
+    protected abstract byte[] ensureBitDepth(byte[] buf);
 
     public void clearAudioBuffer() {
         this.sampleFrameBuffer.clear();
