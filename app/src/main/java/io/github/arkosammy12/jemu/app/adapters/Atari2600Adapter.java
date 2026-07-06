@@ -15,13 +15,11 @@ import static io.github.arkosammy12.jemu.app.util.System.ATARI_2600;
 
 public class Atari2600Adapter extends AbstractSystemAdapter {
 
-    private final String romTitle;
-    private final System system;
+    private String romTitle;
+    private System system;
 
     public Atari2600Adapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
         super(jemu, initializer);
-        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
-        this.system = initializer.getSystem().orElse(ATARI_2600);
     }
 
     @Override
@@ -49,4 +47,12 @@ public class Atari2600Adapter extends AbstractSystemAdapter {
     public Optional<String> getRomTitle() {
         return Optional.ofNullable(this.romTitle);
     }
+
+    @Override
+    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
+        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+        this.system = initializer.getSystem().orElse(ATARI_2600);
+        super.initialize(jemu, initializer, tryReset);
+    }
+
 }
