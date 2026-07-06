@@ -34,10 +34,10 @@ public class RIOT<E extends Atari2600Emulator> implements Bus {
         if ((address & 0x200) != 0) {
             int reg = address & 0x1F;
             return switch (reg) {
-                case SWCHA -> 0;
-                case SWACNT -> 0;
-                case SWCHB -> 0;
-                case SWBCNT -> 0;
+                case SWCHA -> 0xFF;
+                case SWACNT -> 0xFF;
+                case SWCHB -> 0xFF;
+                case SWBCNT -> 0xFF;
                 case INTIM -> {
                     // reading INTIM clears the underflow flag
                     this.timerUnderflowed = false;

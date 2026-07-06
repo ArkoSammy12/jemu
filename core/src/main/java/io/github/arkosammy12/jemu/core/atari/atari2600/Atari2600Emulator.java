@@ -1,5 +1,6 @@
 package io.github.arkosammy12.jemu.core.atari.atari2600;
 
+import io.github.arkosammy12.jemu.core.atari.atari2600.tia.TIA;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.cpu.NMOS6507;
 
@@ -48,12 +49,12 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
 
     @Override
     public VideoGenerator getVideoGenerator() {
-        return this.tia.getVideo();
+        return this.tia;
     }
 
     @Override
     public AudioGenerator getAudioGenerator() {
-        return this.tia.getAudio();
+        return this.tia;
     }
 
     @Override

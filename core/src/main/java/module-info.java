@@ -17,5 +17,7 @@ module core {
     exports io.github.arkosammy12.jemu.core.nintendo.nes.mappers;
     exports io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs;
     exports io.github.arkosammy12.jemu.core.rca;
+    exports io.github.arkosammy12.jemu.core.atari.atari2600;
+    exports io.github.arkosammy12.jemu.core.atari.atari2600.tia;
 
 }

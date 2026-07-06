@@ -18,7 +18,8 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     RCA_STUDIO_II("rca-studioii", "RCA Studio II", new String[]{"bin", "st2"}, args -> new RCAStudioIIAdapter(args.jemu(), args.emulatorInitializer())),
     GAME_BOY("gameboy", "Game Boy", new String[] {"gb"}, args -> new GameBoyAdapter(args.jemu(), args.emulatorInitializer(), GameBoyHost.Model.DMG)),
     GAME_BOY_COLOR("gameboy-color", "Game Boy Color", new String[] {"gbc"}, args -> new GameBoyAdapter(args.jemu(), args.emulatorInitializer(), GameBoyHost.Model.CGB)),
-    NES("nes", "Nintendo Entertainment System", new String[] {"nes"}, args -> new NESAdapter(args.jemu(), args.emulatorInitializer()));
+    NES("nes", "Nintendo Entertainment System", new String[] {"nes"}, args -> new NESAdapter(args.jemu(), args.emulatorInitializer())),
+    ATARI_2600("atari-2600", "Atari 2600", new String[] {"a26"}, args -> new Atari2600Adapter(args.jemu(), args.emulatorInitializer()));
 
     private final String identifier;
     private final String displayName;
