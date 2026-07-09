@@ -19,7 +19,7 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
     private boolean currentJoystick0Left;
     private boolean currentJoystick0Right;
 
-    private boolean joystick0Button;
+    private boolean joystick0FireButton;
 
     private boolean physicalJoystick1Up;
     private boolean physicalJoystick1Down;
@@ -31,7 +31,7 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
     private boolean currentJoystick1Left;
     private boolean currentJoystick1Right;
 
-    private boolean joystick1Button;
+    private boolean joystick1FireButton;
 
     public Atari2600Controller(E emulator) {
         this.emulator = emulator;
@@ -69,8 +69,8 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
                     this.currentJoystick0Right = true;
                 }
             }
-            case JOYSTICK0_BUTTON -> {
-                this.joystick0Button = true;
+            case JOYSTICK0_FIRE -> {
+                this.joystick0FireButton = true;
                 this.emulator.getTIA().setI4(false);
             }
 
@@ -98,8 +98,8 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
                     this.currentJoystick1Right = true;
                 }
             }
-            case JOYSTICK1_BUTTON -> {
-                this.joystick1Button = true;
+            case JOYSTICK1_FIRE -> {
+                this.joystick1FireButton = true;
                 this.emulator.getTIA().setI5(false);
             }
         }
@@ -141,8 +141,8 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
                     this.currentJoystick0Left = true;
                 }
             }
-            case JOYSTICK0_BUTTON -> {
-                this.joystick0Button = false;
+            case JOYSTICK0_FIRE -> {
+                this.joystick0FireButton = false;
                 this.emulator.getTIA().setI4(true);
             }
 
@@ -174,8 +174,8 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
                     this.currentJoystick1Left = true;
                 }
             }
-            case JOYSTICK1_BUTTON -> {
-                this.joystick1Button = false;
+            case JOYSTICK1_FIRE -> {
+                this.joystick1FireButton = false;
                 this.emulator.getTIA().setI5(true);
             }
         }
@@ -190,13 +190,13 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
             case JOYSTICK0_DOWN -> this.currentJoystick0Down;
             case JOYSTICK0_LEFT -> this.currentJoystick0Left;
             case JOYSTICK0_RIGHT -> this.currentJoystick0Right;
-            case JOYSTICK0_BUTTON -> this.joystick0Button;
+            case JOYSTICK0_FIRE -> this.joystick0FireButton;
 
             case JOYSTICK1_UP -> this.currentJoystick1Up;
             case JOYSTICK1_DOWN -> this.currentJoystick1Down;
             case JOYSTICK1_LEFT -> this.currentJoystick1Left;
             case JOYSTICK1_RIGHT -> this.currentJoystick1Right;
-            case JOYSTICK1_BUTTON -> this.joystick1Button;
+            case JOYSTICK1_FIRE -> this.joystick1FireButton;
         };
     }
 
@@ -204,17 +204,17 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
         GAME_SELECT("Game Select"),
         GAME_RESET("Game Reset"),
 
-        JOYSTICK0_UP("Joystick 0 Up"),
-        JOYSTICK0_DOWN("Joystick 0 Down"),
-        JOYSTICK0_LEFT("Joystick 0 Left"),
-        JOYSTICK0_RIGHT("Joystick 0 Right"),
-        JOYSTICK0_BUTTON("Joystick 0 Button"),
+        JOYSTICK0_UP("Left Joystick Up"),
+        JOYSTICK0_DOWN("Left Joystick Down"),
+        JOYSTICK0_LEFT("Left Joystick Left"),
+        JOYSTICK0_RIGHT("Left Joystick Right"),
+        JOYSTICK0_FIRE("Left Joystick Button"),
 
-        JOYSTICK1_UP("Joystick 1 Up"),
-        JOYSTICK1_DOWN("Joystick 1 Down"),
-        JOYSTICK1_LEFT("Joystick 1 Left"),
-        JOYSTICK1_RIGHT("Joystick 1 Right"),
-        JOYSTICK1_BUTTON("Joystick 1 Button"),
+        JOYSTICK1_UP("Right Joystick 1 Up"),
+        JOYSTICK1_DOWN("Right Joystick Down"),
+        JOYSTICK1_LEFT("Right Joystick Left"),
+        JOYSTICK1_RIGHT("Right Joystick Right"),
+        JOYSTICK1_FIRE("Right Joystick Button"),
 
         ;
 

@@ -177,12 +177,12 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
 
     @Override
     public boolean getI4() {
-        return !this.controller.isActionPressed(JOYSTICK0_BUTTON);
+        return !this.controller.isActionPressed(JOYSTICK0_FIRE);
     }
 
     @Override
     public boolean getI5() {
-        return !this.controller.isActionPressed(JOYSTICK1_BUTTON);
+        return !this.controller.isActionPressed(JOYSTICK1_FIRE);
     }
 
     @Override

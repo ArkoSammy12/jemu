@@ -12,22 +12,23 @@ Multi-system emulator written in Java.
 
 ## Supported systems
 
-| System                              | CLI identifier  | Status      |
-|-------------------------------------|-----------------|-------------|
-| COSMAC VIP                          | `cosmac-vip`    | ✅ Supported |
-| RCA Studio II                       | `rca-studioii`  | ✅ Supported |
-| VIP CHIP-8                          | `vip-chip8`     | ✅ Supported |
-| VIP CHIP-8X                         | `vip-chip8x`    | ✅ Supported |
-| Game Boy (DMG)                      | `gameboy`       | ✅ Supported |
-| Game Boy Color (CGB)                | `gameboy-color` | ✅ Supported |
-| Nintendo Entertainment System       | `nes`           | ✅ Supported |
-| Commodore 64                        | —               | 🗓 Planned  |
-| Apple II                            | —               | 🗓 Planned  |
-| Atari 2600                          | —               | 🗓 Planned  |
-| Sega Master System                  | —               | 🗓 Planned  |
-| ZX Spectrum                         | —               | 🗓 Planned  |
-| Sega Genesis                        | —               | 🗓 Planned  |
-| Super Nintendo Entertainment System | —               | 🗓 Planned  |
+| System                              | CLI identifier  | Status              |
+|-------------------------------------|-----------------|---------------------|
+| COSMAC VIP                          | `cosmac-vip`    | ✅ Supported         |
+| RCA Studio II                       | `rca-studioii`  | ✅ Supported         |
+| VIP CHIP-8                          | `vip-chip8`     | ✅ Supported         |
+| VIP CHIP-8X                         | `vip-chip8x`    | ✅ Supported         |
+| Game Boy (DMG)                      | `gameboy`       | ✅ Supported         |
+| Game Boy Color (CGB)                | `gameboy-color` | ✅ Supported         |
+| Nintendo Entertainment System       | `nes`           | ✅ Supported         |
+| Atari 2600                          | `atari-2600`    | 🚧 Work-in-progress |
+| Apple II                            | —               | 🗓 Planned          |
+| Commodore 64                        | —               | 🗓 Planned          |
+| Space Invaders arcade cabinet       | —               | 🗓 Planned          |
+| Sega Master System                  | —               | 🗓 Planned          |
+| ZX Spectrum                         | —               | 🗓 Planned          |
+| Sega Genesis                        | —               | 🗓 Planned          |
+| Super Nintendo Entertainment System | —               | 🗓 Planned          |
 
 ## Keybindings
 
@@ -41,7 +42,6 @@ Multi-system emulator written in Java.
 | `A 0 B F`  | `Z X C V`    |
 
 ## RCA Studio II
-
 
 | Keypad A | Keyboard key |
 |----------|--------------|
@@ -70,6 +70,23 @@ Multi-system emulator written in Java.
 | B           | `K`         |
 | Start       | `Enter`     |
 | Select      | `Backspace` |
+
+### Atari 2600
+
+| Action               | Key |
+|----------------------|-----|
+| Game Select          | `E` |
+| Game Reset           | `R` |
+| Left Joystick Up     | `W` |
+| Left Joystick Down   | `S` |
+| Left Joystick Left   | `A` |
+| Left Joystick Right  | `D` |
+| Left Joystick Fire   | `J` |
+| Right Joystick Up    | TBA |
+| Right Joystick Down  | TBA |
+| Right Joystick Left  | TBA |
+| Right Joystick Right | TBA |
+| Right Joystick Fire  | TBA |
 
 ## Command-line usage
 

@@ -33,12 +33,13 @@ public class Atari2600Adapter extends AbstractSystemAdapter {
     @Nullable
     protected SystemController.Action getActionForKeyCode(int keyCode) {
         return switch (keyCode) {
+            case KeyEvent.VK_E -> Atari2600Controller.Actions.GAME_SELECT;
             case KeyEvent.VK_R -> Atari2600Controller.Actions.GAME_RESET;
             case KeyEvent.VK_W -> Atari2600Controller.Actions.JOYSTICK0_UP;
             case KeyEvent.VK_S -> Atari2600Controller.Actions.JOYSTICK0_DOWN;
             case KeyEvent.VK_A -> Atari2600Controller.Actions.JOYSTICK0_LEFT;
             case KeyEvent.VK_D -> Atari2600Controller.Actions.JOYSTICK0_RIGHT;
-            case KeyEvent.VK_J -> Atari2600Controller.Actions.JOYSTICK0_BUTTON;
+            case KeyEvent.VK_J -> Atari2600Controller.Actions.JOYSTICK0_FIRE;
             default -> null;
         };
     }
