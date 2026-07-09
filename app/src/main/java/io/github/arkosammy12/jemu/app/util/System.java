@@ -3,9 +3,9 @@ package io.github.arkosammy12.jemu.app.util;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.adapters.*;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import picocli.CommandLine;
 

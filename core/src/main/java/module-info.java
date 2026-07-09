@@ -5,19 +5,18 @@ module core {
     requires org.tinylog.api;
 
     exports io.github.arkosammy12.jemu.core.common;
-    exports io.github.arkosammy12.jemu.core.rca.cosmacvip;
-    exports io.github.arkosammy12.jemu.core.rca.studioii;
-    exports io.github.arkosammy12.jemu.core.cpu;
+    exports io.github.arkosammy12.jemu.core.cosmacvip;
+    exports io.github.arkosammy12.jemu.core.studioii;
+    exports io.github.arkosammy12.jemu.core.hardware;
     exports io.github.arkosammy12.jemu.core.drivers;
     exports io.github.arkosammy12.jemu.core.exceptions;
-    exports io.github.arkosammy12.jemu.core.nintendo.gameboy;
-    exports io.github.arkosammy12.jemu.core.nintendo.gameboycolor;
-    exports io.github.arkosammy12.jemu.core.nintendo.nes;
-    exports io.github.arkosammy12.jemu.core.nintendo.nes.ines;
-    exports io.github.arkosammy12.jemu.core.nintendo.nes.mappers;
-    exports io.github.arkosammy12.jemu.core.nintendo.gameboy.mbcs;
-    exports io.github.arkosammy12.jemu.core.rca;
-    exports io.github.arkosammy12.jemu.core.atari.atari2600;
-    exports io.github.arkosammy12.jemu.core.atari.atari2600.tia;
+    exports io.github.arkosammy12.jemu.core.gameboy;
+    exports io.github.arkosammy12.jemu.core.gameboycolor;
+    exports io.github.arkosammy12.jemu.core.nes;
+    exports io.github.arkosammy12.jemu.core.nes.ines;
+    exports io.github.arkosammy12.jemu.core.nes.mappers;
+    exports io.github.arkosammy12.jemu.core.gameboy.mbcs;
+    exports io.github.arkosammy12.jemu.core.atari2600;
+    exports io.github.arkosammy12.jemu.core.atari2600.tia;
 
 }

@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.test.cpu;
 
-import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
+import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.test.ssts.nmos6502.NMOS6502TestCase;
 import io.github.arkosammy12.jemu.core.test.ssts.nmos6502.NMOS6502TestState;
 

@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.test.ssts.cdp1802;
 
 import io.github.arkosammy12.jemu.core.test.cpu.TestCDP1802;
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.cpu.CDP1802;
+import io.github.arkosammy12.jemu.core.hardware.CDP1802;
 import io.github.arkosammy12.jemu.core.test.util.FlatTestBus;
 
 import java.util.List;

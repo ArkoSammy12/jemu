@@ -5,10 +5,10 @@ import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyEmulator;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyJoypad;
-import io.github.arkosammy12.jemu.core.nintendo.gameboycolor.GameBoyColorEmulator;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
+import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 

@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.test.gameboy;
 
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 
 import java.io.IOException;
 import java.nio.file.Files;
