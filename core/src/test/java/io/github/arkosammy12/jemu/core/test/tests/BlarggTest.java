@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.test.tests;
 
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.test.gameboy.GameBoyTestHarness;
 import io.github.arkosammy12.jemu.core.test.gameboy.TestRoms;
 import org.junit.jupiter.api.DynamicTest;

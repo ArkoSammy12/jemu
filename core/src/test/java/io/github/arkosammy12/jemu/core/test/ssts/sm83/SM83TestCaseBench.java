@@ -2,12 +2,12 @@ package io.github.arkosammy12.jemu.core.test.ssts.sm83;
 
 import io.github.arkosammy12.jemu.core.test.cpu.TestSM83;
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.cpu.SM83;
+import io.github.arkosammy12.jemu.core.hardware.SM83;
 import io.github.arkosammy12.jemu.core.test.util.FlatTestBus;
 
 import java.util.List;
 
-import static io.github.arkosammy12.jemu.core.cpu.SM83.PREFIX;
+import static io.github.arkosammy12.jemu.core.hardware.SM83.PREFIX;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class SM83TestCaseBench implements SM83.SystemBus {

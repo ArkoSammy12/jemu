@@ -1,11 +1,11 @@
 package io.github.arkosammy12.jemu.core.test.gameboy;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.cpu.SM83;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.DMGSerialController;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyEmulator;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
-import io.github.arkosammy12.jemu.core.nintendo.gameboycolor.GameBoyColorEmulator;
+import io.github.arkosammy12.jemu.core.hardware.SM83;
+import io.github.arkosammy12.jemu.core.gameboy.DMGSerialController;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
 
 import java.io.IOException;
 import java.nio.file.Path;

@@ -1,0 +1,153 @@
+package io.github.arkosammy12.jemu.core.gameboy;
+
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
+import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.hardware.SM83;
+
+public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
+
+    public static final int DIV_ADDR = 0xFF04;
+    public static final int TIMA_ADDR = 0xFF05;
+    public static final int TMA_ADDR = 0xFF06;
+    public static final int TAC_ADDR = 0xFF07;
+
+    protected final E emulator;
+
+    protected static final int FREQ_0 = 1 << 9;
+    protected static final int FREQ_1 = 1 << 3;
+    protected static final int FREQ_2 = 1 << 5;
+    protected static final int FREQ_3 = 1 << 7;
+
+    protected static final int TAC_CLOCK_SELECT_MASK = 0b11;
+    protected static final int TAC_ENABLE_BIT = 1 << 2;
+
+    protected static final int DIV_BIT_4_MASK = 1 << 12;
+
+    protected int systemClock; // DIV (8 upper bits)
+    protected int timerCounter; // TIMA
+    protected int timerModulo; // TMA
+    protected int timerControl; // TAC
+
+    protected boolean oldTimerInput = false;
+    protected boolean reloadOccurred = false;
+
+    protected int reloadDelay = -1;
+
+    protected boolean oldDivBit4 = false;
+
+    public DMGTimerController(E emulator) {
+        this.emulator = emulator;
+    }
+
+    @Override
+    public int readByte(int address) {
+        return switch (address) {
+            case DIV_ADDR -> (this.systemClock & 0xFF00) >>> 8;
+            case TIMA_ADDR -> this.timerCounter;
+            case TMA_ADDR -> this.timerModulo;
+            case TAC_ADDR -> this.timerControl | 0b11111000;
+            default -> throw new EmulatorException("Invalid GameBoy timer address $%04X!".formatted(address));
+        };
+    }
+
+    @Override
+    public void writeByte(int address, int value) {
+        switch (address) {
+            case DIV_ADDR -> this.systemClock = 0;
+            case TIMA_ADDR -> {
+                if (this.reloadDelay >= 0) {
+                    this.reloadDelay = -1;
+                }
+                if (!this.reloadOccurred) {
+                    this.timerCounter = value & 0xFF;
+                }
+            }
+            case TMA_ADDR -> {
+                this.timerModulo = value & 0xFF;
+                if (this.reloadOccurred) {
+                    this.timerCounter = this.timerModulo;
+                }
+            }
+            case TAC_ADDR -> this.timerControl = value & 0xFF;
+            default -> throw new EmulatorException("Invalid GameBoy timer address $%04X!".formatted(address));
+        }
+    }
+
+    public int getSystemClock() {
+        return this.systemClock;
+    }
+
+    // It is assumed that this is called once per M-cycle, after the Processor performs the action of the current cycle, but before it fetches (if instruction ended), or polls for interrupts (if any)
+    public boolean cycle() {
+        this.reloadOccurred = false;
+
+        boolean apuFrameSequencerTick = false;
+
+        apuFrameSequencerTick |= this.cycleSystemClock();
+        apuFrameSequencerTick |= this.cycleSystemClock();
+        apuFrameSequencerTick |= this.cycleSystemClock();
+        apuFrameSequencerTick |= this.cycleSystemClock();
+
+        return apuFrameSequencerTick;
+    }
+
+    protected boolean cycleSystemClock() {
+        this.systemClock = (this.systemClock + 1) & 0xFFFF;
+        this.tickPendingReloadIfPresent();
+        boolean timerInput = this.getFrequencyBit() && (this.timerControl & TAC_ENABLE_BIT) != 0;
+
+        if (this.oldTimerInput && !timerInput) {
+            int newTimerCounter = this.timerCounter + 1;
+            if (newTimerCounter > 0xFF) {
+                this.reloadDelay = 4;
+            }
+            this.timerCounter = newTimerCounter & 0xFF;
+        }
+
+        this.oldTimerInput = timerInput;
+        return this.getAPUFrameSequencerTick();
+    }
+
+    protected boolean getAPUFrameSequencerTick() {
+        boolean divBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
+        boolean tick = this.oldDivBit4 && !divBit4;
+        this.oldDivBit4 = divBit4;
+        return tick;
+    }
+
+    protected void tickPendingReloadIfPresent() {
+        if (this.reloadDelay > 0) {
+            this.reloadDelay--;
+            if (this.reloadDelay <= 0) {
+                this.timerCounter = this.timerModulo;
+                this.triggerInterrupt();
+                this.reloadOccurred = true;
+            }
+        }
+    }
+
+    protected boolean getFrequencyBit() {
+        return switch (this.timerControl & TAC_CLOCK_SELECT_MASK) {
+            case 0 -> (this.systemClock & FREQ_0) != 0;
+            case 1 -> (this.systemClock & FREQ_1) != 0;
+            case 2 -> (this.systemClock & FREQ_2) != 0;
+            case 3 -> (this.systemClock & FREQ_3) != 0;
+            default -> throw new EmulatorException("Lower 2 bits of TAC is not in the range [0, 3]!");
+        };
+    }
+
+    public void resetDiv() {
+        this.systemClock = 0;
+    }
+
+    protected void triggerInterrupt() {
+        DMGBus<?> bus = this.emulator.getBus();
+        bus.setIF(bus.getIF() | SM83.TIMER_MASK);
+    }
+
+    public void onAPUPowerOn() {
+        this.oldDivBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
+    }
+
+}
+

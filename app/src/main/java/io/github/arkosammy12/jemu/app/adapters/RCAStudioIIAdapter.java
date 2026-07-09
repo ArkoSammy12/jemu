@@ -4,8 +4,8 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.core.rca.studioii.RCAStudioIIEmulator;
-import io.github.arkosammy12.jemu.core.rca.studioii.RCAStudioIIKeypad;
+import io.github.arkosammy12.jemu.core.studioii.RCAStudioIIEmulator;
+import io.github.arkosammy12.jemu.core.studioii.RCAStudioIIKeypad;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;

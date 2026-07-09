@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.core.test.ssts.nes6502;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.cpu.NMOS6502;
+import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.test.cpu.TestNES6502;
 import io.github.arkosammy12.jemu.core.test.util.FlatTestBus;
 

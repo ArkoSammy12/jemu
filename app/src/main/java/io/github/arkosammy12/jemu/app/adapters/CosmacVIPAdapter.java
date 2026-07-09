@@ -4,9 +4,9 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPKeypad;
-import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPEmulator;
-import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPEmulator;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;

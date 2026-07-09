@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.test.cpu;
 
-import io.github.arkosammy12.jemu.core.cpu.SM83;
+import io.github.arkosammy12.jemu.core.hardware.SM83;
 import io.github.arkosammy12.jemu.core.test.ssts.sm83.SM83TestCase;
 import io.github.arkosammy12.jemu.core.test.ssts.sm83.SM83TestState;
 
