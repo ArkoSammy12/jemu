@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.core.atari2600;
 
-import io.github.arkosammy12.jemu.core.atari2600.tia.TIA;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.hardware.MOS6532;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6507;
