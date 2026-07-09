@@ -1,16 +1,14 @@
 package io.github.arkosammy12.jemu.core.atari.atari2600.tia;
 
-import io.github.arkosammy12.jemu.core.atari.atari2600.Atari2600Emulator;
 import io.github.arkosammy12.jemu.core.common.AudioGenerator;
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Optional;
 
-public class TIA<E extends Atari2600Emulator> implements Bus, VideoGenerator, AudioGenerator {
-
-    private static final int AUDIO_CPU_CLK_DIVISOR = 38;
+public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenerator, AudioGenerator {
 
     static final int CXM0P = 0x00;
     static final int CXM1P = 0x01;
@@ -78,13 +76,16 @@ public class TIA<E extends Atari2600Emulator> implements Bus, VideoGenerator, Au
     private final TIAVideo<E> video;
     private final TIAAudio<E> audio;
 
-    private int audioClockDivisor = AUDIO_CPU_CLK_DIVISOR;
+    private boolean dump;
+    private boolean latchesEnabled;
 
-    public TIA(E emulator) {
+    private boolean i4Latch = true;
+    private boolean i5Latch = true;
+
+    public TIA(E emulator, int samplesPerFrame) {
         this.emulator = emulator;
-        this.video = new TIAVideo<>(emulator);
-        this.audio = new TIAAudio<>(emulator);
-
+        this.video = new TIAVideo<>(emulator, this);
+        this.audio = new TIAAudio<>(emulator, samplesPerFrame);
     }
 
     @Override
@@ -122,18 +123,51 @@ public class TIA<E extends Atari2600Emulator> implements Bus, VideoGenerator, Au
         return this.video.getPixelAspectRatio();
     }
 
+    public void setI4(boolean value) {
+        if (this.latchesEnabled && !value) {
+            this.i4Latch = false;
+        }
+    }
+
+    public void setI5(boolean value) {
+        if (this.latchesEnabled && !value) {
+            this.i5Latch = false;
+        }
+    }
+
+    void setLatch(boolean value) {
+        this.latchesEnabled = value;
+        if (this.latchesEnabled) {
+            // Capture the current state of the I4 and I5 input lines in case we need to clear the latches immediately to maintain continuity,
+            // as these are level sensitive latches.
+            if (!this.emulator.getI4()) {
+                this.i4Latch = false;
+            }
+            if (!this.emulator.getI5()) {
+                this.i5Latch = false;
+            }
+        } else {
+            this.i4Latch = true;
+            this.i5Latch = true;
+        }
+    }
+
+    void setDump(boolean value) {
+        this.dump = value;
+    }
+
     @Override
     public int readByte(int address) {
         address &= 0xF;
         return switch (address) {
             case CXM0P, CXM1P, CXP0FB, CXP1FB, CXM0FB, CXM1FB, CXBLPF, CXPPMM -> this.video.readByte(address);
-            case INPT0 -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
-            case INPT1 -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
-            case INPT2 -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
-            case INPT3 -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
-            case INPT4 -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
-            case INPT5 -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
-            default -> this.emulator.getBus().combineWithDataBus(0x80, 0x80);
+            case INPT0 -> this.emulator.combineWithDataBus(this.dump ? 0x00 : this.emulator.getI0() ? 0x80 : 0x00, 0x80);
+            case INPT1 -> this.emulator.combineWithDataBus(this.dump ? 0x00 : this.emulator.getI1() ? 0x80 : 0x00, 0x80);
+            case INPT2 -> this.emulator.combineWithDataBus(this.dump ? 0x00 : this.emulator.getI2() ? 0x80 : 0x00, 0x80);
+            case INPT3 -> this.emulator.combineWithDataBus(this.dump ? 0x00 : this.emulator.getI3() ? 0x80 : 0x00, 0x80);
+            case INPT4 -> this.emulator.combineWithDataBus(this.latchesEnabled ? (this.i4Latch ? 0x80 : 0x00) : this.emulator.getI4() ? 0x80 : 0x00, 0x80);
+            case INPT5 -> this.emulator.combineWithDataBus(this.latchesEnabled ? (this.i5Latch ? 0x80 : 0x00) : this.emulator.getI5() ? 0x80 : 0x00, 0x80);
+            default -> this.emulator.combineWithDataBus(0x00, 0x00);
         };
     }
 
@@ -149,19 +183,32 @@ public class TIA<E extends Atari2600Emulator> implements Bus, VideoGenerator, Au
     }
 
     public void cycle() {
-        this.video.clock();
-        this.video.clock();
-        this.video.clock();
-
-        this.audioClockDivisor--;
-        if (this.audioClockDivisor <= 0) {
-            this.audioClockDivisor = AUDIO_CPU_CLK_DIVISOR;
-            this.audio.clock();
-        }
+        this.video.cycle();
+        this.video.cycle();
+        this.video.cycle();
+        this.audio.cycle();
     }
 
     public boolean getRDYSignal() {
         return this.video.getRDYSignal();
+    }
+
+    public interface SystemBus {
+
+        boolean getI0();
+
+        boolean getI1();
+
+        boolean getI2();
+
+        boolean getI3();
+
+        boolean getI4();
+
+        boolean getI5();
+
+        int combineWithDataBus(int value, int validBitsMask);
+
     }
 
 }

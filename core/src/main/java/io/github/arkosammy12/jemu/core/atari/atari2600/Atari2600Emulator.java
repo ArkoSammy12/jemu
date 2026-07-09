@@ -4,7 +4,9 @@ import io.github.arkosammy12.jemu.core.atari.atari2600.tia.TIA;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.cpu.NMOS6507;
 
-public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
+import static io.github.arkosammy12.jemu.core.atari.atari2600.Atari2600Controller.Actions.*;
+
+public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.SystemBus, TIA.SystemBus {
 
     private static final int NTSC_CPU_CLOCK_SPEED = 1193182;
     private static final int NTSC_FRAMERATE = 60;
@@ -16,7 +18,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
 
     private final NMOS6507 cpu;
     private final TIA<?> tia;
-    private final RIOT<?> riot;
+    private final MOS6532<?> pia;
     private final Atari2600Bus<?> bus;
     private final Atari2600Controller<?> controller;
     private final Atari2600Cartridge<?> cartridge;
@@ -26,15 +28,16 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
 
     public Atari2600Emulator(SystemHost systemHost) {
         this.systemHost = systemHost;
-        this.cpu = new NMOS6507(this);
-        this.tia = new TIA<>(this);
-        this.riot = new RIOT<>(this);
-        this.bus = new Atari2600Bus<>(this);
-        this.controller = new Atari2600Controller<>(this);
-        this.cartridge = Atari2600Cartridge.getCartridge(this);
-
         this.framerate = NTSC_FRAMERATE;
         this.iterationsPerFrame = NTSC_CPU_CLOCK_SPEED / this.framerate;
+
+        this.controller = new Atari2600Controller<>(this);
+        this.cpu = new NMOS6507(this);
+        this.tia = new TIA<>(this, this.iterationsPerFrame);
+        this.pia = new MOS6532<>(this);
+        this.bus = new Atari2600Bus<>(this);
+        this.cartridge = Atari2600Cartridge.getCartridge(this);
+
     }
 
     @Override
@@ -66,8 +69,8 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
         return this.tia;
     }
 
-    public RIOT<?> getRIOT() {
-        return this.riot;
+    public MOS6532<?> getPIA() {
+        return this.pia;
     }
 
     public Atari2600Cartridge<?> getCartridge() {
@@ -90,7 +93,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
         this.cpu.cycle();
         this.cpu.cycle();
         this.tia.cycle();
-        this.riot.cycle();
+        this.pia.cycle();
     }
 
     @Override
@@ -100,7 +103,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
 
     @Override
     public boolean getIRQ() {
-        return false;
+        return this.pia.getIRQSignal();
     }
 
     @Override
@@ -116,6 +119,94 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus {
     @Override
     public boolean getRDY() {
         return this.tia.getRDYSignal();
+    }
+
+    @Override
+    public int readSWCHA(int ddrA) {
+        int ret = this.controller.isActionPressed(JOYSTICK1_UP) ? 0 : 1;
+        ret |= this.controller.isActionPressed(JOYSTICK1_DOWN) ? 0 : 1 << 1;
+        ret |= this.controller.isActionPressed(JOYSTICK1_LEFT) ? 0 : 1 << 2;
+        ret |= this.controller.isActionPressed(JOYSTICK1_RIGHT) ? 0 : 1 << 3;
+        ret |= this.controller.isActionPressed(JOYSTICK0_UP) ? 0 : 1 << 4;
+        ret |= this.controller.isActionPressed(JOYSTICK0_DOWN) ? 0 : 1 << 5;
+        ret |= this.controller.isActionPressed(JOYSTICK0_LEFT) ? 0 : 1 << 6;
+        ret |= this.controller.isActionPressed(JOYSTICK0_RIGHT) ? 0 : 1 << 7;
+        return ret;
+    }
+
+    @Override
+    public int readSWCHB(int ddrB) {
+        int ret = this.getP1Difficulty() ? 1 << 7 : 0;
+        ret |= this.getP0Difficulty() ? 1 << 6 : 0;
+        ret |= this.getColor() ? 1 << 3 : 0;
+        ret |= this.getGameSelect() ? 1 << 1 : 0;
+        ret |= this.getGameReset() ? 1 : 0;
+        return ret;
+    }
+
+    @Override
+    public void writeSWCHA(int value, int ddrA) {
+
+    }
+
+    @Override
+    public void writeSWCHB(int value, int ddrB) {
+
+    }
+
+    @Override
+    public boolean getI0() {
+        return false;
+    }
+
+    @Override
+    public boolean getI1() {
+        return false;
+    }
+
+    @Override
+    public boolean getI2() {
+        return false;
+    }
+
+    @Override
+    public boolean getI3() {
+        return false;
+    }
+
+    @Override
+    public boolean getI4() {
+        return !this.controller.isActionPressed(JOYSTICK0_BUTTON);
+    }
+
+    @Override
+    public boolean getI5() {
+        return !this.controller.isActionPressed(JOYSTICK1_BUTTON);
+    }
+
+    @Override
+    public int combineWithDataBus(int value, int validBitsMask) {
+        return this.getBus().combineWithDataBus(value, validBitsMask);
+    }
+
+    private boolean getP1Difficulty() {
+        return false;
+    }
+
+    private boolean getP0Difficulty() {
+        return false;
+    }
+
+    private boolean getColor() {
+        return true;
+    }
+
+    private boolean getGameSelect() {
+        return !this.controller.isActionPressed(GAME_SELECT);
+    }
+
+    private boolean getGameReset() {
+        return !this.controller.isActionPressed(GAME_RESET);
     }
 
     @Override

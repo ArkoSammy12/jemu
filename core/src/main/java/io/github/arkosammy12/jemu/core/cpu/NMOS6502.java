@@ -4421,13 +4421,7 @@ public abstract class NMOS6502 implements Processor {
                     }
                     case 2 -> {
                         setPC(getPC() + 1);
-                        setA(getA() & getOperand());
-                        int temp = getFC() ? 0x80 : 0x00;
-                        setFC((getA() & 0x80) != 0);
-                        setA((getA() >>> 1) | temp);
-                        setFN((getA() & 0x80) != 0);
-                        setFZ(getA() == 0);
-                        setFV(((getFC() ? 1 : 0) ^ ((getA() >>> 5) & 1)) != 0);
+                        arr();
 
                         onFetchCyclePHI1();
                         subCycleIndex = 3;
@@ -10283,46 +10277,86 @@ public abstract class NMOS6502 implements Processor {
         setFZ(getOperand() == 0);
     }
 
-    private void adc() {
-        addOrSubCarry(getOperand());
-    }
-
-    private void sbc() {
-        addOrSubCarry(getOperand() ^ 0xFF);
-    }
-
-    protected void addOrSubCarry(int operand) {
-        int a = getA();
-        int c = getFC() ? 1 : 0;
-
-        int binarySum = a + operand + c;
-        setFV(((~(a ^ operand)) & (a ^ binarySum) & 0x80) != 0);
-
-        int result;
-
+    protected void adc() {
+        int carry = getFC() ? 1 : 0;
         if (getFD()) {
-            int lo = (a & 0x0F) + (operand & 0x0F) + c;
-            int hi = (a & 0xF0) + (operand & 0xF0);
-            if (lo > 9) {
-                lo += 6;
+            int al = (getA() & 0xF) + (getOperand() & 0xF) + carry;
+            if (al > 0x9) {
+                al += 0x6;
             }
-            if (lo > 0x0F) {
-                hi += 0x10;
+            al &= 0xFF;
+            int ah = (((getA() >>> 4) & 0xF) + ((getOperand() >>> 4) & 0xF) + ((al > 0xF) ? 1 : 0)) & 0xFF;
+            setFN((ah & 0x8) != 0);
+            setFV((~(getA() ^ getOperand()) & (getA() ^ (ah << 4)) & 0x80) != 0);
+            if (ah > 0x9) {
+                ah = (ah + 0x6) & 0xFF;
             }
-            if ((hi & 0x1F0) > 0x90) {
-                hi += 0x60;
-            }
-            result = (lo & 0x0F) | (hi & 0xF0);
-            setFC(hi > 0xF0);
+            setFC(ah > 0xF);
+            setFZ(((getA() + getOperand() + carry) & 0xFF) == 0);
+            setA(((ah << 4) & 0xF0) | (al & 0xF));
         } else {
-            result = binarySum;
-            setFC(binarySum > 0xFF);
+            int val = getA() + getOperand() + carry;
+            setFV((((val ^ getA()) & (val ^ getOperand())) & 0x80) != 0);
+            setA(val);
+            setFC(val > 0xFF);
+            setFN((getA() & 0x80) != 0);
+            setFZ(getA() == 0);
         }
+    }
 
-        result &= 0xFF;
-        setA(result);
-        setFZ(result == 0);
-        setFN((result & 0x80) != 0);
+    protected void sbc() {
+        int carry = getFC() ? 0 : 1;
+        if (getFD()) {
+            int al = ((getA() & 0xF) - (getOperand() & 0xF) - carry) & 0xFF;
+            if (al > 0xF) {
+                al = (al - 0x6) & 0xFF;
+            }
+            int ah = (((getA() >>> 4) & 0xF) - ((getOperand() >>> 4) & 0xF) - (((al & 0x80) != 0) ? 1 : 0)) & 0xFF;
+            setFN((ah & 0x8) != 0);
+            setFV(((getA() ^ getOperand()) & (getA() ^ (ah << 4)) & 0x80) != 0);
+            if (ah > 0xF) {
+                ah = (ah - 0x6) & 0xFF;
+            }
+            int sub = getA() - getOperand() - carry;
+            setFC(sub >= 0);
+            setFZ((sub & 0xFF) == 0);
+            setA(((ah << 4) & 0xF0) | (al & 0xF));
+        } else {
+            int val = getA() - getOperand() - carry;
+            setFV(((getA() & 0x80) != (getOperand() & 0x80)) && ((getA() & 0x80) != (val & 0x80)));
+            setA(val);
+            setFC(val >= 0);
+            setFN((getA() & 0x80) != 0);
+            setFZ(getA() == 0);
+        }
+    }
+
+    protected void arr() {
+        setA(getA() & getOperand());
+        boolean carry = getFC();
+        int A = (getA() >>> 1) & 0xFF;
+        A |= carry ? 0x80 : 0x00;
+        setFZ(A == 0);
+        setFN((A & 0x80) != 0);
+        if (getFD()) {
+            setFV(((A ^  getA()) & 0x40) != 0);
+            if ((getA() & 0x0F) >= 0x05) {
+                A = ((A + 0x6) & 0xF) | (A & 0xF0);
+            }
+            if ((getA() & 0xF0) >= 0x50) {
+                A = (A + 0x60) & 0xFF;
+                setFC(true);
+            } else {
+                setFC(false);
+            }
+        } else {
+            setFC((A & 0x40) != 0);
+            setFV((A & 0x40) != 0);
+            if ((A & 0x20) != 0) {
+                setFV(!getFV());
+            }
+        }
+        setA(A);
     }
 
     protected int readByte(int address) {

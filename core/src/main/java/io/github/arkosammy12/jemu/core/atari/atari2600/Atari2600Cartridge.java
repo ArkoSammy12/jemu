@@ -2,21 +2,25 @@ package io.github.arkosammy12.jemu.core.atari.atari2600;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
 import java.util.Optional;
 
+import static io.github.arkosammy12.jemu.core.nintendo.nes.ines.INESFile.KB_4;
+
 public class Atari2600Cartridge<E extends Atari2600Emulator> implements Bus {
 
-    private final E emulator;
     private final byte[] rom;
 
     private Atari2600Cartridge(E emulator) {
-        this.emulator = emulator;
-        Optional<byte[]> rom = this.emulator.getHost().getRom();
+        Optional<byte[]> rom = emulator.getHost().getRom();
         if (rom.isEmpty()) {
-            throw new MissingROMException(this.emulator.getHost().getSystemName());
+            throw new MissingROMException(emulator.getHost().getSystemName());
         }
         this.rom = rom.get();
+        if (this.rom.length > KB_4) {
+            throw new ROMInitializationException("ROM cartridges bigger than 4KB are not yet supported!");
+        }
     }
 
     @Override

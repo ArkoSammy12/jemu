@@ -1,60 +1,95 @@
 package io.github.arkosammy12.jemu.core.atari.atari2600.tia;
 
-import io.github.arkosammy12.jemu.core.atari.atari2600.Atari2600Emulator;
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.util.ActionSignalDispatcher;
 
 import static io.github.arkosammy12.jemu.core.atari.atari2600.tia.TIA.*;
 
-class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
+class TIAVideo<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenerator {
 
     private static final int[] TIA_NTSC_PALETTE = {
-            0x000000, 0x444400, 0x702800, 0x841800,
-            0x880000, 0x78005c, 0x480078, 0x140084,
-            0x000088, 0x00187c, 0x002c5c, 0x00402c,
-            0x003c00, 0x143800, 0x2c3000, 0x442800,
-            0x404040, 0x646410, 0x844414, 0x983418,
-            0x9c2020, 0x8c2074, 0x602090, 0x302098,
-            0x1c209c, 0x1c3890, 0x1c4c78, 0x1c5c48,
-            0x205c20, 0x345c1c, 0x4c501c, 0x644818,
-            0x6c6c6c, 0x848424, 0x985c28, 0xac5030,
-            0xb03c3c, 0xa03c88, 0x783ca4, 0x4c3cac,
-            0x3840b0, 0x3854a8, 0x386890, 0x387c64,
-            0x407c40, 0x507c38, 0x687034, 0x846830,
-            0x909090, 0xa0a034, 0xac783c, 0xc06848,
-            0xc05858, 0xb0589c, 0x8c58b8, 0x6858c0,
-            0x505cc0, 0x5070bc, 0x5084ac, 0x509c80,
-            0x5c9c5c, 0x6c9850, 0x848c4c, 0xa08444,
-            0xb0b0b0, 0xb8b840, 0xbc8c4c, 0xd0805c,
-            0xd07070, 0xc070b0, 0xa070cc, 0x7c70d0,
-            0x6874d0, 0x6888cc, 0x689cc0, 0x68b494,
-            0x74b474, 0x84b468, 0x9ca864, 0xb89c58,
-            0xc8c8c8, 0xd0d050, 0xcca05c, 0xe09470,
-            0xe08888, 0xd084c0, 0xb484dc, 0x9488e0,
-            0x7c8ce0, 0x7c9cdc, 0x7cb4d4, 0x7cd0ac,
-            0x8cd08c, 0x9ccc7c, 0xb4c078, 0xd0b46c,
-            0xdcdcdc, 0xe8e85c, 0xdcb468, 0xeca880,
-            0xeca0a0, 0xdc9cd0, 0xc49cec, 0xa8a0ec,
-            0x90a4ec, 0x90b4ec, 0x90cce8, 0x90e4c0,
-            0xa4e4a4, 0xb4e490, 0xccd488, 0xe8cc7c,
-            0xececec, 0xfcfc68, 0xfcbc94, 0xfcb4b4,
-            0xecb0e0, 0xd4b0fc, 0xbcb4fc, 0xa4b8fc,
-            0xa4c8fc, 0xa4e0fc, 0xa4fcd4, 0xb8fcb8,
-            0xc8fca4, 0xe0ec9c, 0xfce08c, 0xffffff
+            0x000000, 0x404040, 0x6c6c6c, 0x909090,
+            0xb0b0b0, 0xc8c8c8, 0xdcdcdc, 0xececec,
+            0x444400, 0x646410, 0x848424, 0xa0a034,
+            0xb8b840, 0xd0d050, 0xe8e85c, 0xfcfc68,
+            0x702800, 0x844414, 0x985c28, 0xac783c,
+            0xbc8c4c, 0xb89c58, 0xdcb468, 0xecc878,
+            0x841800, 0x983418, 0xac5030, 0xc06848,
+            0xd0805c, 0xe09470, 0xeca880, 0xfcbc94,
+            0x880000, 0x9c2020, 0xb03c3c, 0xc05858,
+            0xd07070, 0xe08888, 0xeca0a0, 0xfcb4b4,
+            0x78005c, 0x8c2074, 0xa03c88, 0xb0589c,
+            0xc070b0, 0xd084c0, 0xdc9cd0, 0xecb0e0,
+            0x480078, 0x602090, 0x783ca4, 0x8c58b8,
+            0xa070cc, 0xb484dc, 0xc49cec, 0xd4b0fc,
+            0x140084, 0x302098, 0x4c3cac, 0x6858c0,
+            0x7c70d0, 0x9488e0, 0xa8a0ec, 0xbcb4fc,
+            0x000088, 0x1c209c, 0x3840b0, 0x505cc0,
+            0x6874d0, 0x7c8ce0, 0x90a4ec, 0xa4c8fc,
+            0x00187c, 0x1c3890, 0x3854a8, 0x5070bc,
+            0x6888cc, 0x7c9cdc, 0x90b4ec, 0xa4c8fc,
+            0x002c5c, 0x1c4c78, 0x386890, 0x5084ac,
+            0x689cc0, 0x7cb4d4, 0x90cce8, 0xa4e0fc,
+            0x003c2c, 0x1c5c48, 0x387c64, 0x509c80,
+            0x68b494, 0x7cd0ac, 0x90e4c0, 0xa4fcd4,
+            0x003c00, 0x205c20, 0x407c40, 0x5c9c5c,
+            0x74b474, 0x8cd08c, 0xa4e4a4, 0xb8fcb8,
+            0x143800, 0x345c1c, 0x507c38, 0x6c9850,
+            0x84b468, 0x9ccc7c, 0xb4e490, 0xc8fca4,
+            0x2c3000, 0x644818, 0x687034, 0x848c4c,
+            0x9ca864, 0xb4c078, 0xb4e490, 0xc8fca4,
+            0x442800, 0x644818, 0x846830, 0xa08444,
+            0xb89c58, 0xd0b46c, 0xecc878, 0xfce08c,
     };
 
-    // TODO: PAL palette
+    private static final int[] TIA_PAL_PALETTE = {
+            0x000000, 0x1a1a1a, 0x393939, 0x5b5b5b,
+            0x7e7e7e, 0xa2a2a2, 0xc7c7c7, 0xededed,
+            0x000000, 0x1a1a1a, 0x393939, 0x5b5b5b,
+            0x7e7e7e, 0xa2a2a2, 0xc7c7c7, 0xededed,
+            0x150400, 0x341f00, 0x553f00, 0x776100,
+            0x9b8419, 0xc0a838, 0xe6cd5a, 0xfef47d,
+            0x001e00, 0x003e00, 0x0d6000, 0x2a8318,
+            0x4ba737, 0x6dcc59, 0x91f27b, 0xb5fea0,
+            0x280000, 0x491000, 0x6b2e00, 0x8e4f17,
+            0xb37136, 0xd99558, 0xffba7a, 0xfedf9e,
+            0x001d00, 0x003c07, 0x045e23, 0x1f8143,
+            0x3fa565, 0x61ca88, 0x84f0ad, 0xa8fed2,
+            0x340000, 0x550405, 0x772021, 0x9b4041,
+            0xc06263, 0xe68586, 0xfea9aa, 0xfecfd0,
+            0x001413, 0x003332, 0x045453, 0x1f7675,
+            0x3f9a99, 0x61bfbe, 0x84e5e4, 0xa8fefe,
+            0x340012, 0x550031, 0x771852, 0x9b3674,
+            0xc05898, 0xe67abd, 0xfe9ee3, 0xfec3fe,
+            0x00112a, 0x00245f, 0x0d4482, 0x2a66a6,
+            0x4b89cb, 0x6daef1, 0x91d3fe, 0xb5f9fe,
+            0x28003c, 0x49005e, 0x6b1681, 0x8e34a5,
+            0xb356ca, 0xd978f0, 0xff9cfe, 0xfec1fe,
+            0x00005c, 0x04157f, 0x2034a3, 0x4055c8,
+            0x6277ee, 0x859bfe, 0xa9c0fe, 0xcfe6fe,
+            0x15005b, 0x34007e, 0x551aa2, 0x7739c7,
+            0x9b5bed, 0xc07efe, 0xe6a2fe, 0xfec7fe,
+            0x000067, 0x1a088a, 0x3925af, 0x5b45d4,
+            0x7e67fa, 0xa28afe, 0xc7affe, 0xedd4fe,
+            0x000000, 0x1a1a1a, 0x393939, 0x5b5b5b,
+            0x7e7e7e, 0xa2a2a2, 0xc7c7c7, 0xededed,
+            0x000000, 0x1a1a1a, 0x393939, 0x5b5b5b,
+            0x7e7e7e, 0xa2a2a2, 0xc7c7c7, 0xededed,
+    };
 
     private static final int NTSC_SCANLINES_PER_FRAME = 262;
     private static final int NTSC_VBLANK_SCANLINES = 40;
     private static final int NTSC_KERNEL_SCANLINES = 192;
     private static final int NTSC_OVERSCAN_SCANLINES = 30;
+    private static final double NTSC_PAR = 12.0 / 7.0;
 
     private static final int PAL_SCANLINES_PER_FRAME = 312;
     private static final int PAL_VBLANK_SCANLINES = 48;
     private static final int PAL_KERNEL_SCANLINES = 228;
     private static final int PAL_OVERSCAN_SCANLINES = 36;
+    private static final double PAL_PAR = 27.0 / 13.0;
 
     private static final int VSYNC_SCANLINES = 3;
 
@@ -90,13 +125,15 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
     private final int vblankEndScanline;
     private final int kernelEndScanline;
     private final int overscanEndScanline;
+    private final double pixelAspectRatio;
+    private final int[] palette;
 
     private final int[] video;
 
-    private final Player player0 = new Player();
-    private final Player player1 = new Player();
     private final Missile missile0 = new Missile();
     private final Missile missile1 = new Missile();
+    private final Player player0 = new Player(this.missile0);
+    private final Player player1 = new Player(this.missile1);
     private final Ball ball = new Ball();
 
     private int colorClockNumber;
@@ -131,7 +168,7 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
     private int collisionLatchBallPlayfield;
     private int collisionLatchPlayerPlayerMissileMissile;
 
-    TIAVideo(E emulator) {
+    TIAVideo(E emulator, TIA<E> tia) {
         this.emulator = emulator;
         this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
         this.kernelScanlines = NTSC_KERNEL_SCANLINES;
@@ -139,11 +176,14 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
         this.vblankEndScanline = NTSC_VBLANK_SCANLINES;
         this.kernelEndScanline = this.vblankEndScanline + this.kernelScanlines;
         this.overscanEndScanline = this.kernelEndScanline + NTSC_OVERSCAN_SCANLINES;
+        this.pixelAspectRatio = NTSC_PAR;
+        this.palette = TIA_NTSC_PALETTE;
 
         this.video = new int[this.getImageWidth() * this.getImageHeight()];
 
         this.vBlankWriteSignal = this.actionSignalDispatcher.addSignal(1, value -> {
-            // TODO: Input bits
+            tia.setDump((value & (1 << 7)) != 0);
+            tia.setLatch((value & (1 << 6)) != 0);
             this.vBlank = (value & (1 << 1)) != 0;
         });
         this.reflectPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.player0.setReflectGraphics((value & (1 << 3)) != 0));
@@ -151,8 +191,15 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
         this.playfield0WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.playfield = ((reverseBits(value) & 0xF) << 16) | (this.playfield & 0x0FFFF));
         this.playfield1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.playfield = (value << 8) | (this.playfield & 0xF00FF));
         this.playfield2WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.playfield = (reverseBits(value)) | (this.playfield & 0xFFF00));
-        this.graphicsPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, this.player0::setGraphics);
-        this.graphicsPlayer1WriteSignal = this.actionSignalDispatcher.addSignal(1, this.player1::setGraphics);
+        this.graphicsPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> {
+            this.player0.setGraphics(value);
+            this.player1.copyNewGraphicsToOld();
+        });
+        this.graphicsPlayer1WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> {
+            this.player1.setGraphics(value);
+            this.player0.copyNewGraphicsToOld();
+            this.ball.copyNewEnabledToOld();
+        });
         this.enableMissile0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.missile0.setEnabled((value & (1 << 1)) != 0));
         this.enableMissile1WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.missile1.setEnabled((value & (1 << 1)) != 0));
         this.enableBallWriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.ball.setEnabled((value & (1 << 1)) != 0));
@@ -161,7 +208,14 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
         this.horizontalMotionMissile0WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile0.setHorizontalMotion(value >>> 4));
         this.horizontalMotionMissile1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile1.setHorizontalMotion(value >>> 4));
         this.horizontalMotionBallWriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.ball.setHorizontalMotion(value >>> 4));
-        this.applyHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(6, _ -> this.hMove = true);
+        this.applyHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(6, _ -> {
+            this.hMove = true;
+            this.player0.applyHorizontalMotion();
+            this.player1.applyHorizontalMotion();
+            this.missile0.applyHorizontalMotion();
+            this.missile1.applyHorizontalMotion();
+            this.ball.applyHorizontalMotion();
+        });
         this.clearHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(2, _ -> {
             this.player0.clearHorizontalMotion();
             this.player1.clearHorizontalMotion();
@@ -183,21 +237,21 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
 
     @Override
     public double getPixelAspectRatio() {
-        return 2.0;
+        return this.pixelAspectRatio;
     }
 
     @Override
     public int readByte(int address) {
         return switch (address) {
-            case CXM0P -> this.emulator.getBus().combineWithDataBus(this.collisionLatchMissile0Player, 0xC0);
-            case CXM1P -> this.emulator.getBus().combineWithDataBus(this.collisionLatchMissile1Player, 0xC0);
-            case CXP0FB -> this.emulator.getBus().combineWithDataBus(this.collisionLatchPlayer0PlayfieldBall, 0xC0);
-            case CXP1FB -> this.emulator.getBus().combineWithDataBus(this.collisionLatchPlayer1PlayfieldBall, 0xC0);
-            case CXM0FB -> this.emulator.getBus().combineWithDataBus(this.collisionLatchMissile0PlayfieldBall, 0xC0);
-            case CXM1FB -> this.emulator.getBus().combineWithDataBus(this.collisionLatchMissile1PlayfieldBall, 0xC0);
-            case CXBLPF -> this.emulator.getBus().combineWithDataBus(this.collisionLatchBallPlayfield, 0x80);
-            case CXPPMM -> this.emulator.getBus().combineWithDataBus(this.collisionLatchPlayerPlayerMissileMissile, 0xC0);
-            default -> this.emulator.getBus().combineWithDataBus(0, 0x00);
+            case CXM0P -> this.emulator.combineWithDataBus(this.collisionLatchMissile0Player, 0xC0);
+            case CXM1P -> this.emulator.combineWithDataBus(this.collisionLatchMissile1Player, 0xC0);
+            case CXP0FB -> this.emulator.combineWithDataBus(this.collisionLatchPlayer0PlayfieldBall, 0xC0);
+            case CXP1FB -> this.emulator.combineWithDataBus(this.collisionLatchPlayer1PlayfieldBall, 0xC0);
+            case CXM0FB -> this.emulator.combineWithDataBus(this.collisionLatchMissile0PlayfieldBall, 0xC0);
+            case CXM1FB -> this.emulator.combineWithDataBus(this.collisionLatchMissile1PlayfieldBall, 0xC0);
+            case CXBLPF -> this.emulator.combineWithDataBus(this.collisionLatchBallPlayfield, 0x80);
+            case CXPPMM -> this.emulator.combineWithDataBus(this.collisionLatchPlayerPlayerMissileMissile, 0xC0);
+            default -> this.emulator.combineWithDataBus(0, 0x00);
         };
     }
 
@@ -216,12 +270,12 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
             case WSYNC -> this.wSyncRdySignal = true;
             case RSYNC -> this.resetScanline();
             case NUSIZ0 -> {
-                this.missile0.setSize(value >>> 4);
-                this.player0.setSize(value);
+                this.missile0.setSize((value >>> 4) & 0b11);
+                this.player0.setSize(value & 0b111);
             }
             case NUSIZ1 -> {
-                this.missile1.setSize(value >>> 4);
-                this.player1.setSize(value);
+                this.missile1.setSize((value >>> 4) & 0b11);
+                this.player1.setSize(value & 0b111);
             }
             case COLUP0 -> this.colorLuminance0 = (value >>> 1) & 0x7F;
             case COLUP1 -> this.colorLuminance1 = (value >>> 1) & 0x7F;
@@ -231,7 +285,7 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
                 this.playfieldPriority = (value & (1 << 2)) != 0;
                 this.scoreMode = (value & (1 << 1)) != 0;
                 this.reflectPlayfield = (value & 1) != 0;
-                this.ball.setSize(value >>> 4);
+                this.ball.setSize((value >>> 4) & 0b11);
             }
             case REFP0 -> this.actionSignalDispatcher.trigger(this.reflectPlayer0WriteSignal, value);
             case REFP1 -> this.actionSignalDispatcher.trigger(this.reflectPlayer1WriteSignal, value);
@@ -277,7 +331,7 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
         return this.wSyncRdySignal;
     }
 
-    void clock() {
+    void cycle() {
 
         this.actionSignalDispatcher.tick();
 
@@ -327,10 +381,10 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
                 }
 
                 if (m1) {
-                    if (p1) {
+                    if (p0) {
                         this.collisionLatchMissile1Player |= 1 << 7;
                     }
-                    if (p0) {
+                    if (p1) {
                         this.collisionLatchMissile1Player |= 1 << 6;
                     }
                     if (pf) {
@@ -389,7 +443,7 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
                 }
 
             }
-            this.video[((this.scanlineNumber - this.vblankEndScanline) * VISIBLE_CLOCKS + pixelX)] = TIA_NTSC_PALETTE[colorIndex];
+            this.video[((this.scanlineNumber - this.vblankEndScanline) * VISIBLE_CLOCKS + pixelX)] = this.palette[colorIndex];
         }
 
         this.colorClockNumber++;
@@ -447,166 +501,305 @@ class TIAVideo<E extends Atari2600Emulator> implements Bus, VideoGenerator {
         return b;
     }
 
-    private abstract class Sprite {
+    private abstract static class Sprite {
 
-        protected abstract void setSize(int size);
+        protected int size;
+        private int horizontalMotion;
 
-        protected abstract void resetHorizontalPosition();
+        protected int phaseCounter = 4;
+        protected int positionCounter;
 
-        protected abstract void setHorizontalMotion(int value);
+        protected int startCounter;
+        protected int pixelCounter;
+        protected int widthCounter;
 
-        protected abstract void applyHorizontalMotion();
+        protected boolean pixel;
 
-        protected abstract void clearHorizontalMotion();
+        protected void setSize(int size) {
+            this.size = size;
+        }
+
+        protected void resetHorizontalPosition() {
+            this.phaseCounter = 4;
+            this.positionCounter = 0;
+        }
+
+        protected void setHorizontalMotion(int value) {
+            this.horizontalMotion = value & 0xF;
+        }
+
+        protected void applyHorizontalMotion() {
+            int clocks = this.horizontalMotion ^ 8;
+            for (int i = 0; i < clocks; i++) {
+                this.clock();
+            }
+        }
+
+        protected void clearHorizontalMotion() {
+            this.horizontalMotion = 0;
+        }
 
         protected abstract void clock();
 
-        protected abstract boolean getPixel();
+        protected boolean getPixel() {
+            return this.pixel;
+        }
 
     }
 
-    private class Player extends Sprite {
+    private static class Player extends Sprite {
+
+        private final Missile associatedMissile;
+
+        private int oldGraphics;
+        private int newGraphics;
+
+        private boolean verticalDelay;
+        private boolean reflectGraphics;
+
+        private boolean copy;
+
+        private Player(Missile associatedMissile) {
+            this.associatedMissile = associatedMissile;
+            this.pixelCounter = 8;
+        }
 
         private void setGraphics(int graphics) {
+            this.newGraphics = graphics & 0xFF;
+        }
 
+        private void copyNewGraphicsToOld() {
+            this.oldGraphics = this.newGraphics;
         }
 
         private void setReflectGraphics(boolean reflectGraphics) {
-
+            this.reflectGraphics = reflectGraphics;
         }
 
         private void setVerticalDelay(boolean verticalDelay) {
-
-        }
-
-        @Override
-        protected void setSize(int size) {
-            size &= 0b111;
-        }
-
-        @Override
-        protected void resetHorizontalPosition() {
-
-        }
-
-        @Override
-        protected void setHorizontalMotion(int value) {
-            value &= 0xF;
-        }
-
-        @Override
-        protected void applyHorizontalMotion() {
-
-        }
-
-        @Override
-        protected void clearHorizontalMotion() {
-
+            this.verticalDelay = verticalDelay;
         }
 
         @Override
         protected void clock() {
+            this.phaseCounter--;
+            if (this.phaseCounter <= 0) {
+                this.phaseCounter = 4;
+
+                boolean firstCopy = this.size == 1 || this.size == 3;
+                boolean secondCopy = this.size == 2 || this.size == 3 || this.size == 6;
+                boolean thirdCopy = this.size == 4 || this.size == 6;
+
+                if (firstCopy && this.positionCounter == 3) {
+                    this.copy = true;
+                    this.start();
+                } else if (secondCopy && this.positionCounter == 7) {
+                    this.copy = true;
+                    this.start();
+                } else if (thirdCopy && this.positionCounter == 15) {
+                    this.copy = true;
+                    this.start();
+                } else if (this.positionCounter == 39) {
+                    this.start();
+                }
+
+                this.positionCounter++;
+                if (this.positionCounter >= 40) {
+                    this.copy = false;
+                    this.positionCounter = 0;
+                }
+            }
+
+            if (this.startCounter > 0) {
+                this.startCounter--;
+                if (this.startCounter <= 0) {
+                    this.pixelCounter = 0;
+                    this.widthCounter = this.getWidth();
+                }
+            }
+
+            this.pixel = false;
+
+            if (this.pixelCounter < 8) {
+                int graphics = this.verticalDelay ? this.oldGraphics : this.newGraphics;
+                int bit = this.reflectGraphics ? this.pixelCounter : (7 - this.pixelCounter);
+                this.pixel = (graphics & (1 << bit)) != 0;
+
+                if (!this.copy && this.associatedMissile.getResetToPlayer() && this.pixelCounter == 4) {
+                    this.associatedMissile.resetHorizontalPosition();
+                }
+
+                this.widthCounter--;
+                if (this.widthCounter <= 0) {
+                    this.pixelCounter++;
+                    this.widthCounter = this.getWidth();
+                }
+            }
 
         }
 
-        @Override
-        protected boolean getPixel() {
-            return false;
+
+        private void start() {
+            this.startCounter = 7;
+        }
+
+        private int getWidth() {
+            return switch (this.size) {
+                case 5 -> 2;
+                case 7 -> 4;
+                default -> 1;
+            };
         }
 
     }
 
-    private class Missile extends Sprite {
+    private static class Missile extends Sprite {
+
+        private boolean enabled;
+        private boolean resetToPlayer;
+
+        private Missile() {
+            this.pixelCounter = 1;
+        }
 
         protected void setEnabled(boolean enabled) {
-
-        }
-
-        @Override
-        protected void setSize(int size) {
-            size &= 0b11;
-        }
-
-        @Override
-        protected void resetHorizontalPosition() {
-
-        }
-
-        @Override
-        protected void setHorizontalMotion(int value) {
-            value &= 0xF;
-        }
-
-        @Override
-        protected void applyHorizontalMotion() {
-
-        }
-
-        @Override
-        protected void clearHorizontalMotion() {
-
+            this.enabled = enabled;
         }
 
         protected void resetToPlayer(boolean resetToPlayer) {
+            this.resetToPlayer = resetToPlayer;
+        }
 
+        protected boolean getResetToPlayer() {
+            return this.resetToPlayer;
         }
 
         @Override
         protected void clock() {
+            this.phaseCounter--;
+            if (this.phaseCounter <= 0) {
+                this.phaseCounter = 4;
+
+                if (this.positionCounter == 39) {
+                    this.start();
+                }
+
+                this.positionCounter++;
+                if (this.positionCounter >= 40) {
+                    this.positionCounter = 0;
+                }
+            }
+
+            if (this.startCounter > 0) {
+                this.startCounter--;
+                if (this.startCounter <= 0) {
+                    this.pixelCounter = 0;
+                    this.widthCounter = this.getWidth();
+                }
+            }
+
+            this.pixel = false;
+
+            if (this.pixelCounter < 1) {
+
+                this.pixel = !this.resetToPlayer && this.enabled;
+
+                this.widthCounter--;
+                if (this.widthCounter <= 0) {
+                    this.pixelCounter++;
+                    this.widthCounter = this.getWidth();
+                }
+
+            }
 
         }
 
-        @Override
-        protected boolean getPixel() {
-            return false;
+        private void start() {
+            this.startCounter = 6;
+        }
+
+        private int getWidth() {
+            return 1 << this.size;
         }
 
     }
 
-    private class Ball extends Sprite {
+    private static class Ball extends Sprite {
 
-        protected void setEnabled(boolean enabled) {
+        private boolean oldEnabled;
+        private boolean newEnabled;
 
+        private boolean verticalDelay;
+
+        private Ball() {
+            this.pixelCounter = 1;
         }
 
-        @Override
-        protected void setSize(int size) {
-            size &= 0b11;
-
+        protected void setEnabled(boolean enabled) {
+            this.newEnabled = enabled;
         }
 
         private void setVerticalDelay(boolean verticalDelay) {
+            this.verticalDelay = verticalDelay;
+        }
 
+        private void copyNewEnabledToOld() {
+            this.oldEnabled = this.newEnabled;
         }
 
         @Override
         protected void resetHorizontalPosition() {
-
-        }
-
-        @Override
-        protected void setHorizontalMotion(int value) {
-            value &= 0xF;
-        }
-
-        @Override
-        protected void applyHorizontalMotion() {
-
-        }
-
-        @Override
-        protected void clearHorizontalMotion() {
-
+            super.resetHorizontalPosition();
+            this.start();
         }
 
         @Override
         protected void clock() {
+            this.phaseCounter--;
+            if (this.phaseCounter <= 0) {
+                this.phaseCounter = 4;
+
+                if (this.positionCounter == 39) {
+                    this.start();
+                }
+
+                this.positionCounter++;
+                if (this.positionCounter >= 40) {
+                    this.positionCounter = 0;
+                }
+            }
+
+            if (this.startCounter > 0) {
+                this.startCounter--;
+                if (this.startCounter <= 0) {
+                    this.pixelCounter = 0;
+                    this.widthCounter = this.getWidth();
+                }
+            }
+
+            this.pixel = false;
+
+            if (this.pixelCounter < 1) {
+
+                this.pixel = this.verticalDelay ? this.oldEnabled : this.newEnabled;
+
+                this.widthCounter--;
+                if (this.widthCounter <= 0) {
+                    this.pixelCounter++;
+                    this.widthCounter = this.getWidth();
+                }
+
+            }
+
 
         }
 
-        @Override
-        protected boolean getPixel() {
-            return false;
+        private void start() {
+            this.startCounter = 6;
+        }
+
+        private int getWidth() {
+            return 1 << this.size;
         }
 
     }

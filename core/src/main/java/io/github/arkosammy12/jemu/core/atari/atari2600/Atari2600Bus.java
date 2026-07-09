@@ -19,7 +19,7 @@ public class Atari2600Bus<E extends Atari2600Emulator> implements Bus {
         if ((address & 0x1000) != 0) {
             ret = this.emulator.getCartridge().readByte(address);
         } else if ((address & 0x80) != 0) {
-            ret = this.emulator.getRIOT().readByte(address);
+            ret = this.emulator.getPIA().readByte(address);
         } else {
             ret = this.emulator.getTIA().readByte(address);
         }
@@ -35,7 +35,7 @@ public class Atari2600Bus<E extends Atari2600Emulator> implements Bus {
         if ((address & 0x1000) != 0) {
             this.emulator.getCartridge().writeByte(address, value);
         } else if ((address & 0x80) != 0) {
-            this.emulator.getRIOT().writeByte(address, value);
+            this.emulator.getPIA().writeByte(address, value);
         } else {
             this.emulator.getTIA().writeByte(address, value);
         }
