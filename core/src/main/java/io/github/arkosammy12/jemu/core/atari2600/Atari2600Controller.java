@@ -208,13 +208,13 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
         JOYSTICK0_DOWN("Left Joystick Down"),
         JOYSTICK0_LEFT("Left Joystick Left"),
         JOYSTICK0_RIGHT("Left Joystick Right"),
-        JOYSTICK0_FIRE("Left Joystick Button"),
+        JOYSTICK0_FIRE("Left Joystick Fire"),
 
         JOYSTICK1_UP("Right Joystick 1 Up"),
         JOYSTICK1_DOWN("Right Joystick Down"),
         JOYSTICK1_LEFT("Right Joystick Left"),
         JOYSTICK1_RIGHT("Right Joystick Right"),
-        JOYSTICK1_FIRE("Right Joystick Button"),
+        JOYSTICK1_FIRE("Right Joystick Fire"),
 
         ;
 

@@ -81,12 +81,12 @@ Multi-system emulator written in Java.
 | Left Joystick Down   | `S` |
 | Left Joystick Left   | `A` |
 | Left Joystick Right  | `D` |
-| Left Joystick Fire   | `J` |
-| Right Joystick Up    | TBA |
-| Right Joystick Down  | TBA |
-| Right Joystick Left  | TBA |
-| Right Joystick Right | TBA |
-| Right Joystick Fire  | TBA |
+| Left Joystick Fire   | `F` |
+| Right Joystick Up    | `I` |
+| Right Joystick Down  | `K` |
+| Right Joystick Left  | `J` |
+| Right Joystick Right | `L` |
+| Right Joystick Fire  | `;` |
 
 ## Command-line usage
 
