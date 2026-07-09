@@ -14,7 +14,7 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     private int dataDirectionRegisterB;
 
     private int timer = 0;
-    private int timerDivisor = 1;
+    private int timerDivisorCounter = 1;
     private int timerDivisorReload = 1;
     private boolean timerUnderflowed = false;
     private boolean enableTimerIrq = false;
@@ -88,15 +88,15 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     }
 
     public void cycle() {
-        this.timerDivisor--;
-        if (this.timerDivisor <= 0) {
-            this.timerDivisor = this.timerDivisorReload;
+        this.timerDivisorCounter--;
+        if (this.timerDivisorCounter <= 0) {
+            this.timerDivisorCounter = this.timerDivisorReload;
             this.timer--;
             if (this.timer < 0) {
                 this.timer = 0xFF;
                 this.timerUnderflowed = true;
                 this.timerDivisorReload = 1;
-                this.timerDivisor = 1;
+                this.timerDivisorCounter = 1;
             }
         }
     }
@@ -104,7 +104,6 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     private void writeTimer(int address, int value, int divisor) {
         this.timer = value & 0xFF;
         this.timerDivisorReload = divisor;
-        this.timerDivisor = divisor;
         this.timerUnderflowed = false;
         this.enableTimerIrq = (address & ENABLE_TIMER_IRQ_ADDRESS_MASK) != 0;
     }
