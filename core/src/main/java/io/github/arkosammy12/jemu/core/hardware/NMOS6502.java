@@ -10339,7 +10339,7 @@ public abstract class NMOS6502 implements Processor {
         setFZ(A == 0);
         setFN((A & 0x80) != 0);
         if (getFD()) {
-            setFV(((A ^  getA()) & 0x40) != 0);
+            setFV(((A ^ getA()) & 0x40) != 0);
             if ((getA() & 0x0F) >= 0x05) {
                 A = ((A + 0x6) & 0xF) | (A & 0xF0);
             }
