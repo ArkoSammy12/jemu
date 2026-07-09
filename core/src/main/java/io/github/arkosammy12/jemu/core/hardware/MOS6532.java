@@ -10,6 +10,9 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
 
     private final byte[] ram = new byte[128];
 
+    private int outputLatchA;
+    private int outputLatchB;
+
     private int dataDirectionRegisterA;
     private int dataDirectionRegisterB;
 
@@ -31,9 +34,9 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     public int readByte(int address) {
         if ((address & 0x200) != 0) {
             return switch (address & 0b111) {
-                case 0 -> (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & ~this.dataDirectionRegisterA) & 0xFF;
+                case 0 -> ((this.outputLatchA & this.dataDirectionRegisterA) | (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & ~this.dataDirectionRegisterA)) & 0xFF;
                 case 1 -> this.dataDirectionRegisterA;
-                case 2 -> (this.systemBus.readSWCHB(this.dataDirectionRegisterB) & ~this.dataDirectionRegisterB) & 0xFF;
+                case 2 -> ((this.outputLatchB & this.dataDirectionRegisterB) | (this.systemBus.readSWCHB(this.dataDirectionRegisterB) & ~this.dataDirectionRegisterB)) & 0xFF;
                 case 3 -> this.dataDirectionRegisterB;
                 default -> {
                     if ((address & (1 << 2)) != 0) {
@@ -60,9 +63,15 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     public void writeByte(int address, int value) {
         if ((address & 0x200) != 0) {
             switch (address & 0b111) {
-                case 0 -> this.systemBus.writeSWCHA(value & this.dataDirectionRegisterA, this.dataDirectionRegisterA);
+                case 0 -> {
+                    this.outputLatchA = value & 0xFF;
+                    this.systemBus.writeSWCHA(this.outputLatchA & this.dataDirectionRegisterA, this.dataDirectionRegisterA);
+                }
                 case 1 -> this.dataDirectionRegisterA = value & 0xFF;
-                case 2 -> this.systemBus.writeSWCHB(value & this.dataDirectionRegisterB, this.dataDirectionRegisterB);
+                case 2 -> {
+                    this.outputLatchB = value & 0xFF;
+                    this.systemBus.writeSWCHB(this.outputLatchB & this.dataDirectionRegisterB, this.dataDirectionRegisterB);
+                }
                 case 3 -> this.dataDirectionRegisterB = value & 0xFF;
                 default -> {
                     if ((address & (1 << 4)) != 0) {
