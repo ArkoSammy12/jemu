@@ -12,22 +12,23 @@ Multi-system emulator written in Java.
 
 ## Supported systems
 
-| System                              | CLI identifier  | Status      |
-|-------------------------------------|-----------------|-------------|
-| COSMAC VIP                          | `cosmac-vip`    | ✅ Supported |
-| RCA Studio II                       | `rca-studioii`  | ✅ Supported |
-| VIP CHIP-8                          | `vip-chip8`     | ✅ Supported |
-| VIP CHIP-8X                         | `vip-chip8x`    | ✅ Supported |
-| Game Boy (DMG)                      | `gameboy`       | ✅ Supported |
-| Game Boy Color (CGB)                | `gameboy-color` | ✅ Supported |
-| Nintendo Entertainment System       | `nes`           | ✅ Supported |
-| Commodore 64                        | —               | 🗓 Planned  |
-| Apple II                            | —               | 🗓 Planned  |
-| Atari 2600                          | —               | 🗓 Planned  |
-| Sega Master System                  | —               | 🗓 Planned  |
-| ZX Spectrum                         | —               | 🗓 Planned  |
-| Sega Genesis                        | —               | 🗓 Planned  |
-| Super Nintendo Entertainment System | —               | 🗓 Planned  |
+| System                              | CLI identifier  | Status              |
+|-------------------------------------|-----------------|---------------------|
+| COSMAC VIP                          | `cosmac-vip`    | ✅ Supported         |
+| RCA Studio II                       | `rca-studioii`  | ✅ Supported         |
+| VIP CHIP-8                          | `vip-chip8`     | ✅ Supported         |
+| VIP CHIP-8X                         | `vip-chip8x`    | ✅ Supported         |
+| Game Boy (DMG)                      | `gameboy`       | ✅ Supported         |
+| Game Boy Color (CGB)                | `gameboy-color` | ✅ Supported         |
+| Nintendo Entertainment System       | `nes`           | ✅ Supported         |
+| Atari 2600                          | `atari-2600`    | 🚧 Work-in-progress |
+| Apple II                            | —               | 🗓 Planned          |
+| Commodore 64                        | —               | 🗓 Planned          |
+| Space Invaders arcade cabinet       | —               | 🗓 Planned          |
+| Sega Master System                  | —               | 🗓 Planned          |
+| ZX Spectrum                         | —               | 🗓 Planned          |
+| Sega Genesis                        | —               | 🗓 Planned          |
+| Super Nintendo Entertainment System | —               | 🗓 Planned          |
 
 ## Keybindings
 
@@ -41,7 +42,6 @@ Multi-system emulator written in Java.
 | `A 0 B F`  | `Z X C V`    |
 
 ## RCA Studio II
-
 
 | Keypad A | Keyboard key |
 |----------|--------------|
@@ -70,6 +70,23 @@ Multi-system emulator written in Java.
 | B           | `K`         |
 | Start       | `Enter`     |
 | Select      | `Backspace` |
+
+### Atari 2600
+
+| Action               | Key |
+|----------------------|-----|
+| Game Select          | `E` |
+| Game Reset           | `R` |
+| Left Joystick Up     | `W` |
+| Left Joystick Down   | `S` |
+| Left Joystick Left   | `A` |
+| Left Joystick Right  | `D` |
+| Left Joystick Fire   | `F` |
+| Right Joystick Up    | `I` |
+| Right Joystick Down  | `K` |
+| Right Joystick Left  | `J` |
+| Right Joystick Right | `L` |
+| Right Joystick Fire  | `;` |
 
 ## Command-line usage
 
@@ -128,3 +145,4 @@ This project is licensed under the [MIT License](LICENSE).
 - [dtabacaru](https://github.com/dtabacaru/): Providing audio filtering logic to system's audio processing units.
 - [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output, and the amazing [Ricoh 2A03 instruction reference](https://github.com/L-Spiro/BeesNES/tree/main/Research/Instructions).
 - [Andrew "ajoneil" O'Neil](https://github.com/ajoneil): Significant accuracy improvements to the DMG/CGB cores.
+- [The Stella Team](https://stella-emu.github.io/theteam.html): Implementation of the Atari 2600's audio LFSR mechanism.

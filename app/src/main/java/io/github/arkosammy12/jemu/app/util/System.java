@@ -3,9 +3,9 @@ package io.github.arkosammy12.jemu.app.util;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.adapters.*;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.core.rca.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.core.nintendo.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import picocli.CommandLine;
 
@@ -18,7 +18,8 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     RCA_STUDIO_II("rca-studioii", "RCA Studio II", new String[]{"bin", "st2"}, args -> new RCAStudioIIAdapter(args.jemu(), args.emulatorInitializer())),
     GAME_BOY("gameboy", "Game Boy", new String[] {"gb"}, args -> new GameBoyAdapter(args.jemu(), args.emulatorInitializer(), GameBoyHost.Model.DMG)),
     GAME_BOY_COLOR("gameboy-color", "Game Boy Color", new String[] {"gbc"}, args -> new GameBoyAdapter(args.jemu(), args.emulatorInitializer(), GameBoyHost.Model.CGB)),
-    NES("nes", "Nintendo Entertainment System", new String[] {"nes"}, args -> new NESAdapter(args.jemu(), args.emulatorInitializer()));
+    NES("nes", "Nintendo Entertainment System", new String[] {"nes"}, args -> new NESAdapter(args.jemu(), args.emulatorInitializer())),
+    ATARI_2600("atari-2600", "Atari 2600", new String[] {"a26"}, args -> new Atari2600Adapter(args.jemu(), args.emulatorInitializer()));
 
     private final String identifier;
     private final String displayName;

@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.test.cpu;
 
-import io.github.arkosammy12.jemu.core.cpu.NES6502;
+import io.github.arkosammy12.jemu.core.hardware.NES6502;
 import io.github.arkosammy12.jemu.core.test.ssts.nes6502.NES6502TestCase;
 import io.github.arkosammy12.jemu.core.test.ssts.nes6502.NES6502TestState;
 
