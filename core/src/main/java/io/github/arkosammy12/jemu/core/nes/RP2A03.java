@@ -246,7 +246,6 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         if (this.scheduleDmcDmaHaltCountdown > 0) {
             this.scheduleDmcDmaHaltCountdown--;
 
-            // TODO: On the RP2A07 (PAL), it waits until the fetch cycle of the 6502 via the SYNC pin
             if (this.scheduleDmcDmaHaltCountdown <= 0) {
                 // If the start of DMC DMA coincides with the second-to-last or last OAM DMA GET, delay the former by an extra cycle
                 if (this.apuHalfCycleType == APUHalfCycleType.GET && this.oamDmaCurrentData < 0 && (this.oamDmaTransferredBytes == 254 || this.oamDmaTransferredBytes == 255)) {
