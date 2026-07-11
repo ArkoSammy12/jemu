@@ -1190,4 +1190,57 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
 
     }
 
+    public enum TVFormat {
+        NSTC,
+        PAL,
+        SECAM,
+        NTSC50,
+        PAL60,
+        SECAM60
+
+    }
+
+    public enum CartridgeType {
+        CART_2K,
+        CART_4K,
+        CART_4KSC,
+        CART_F4,
+        CART_F4SC,
+        CART_F6,
+        CART_F6SC,
+        CART_F8,
+        CART_F8SC,
+        CART_F0,
+        CART_FA,
+        CART_FA2,
+        CART_FE,
+        CART_E0,
+        CART_E7,
+        CART_EF,
+        CART_EFSC,
+        CART_3E,
+        CART_3EPLUS,
+        CART_3F,
+        CART_0840,
+        CART_4A50,
+        CART_AR,
+        CART_CV,
+        CART_UA,
+        CART_SB,
+        CART_WD,
+        CART_X07,
+        CART_MDM,
+        CART_MVC,
+        CART_BF,
+        CART_BFSC,
+        CART_DF,
+        CART_DFSC,
+        CART_DPC,
+        CART_DPCPLUS,
+        CART_CDF,
+        CART_GL,
+        CART_TVBOY
+
+    }
+
 }
