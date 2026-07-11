@@ -466,7 +466,6 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
         private static final int NTSC_SCANLINES_PER_FRAME = 262;
         private static final int NTSC_VBLANK_SCANLINES = 40;
         private static final int NTSC_KERNEL_SCANLINES = 192;
-        private static final int NTSC_OVERSCAN_SCANLINES = 30;
         private static final double NTSC_PAR = 12.0 / 7.0;
 
         private static final int PAL_SCANLINES_PER_FRAME = 312;
@@ -504,9 +503,8 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
 
         private final int scanlinesPerFrame;
         private final int kernelScanlines;
-        private final int vblankEndScanline;
+        private final int vBlankEndScanline;
         private final int kernelEndScanline;
-        private final int overscanEndScanline;
         private final double pixelAspectRatio;
         private final int[] palette;
 
@@ -522,12 +520,11 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
         private int hSyncCounter;
         private boolean hMove;
 
-        private boolean vsync;
         private int scanlineNumber;
 
         private boolean vSync;
         private boolean vBlank;
-        private boolean wSyncRdySignal;
+        private boolean wSync;
 
         private int colorLuminance0;
         private int colorLuminance1;
@@ -554,9 +551,8 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
             this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
             this.kernelScanlines = NTSC_KERNEL_SCANLINES;
 
-            this.vblankEndScanline = NTSC_VBLANK_SCANLINES;
-            this.kernelEndScanline = this.vblankEndScanline + this.kernelScanlines;
-            this.overscanEndScanline = this.kernelEndScanline + NTSC_OVERSCAN_SCANLINES;
+            this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
+            this.kernelEndScanline = this.vBlankEndScanline + this.kernelScanlines;
             this.pixelAspectRatio = NTSC_PAR;
             this.palette = TIA_NTSC_PALETTE;
 
@@ -641,15 +637,15 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
             switch (address) {
                 case VSYNC -> {
                     boolean vSync = (value & (1 << 1)) != 0;
-                    if (!this.vsync && vSync) {
+                    if (!this.vSync && vSync) {
                         this.scanlineNumber = 0;
                         emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
                     }
-                    this.vsync = vSync;
+                    this.vSync = vSync;
                 }
                 case VBLANK -> this.actionSignalDispatcher.trigger(this.vBlankWriteSignal, value);
-                case WSYNC -> this.wSyncRdySignal = true;
-                case RSYNC -> this.resetScanline();
+                case WSYNC -> this.wSync = true;
+                case RSYNC -> this.hSyncCounter = 0;
                 case NUSIZ0 -> {
                     this.missile0.setSize((value >>> 4) & 0b11);
                     this.player0.setSize(value & 0b111);
@@ -709,7 +705,7 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
         }
 
         private boolean getRDYSignal() {
-            return this.wSyncRdySignal;
+            return this.wSync;
         }
 
         private void cycle() {
@@ -717,7 +713,7 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
             this.actionSignalDispatcher.tick();
 
             if (this.colorClockNumber == 0) {
-                this.wSyncRdySignal = false;
+                this.wSync = false;
             }
 
             boolean hBlank = this.isHBlank();
@@ -730,101 +726,110 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
                 this.ball.clock();
             }
 
+            boolean pf = this.getPlayfieldPixel();
+            boolean p0 = this.player0.getPixel();
+            boolean p1 = this.player1.getPixel();
+            boolean m0 = this.missile0.getPixel();
+            boolean m1 = this.missile1.getPixel();
+            boolean bl =  this.ball.getPixel();
+
+            if (!this.vBlank) {
+                if (m0) {
+                    if (p1) {
+                        this.collisionLatchMissile0Player |= 1 << 7;
+                    }
+                    if (p0) {
+                        this.collisionLatchMissile0Player |= 1 << 6;
+                    }
+                    if (pf) {
+                        this.collisionLatchMissile0PlayfieldBall |= 1 << 7;
+                    }
+                    if (bl) {
+                        this.collisionLatchMissile0PlayfieldBall |= 1 << 6;
+                    }
+                    if (m1) {
+                        this.collisionLatchPlayerPlayerMissileMissile |= 1 << 6;
+                    }
+                }
+
+                if (m1) {
+                    if (p0) {
+                        this.collisionLatchMissile1Player |= 1 << 7;
+                    }
+                    if (p1) {
+                        this.collisionLatchMissile1Player |= 1 << 6;
+                    }
+                    if (pf) {
+                        this.collisionLatchMissile1PlayfieldBall |= 1 << 7;
+                    }
+                    if (bl) {
+                        this.collisionLatchMissile1PlayfieldBall |= 1 << 6;
+                    }
+                }
+
+                if (p0) {
+                    if (pf) {
+                        this.collisionLatchPlayer0PlayfieldBall |= 1 << 7;
+                    }
+                    if (bl) {
+                        this.collisionLatchPlayer0PlayfieldBall |=  1 << 6;
+                    }
+                    if (p1) {
+                        this.collisionLatchPlayerPlayerMissileMissile |= 1 << 7;
+                    }
+                }
+
+                if (p1) {
+                    if (pf) {
+                        this.collisionLatchPlayer1PlayfieldBall |= 1 << 7;
+                    }
+                    if (bl) {
+                        this.collisionLatchPlayer1PlayfieldBall |=  1 << 6;
+                    }
+                }
+
+                if (bl && pf) {
+                    this.collisionLatchBallPlayfield |= 1 << 7;
+                }
+            }
+
             int pixelX = this.colorClockNumber - HBLANK_CLOCKS;
             if (this.isKernelScanline() && pixelX >= 0 && pixelX < 160) {
                 int colorIndex;
-                if (hBlank || this.vBlank) {
+                if (hBlank || this.vBlank || this.vSync) {
                     colorIndex = 0;
-                } else {
-                    boolean pf = this.getPlayfieldPixel();
-                    boolean p0 = this.player0.getPixel();
-                    boolean p1 = this.player1.getPixel();
-                    boolean m0 = this.missile0.getPixel();
-                    boolean m1 = this.missile1.getPixel();
-                    boolean bl =  this.ball.getPixel();
-
-                    if (m0) {
-                        if (p1) {
-                            this.collisionLatchMissile0Player |= 1 << 7;
-                        }
-                        if (p0) {
-                            this.collisionLatchMissile0Player |= 1 << 6;
-                        }
-                        if (pf) {
-                            this.collisionLatchMissile0PlayfieldBall |= 1 << 7;
-                        }
-                        if (bl) {
-                            this.collisionLatchMissile0PlayfieldBall |= 1 << 6;
-                        }
-                        if (m1) {
-                            this.collisionLatchPlayerPlayerMissileMissile |= 1 << 6;
-                        }
-                    }
-
-                    if (m1) {
-                        if (p0) {
-                            this.collisionLatchMissile1Player |= 1 << 7;
-                        }
-                        if (p1) {
-                            this.collisionLatchMissile1Player |= 1 << 6;
-                        }
-                        if (pf) {
-                            this.collisionLatchMissile1PlayfieldBall |= 1 << 7;
-                        }
-                        if (bl) {
-                            this.collisionLatchMissile1PlayfieldBall |= 1 << 6;
-                        }
-                    }
-
-                    if (p0) {
-                        if (pf) {
-                            this.collisionLatchPlayer0PlayfieldBall |= 1 << 7;
-                        }
-                        if (bl) {
-                            this.collisionLatchPlayer0PlayfieldBall |=  1 << 6;
-                        }
-                        if (p1) {
-                            this.collisionLatchPlayerPlayerMissileMissile |= 1 << 7;
-                        }
-                    }
-
-                    if (p1) {
-                        if (pf) {
-                            this.collisionLatchPlayer1PlayfieldBall |= 1 << 7;
-                        }
-                        if (bl) {
-                            this.collisionLatchPlayer1PlayfieldBall |=  1 << 6;
-                        }
-                    }
-
-                    if (bl && pf) {
-                        this.collisionLatchBallPlayfield |= 1 << 7;
-                    }
-
-                    if (this.playfieldPriority) {
-                        if (bl || pf) {
-                            colorIndex = this.colorLuminancePlayfield;
-                        } else if (p0 || m0) {
-                            colorIndex = this.colorLuminance0;
-                        } else if (p1 || m1) {
-                            colorIndex = this.colorLuminance1;
-                        } else {
-                            colorIndex = this.colorLuminanceBackground;
-                        }
+                } else if (this.playfieldPriority) {
+                    if (bl || pf) {
+                        colorIndex = this.colorLuminancePlayfield;
+                    } else if (p0 || m0) {
+                        colorIndex = this.colorLuminance0;
+                    } else if (p1 || m1) {
+                        colorIndex = this.colorLuminance1;
                     } else {
-                        if (p0 || m0) {
-                            colorIndex = this.colorLuminance0;
-                        } else if (p1 || m1) {
-                            colorIndex = this.colorLuminance1;
-                        } else if (bl || pf) { // TODO: Only BL in SCORE-mode (what does that mean)
-                            colorIndex = this.scoreMode ? ((pixelX < 80 ? this.colorLuminance0 : this.colorLuminance1)) : this.colorLuminancePlayfield;
-                        } else {
-                            colorIndex = this.colorLuminanceBackground;
-                        }
+                        colorIndex = this.colorLuminanceBackground;
                     }
-
+                } else if (this.scoreMode) {
+                    if (p0 || m0 || (pf && pixelX < 80)) {
+                        colorIndex = this.colorLuminance0;
+                    } else if (p1 || m1 || pf) {
+                        colorIndex = this.colorLuminance1;
+                    } else if (bl) {
+                        colorIndex = this.colorLuminancePlayfield;
+                    } else {
+                        colorIndex = this.colorLuminanceBackground;
+                    }
+                } else {
+                    if (p0 || m0) {
+                        colorIndex = this.colorLuminance0;
+                    } else if (p1 || m1) {
+                        colorIndex = this.colorLuminance1;
+                    } else if (bl || pf) {
+                        colorIndex = this.colorLuminancePlayfield;
+                    } else {
+                        colorIndex = this.colorLuminanceBackground;
+                    }
                 }
-                this.video[((this.scanlineNumber - this.vblankEndScanline) * VISIBLE_CLOCKS + pixelX)] = this.palette[colorIndex];
+                this.video[((this.scanlineNumber - this.vBlankEndScanline) * VISIBLE_CLOCKS + pixelX)] = this.palette[colorIndex];
             }
 
             this.colorClockNumber++;
@@ -838,14 +843,17 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
                 this.scanlineNumber++;
                 if (this.scanlineNumber >= this.scanlinesPerFrame) {
                     this.scanlineNumber = 0;
-                    //this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.video));
                 }
                 this.hMove = false;
-                this.resetScanline();
+                this.colorClockNumber = 0;
+                this.hSyncCounter = 0;
             }
         }
 
         private boolean getPlayfieldPixel() {
+            if (this.hSyncCounter < 17) {
+                return false;
+            }
             int playfieldBit;
             int playfieldColumn = this.hSyncCounter - 17;
             if (playfieldColumn < 20) {
@@ -862,16 +870,11 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
         }
 
         private boolean isKernelScanline() {
-            return this.scanlineNumber >= this.vblankEndScanline && this.scanlineNumber < this.kernelEndScanline;
+            return this.scanlineNumber >= this.vBlankEndScanline && this.scanlineNumber < this.kernelEndScanline;
         }
 
         private boolean isHBlank() {
             return this.colorClockNumber < HBLANK_CLOCKS || (this.hMove && this.colorClockNumber < HBLANK_CLOCKS + 8);
-        }
-
-        private void resetScanline() {
-            this.colorClockNumber = 0;
-            this.hSyncCounter = 0;
         }
 
         private static int reverseBits(int b) {
