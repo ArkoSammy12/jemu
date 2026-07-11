@@ -22,12 +22,16 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     private boolean timerUnderflowed = false;
     private boolean enableTimerIrq = false;
 
-    // TODO: Implement PA7 edge transition interrupt
+    private boolean pa7InterruptFlag;
     private boolean enablePA7Interrupt = false;
-    private PA7EdgeDetect pa7EdgeDetect = PA7EdgeDetect.NEGATIVE;
+    private PA7EdgeDetect pa7EdgeDetectMode = PA7EdgeDetect.NEGATIVE;
+
+    private boolean oldOutputLatchAPA7;
+    private boolean oldSWCHAAPA7;
 
     public MOS6532(E systemBus) {
         this.systemBus = systemBus;
+        this.oldSWCHAAPA7 = (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & (1 << 7)) != 0;
     }
 
     @Override
@@ -41,9 +45,9 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
                 default -> {
                     if ((address & (1 << 2)) != 0) {
                         if ((address & 1) != 0) {
-                            // bit 7 = timer underflow, bit 6 = PA7 flag (stubbed)
-                            // reading INSTAT clears the PA7 flag but NOT the timer flag
-                            yield (this.timerUnderflowed ? 0x80 : 0x00);
+                            int ret = (this.timerUnderflowed ? (1 << 7) : 0) | (this.pa7InterruptFlag ? (1 << 6) : 0);
+                            this.pa7InterruptFlag = false;
+                            yield ret;
                         } else {
                             this.timerUnderflowed = false;
                             this.enableTimerIrq = (address & ENABLE_TIMER_IRQ_ADDRESS_MASK) != 0;
@@ -83,7 +87,7 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
                         }
                     } else if ((address & (1 << 2)) != 0) {
                         this.enablePA7Interrupt = (address & (1 << 1)) != 0;
-                        this.pa7EdgeDetect = (address & 1) != 0 ? PA7EdgeDetect.POSITIVE : PA7EdgeDetect.NEGATIVE;
+                        this.pa7EdgeDetectMode = (address & 1) != 0 ? PA7EdgeDetect.POSITIVE : PA7EdgeDetect.NEGATIVE;
                     }
                 }
             }
@@ -93,10 +97,32 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     }
 
     public boolean getIRQSignal() {
-        return this.timerUnderflowed && this.enableTimerIrq;
+        return (this.timerUnderflowed && this.enableTimerIrq) || (this.pa7InterruptFlag && this.enablePA7Interrupt);
     }
 
     public void cycle() {
+        boolean currentOutputLatchAPA7 = (this.outputLatchA & (1 << 7)) != 0;
+        boolean currentSWCHAAPA7 = (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & (1 << 7)) != 0;
+
+        boolean oldPA7Level;
+        boolean currentPA7Level;
+        if ((this.dataDirectionRegisterA & (1 << 7)) != 0) {
+            oldPA7Level = this.oldOutputLatchAPA7;
+            currentPA7Level = currentOutputLatchAPA7;
+        } else {
+            oldPA7Level = this.oldSWCHAAPA7;
+            currentPA7Level = currentSWCHAAPA7;
+        }
+
+        if (this.pa7EdgeDetectMode == PA7EdgeDetect.POSITIVE && !oldPA7Level && currentPA7Level) {
+            this.pa7InterruptFlag = true;
+        } else if (this.pa7EdgeDetectMode == PA7EdgeDetect.NEGATIVE && oldPA7Level && !currentPA7Level) {
+            this.pa7InterruptFlag = true;
+        }
+
+        this.oldOutputLatchAPA7 = currentOutputLatchAPA7;
+        this.oldSWCHAAPA7 = currentSWCHAAPA7;
+
         this.timerDivisorCounter--;
         if (this.timerDivisorCounter <= 0) {
             this.timerDivisorCounter = this.timerDivisorReload;
