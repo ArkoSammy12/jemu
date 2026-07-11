@@ -17,8 +17,9 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     private int dataDirectionRegisterB;
 
     private int timer = 0;
+    private int timerDivisor = 1;
     private int timerDivisorCounter = 1;
-    private int timerDivisorReload = 1;
+    private boolean timerUnderflowedThisCycle = false;
     private boolean timerUnderflowed = false;
     private boolean enableTimerIrq = false;
 
@@ -49,7 +50,9 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
                             this.pa7InterruptFlag = false;
                             yield ret;
                         } else {
-                            this.timerUnderflowed = false;
+                            if (!this.timerUnderflowedThisCycle) {
+                                this.timerUnderflowed = false;
+                            }
                             this.enableTimerIrq = (address & ENABLE_TIMER_IRQ_ADDRESS_MASK) != 0;
                             yield this.timer & 0xFF;
                         }
@@ -123,23 +126,34 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
         this.oldOutputLatchAPA7 = currentOutputLatchAPA7;
         this.oldSWCHAAPA7 = currentSWCHAAPA7;
 
+        this.timerUnderflowedThisCycle = false;
+
         this.timerDivisorCounter--;
-        if (this.timerDivisorCounter <= 0) {
-            this.timerDivisorCounter = this.timerDivisorReload;
+        boolean timerDivisorCounterReached0 = this.timerDivisorCounter <= 0;
+        if (timerDivisorCounterReached0 || this.timerUnderflowed) {
             this.timer--;
             if (this.timer < 0) {
                 this.timer = 0xFF;
+                if (!this.timerUnderflowed) {
+                    this.timerUnderflowedThisCycle = true;
+                }
                 this.timerUnderflowed = true;
-                this.timerDivisorReload = 1;
-                this.timerDivisorCounter = 1;
             }
         }
+
+        if (timerDivisorCounterReached0) {
+            this.timerDivisorCounter = this.timerDivisor;
+        }
+
     }
 
     private void writeTimer(int address, int value, int divisor) {
         this.timer = value & 0xFF;
-        this.timerDivisorReload = divisor;
-        this.timerUnderflowed = false;
+        this.timerDivisor = divisor;
+        this.timerDivisorCounter = 1;
+        if (!this.timerUnderflowedThisCycle) {
+            this.timerUnderflowed = false;
+        }
         this.enableTimerIrq = (address & ENABLE_TIMER_IRQ_ADDRESS_MASK) != 0;
     }
 
