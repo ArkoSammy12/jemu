@@ -983,8 +983,9 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
 
                 if (this.startCounter > 0) {
                     this.startCounter--;
-                    if (this.startCounter <= 0) {
+                    if (this.startCounter == 1) {
                         this.pixelCounter = 0;
+                    } else if (this.startCounter <= 0) {
                         this.widthCounter = this.getWidth();
                     }
                 }
@@ -1011,7 +1012,7 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
 
 
             private void start() {
-                this.startCounter = 7;
+                this.startCounter = 8;
             }
 
             private int getWidth() {
