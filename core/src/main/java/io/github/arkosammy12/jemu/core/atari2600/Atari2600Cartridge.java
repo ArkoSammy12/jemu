@@ -6,9 +6,6 @@ import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
 import java.util.Optional;
-import java.util.function.Supplier;
-
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_4;
 
 public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements Bus {
 
@@ -35,7 +32,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
     protected abstract int mapROMAddress(int address);
 
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
-        CartridgeType cartridgeType = CartridgeType.CART_4K;
+        CartridgeType cartridgeType = emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType).orElse(CartridgeType.CART_4K);
         return switch (cartridgeType) {
             case CART_2K -> new Cartridge2K<>(emulator);
             case CART_4K -> new Cartridge4K<>(emulator);

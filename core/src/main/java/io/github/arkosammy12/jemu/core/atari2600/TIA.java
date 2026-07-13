@@ -5,13 +5,14 @@ import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.util.ActionSignalDispatcher;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 import java.util.Optional;
 
-public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenerator, AudioGenerator {
+public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, VideoGenerator, AudioGenerator {
 
     private static final int CXM0P = 0x00;
     private static final int CXM1P = 0x01;
@@ -87,7 +88,7 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
 
     public TIA(E emulator, int samplesPerFrame) {
         this.emulator = emulator;
-        this.video = new Video();
+        this.video = new Video(emulator);
         this.audio = new Audio(samplesPerFrame);
     }
 
@@ -452,13 +453,12 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
 
         private static final int NTSC_SCANLINES_PER_FRAME = 262;
         private static final int NTSC_VBLANK_SCANLINES = 40;
-        private static final int NTSC_KERNEL_SCANLINES = 240;
+        private static final int NTSC_KERNEL_SCANLINES = 192;
         private static final double NTSC_PAR = 12.0 / 7.0;
 
         private static final int PAL_SCANLINES_PER_FRAME = 312;
         private static final int PAL_VBLANK_SCANLINES = 48;
         private static final int PAL_KERNEL_SCANLINES = 228;
-        private static final int PAL_OVERSCAN_SCANLINES = 36;
         private static final double PAL_PAR = 27.0 / 13.0;
 
         private static final int VSYNC_SCANLINES = 3;
@@ -534,14 +534,33 @@ public class TIA<E extends Emulator & TIA.SystemBus> implements Bus, VideoGenera
         private int collisionLatchBallPlayfield;
         private int collisionLatchPlayerPlayerMissileMissile;
 
-        private Video() {
-            this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
-            this.kernelScanlines = NTSC_KERNEL_SCANLINES;
+        private Video(E emulator) {
+            switch (emulator.getTVFormat()) {
+                case NTSC -> {
+                    this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
+                    this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
+                    this.kernelScanlines = NTSC_KERNEL_SCANLINES;
+                    this.pixelAspectRatio = NTSC_PAR;
+                    this.palette = TIA_NTSC_PALETTE;
+                }
+                case PAL -> {
+                    this.scanlinesPerFrame = PAL_SCANLINES_PER_FRAME;
+                    this.vBlankEndScanline = PAL_VBLANK_SCANLINES;
+                    this.kernelScanlines = PAL_KERNEL_SCANLINES;
+                    this.pixelAspectRatio = PAL_PAR;
+                    this.palette = TIA_PAL_PALETTE;
+                }
+                case SECAM -> {
+                    this.scanlinesPerFrame = PAL_SCANLINES_PER_FRAME;
+                    this.vBlankEndScanline = PAL_VBLANK_SCANLINES;
+                    this.kernelScanlines = PAL_KERNEL_SCANLINES;
+                    this.pixelAspectRatio = PAL_PAR;
+                    this.palette = TIA_SECAM_PALETTE;
+                }
+                default -> throw new EmulatorException("Atari 2600 TV format %s is not supported!".formatted(emulator.getTVFormat().getName()));
+            }
 
-            this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
             this.kernelEndScanline = this.vBlankEndScanline + this.kernelScanlines;
-            this.pixelAspectRatio = NTSC_PAR;
-            this.palette = TIA_NTSC_PALETTE;
 
             this.video = new int[this.getImageWidth() * this.getImageHeight()];
 

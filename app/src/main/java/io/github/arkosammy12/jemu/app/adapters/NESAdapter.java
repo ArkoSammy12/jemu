@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.app.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.nes.NESController;
@@ -14,13 +15,12 @@ import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.Optional;
 
-public class NESAdapter extends AbstractSystemAdapter implements NESHost {
+public class NESAdapter extends SystemAdapter implements NESHost {
 
     private String romTitle;
-    private System system;
 
-    public NESAdapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
-        super(jemu, initializer);
+    public NESAdapter(Jemu jemu, System system, SystemManager systemManager) throws LineUnavailableException {
+        super(jemu, system, systemManager);
     }
 
     @Override
@@ -45,18 +45,8 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
     }
 
     @Override
-    public String getSystemName() {
-        return this.system.getName();
-    }
-
-    @Override
     public Optional<String> getRomTitle() {
         return Optional.ofNullable(this.romTitle);
-    }
-
-    @Override
-    public System getSystem() {
-        return this.system;
     }
 
     @Override
@@ -65,10 +55,9 @@ public class NESAdapter extends AbstractSystemAdapter implements NESHost {
     }
 
     @Override
-    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
+    protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
-        this.system = System.NES;
-        super.initialize(jemu, initializer, tryReset);
+        super.initialize(initializer, tryReset);
     }
 
 }

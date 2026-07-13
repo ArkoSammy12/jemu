@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.app.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
@@ -15,22 +16,29 @@ import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.app.util.System.COSMAC_VIP;
 
-public class CosmacVIPAdapter extends AbstractSystemAdapter implements CosmacVIPHost {
+public class CosmacVIPAdapter extends SystemAdapter implements CosmacVIPHost {
 
-    private final String romTitle;
-    private final System system;
+    private String romTitle;
     private final Chip8Interpreter chip8Interpreter;
 
-    public CosmacVIPAdapter(Jemu jemu, EmulatorInitializer initializer, Chip8Interpreter chip8Interpreter) throws LineUnavailableException {
-        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
-        this.system = initializer.getSystem().orElse(COSMAC_VIP);
+    public CosmacVIPAdapter(Jemu jemu, System system, Chip8Interpreter chip8Interpreter, SystemManager systemManager) throws LineUnavailableException {
         this.chip8Interpreter = chip8Interpreter;
-        super(jemu, initializer);
+        super(jemu, system, systemManager);
     }
 
     @Override
     protected Emulator createEmulator() {
         return new CosmacVIPEmulator(this);
+    }
+
+    @Override
+    public Optional<String> getRomTitle() {
+        return Optional.ofNullable(this.romTitle);
+    }
+
+    @Override
+    public Chip8Interpreter getChip8Interpreter() {
+        return this.chip8Interpreter;
     }
 
     @Override
@@ -58,23 +66,9 @@ public class CosmacVIPAdapter extends AbstractSystemAdapter implements CosmacVIP
     }
 
     @Override
-    public System getSystem() {
-        return this.system;
-    }
-
-    @Override
-    public String getSystemName() {
-        return this.system.getDisplayName();
-    }
-
-    @Override
-    public Optional<String> getRomTitle() {
-        return Optional.ofNullable(this.romTitle);
-    }
-
-    @Override
-    public Chip8Interpreter getChip8Interpreter() {
-        return this.chip8Interpreter;
+    protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
+        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+        super.initialize(initializer, tryReset);
     }
 
 }

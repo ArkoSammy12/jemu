@@ -1,12 +1,12 @@
 package io.github.arkosammy12.jemu.app;
 
-import io.github.arkosammy12.jemu.app.adapters.AbstractSystemAdapter;
 import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.CLIArgs;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.GitProperties;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
+import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
@@ -42,7 +42,7 @@ public final class Jemu {
     private final Thread coreThread;
     private final Thread uiEventListenerThread;
 
-    private volatile AbstractSystemAdapter currentSystem = null;
+    private volatile SystemAdapter currentSystem = null;
     private volatile State currentState = State.STOPPED;
 
     private final Object systemLock = new Object();
@@ -119,7 +119,7 @@ public final class Jemu {
                 switch (uiEvent) {
                     case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
                     case CoreSettingChangeEvent coreSettingChangeEvent -> {
-                        AbstractSystemAdapter currentSystem = this.currentSystem;
+                        SystemAdapter currentSystem = this.currentSystem;
                         if (currentSystem != null) {
                             currentSystem.onCoreSettingEvent(coreSettingChangeEvent);
                         }
@@ -201,7 +201,7 @@ public final class Jemu {
         if (this.currentSystem == null) {
             return;
         }
-        this.currentSystem.getEmulator().executeFrame();
+        this.currentSystem.getEmulator().ifPresent(Emulator::executeFrame);
         this.mainWindow.getTitleManager().update(this.currentSystem.getRomTitle().orElse("No title"));
     }
 
@@ -209,7 +209,7 @@ public final class Jemu {
         if (this.currentSystem == null) {
             return;
         }
-        this.currentSystem.getEmulator().executeFrame();
+        this.currentSystem.getEmulator().ifPresent(Emulator::executeFrame);
         this.currentState = State.PAUSED;
     }
 
@@ -217,7 +217,7 @@ public final class Jemu {
         if (this.currentSystem == null) {
             return;
         }
-        this.currentSystem.getEmulator().executeCycle();
+        this.currentSystem.getEmulator().ifPresent(Emulator::executeCycle);
         this.currentState = State.PAUSED;
     }
 
@@ -236,7 +236,7 @@ public final class Jemu {
         if (currentSystemDescriptor.isPresent() && currentSystemDescriptor.get() instanceof System system && system != this.currentSystem.getSystem()) {
             this.initializeEmulator(system);
         } else {
-            this.currentSystem.reset(this.createEmulatorInitializer(this.currentSystem.getSystem()));
+            this.currentSystem.reset(this.createEmulatorInitializer());
         }
         boolean resetIntoPaused = resetEmulatorCommand.resetIntoPaused();
         this.audioEngine.setPaused(resetIntoPaused);
@@ -276,15 +276,16 @@ public final class Jemu {
         return State.STEPPING_CYCLE;
     }
 
-    private void initializeEmulator(System system) throws Exception {
+    private void initializeEmulator(@Nullable System system) throws Exception {
         if (this.currentSystem != null) {
             this.currentSystem.close();
         }
-        this.currentSystem = System.getSystemAdapter(this, this.createEmulatorInitializer(system));
+        this.currentSystem = System.getSystemAdapter(this, system);
+        this.currentSystem.powerCycle(createEmulatorInitializer());
         this.audioEngine.start();
     }
 
-    private EmulatorInitializer createEmulatorInitializer(@Nullable System system) {
+    private EmulatorInitializer createEmulatorInitializer() {
         return new EmulatorInitializer() {
 
             @Override
@@ -293,13 +294,8 @@ public final class Jemu {
             }
 
             @Override
-            public Optional<byte[]> getRawRom() {
+            public Optional<byte[]> getRomImage() {
                 return this.getRomPath().map(SystemAdapter::readRawRom);
-            }
-
-            @Override
-            public Optional<System> getSystem() {
-                return Optional.ofNullable(system);
             }
 
         };

@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.app.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.studioii.RCAStudioIIEmulator;
@@ -14,14 +15,12 @@ import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.app.util.System.RCA_STUDIO_II;
 
-public class RCAStudioIIAdapter extends AbstractSystemAdapter {
+public class RCAStudioIIAdapter extends SystemAdapter {
 
     private String romTitle;
-    private final System system;
 
-    public RCAStudioIIAdapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
-        this.system = initializer.getSystem().orElse(RCA_STUDIO_II);
-        super(jemu, initializer);
+    public RCAStudioIIAdapter(Jemu jemu, System system, SystemManager systemManager) throws LineUnavailableException {
+        super(jemu, system, systemManager);
     }
 
     @Override
@@ -58,24 +57,14 @@ public class RCAStudioIIAdapter extends AbstractSystemAdapter {
     }
 
     @Override
-    public System getSystem() {
-        return this.system;
-    }
-
-    @Override
-    public String getSystemName() {
-        return this.system.getDisplayName();
-    }
-
-    @Override
     public Optional<String> getRomTitle() {
         return Optional.ofNullable(this.romTitle);
     }
 
     @Override
-    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
-        super.initialize(jemu, initializer, tryReset);
+    protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+        super.initialize(initializer, tryReset);
     }
 
 }

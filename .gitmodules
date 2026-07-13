@@ -4,3 +4,6 @@
 [submodule "core/src/test/resources/submodules/tests/65x02-ssts"]
 	path = core/src/test/resources/submodules/tests/65x02-ssts
 	url = https://github.com/ArkoSammy12/65x02
+[submodule "app/src/main/resources/system/atari2600/vcs_cart_db"]
+	path = app/src/main/resources/system/atari2600/vcs_cart_db
+	url = https://github.com/munsie/vcs_cart_db

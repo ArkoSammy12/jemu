@@ -2,9 +2,11 @@ package io.github.arkosammy12.jemu.app.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.managers.Atari2600Manager;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Controller;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
+import io.github.arkosammy12.jemu.core.atari2600.Atari2600SystemHost;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import org.jetbrains.annotations.Nullable;
@@ -13,20 +15,30 @@ import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.app.util.System.ATARI_2600;
+public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHost {
 
-public class Atari2600Adapter extends AbstractSystemAdapter {
+    private final Atari2600Manager atari2600Manager;
 
     private String romTitle;
-    private System system;
 
-    public Atari2600Adapter(Jemu jemu, EmulatorInitializer initializer) throws LineUnavailableException {
-        super(jemu, initializer);
+    public Atari2600Adapter(Jemu jemu, System system, Atari2600Manager systemManager) throws LineUnavailableException {
+        this.atari2600Manager = systemManager;
+        super(jemu, system, systemManager);
     }
 
     @Override
     protected Emulator createEmulator() {
         return new Atari2600Emulator(this);
+    }
+
+    @Override
+    public Optional<String> getRomTitle() {
+        return Optional.ofNullable(this.romTitle);
+    }
+
+    @Override
+    public Optional<CartridgeInfo> getCartridgeInfo() {
+        return Optional.ofNullable(this.rom).flatMap(this.atari2600Manager::getDatabaseEntryForRom);
     }
 
     @Override
@@ -53,25 +65,9 @@ public class Atari2600Adapter extends AbstractSystemAdapter {
     }
 
     @Override
-    public System getSystem() {
-        return this.system;
-    }
-
-    @Override
-    public String getSystemName() {
-        return this.system.getName();
-    }
-
-    @Override
-    public Optional<String> getRomTitle() {
-        return Optional.ofNullable(this.romTitle);
-    }
-
-    @Override
-    protected void initialize(Jemu jemu, EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
+    protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
-        this.system = initializer.getSystem().orElse(ATARI_2600);
-        super.initialize(jemu, initializer, tryReset);
+        super.initialize(initializer, tryReset);
     }
 
 }

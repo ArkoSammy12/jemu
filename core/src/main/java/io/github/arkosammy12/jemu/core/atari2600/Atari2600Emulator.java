@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.atari2600;
 
 import io.github.arkosammy12.jemu.core.common.*;
+import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.hardware.MOS6532;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6507;
 
@@ -14,7 +15,8 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     private static final int PAL_CPU_CLOCK_SPEED = 1182298;
     private static final int PAL_FRAMERATE = 50;
 
-    private final SystemHost systemHost;
+    private final Atari2600SystemHost systemHost;
+    private final TVFormat tvFormat;
 
     private final NMOS6507 cpu;
     private final TIA<?> tia;
@@ -26,10 +28,24 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     private final int framerate;
     private final int iterationsPerFrame;
 
-    public Atari2600Emulator(SystemHost systemHost) {
+    public Atari2600Emulator(Atari2600SystemHost systemHost) {
         this.systemHost = systemHost;
-        this.framerate = NTSC_FRAMERATE;
-        this.iterationsPerFrame = NTSC_CPU_CLOCK_SPEED / this.framerate;
+        this.tvFormat = this.systemHost.getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getTVFormat).orElse(TVFormat.NTSC);
+
+        int clockSpeed;
+        switch (this.tvFormat) {
+            case NTSC -> {
+                clockSpeed = NTSC_CPU_CLOCK_SPEED;
+                this.framerate = NTSC_FRAMERATE;
+            }
+            case PAL, SECAM -> {
+                clockSpeed = PAL_CPU_CLOCK_SPEED;
+                this.framerate = PAL_FRAMERATE;
+            }
+            default -> throw new EmulatorException("Atari 2600 TV format %s is not supported!".formatted(this.tvFormat.getName()));
+        }
+
+        this.iterationsPerFrame = clockSpeed / this.framerate;
 
         this.controller = new Atari2600Controller<>(this);
         this.cpu = new NMOS6507(this);
@@ -40,13 +56,17 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
 
     }
 
+    public TVFormat getTVFormat() {
+        return this.tvFormat;
+    }
+
     @Override
     public Atari2600Bus<?> getBus() {
         return this.bus;
     }
 
     @Override
-    public SystemHost getHost() {
+    public Atari2600SystemHost getHost() {
         return this.systemHost;
     }
 
@@ -215,12 +235,22 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     }
 
     public enum TVFormat {
-        NSTC,
-        PAL,
-        SECAM,
-        NTSC50,
-        PAL60,
-        SECAM60
+        NTSC("NTSC"),
+        PAL("PAL"),
+        SECAM("SECAM"),
+        NTSC50("NTSC50"),
+        PAL60("PAL60"),
+        SECAM60("SECAM60");
+
+        private final String name;
+
+        TVFormat(String name) {
+            this.name = name;
+        }
+
+        public String getName() {
+            return this.name;
+        }
 
     }
 
