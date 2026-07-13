@@ -14,8 +14,6 @@ import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.io.InputStream;
-import java.nio.file.Path;
-import java.security.MessageDigest;
 import java.util.*;
 
 public class Atari2600Manager implements SystemManager {
@@ -24,7 +22,7 @@ public class Atari2600Manager implements SystemManager {
 
     public Atari2600Manager() {
         try {
-            byte[] bytes = loadFromResources("/system/atari2600/vcs_cart_db/db.json");
+            byte[] bytes = loadFromResources(this.getClass(), "/system/atari2600/vcs_cart_db/db.json");
             if (bytes == null) {
                 Logger.error("Atari 2600 database file not found!");
                 return;
@@ -61,18 +59,14 @@ public class Atari2600Manager implements SystemManager {
 
     public Optional<Atari2600Database.Entry> getDatabaseEntryForRom(byte[] rom) {
         try {
-            return Optional.ofNullable(this.databaseMap.get(getSha1Hash(rom)));
+            return Optional.ofNullable(this.databaseMap.get(SystemManager.getSha1Hash(rom)));
         } catch (Exception e) {
             return Optional.empty();
         }
     }
 
-    private static String getSha1Hash(byte[] data) throws Exception {
-        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(data));
-    }
-
-    private static byte @Nullable [] loadFromResources(String path) throws Exception {
-        try (InputStream in = Atari2600Manager.class.getResourceAsStream(path)) {
+    public static byte @Nullable [] loadFromResources(Class<?> clazz, String path) throws Exception {
+        try (InputStream in = clazz.getResourceAsStream(path)) {
             if (in == null) {
                 return null;
             } else {

@@ -2,12 +2,14 @@ package io.github.arkosammy12.jemu.app.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.managers.NESManager;
 import io.github.arkosammy12.jemu.app.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.nes.NESController;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.NESHost;
+import io.github.arkosammy12.jemu.core.nes.ines.CartridgeInfo;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -17,9 +19,11 @@ import java.util.Optional;
 
 public class NESAdapter extends SystemAdapter implements NESHost {
 
+    private final NESManager nesManager;
     private String romTitle;
 
-    public NESAdapter(Jemu jemu, System system, SystemManager systemManager) throws LineUnavailableException {
+    public NESAdapter(Jemu jemu, System system, NESManager systemManager) throws LineUnavailableException {
+        this.nesManager = systemManager;
         super(jemu, system, systemManager);
     }
 
@@ -52,6 +56,11 @@ public class NESAdapter extends SystemAdapter implements NESHost {
     @Override
     public Optional<Path> getSaveDataDirectory() {
         return this.jemu.getSavesDirectory();
+    }
+
+    @Override
+    public Optional<CartridgeInfo> getExternalCartridgeInfo(int totalRomSize, boolean hasByteTrainer) {
+        return this.nesManager.findDatabaseEntryFromNesFile(this.rom, totalRomSize, hasByteTrainer);
     }
 
     @Override

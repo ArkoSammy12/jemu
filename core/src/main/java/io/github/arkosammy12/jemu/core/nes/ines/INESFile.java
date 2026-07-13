@@ -29,23 +29,14 @@ public class INESFile {
     private final int mapperNumber;
     private final int submapperNumber;
     private final int programRamSizeBytes;
+    private final int nonVolatileProgramRamSizeBytes;
     private final int characterRamSizeBytes;
+    private final int nonVolatileCharacterRamSizeBytes;
     private final NESEmulator.TVSystem tvSystem;
 
-    public INESFile(byte[] file) {
+    public <E extends NESEmulator> INESFile(E emulator, byte[] file) {
 
-        // TODO: Extract whether the ROM is for a PAL console
-        this.mapperNumber = this.getMapperNumber(file);
-        this.submapperNumber = this.getSubmapperNumber(file);
-        this.programRamSizeBytes = this.getProgramRamSize(file);
-        this.characterRamSizeBytes = this.getCharacterRamSize(file);
-        this.tvSystem = this.getTVSystem(file);
-
-        int flags6 = (int) file[6] & 0xFF;
-        this.nametableArrangement = (flags6 & 1) != 0;
-        this.hasBattery = (flags6 & (1 << 1)) != 0;
-        this.hasAlternativeNametableLayout = (flags6 & (1 << 3)) != 0;
-
+        int flags6 = (int) file[6] & 0xFF;;
         boolean hasByeTrainer = (flags6 & (1 << 2)) != 0;
 
         int programRomDataBeginIndex = 16;
@@ -77,6 +68,31 @@ public class INESFile {
             System.arraycopy(file, characterRomDataBeginIndex, this.characterRomData, 0, this.characterRomData.length);
         }
 
+        Optional<CartridgeInfo> externalCartridgeInfo = emulator.getHost().getExternalCartridgeInfo(programRomSizeBytes + characterRomSizeBytes, hasByeTrainer);
+        if (externalCartridgeInfo.isPresent()) {
+            CartridgeInfo cartridgeInfo = externalCartridgeInfo.get();
+            this.mapperNumber = cartridgeInfo.getMapperNumber();
+            this.submapperNumber = cartridgeInfo.getSubmapperNumber();
+            this.programRamSizeBytes = cartridgeInfo.getProgramRamSize();
+            this.characterRamSizeBytes = cartridgeInfo.getCharacterRamSize();
+            this.nonVolatileProgramRamSizeBytes = cartridgeInfo.getNonVolatileProgramRamSize();
+            this.nonVolatileCharacterRamSizeBytes = cartridgeInfo.getNonVolatileCharacterRamSize();
+            this.tvSystem = cartridgeInfo.getTVSystem();
+            this.nametableArrangement = cartridgeInfo.getNametableArrangement();
+            this.hasBattery = cartridgeInfo.hasBattery();
+            this.hasAlternativeNametableLayout = cartridgeInfo.hasAlternativeNametableLayout();
+        } else {
+            this.mapperNumber = this.getMapperNumber(file);
+            this.submapperNumber = this.getSubmapperNumber(file);
+            this.programRamSizeBytes = this.getProgramRamSize(file);
+            this.characterRamSizeBytes = this.getCharacterRamSize(file);
+            this.nonVolatileProgramRamSizeBytes = this.getNonVolatileProgramRamSize(file);
+            this.nonVolatileCharacterRamSizeBytes = this.getNonVolatileCharacterRamSize(file);
+            this.tvSystem = this.getTVSystem(file);
+            this.nametableArrangement = (flags6 & 1) != 0;
+            this.hasBattery = (flags6 & (1 << 1)) != 0;
+            this.hasAlternativeNametableLayout = (flags6 & (1 << 3)) != 0;
+        }
     }
 
     protected int getProgramRomSizeBytes(byte[] file) {
@@ -101,6 +117,14 @@ public class INESFile {
 
     protected int getCharacterRamSize(byte[] file) {
         return ((int) file[5] & 0xFF) == 0 ? KB_8 : 0;
+    }
+
+    protected int getNonVolatileProgramRamSize(byte[] file) {
+        return 0;
+    }
+
+    protected int getNonVolatileCharacterRamSize(byte[] file) {
+        return 0;
     }
 
     protected NESEmulator.TVSystem getTVSystem(byte[] file) {
@@ -135,6 +159,14 @@ public class INESFile {
         return this.characterRamSizeBytes;
     }
 
+    public int getNonVolatileProgramRamSizeBytes() {
+        return this.nonVolatileProgramRamSizeBytes;
+    }
+
+    public int getNonVolatileCharacterRamSizeBytes() {
+        return this.nonVolatileCharacterRamSizeBytes;
+    }
+
     public boolean getNametableArrangement() {
         return this.nametableArrangement;
     }
@@ -151,7 +183,7 @@ public class INESFile {
         return this.tvSystem;
     }
 
-    public static INESFile getINESFile(byte[] file) {
+    public static <E extends NESEmulator> INESFile getINESFile(E emulator, byte[] file) {
         try {
             int maskedByte7 = (int) file[7] & 0x0C;
             boolean bytes12To15AreZero = true;
@@ -175,13 +207,13 @@ public class INESFile {
             finalIndex += characterRomSizeBytes;
 
             if (maskedByte7 == 0x08 && finalIndex <= file.length) {
-                return new NES20File(file);
+                return new NES20File(emulator, file);
             } else if (maskedByte7 == 0x04) {
-                return new INESFile(file);
+                return new INESFile(emulator, file);
             } else if (maskedByte7 == 0x00 && bytes12To15AreZero) {
-                return new ExtendedINESFile(file);
+                return new ExtendedINESFile(emulator, file);
             } else {
-                return new INESFile(file);
+                return new INESFile(emulator, file);
             }
 
         } catch (ArrayIndexOutOfBoundsException e) {

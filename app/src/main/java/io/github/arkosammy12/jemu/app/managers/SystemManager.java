@@ -5,8 +5,15 @@ import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 
+import java.security.MessageDigest;
+import java.util.HexFormat;
+
 public interface SystemManager extends SystemDescriptor {
 
     SystemAdapter createSystem(Jemu jemu, System system) throws Exception;
+
+    static String getSha1Hash(byte[] data) throws Exception {
+        return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(data));
+    }
 
 }

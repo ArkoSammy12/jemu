@@ -5,14 +5,8 @@ import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 
 public class NES20File extends ExtendedINESFile {
 
-    private final int nonVolatileProgramRamSize;
-    private final int nonVolatileCharacterRamSize;
-
-    public NES20File(byte[] file) {
-        super(file);
-
-        this.nonVolatileProgramRamSize = this.getNonVolatileProgramRamSize(file);
-        this.nonVolatileCharacterRamSize = this.getNonVolatileCharacterRamSize(file);
+    public <E extends NESEmulator> NES20File(E emulator, byte[] file) {
+        super(emulator, file);
     }
 
     public static int parseNes20ProgramRomSizeBytes(byte[] file) {
@@ -66,13 +60,15 @@ public class NES20File extends ExtendedINESFile {
         return volatileShiftCount == 0 ? 0 : 64 << volatileShiftCount;
     }
 
-    private int getNonVolatileProgramRamSize(byte[] file) {
+    @Override
+    protected int getNonVolatileProgramRamSize(byte[] file) {
         int flags10 = (int) file[10] & 0xFF;
         int nonVolatileShiftCount = (flags10 >>> 4) & 0x0F;
         return nonVolatileShiftCount == 0 ? 0 : 64 << nonVolatileShiftCount;
     }
 
-    private int getNonVolatileCharacterRamSize(byte[] file) {
+    @Override
+    protected int getNonVolatileCharacterRamSize(byte[] file) {
         int flags10 = (int) file[11] & 0xFF;
         int nonVolatileShiftCount = (flags10 >>> 4) & 0x0F;
         return nonVolatileShiftCount == 0 ? 0 : 64 << nonVolatileShiftCount;
@@ -83,14 +79,6 @@ public class NES20File extends ExtendedINESFile {
         int flags10 = (int) file[11] & 0xFF;
         int volatileShiftCount = flags10 & 0x0F;
         return volatileShiftCount == 0 ? 0 : 64 << volatileShiftCount;
-    }
-
-    public int getNonVolatileProgramRamSizeBytes() {
-        return this.nonVolatileProgramRamSize;
-    }
-
-    public int getNonVolatileCharacterRamSizeBytes() {
-        return this.nonVolatileCharacterRamSize;
     }
 
     @Override

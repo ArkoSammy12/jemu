@@ -4,8 +4,8 @@ import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 
 public class ExtendedINESFile extends INESFile {
 
-    public ExtendedINESFile(byte[] file) {
-        super(file);
+    public <E extends NESEmulator> ExtendedINESFile(E emulator, byte[] file) {
+        super(emulator, file);
     }
 
     protected int getMapperNumber(byte[] file) {

@@ -57,12 +57,11 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
         }
 
         byte[] rom = optionalROM.get();
-        this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(rom));
+        this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(this, rom));
         systemHost.getRomPath().ifPresent(path -> {
             this.loadedRomFileName = path.getFileName().toString();
         });
 
-        // TODO: Detect TV system properly with the nes20 xml database
         this.tvSystem = this.cartridge.getINESFile().getTVSystem();
         boolean deriveCyclesFromMasterClock;
         switch (this.tvSystem) {
@@ -132,7 +131,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
                         this.cartridge.save();
                     }
                     this.loadedRomFileName = romPathFilename;
-                    this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(newRom));
+                    this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(this, newRom));
                 }
             }));
 
