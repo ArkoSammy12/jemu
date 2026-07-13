@@ -1180,7 +1180,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
                 }
 
-
             }
 
             private void start() {
