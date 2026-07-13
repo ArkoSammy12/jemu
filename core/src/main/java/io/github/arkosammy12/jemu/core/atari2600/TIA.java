@@ -2,7 +2,6 @@ package io.github.arkosammy12.jemu.core.atari2600;
 
 import io.github.arkosammy12.jemu.core.common.AudioGenerator;
 import io.github.arkosammy12.jemu.core.common.Bus;
-import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
@@ -505,7 +504,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private int colorClockNumber;
         private int hSyncCounter;
-        private boolean hMove;
+        private boolean hMoveLatch;
 
         private int scanlineNumber;
 
@@ -592,7 +591,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             this.horizontalMotionMissile1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile1.setHorizontalMotion(value >>> 4));
             this.horizontalMotionBallWriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.ball.setHorizontalMotion(value >>> 4));
             this.applyHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(6, _ -> {
-                this.hMove = true;
+                if (this.isHBlank()) {
+                    this.hMoveLatch = true;
+                }
                 this.player0.applyHorizontalMotion();
                 this.player1.applyHorizontalMotion();
                 this.missile0.applyHorizontalMotion();
@@ -843,6 +844,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 this.hSyncCounter++;
                 if (this.hSyncCounter >= 57) {
                     this.hSyncCounter = 0;
+                    this.hMoveLatch = false;
                 }
             }
             if (this.colorClockNumber >= CLOCKS_PER_SCANLINE) {
@@ -850,7 +852,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 if (this.scanlineNumber >= this.scanlinesPerFrame) {
                     this.scanlineNumber = 0;
                 }
-                this.hMove = false;
                 this.colorClockNumber = 0;
                 this.hSyncCounter = 0;
             }
@@ -880,7 +881,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         }
 
         private boolean isHBlank() {
-            return this.colorClockNumber < HBLANK_CLOCKS || (this.hMove && this.colorClockNumber < HBLANK_CLOCKS + 8);
+            return this.colorClockNumber < HBLANK_CLOCKS || (this.hMoveLatch && this.colorClockNumber < HBLANK_CLOCKS + 8);
         }
 
         private static int reverseBits(int b) {
