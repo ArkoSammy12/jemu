@@ -452,13 +452,13 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         };
 
         private static final int NTSC_SCANLINES_PER_FRAME = 262;
-        private static final int NTSC_VBLANK_SCANLINES = 40;
-        private static final int NTSC_KERNEL_SCANLINES = 192;
+        private static final int NTSC_VBLANK_SCANLINES = 37;
+        private static final int NTSC_KERNEL_SCANLINES = 228;
         private static final double NTSC_PAR = 12.0 / 7.0;
 
         private static final int PAL_SCANLINES_PER_FRAME = 312;
-        private static final int PAL_VBLANK_SCANLINES = 48;
-        private static final int PAL_KERNEL_SCANLINES = 228;
+        private static final int PAL_VBLANK_SCANLINES = 45;
+        private static final int PAL_KERNEL_SCANLINES = 274;
         private static final double PAL_PAR = 27.0 / 13.0;
 
         private static final int VSYNC_SCANLINES = 3;
