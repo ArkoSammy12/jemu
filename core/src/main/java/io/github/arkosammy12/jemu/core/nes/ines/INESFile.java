@@ -139,7 +139,7 @@ public class INESFile {
         return Optional.ofNullable(this.characterRomData == null ? null : Arrays.copyOf(this.characterRomData, this.characterRomData.length));
     }
 
-    public Optional<byte[]> getByteTrainer() {
+    public Optional<byte[]> getTrainer() {
         return Optional.ofNullable(this.byteTrainer == null ? null : Arrays.copyOf(this.byteTrainer, this.byteTrainer.length));
     }
 

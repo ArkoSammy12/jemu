@@ -32,6 +32,11 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
             case KB_2 -> 0x800;
             case KB_4 -> 0x1000;
         }];
+        this.iNESFile.getTrainer().ifPresent(trainer -> {
+            for (byte value : trainer) {
+                this.writeByte(0x7000, value);
+            }
+        });
     }
 
     public static <E extends NESEmulator> NESCartridge<E> getCartridge(E emulator, INESFile iNESFile) {
