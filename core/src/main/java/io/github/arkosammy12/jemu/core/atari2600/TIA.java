@@ -1002,9 +1002,8 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
                 if (this.startCounter > 0) {
                     this.startCounter--;
-                    if (this.startCounter == 1) {
+                    if (this.startCounter <= 0) {
                         this.pixelCounter = 0;
-                    } else if (this.startCounter <= 0) {
                         this.widthCounter = this.getWidth();
                     }
                 }
@@ -1029,9 +1028,8 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             }
 
-
             private void start() {
-                this.startCounter = 8;
+                this.startCounter = this.getWidth() > 1 ? 8 : 7;
             }
 
             private int getWidth() {
