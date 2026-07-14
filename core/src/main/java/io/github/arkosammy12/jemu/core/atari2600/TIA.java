@@ -287,7 +287,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
             double ch0 = this.channel0.getDigitalOutput();
             double ch1 = this.channel1.getDigitalOutput();
-            this.sampleBuffer[this.currentSampleIndex] = (ch0 + ch1) / 31.0;
+            this.sampleBuffer[this.currentSampleIndex] = (ch0 + ch1) / 30.0;
             this.currentSampleIndex++;
         }
 
@@ -346,8 +346,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     boolean nineBitPolyBit4 = (this.noiseCounter & 1) != 0;
 
                     switch (this.control & 0b11) {
-                        case 0 -> {}
-                        case 1 -> this.holdPulseCounter = false;
+                        case 0, 1 -> this.holdPulseCounter = false;
                         case 2 -> this.holdPulseCounter = (this.noiseCounter & 0x1E) != 2;
                         case 3 -> this.holdPulseCounter = !nineBitPolyBit4;
                     }
@@ -385,7 +384,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
 
             private int getDigitalOutput() {
-                return (this.pulseCounter & 1) * this.volume;
+                return (this.pulseCounter & 1) == 0 ? this.volume : 0;
             }
 
         }
