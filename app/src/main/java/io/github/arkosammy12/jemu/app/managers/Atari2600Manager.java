@@ -93,6 +93,7 @@ public class Atari2600Manager implements SystemManager {
         }
 
         public static class Entry implements Atari2600SystemHost.CartridgeInfo {
+
             @SerializedName("title")
             private String title;
 
