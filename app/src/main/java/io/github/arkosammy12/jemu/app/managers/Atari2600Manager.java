@@ -18,23 +18,25 @@ import java.util.*;
 
 public class Atari2600Manager implements SystemManager {
 
-    private final Map<String, Atari2600Database.Entry> databaseMap = new HashMap<>();
+    private final Map<String, Atari2600Database.Entry> databaseMap;
 
     public Atari2600Manager() {
-        try {
+        Map<String, Atari2600Database.Entry> map = new HashMap<>();
+        dbInit: try {
             byte[] bytes = loadFromResources(this.getClass(), "/system/atari2600/vcs_cart_db/db.json");
             if (bytes == null) {
                 Logger.error("Atari 2600 database file not found!");
-                return;
+                break dbInit;
             }
             String json = new String(bytes);
             Atari2600Database db = new Gson().fromJson(json, Atari2600Database.class);
             for (Atari2600Database.Entry entry : db.getRoms()) {
-                this.databaseMap.put(entry.getSha1(), entry);
+                map.put(entry.getSha1(), entry);
             }
         } catch (Exception e) {
             Logger.error(e, "Failed to load Atari 2600 database!");
         }
+        this.databaseMap = Map.copyOf(map);
     }
 
     @Override
