@@ -318,7 +318,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             private boolean holdPulseCounter;
 
-            private int frequencyDivisorCounter = 1;
+            private int frequencyDivisorCounter;
             private int pulseCounter;
             private int noiseCounter;
 
@@ -327,7 +327,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
 
             private void setFrequency(int value) {
-                this.frequency = (value & 0x1F) + 1;
+                this.frequency = value & 0x1F;
             }
 
             private void setVolume(int value) {
@@ -339,9 +339,8 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             // itself based on Christian Speckner's 6502.ts (https://github.com/6502ts/6502.ts/blob/master/src/machine/stella/tia/PCMChannel.ts).
             // Many thanks to Stephen Anthony and Christian Speckner for letting me borrow their implementation.
             private void clock() {
-                this.frequencyDivisorCounter--;
-                if (this.frequencyDivisorCounter <= 0) {
-                    this.frequencyDivisorCounter = this.frequency;
+                if (this.frequencyDivisorCounter == this.frequency) {
+                    this.frequencyDivisorCounter = 0;
 
                     // Corresponds to bit 0 of the 5-bit poly counter
                     boolean nineBitPolyBit4 = (this.noiseCounter & 1) != 0;
@@ -380,6 +379,8 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                             this.pulseCounter |= (1 << 3);
                         }
                     }
+                } else {
+                    this.frequencyDivisorCounter = (this.frequencyDivisorCounter + 1) & 0x1F;
                 }
             }
 
