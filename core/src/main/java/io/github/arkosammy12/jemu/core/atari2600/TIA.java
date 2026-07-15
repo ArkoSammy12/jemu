@@ -393,7 +393,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
     private class Video implements VideoGenerator, Bus {
 
-        private static final int[] TIA_NTSC_PALETTE = {
+        private static final int[] NTSC_PALETTE = {
                 0x000000, 0x4A4A4A, 0x6F6F6F, 0x8E8E8E, 0xAAAAAA, 0xC0C0C0, 0xD6D6D6, 0xECECEC,
                 0x484800, 0x69690F, 0x86861D, 0xA2A22A, 0xBBBB35, 0xD2D240, 0xE8E84A, 0xFCFC54,
                 0x7C2C00, 0x904811, 0xA26221, 0xB47A30, 0xC3903D, 0xD2A44A, 0xDFB755, 0xECC860,
@@ -412,7 +412,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 0x482C00, 0x694D14, 0x866A26, 0xA28638, 0xBB9F47, 0xD2B656, 0xE8CC63, 0xFCE070,
         };
 
-        private static final int[] TIA_PAL_PALETTE = {
+        private static final int[] PAL_PALETTE = {
                 0x000000, 0x333333, 0x595959, 0x7B7B7B, 0x999999, 0xB6B6B6, 0xCFCFCF, 0xE6E6E6,
                 0x0B0B0B, 0x333333, 0x595959, 0x7B7B7B, 0x999999, 0xB6B6B6, 0xCFCFCF, 0xE6E6E6,
                 0x3B2400, 0x664700, 0x8B7000, 0xAC9200, 0xC5AE36, 0xDEC85E, 0xF7E27F, 0xFFF19E,
@@ -461,7 +461,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         private static final double PAL_PAR = 27.0 / 13.0;
 
         private static final int VSYNC_SCANLINES = 3;
-
         private static final int CLOCKS_PER_SCANLINE = 228;
         private static final int HBLANK_CLOCKS = 68;
         private static final int VISIBLE_CLOCKS = 160;
@@ -540,14 +539,14 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
                     this.kernelScanlines = NTSC_KERNEL_SCANLINES;
                     this.pixelAspectRatio = NTSC_PAR;
-                    this.palette = TIA_NTSC_PALETTE;
+                    this.palette = NTSC_PALETTE;
                 }
                 case PAL -> {
                     this.scanlinesPerFrame = PAL_SCANLINES_PER_FRAME;
                     this.vBlankEndScanline = PAL_VBLANK_SCANLINES;
                     this.kernelScanlines = PAL_KERNEL_SCANLINES;
                     this.pixelAspectRatio = PAL_PAR;
-                    this.palette = TIA_PAL_PALETTE;
+                    this.palette = PAL_PALETTE;
                 }
                 case SECAM -> {
                     this.scanlinesPerFrame = PAL_SCANLINES_PER_FRAME;
@@ -555,6 +554,20 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     this.kernelScanlines = PAL_KERNEL_SCANLINES;
                     this.pixelAspectRatio = PAL_PAR;
                     this.palette = TIA_SECAM_PALETTE;
+                }
+                case NTSC50 -> {
+                    this.scanlinesPerFrame = PAL_SCANLINES_PER_FRAME;
+                    this.vBlankEndScanline = PAL_VBLANK_SCANLINES;
+                    this.kernelScanlines = PAL_KERNEL_SCANLINES;
+                    this.pixelAspectRatio = NTSC_PAR;
+                    this.palette = NTSC_PALETTE;
+                }
+                case PAL60, SECAM60 -> {
+                    this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
+                    this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
+                    this.kernelScanlines = NTSC_KERNEL_SCANLINES;
+                    this.pixelAspectRatio = PAL_PAR;
+                    this.palette = PAL_PALETTE;
                 }
                 default -> throw new EmulatorException("Atari 2600 TV format %s is not supported!".formatted(emulator.getTVFormat().getName()));
             }

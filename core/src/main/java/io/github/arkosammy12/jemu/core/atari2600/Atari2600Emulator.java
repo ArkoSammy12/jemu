@@ -42,6 +42,14 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
                 clockSpeed = PAL_CPU_CLOCK_SPEED;
                 this.framerate = PAL_FRAMERATE;
             }
+            case NTSC50 -> {
+                clockSpeed = NTSC_CPU_CLOCK_SPEED;
+                this.framerate = PAL_FRAMERATE;
+            }
+            case PAL60, SECAM60 -> {
+                clockSpeed = PAL_CPU_CLOCK_SPEED;
+                this.framerate = NTSC_FRAMERATE;
+            }
             default -> throw new EmulatorException("Atari 2600 TV format %s is not supported!".formatted(this.tvFormat.getName()));
         }
 
