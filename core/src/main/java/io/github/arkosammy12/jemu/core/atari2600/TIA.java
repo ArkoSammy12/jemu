@@ -916,17 +916,17 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             private int horizontalMotion;
 
-            protected int phaseCounter = 4;
+            protected int phaseCounter;
             protected int positionCounter;
 
             protected int startCounter;
-            protected int pixelCounter;
-            protected int widthCounter;
+            protected int scanCounter;
+            protected int scanCounterIncrementDivisorCounter;
 
             protected boolean pixel;
 
             protected void resetHorizontalPosition() {
-                this.phaseCounter = 4;
+                this.phaseCounter = 0;
                 this.positionCounter = 0;
             }
 
@@ -969,7 +969,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             private Player(Missile associatedMissile) {
                 this.associatedMissile = associatedMissile;
-                this.pixelCounter = 8;
+                this.scanCounter = 8;
             }
 
             private void setGraphics(int graphics) {
@@ -994,9 +994,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             @Override
             protected void clock() {
-                this.phaseCounter--;
-                if (this.phaseCounter <= 0) {
-                    this.phaseCounter = 4;
+                this.phaseCounter++;
+                if (this.phaseCounter >= 4) {
+                    this.phaseCounter = 0;
 
                     boolean firstCopy = this.numberSize == 1 || this.numberSize == 3;
                     boolean secondCopy = this.numberSize == 2 || this.numberSize == 3 || this.numberSize == 6;
@@ -1025,26 +1025,26 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 if (this.startCounter > 0) {
                     this.startCounter--;
                     if (this.startCounter <= 0) {
-                        this.pixelCounter = 0;
-                        this.widthCounter = this.getWidth();
+                        this.scanCounter = 0;
+                        this.scanCounterIncrementDivisorCounter = 0;
                     }
                 }
 
                 this.pixel = false;
 
-                if (this.pixelCounter < 8) {
+                if (this.scanCounter < 8) {
                     int graphics = this.verticalDelay ? this.oldGraphics : this.newGraphics;
-                    int bit = this.reflectGraphics ? this.pixelCounter : (7 - this.pixelCounter);
+                    int bit = this.reflectGraphics ? this.scanCounter : (7 - this.scanCounter);
                     this.pixel = (graphics & (1 << bit)) != 0;
 
-                    if (!this.drawingCopy && this.associatedMissile.getResetToPlayer() && this.pixelCounter == 4) {
+                    if (!this.drawingCopy && this.associatedMissile.getResetToPlayer() && this.scanCounter == 4) {
                         this.associatedMissile.resetHorizontalPosition();
                     }
 
-                    this.widthCounter--;
-                    if (this.widthCounter <= 0) {
-                        this.pixelCounter++;
-                        this.widthCounter = this.getWidth();
+                    this.scanCounterIncrementDivisorCounter++;
+                    if (this.scanCounterIncrementDivisorCounter >= this.getWidth()) {
+                        this.scanCounter++;
+                        this.scanCounterIncrementDivisorCounter = 0;
                     }
                 }
 
@@ -1073,7 +1073,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             private boolean resetToPlayer;
 
             private Missile() {
-                this.pixelCounter = 1;
+                this.scanCounter = 1;
             }
 
             protected void setEnabled(boolean enabled) {
@@ -1095,9 +1095,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             @Override
             protected void clock() {
-                this.phaseCounter--;
-                if (this.phaseCounter <= 0) {
-                    this.phaseCounter = 4;
+                this.phaseCounter++;
+                if (this.phaseCounter >= 4) {
+                    this.phaseCounter = 0;
 
                     boolean firstCopy = this.number == 1 || this.number == 3;
                     boolean secondCopy = this.number == 2 || this.number == 3 || this.number == 6;
@@ -1122,21 +1122,21 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 if (this.startCounter > 0) {
                     this.startCounter--;
                     if (this.startCounter <= 0) {
-                        this.pixelCounter = 0;
-                        this.widthCounter = this.getWidth();
+                        this.scanCounter = 0;
+                        this.scanCounterIncrementDivisorCounter = 0;
                     }
                 }
 
                 this.pixel = false;
 
-                if (this.pixelCounter < 1) {
+                if (this.scanCounter < 1) {
 
                     this.pixel = !this.resetToPlayer && this.enabled;
 
-                    this.widthCounter--;
-                    if (this.widthCounter <= 0) {
-                        this.pixelCounter++;
-                        this.widthCounter = this.getWidth();
+                    this.scanCounterIncrementDivisorCounter++;
+                    if (this.scanCounterIncrementDivisorCounter >= this.getWidth()) {
+                        this.scanCounter++;
+                        this.scanCounterIncrementDivisorCounter = 0;
                     }
 
                 }
@@ -1163,7 +1163,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             private boolean verticalDelay;
 
             private Ball() {
-                this.pixelCounter = 1;
+                this.scanCounter = 1;
             }
 
             protected void setEnabled(boolean enabled) {
@@ -1190,9 +1190,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             @Override
             protected void clock() {
-                this.phaseCounter--;
-                if (this.phaseCounter <= 0) {
-                    this.phaseCounter = 4;
+                this.phaseCounter++;
+                if (this.phaseCounter >= 4) {
+                    this.phaseCounter = 0;
 
                     if (this.positionCounter == 39) {
                         this.start();
@@ -1207,21 +1207,21 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 if (this.startCounter > 0) {
                     this.startCounter--;
                     if (this.startCounter <= 0) {
-                        this.pixelCounter = 0;
-                        this.widthCounter = this.getWidth();
+                        this.scanCounter = 0;
+                        this.scanCounterIncrementDivisorCounter = 0;
                     }
                 }
 
                 this.pixel = false;
 
-                if (this.pixelCounter < 1) {
+                if (this.scanCounter < 1) {
 
                     this.pixel = this.verticalDelay ? this.oldEnabled : this.newEnabled;
 
-                    this.widthCounter--;
-                    if (this.widthCounter <= 0) {
-                        this.pixelCounter++;
-                        this.widthCounter = this.getWidth();
+                    this.scanCounterIncrementDivisorCounter++;
+                    if (this.scanCounterIncrementDivisorCounter >= this.getWidth()) {
+                        this.scanCounter++;
+                        this.scanCounterIncrementDivisorCounter = 0;
                     }
 
                 }
