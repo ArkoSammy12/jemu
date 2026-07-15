@@ -384,7 +384,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
 
             private int getDigitalOutput() {
-                return (this.pulseCounter & 1) == 0 ? this.volume : 0;
+                return (this.pulseCounter & 1) * this.volume;
             }
 
         }
