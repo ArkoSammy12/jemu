@@ -759,7 +759,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                         if (this.dotNumber == 0) {
                             if (isRenderingEnabled) {
                                 this.oamDataReadBuffer = this.secondaryOAM[0];
-                                this.readBytePPU(this.getBackgroundPatternByteAddress(false));
+                                this.emulator.getCartridge().observePPUAddress(this.getBackgroundPatternByteAddress(false));
                             }
                         } else if (this.dotNumber >= OAM2_INIT_START && this.dotNumber <= OAM2_INIT_END) {
                             this.tickSecondaryOAMClear();
@@ -824,7 +824,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                 } else if (this.scanlineNumber == this.vblScanline - 1) {
                     if (this.dotNumber == 0) {
                         if (this.isRenderingEnabled()) {
-                            this.readBytePPU(this.getBackgroundPatternByteAddress(false));
+                            this.emulator.getCartridge().observePPUAddress(this.getBackgroundPatternByteAddress(false));
                         }
                     }
                 } else if (this.scanlineNumber == this.vblScanline) {
