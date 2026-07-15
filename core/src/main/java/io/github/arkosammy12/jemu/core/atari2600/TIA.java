@@ -1037,8 +1037,15 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     int bit = this.reflectGraphics ? this.scanCounter : (7 - this.scanCounter);
                     this.pixel = (graphics & (1 << bit)) != 0;
 
-                    if (!this.drawingCopy && this.associatedMissile.getResetToPlayer() && this.scanCounter == 4) {
-                        this.associatedMissile.resetHorizontalPosition();
+                    if (!this.drawingCopy && this.associatedMissile.getResetToPlayer()) {
+                        int missileOffset = switch (this.getWidth()) {
+                            case 2 -> 0;
+                            case 4 -> 1;
+                            default -> 3;
+                        };
+                        if (this.scanCounter == missileOffset) {
+                            this.associatedMissile.resetHorizontalPosition();
+                        }
                     }
 
                     this.scanCounterIncrementDivisorCounter++;
