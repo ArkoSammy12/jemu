@@ -431,7 +431,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 0x0B0B0B, 0x333333, 0x595959, 0x7B7B7B, 0x999999, 0xB6B6B6, 0xCFCFCF, 0xE6E6E6,
         };
 
-        private static final int[] TIA_SECAM_PALETTE = {
+        private static final int[] SECAM_PALETTE = {
                 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000,
                 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000, 0x000000,
                 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF, 0x0000FF,
@@ -553,7 +553,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     this.vBlankEndScanline = PAL_VBLANK_SCANLINES;
                     this.kernelScanlines = PAL_KERNEL_SCANLINES;
                     this.pixelAspectRatio = PAL_PAR;
-                    this.palette = TIA_SECAM_PALETTE;
+                    this.palette = SECAM_PALETTE;
                 }
                 case NTSC50 -> {
                     this.scanlinesPerFrame = PAL_SCANLINES_PER_FRAME;
@@ -562,12 +562,19 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     this.pixelAspectRatio = NTSC_PAR;
                     this.palette = NTSC_PALETTE;
                 }
-                case PAL60, SECAM60 -> {
+                case PAL60 -> {
                     this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
                     this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
                     this.kernelScanlines = NTSC_KERNEL_SCANLINES;
                     this.pixelAspectRatio = PAL_PAR;
                     this.palette = PAL_PALETTE;
+                }
+                case SECAM60 -> {
+                    this.scanlinesPerFrame = NTSC_SCANLINES_PER_FRAME;
+                    this.vBlankEndScanline = NTSC_VBLANK_SCANLINES;
+                    this.kernelScanlines = NTSC_KERNEL_SCANLINES;
+                    this.pixelAspectRatio = PAL_PAR;
+                    this.palette = SECAM_PALETTE;
                 }
                 default -> throw new EmulatorException("Atari 2600 TV format %s is not supported!".formatted(emulator.getTVFormat().getName()));
             }
