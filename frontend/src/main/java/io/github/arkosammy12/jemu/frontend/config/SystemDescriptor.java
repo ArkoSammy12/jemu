@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.config;
 
-import java.util.Optional;
+import java.util.Collection;
 
 public interface SystemDescriptor {
 
@@ -8,6 +8,6 @@ public interface SystemDescriptor {
 
     String getId();
 
-    Optional<String[]> getFileExtensions();
+    Collection<String> getFileExtensions();
 
 }

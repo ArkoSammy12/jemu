@@ -6,6 +6,8 @@ import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.util.System;
 
 import javax.sound.sampled.LineUnavailableException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public class RCAStudioIIManager implements SystemManager {
@@ -26,8 +28,8 @@ public class RCAStudioIIManager implements SystemManager {
     }
 
     @Override
-    public Optional<String[]> getFileExtensions() {
-        return Optional.of(new String[]{"st2"});
+    public Collection<String> getFileExtensions() {
+        return List.of("st2");
     }
 
 }

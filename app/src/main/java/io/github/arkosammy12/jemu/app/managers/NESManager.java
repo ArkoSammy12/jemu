@@ -51,8 +51,8 @@ public class NESManager implements SystemManager {
     }
 
     @Override
-    public Optional<String[]> getFileExtensions() {
-        return Optional.of(new String[] {"nes"});
+    public Collection<String> getFileExtensions() {
+        return List.of("nes");
     }
 
     public Optional<CartridgeInfo> findDatabaseEntryFromNesFile(byte[] nesFile, int totalRomSize, boolean hasByteTrainer) {

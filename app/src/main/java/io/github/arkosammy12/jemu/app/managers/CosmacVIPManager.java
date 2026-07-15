@@ -7,6 +7,8 @@ import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 
 import javax.sound.sampled.LineUnavailableException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public class CosmacVIPManager implements SystemManager {
@@ -41,11 +43,11 @@ public class CosmacVIPManager implements SystemManager {
     }
 
     @Override
-    public Optional<String[]> getFileExtensions() {
+    public Collection<String> getFileExtensions() {
         return switch (this.chip8Interpreter) {
-            case NONE -> Optional.of(new String[] {"cos"});
-            case CHIP_8 -> Optional.of(new String[] {"ch8", "hc8"});
-            case CHIP_8X -> Optional.of(new String[] {"ch8", "c8x"});
+            case NONE -> List.of("cos");
+            case CHIP_8 -> List.of("ch8", "hc8");
+            case CHIP_8X -> List.of("ch8", "c8x");
         };
     }
 

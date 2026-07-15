@@ -10,6 +10,7 @@ import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine;
 
+import java.util.Collection;
 import java.util.Optional;
 
 public enum System implements DisplayNameProvider, SystemDescriptor {
@@ -60,7 +61,7 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
     }
 
     @Override
-    public Optional<String[]> getFileExtensions() {
+    public Collection<String> getFileExtensions() {
         return this.systemManager.getFileExtensions();
     }
 

@@ -21,10 +21,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
 import java.io.File;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class FileMenu extends MenuBarMenu implements FileManager {
 
@@ -39,7 +37,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
     private final JMenuItem clearRecentsButton;
     private final JMenuItem ejectRomButton;
     private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(RECENT_FILES_SIZE);
-    private final String[] fileExtensions;
+    //private final String[] fileExtensions;
 
     public FileMenu(MainWindow mainWindow, JFrame jFrame) {
         super();
@@ -49,23 +47,16 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         this.jMenu.setText("File");
         this.jMenu.setMnemonic(KeyEvent.VK_F);
 
-        List<String> fileExtensions = new ArrayList<>();
-        for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
-            Optional<String[]> extensions = systemDescriptor.getFileExtensions();
-            if (extensions.isEmpty()) {
-                continue;
-            }
-            fileExtensions.addAll(Arrays.asList(extensions.get()));
-        }
-        this.fileExtensions = fileExtensions.toArray(String[]::new);
-
         JMenuItem openItem = new JMenuItem("Open");
         openItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_L, InputEvent.CTRL_DOWN_MASK, true));
         openItem.setIcon(new FlatFileViewFileIcon());
         openItem.setToolTipText("Load binary ROM data from a file.");
         openItem.addActionListener(_ -> {
             SystemFileChooser chooser = new SystemFileChooser();
-            chooser.setFileFilter(new SystemFileChooser.FileNameExtensionFilter("ROMs", this.fileExtensions));
+            Collection<String> fileExtensions = mainWindow.getSystemDescriptors().stream().map(SystemDescriptor::getFileExtensions).flatMap(Collection::stream).toList();
+            if (!fileExtensions.isEmpty()) {
+                chooser.setFileFilter(new SystemFileChooser.FileNameExtensionFilter("ROMs", fileExtensions.toArray(String[]::new)));
+            }
             this.mainWindow.getConfig().getState().getFileState().getCurrentDirectoryPath().ifPresent(path -> chooser.setCurrentDirectory(path.toFile()));
             if (chooser.showOpenDialog(SwingUtilities.getWindowAncestor(this.jMenu)) == JFileChooser.APPROVE_OPTION) {
                 Path selectedRomPath = chooser.getSelectedFile().toPath();

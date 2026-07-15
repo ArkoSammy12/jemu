@@ -7,6 +7,8 @@ import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 
 import javax.sound.sampled.LineUnavailableException;
+import java.util.Collection;
+import java.util.List;
 import java.util.Optional;
 
 public class GameBoyManager implements SystemManager {
@@ -39,10 +41,10 @@ public class GameBoyManager implements SystemManager {
     }
 
     @Override
-    public Optional<String[]> getFileExtensions() {
+    public Collection<String> getFileExtensions() {
         return switch (this.gameboyModel) {
-            case DMG -> Optional.of(new String[] {"gb"});
-            case CGB -> Optional.of(new String[] {"gbc"});
+            case DMG -> List.of("gb");
+            case CGB -> List.of("gbc");
         };
     }
 }

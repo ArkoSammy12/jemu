@@ -55,8 +55,8 @@ public class Atari2600Manager implements SystemManager {
     }
 
     @Override
-    public Optional<String[]> getFileExtensions() {
-        return Optional.of(new String[] {"a26"});
+    public Collection<String> getFileExtensions() {
+        return List.of("a26");
     }
 
     public Optional<Atari2600Database.Entry> getDatabaseEntryForRom(byte[] rom) {
