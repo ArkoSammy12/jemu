@@ -590,9 +590,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             });
             this.reflectPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.player0.setReflectGraphics((value & (1 << 3)) != 0));
             this.reflectPlayer1WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.player1.setReflectGraphics((value & (1 << 3)) != 0));
-            this.playfield0WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.playfield = ((reverseBits(value) & 0xF) << 16) | (this.playfield & 0x0FFFF));
-            this.playfield1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.playfield = (value << 8) | (this.playfield & 0xF00FF));
-            this.playfield2WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.playfield = (reverseBits(value)) | (this.playfield & 0xFFF00));
+            this.playfield0WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = ((reverseBits(value) & 0xF) << 16) | (this.playfield & 0x0FFFF));
+            this.playfield1WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = (value << 8) | (this.playfield & 0xF00FF));
+            this.playfield2WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = (reverseBits(value)) | (this.playfield & 0xFFF00));
             this.graphicsPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> {
                 this.player0.setGraphics(value);
                 this.player1.copyNewGraphicsToOld();
@@ -674,12 +674,12 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 case WSYNC -> this.wSync = true;
                 case RSYNC -> this.hSyncCounter = 0;
                 case NUSIZ0 -> {
-                    this.missile0.setSize((value >>> 4) & 0b11);
-                    this.player0.setSize(value & 0b111);
+                    this.missile0.setNumberSize(value);
+                    this.player0.setNumberSize(value);
                 }
                 case NUSIZ1 -> {
-                    this.missile1.setSize((value >>> 4) & 0b11);
-                    this.player1.setSize(value & 0b111);
+                    this.missile1.setNumberSize(value);
+                    this.player1.setNumberSize(value);
                 }
                 case COLUP0 -> this.colorLuminance0 = (value >>> 1) & 0x7F;
                 case COLUP1 -> this.colorLuminance1 = (value >>> 1) & 0x7F;
@@ -689,7 +689,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     this.playfieldPriority = (value & (1 << 2)) != 0;
                     this.scoreMode = (value & (1 << 1)) != 0;
                     this.reflectPlayfield = (value & 1) != 0;
-                    this.ball.setSize((value >>> 4) & 0b11);
+                    this.ball.setWidth(value >>> 4);
                 }
                 case REFP0 -> this.actionSignalDispatcher.trigger(this.reflectPlayer0WriteSignal, value);
                 case REFP1 -> this.actionSignalDispatcher.trigger(this.reflectPlayer1WriteSignal, value);
@@ -914,7 +914,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private abstract static class Sprite {
 
-            protected int size;
             private int horizontalMotion;
 
             protected int phaseCounter = 4;
@@ -925,10 +924,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             protected int widthCounter;
 
             protected boolean pixel;
-
-            protected void setSize(int size) {
-                this.size = size;
-            }
 
             protected void resetHorizontalPosition() {
                 this.phaseCounter = 4;
@@ -965,10 +960,12 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             private int oldGraphics;
             private int newGraphics;
 
+            private int numberSize;
+
             private boolean verticalDelay;
             private boolean reflectGraphics;
 
-            private boolean copy;
+            private boolean drawingCopy;
 
             private Player(Missile associatedMissile) {
                 this.associatedMissile = associatedMissile;
@@ -977,6 +974,10 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             private void setGraphics(int graphics) {
                 this.newGraphics = graphics & 0xFF;
+            }
+
+            private void setNumberSize(int value) {
+                this.numberSize = value & 0b111;
             }
 
             private void copyNewGraphicsToOld() {
@@ -997,26 +998,26 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 if (this.phaseCounter <= 0) {
                     this.phaseCounter = 4;
 
-                    boolean firstCopy = this.size == 1 || this.size == 3;
-                    boolean secondCopy = this.size == 2 || this.size == 3 || this.size == 6;
-                    boolean thirdCopy = this.size == 4 || this.size == 6;
+                    boolean firstCopy = this.numberSize == 1 || this.numberSize == 3;
+                    boolean secondCopy = this.numberSize == 2 || this.numberSize == 3 || this.numberSize == 6;
+                    boolean thirdCopy = this.numberSize == 4 || this.numberSize == 6;
 
                     if (firstCopy && this.positionCounter == 3) {
-                        this.copy = true;
+                        this.drawingCopy = true;
                         this.start();
                     } else if (secondCopy && this.positionCounter == 7) {
-                        this.copy = true;
+                        this.drawingCopy = true;
                         this.start();
                     } else if (thirdCopy && this.positionCounter == 15) {
-                        this.copy = true;
+                        this.drawingCopy = true;
                         this.start();
                     } else if (this.positionCounter == 39) {
+                        this.drawingCopy = false;
                         this.start();
                     }
 
                     this.positionCounter++;
                     if (this.positionCounter >= 40) {
-                        this.copy = false;
                         this.positionCounter = 0;
                     }
                 }
@@ -1036,7 +1037,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     int bit = this.reflectGraphics ? this.pixelCounter : (7 - this.pixelCounter);
                     this.pixel = (graphics & (1 << bit)) != 0;
 
-                    if (!this.copy && this.associatedMissile.getResetToPlayer() && this.pixelCounter == 4) {
+                    if (!this.drawingCopy && this.associatedMissile.getResetToPlayer() && this.pixelCounter == 4) {
                         this.associatedMissile.resetHorizontalPosition();
                     }
 
@@ -1054,7 +1055,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
 
             private int getWidth() {
-                return switch (this.size) {
+                return switch (this.numberSize) {
                     case 5 -> 2;
                     case 7 -> 4;
                     default -> 1;
@@ -1065,6 +1066,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private static class Missile extends Sprite {
 
+            private int number;
+            private int width;
+
             private boolean enabled;
             private boolean resetToPlayer;
 
@@ -1074,6 +1078,11 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             protected void setEnabled(boolean enabled) {
                 this.enabled = enabled;
+            }
+
+            private void setNumberSize(int value) {
+                this.number = value & 0b111;
+                this.width = (value >>> 4) & 0b11;
             }
 
             protected void resetToPlayer(boolean resetToPlayer) {
@@ -1090,7 +1099,17 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 if (this.phaseCounter <= 0) {
                     this.phaseCounter = 4;
 
-                    if (this.positionCounter == 39) {
+                    boolean firstCopy = this.number == 1 || this.number == 3;
+                    boolean secondCopy = this.number == 2 || this.number == 3 || this.number == 6;
+                    boolean thirdCopy = this.number == 4 || this.number == 6;
+
+                    if (firstCopy && this.positionCounter == 3) {
+                        this.start();
+                    } else if (secondCopy && this.positionCounter == 7) {
+                        this.start();
+                    } else if (thirdCopy && this.positionCounter == 15) {
+                        this.start();
+                    } else if (this.positionCounter == 39) {
                         this.start();
                     }
 
@@ -1129,12 +1148,14 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
 
             private int getWidth() {
-                return 1 << this.size;
+                return 1 << this.width;
             }
 
         }
 
         private static class Ball extends Sprite {
+
+            private int width;
 
             private boolean oldEnabled;
             private boolean newEnabled;
@@ -1147,6 +1168,10 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             protected void setEnabled(boolean enabled) {
                 this.newEnabled = enabled;
+            }
+
+            private void setWidth(int value) {
+                this.width = value & 0b11;
             }
 
             private void setVerticalDelay(boolean verticalDelay) {
@@ -1208,7 +1233,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             }
 
             private int getWidth() {
-                return 1 << this.size;
+                return 1 << this.width;
             }
 
         }
