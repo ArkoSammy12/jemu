@@ -602,8 +602,8 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 this.player0.copyNewGraphicsToOld();
                 this.ball.copyNewEnabledToOld();
             });
-            this.enableMissile0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.missile0.setEnabled((value & (1 << 1)) != 0));
-            this.enableMissile1WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.missile1.setEnabled((value & (1 << 1)) != 0));
+            this.enableMissile0WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile0.setEnabled((value & (1 << 1)) != 0));
+            this.enableMissile1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile1.setEnabled((value & (1 << 1)) != 0));
             this.enableBallWriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.ball.setEnabled((value & (1 << 1)) != 0));
             this.horizontalMotionPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.player0.setHorizontalMotion(value >>> 4));
             this.horizontalMotionPlayer1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.player1.setHorizontalMotion(value >>> 4));
