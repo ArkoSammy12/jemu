@@ -53,10 +53,8 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
 
         if (ret >= 0) {
             this.externalDataBus = ret;
-            return ret;
-        } else {
-            return this.externalDataBus;
         }
+        return this.externalDataBus;
     }
 
     @Override
