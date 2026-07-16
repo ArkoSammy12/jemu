@@ -33,7 +33,6 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
 
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
         CartridgeType cartridgeType = emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType).orElse(CartridgeType.CART_4K);
-        cartridgeType = CartridgeType.CART_F4;
         return switch (cartridgeType) {
             case CART_0840 -> new Cartridge0840<>(emulator);
             case CART_3E -> new Cartridge3E<>(emulator);
