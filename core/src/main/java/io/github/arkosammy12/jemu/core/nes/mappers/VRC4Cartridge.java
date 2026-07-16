@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
 import io.github.arkosammy12.jemu.core.util.ToIntBiIntFunction;
 
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_2;
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_2;
 
 public class VRC4Cartridge<E extends NESEmulator> extends VRC2Cartridge<E> {
 

@@ -2,6 +2,8 @@ package io.github.arkosammy12.jemu.core.nes.ines;
 
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
+
 public class ExtendedINESFile extends INESFile {
 
     public <E extends NESEmulator> ExtendedINESFile(E emulator, byte[] file) {

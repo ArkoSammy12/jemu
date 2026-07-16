@@ -15,7 +15,7 @@ import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_END;
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_START;
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_END;
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
 
 public class MMC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 

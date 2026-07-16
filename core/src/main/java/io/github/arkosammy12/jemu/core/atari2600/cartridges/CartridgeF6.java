@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
 
 public class CartridgeF6<E extends Atari2600Emulator> extends Atari2600Cartridge<E> {
 
-    private int bankBits = 0b00_0000_0000_0000;
+    private int bankBits = 0b00__0000_0000_0000;
 
     public CartridgeF6(E emulator) {
         super(emulator);
@@ -13,9 +13,8 @@ public class CartridgeF6<E extends Atari2600Emulator> extends Atari2600Cartridge
 
     @Override
     public int readByte(int address) {
-        int ret = super.readByte(address);
         this.checkBankswitch(address);
-        return ret;
+        return super.readByte(address);
     }
 
     @Override

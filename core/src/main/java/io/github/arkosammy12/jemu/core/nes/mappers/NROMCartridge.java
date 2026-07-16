@@ -10,7 +10,7 @@ import java.util.Arrays;
 import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.*;
-import static io.github.arkosammy12.jemu.core.nes.ines.INESFile.KB_8;
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
 
 public class NROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 

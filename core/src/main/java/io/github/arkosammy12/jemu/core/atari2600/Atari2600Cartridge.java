@@ -9,7 +9,7 @@ import java.util.Optional;
 
 public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements Bus {
 
-    private final byte[] rom;
+    protected final byte[] rom;
 
     public Atari2600Cartridge(E emulator) {
         Optional<byte[]> rom = emulator.getHost().getRom();
@@ -21,7 +21,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
 
     @Override
     public int readByte(int address) {
-        return this.rom[this.mapROMAddress(address) % this.rom.length];
+        return (int) this.rom[this.mapROMAddress(address) % this.rom.length] & 0xFF;
     }
 
     @Override
@@ -33,7 +33,10 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
 
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
         CartridgeType cartridgeType = emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType).orElse(CartridgeType.CART_4K);
+        cartridgeType = CartridgeType.CART_F4;
         return switch (cartridgeType) {
+            case CART_0840 -> new Cartridge0840<>(emulator);
+            case CART_3E -> new Cartridge3E<>(emulator);
             case CART_2K -> new Cartridge2K<>(emulator);
             case CART_4K -> new Cartridge4K<>(emulator);
             case CART_F4 -> new CartridgeF4<>(emulator);

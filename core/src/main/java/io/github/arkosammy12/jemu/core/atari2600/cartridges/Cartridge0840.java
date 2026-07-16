@@ -3,11 +3,11 @@ package io.github.arkosammy12.jemu.core.atari2600.cartridges;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Cartridge;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
 
-public class CartridgeF4<E extends Atari2600Emulator> extends Atari2600Cartridge<E> {
+public class Cartridge0840<E extends Atari2600Emulator> extends Atari2600Cartridge<E> {
 
-    private int bankBits = 0b000__0000_0000_0000;
+    private int bankBits = 0b0__0000_0000_0000;
 
-    public CartridgeF4(E emulator) {
+    public Cartridge0840(E emulator) {
         super(emulator);
     }
 
@@ -28,15 +28,9 @@ public class CartridgeF4<E extends Atari2600Emulator> extends Atari2600Cartridge
     }
 
     private void checkBankswitch(int address) {
-        switch (address) {
-            case 0x1FF4 -> this.bankBits = 0;
-            case 0x1FF5 -> this.bankBits = (1 << 12);
-            case 0x1FF6 -> this.bankBits = (2 << 12);
-            case 0x1FF7 -> this.bankBits = (3 << 12);
-            case 0x1FF8 -> this.bankBits = (4 << 12);
-            case 0x1FF9 -> this.bankBits = (5 << 12);
-            case 0x1FFA -> this.bankBits = (6 << 12);
-            case 0x1FFB -> this.bankBits = (7 << 12);
+        switch (address & 0x1840) {
+            case 0x0800 -> this.bankBits = 0;
+            case 0x0840 -> this.bankBits = (1 << 12);
         }
     }
 

@@ -7,17 +7,10 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class INESFile {
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_16;
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
 
-    public static final int KB_2 = 0x800;
-    public static final int KB_4 = KB_2 * 2;
-    public static final int KB_8 = KB_4 * 2;
-    public static final int KB_16 = KB_8 * 2;
-    public static final int KB_32 = KB_16 * 2;
-    public static final int KB_64 = KB_32 * 2;
-    public static final int KB_128 = KB_64 * 2;
-    public static final int KB_256 = KB_128 * 2;
-    public static final int KB_512 = KB_256 * 2;
+public class INESFile {
 
     private final boolean nametableArrangement;
     private final boolean hasBattery;

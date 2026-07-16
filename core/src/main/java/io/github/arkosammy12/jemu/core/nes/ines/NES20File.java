@@ -3,6 +3,9 @@ package io.github.arkosammy12.jemu.core.nes.ines;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_16;
+import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
+
 public class NES20File extends ExtendedINESFile {
 
     public <E extends NESEmulator> NES20File(E emulator, byte[] file) {
