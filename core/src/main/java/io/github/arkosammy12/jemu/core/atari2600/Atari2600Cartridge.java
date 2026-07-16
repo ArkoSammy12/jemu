@@ -9,9 +9,11 @@ import java.util.Optional;
 
 public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements Bus {
 
+    protected final E emulator;
     protected final byte[] rom;
 
     public Atari2600Cartridge(E emulator) {
+        this.emulator = emulator;
         Optional<byte[]> rom = emulator.getHost().getRom();
         if (rom.isEmpty()) {
             throw new MissingROMException(emulator.getHost().getSystemName());
@@ -32,7 +34,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
     protected abstract int mapROMAddress(int address);
 
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
-        CartridgeType cartridgeType = emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType).orElse(CartridgeType.CART_4K);
+        Type cartridgeType = emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType).orElse(Type.CART_4K);
         return switch (cartridgeType) {
             case CART_0840 -> new Cartridge0840<>(emulator);
             case CART_3E -> new Cartridge3E<>(emulator);
@@ -45,7 +47,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
         };
     }
 
-    public enum CartridgeType {
+    public enum Type {
         CART_2K("2K"),
         CART_4K("4K"),
         CART_4KSC("4KSC"),
@@ -88,7 +90,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
 
         private final String name;
 
-        CartridgeType(String name) {
+        Type(String name) {
             this.name = name;
         }
 

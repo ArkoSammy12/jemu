@@ -21,8 +21,10 @@ public class Cartridge3E<E extends Atari2600Emulator> extends Atari2600Cartridge
     public int readByte(int address) {
         if ((address & 0xFFF) >= 0x800 || this.lowerSegmentMapping == LowerSegmentMapping.ROM) {
             return super.readByte(address);
-        } else {
+        } else if (address >= 0x1000 && address <= 0x13FF) {
             return (int) this.ram[(address & 0x3FF) | this.ramBankBits] & 0xFF;
+        } else {
+            return this.emulator.combineWithDataBus(0, 0x00);
         }
     }
 

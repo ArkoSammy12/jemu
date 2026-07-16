@@ -10,7 +10,7 @@ public interface Atari2600SystemHost extends SystemHost {
 
     interface CartridgeInfo {
 
-        Optional<Atari2600Cartridge.CartridgeType> getCartridgeType();
+        Optional<Atari2600Cartridge.Type> getCartridgeType();
 
         Optional<Atari2600Emulator.TVFormat> getTVFormat();
 

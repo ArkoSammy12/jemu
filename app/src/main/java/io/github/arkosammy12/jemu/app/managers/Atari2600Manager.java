@@ -147,8 +147,8 @@ public class Atari2600Manager implements SystemManager {
             }
 
             @Override
-            public Optional<Atari2600Cartridge.CartridgeType> getCartridgeType() {
-                return Arrays.stream(Atari2600Cartridge.CartridgeType.values()).filter(cartridgeType -> cartridgeType.getName().equals(this.cartType)).findFirst();
+            public Optional<Atari2600Cartridge.Type> getCartridgeType() {
+                return Arrays.stream(Atari2600Cartridge.Type.values()).filter(cartridgeType -> cartridgeType.getName().equals(this.cartType)).findFirst();
             }
 
             @Override
