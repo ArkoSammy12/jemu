@@ -31,6 +31,10 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
 
     }
 
+    public void cycle() {
+
+    }
+
     protected abstract int mapROMAddress(int address);
 
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
@@ -43,6 +47,8 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
             case CART_F4 -> new CartridgeF4<>(emulator);
             case CART_F6 -> new CartridgeF6<>(emulator);
             case CART_F8 -> new CartridgeF8<>(emulator);
+            case CART_FA -> new CartridgeFA<>(emulator);
+            case CART_FE -> new CartridgeFE<>(emulator);
             default -> throw new ROMInitializationException("Unimplemented Atari 2600 cartridge type \"%s\"!".formatted(cartridgeType.getName()));
         };
     }

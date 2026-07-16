@@ -122,6 +122,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
         this.cpu.cycle();
         this.tia.cycle();
         this.pia.cycle();
+        this.cartridge.cycle();
     }
 
     @Override

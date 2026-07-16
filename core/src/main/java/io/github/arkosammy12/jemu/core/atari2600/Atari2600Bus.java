@@ -43,6 +43,10 @@ public class Atari2600Bus<E extends Atari2600Emulator> implements Bus {
         }
     }
 
+    public int getDataBus() {
+        return this.dataBus;
+    }
+
     public int combineWithDataBus(int value, int validBitsMask) {
         return (value & validBitsMask & 0xFF) | (this.dataBus & ~validBitsMask);
     }
