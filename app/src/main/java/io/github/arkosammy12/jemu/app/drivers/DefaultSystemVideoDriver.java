@@ -90,7 +90,8 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
     }
 
     @Override
-    public @NotNull Component getComponent() {
+    @NotNull
+    public Component getComponent() {
         return this;
     }
 
@@ -108,12 +109,12 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
 
     public void onVideoSettingChangedEvent(VideoSettingChangedEvent videoSettingChangedEvent) {
         switch (videoSettingChangedEvent) {
-            case UseIntegerScalingSettingChangedEvent(boolean useIntegerScaling) -> {
-                this.setScaleSupplier(useIntegerScaling);
+            case UseIntegerScalingSettingChangedEvent useIntegerScalingSettingChangedEvent -> {
+                this.setScaleSupplier(useIntegerScalingSettingChangedEvent.useIntegerScaling());
                 this.requestFrame(true);
             }
-            case AspectRatioSettingChangedEvent(VideoSettings.AspectRatio aspectRatio) -> {
-                this.setPixelAspectRatioSupplier(aspectRatio);
+            case AspectRatioSettingChangedEvent aspectRatioSettingChangedEvent -> {
+                this.setPixelAspectRatioSupplier(aspectRatioSettingChangedEvent.getAspectRatio());
                 this.requestFrame(true);
             }
             case null, default -> {}

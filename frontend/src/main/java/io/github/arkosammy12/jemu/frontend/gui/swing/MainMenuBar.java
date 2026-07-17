@@ -18,7 +18,6 @@ public class MainMenuBar {
     private final HelpMenu helpMenu;
 
     public MainMenuBar(MainWindow mainWindow) {
-
         this.jMenuBar = new JMenuBar();
 
         this.fileMenu = new FileMenu(mainWindow, mainWindow.getJFrame());

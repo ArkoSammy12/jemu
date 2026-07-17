@@ -41,7 +41,7 @@ public class SoundSettings extends MenuBarMenu {
         this.volumeSlider.addChangeListener(_ -> {
             int volume = Math.clamp(this.volumeSlider.getValue(), 0, 100);
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setVolume(volume);
-            mainWindow.pushEvent(new InternalVolumeChangedEvent(volume));
+            mainWindow.publishEvent(new InternalVolumeChangedEvent(volume));
         });
         JPanel volumePanel = new JPanel();
         volumePanel.add(this.volumeSlider);
@@ -51,7 +51,7 @@ public class SoundSettings extends MenuBarMenu {
         this.muteButton.addActionListener(_ -> {
             boolean mute = this.muteButton.isSelected();
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setMute(mute);
-            mainWindow.pushEvent(new InternalMuteEvent(mute));
+            mainWindow.publishEvent(new InternalMuteEvent(mute));
         });
         this.muteButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK, true));
 
@@ -63,7 +63,7 @@ public class SoundSettings extends MenuBarMenu {
             JRadioButtonMenuItem sampleRateButton = new JRadioButtonMenuItem(sampleRate.getDisplayName());
             sampleRateButton.addActionListener(_ -> {
                 mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSampleRate(sampleRate);
-                mainWindow.pushEvent(new InternalSampleRateChangedEvent(sampleRate));
+                mainWindow.publishEvent(new InternalSampleRateChangedEvent(sampleRate));
             });
             sampleRateButtonGroup.add(sampleRateButton);
             sampleRateMenu.add(sampleRateButton);
@@ -94,7 +94,7 @@ public class SoundSettings extends MenuBarMenu {
         this.autoSoundDeviceButton = new JRadioButtonMenuItem("Auto");
         this.autoSoundDeviceButton.addActionListener(_ -> {
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSoundDevice(null);
-            mainWindow.pushEvent(new InternalSoundDeviceChangedEvent(null));
+            mainWindow.publishEvent(new InternalSoundDeviceChangedEvent(null));
         });
 
         this.getJMenu().add(muteButton);
@@ -129,7 +129,7 @@ public class SoundSettings extends MenuBarMenu {
             JRadioButtonMenuItem soundDeviceButton = new JRadioButtonMenuItem(availableSoundDevice.getName());
             soundDeviceButton.addActionListener(_ -> {
                 mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSoundDevice(availableSoundDevice);
-                mainWindow.pushEvent(new InternalSoundDeviceChangedEvent(availableSoundDevice));
+                mainWindow.publishEvent(new InternalSoundDeviceChangedEvent(availableSoundDevice));
             });
             buttonGroup.add(soundDeviceButton);
             this.soundDeviceMenu.add(soundDeviceButton);

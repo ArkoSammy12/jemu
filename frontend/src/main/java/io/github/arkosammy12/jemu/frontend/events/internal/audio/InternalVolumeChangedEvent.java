@@ -1,14 +1,13 @@
 package io.github.arkosammy12.jemu.frontend.events.internal.audio;
 
 import io.github.arkosammy12.jemu.frontend.events.audio.VolumeChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ExposableEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.InternalAudioSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.InternalEvent;
 
-public record InternalVolumeChangedEvent(int newVolume) implements InternalAudioSettingChangeEvent, ExposableEvent {
+public record InternalVolumeChangedEvent(int newVolume) implements InternalEvent, VolumeChangedEvent {
 
     @Override
-    public VolumeChangedEvent getEvent() {
-        return new VolumeChangedEvent(newVolume);
+    public int getNewVolume() {
+        return this.newVolume();
     }
 
 }

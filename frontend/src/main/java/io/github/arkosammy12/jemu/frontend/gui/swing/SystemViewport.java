@@ -1,10 +1,10 @@
 package io.github.arkosammy12.jemu.frontend.gui.swing;
 
 import io.github.arkosammy12.jemu.frontend.config.settings.internal.VideoSize;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalTriggerOpenFileEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalVideoSizeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.VideoSizeChangedEvent;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.AlignY;
 import net.miginfocom.layout.CC;
@@ -52,15 +52,15 @@ public class SystemViewport {
         this.viewportPanel.addKeyListener(this.systemKeyListener);
         this.viewportPanel.add(this.idleViewport.getJPanel(), "grow, push");
 
-        mainWindow.onEvent(InternalVideoSizeChangedEvent.class, internalVideoSizeChangedEvent -> {
-            VideoSize newVideoSize = internalVideoSizeChangedEvent.videoSize();
+        mainWindow.onEvent(VideoSizeChangedEvent.class, videoSizeChangedEvent -> {
+            VideoSize newVideoSize = videoSizeChangedEvent.videoSize();
             if (newVideoSize == null) {
                 return;
             }
             if (this.systemDisplayComponent != null) {
                 if (this.isMainWindowMaximized()) {
                     // Cancel the video size selection if there's a system running and the window is maximized
-                    SwingUtilities.invokeLater(() -> mainWindow.pushEvent(new InternalVideoSizeChangedEvent(null)));
+                    SwingUtilities.invokeLater(() -> mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
                 } else {
                     this.resizeWindowToFitDisplay(newVideoSize);
                 }
@@ -71,7 +71,7 @@ public class SystemViewport {
         mainWindow.getJFrame().addWindowStateListener(e -> {
             // Clear the video size selection if there's a system running and the window is maximized
             if (this.systemDisplayComponent != null && (e.getNewState() & Frame.MAXIMIZED_BOTH) != 0) {
-                SwingUtilities.invokeLater(() -> this.mainWindow.pushEvent(new InternalVideoSizeChangedEvent(null)));
+                SwingUtilities.invokeLater(() -> this.mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
             }
         });
 
@@ -81,7 +81,7 @@ public class SystemViewport {
             public void componentResized(ComponentEvent e) {
                 // Clear the video size selection if there's a system running and the window is resized away from the video size
                 if (systemDisplayComponent != null && !mainWindow.getJFrame().getSize().equals(lastFitVideoSizeFrameDimension)) {
-                    SwingUtilities.invokeLater(() -> mainWindow.pushEvent(new InternalVideoSizeChangedEvent(null)));
+                    SwingUtilities.invokeLater(() -> mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
                 }
             }
 
@@ -128,7 +128,7 @@ public class SystemViewport {
                 SwingUtilities.invokeLater(() -> {
                     component.requestFocusInWindow();
                     if (this.isMainWindowMaximized()) {
-                        SwingUtilities.invokeLater(() -> this.mainWindow.pushEvent(new InternalVideoSizeChangedEvent(null)));
+                        SwingUtilities.invokeLater(() -> this.mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
                     } else {
                         this.resizeWindowToFitDisplay(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getVideoSize().orElse(null));
                     }
@@ -232,7 +232,7 @@ public class SystemViewport {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     if (e.getClickCount() == 2) {
-                        mainWindow.pushEvent(new InternalTriggerOpenFileEvent());
+                        mainWindow.publishEvent(new TriggerOpenFileEvent());
                     }
                 }
 
@@ -241,9 +241,9 @@ public class SystemViewport {
             this.idleTextLabel.addMouseListener(mouseListener);
             this.getJPanel().addMouseListener(mouseListener);
 
-            mainWindow.onEvent(InternalFileLoadedEvent.class, internalFileLoadedEvent -> this.setSelectedRomFile(internalFileLoadedEvent.loadedFilePath()));
+            mainWindow.onEvent(FileLoadedEvent.class, fileLoadedEvent -> this.setSelectedRomFile(fileLoadedEvent.loadedFilePath()));
 
-            mainWindow.onEvent(InternalROMEjectedEvent.class, _ -> this.setSelectedRomFile(null));
+            mainWindow.onEvent(ROMEjectedEvent.class, _ -> this.setSelectedRomFile(null));
         }
 
         private JPanel getJPanel() {

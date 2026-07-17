@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings;
 import io.github.arkosammy12.jemu.frontend.config.settings.internal.VideoSize;
 import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalAspectRatioSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalUseIntegerScalingSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalVideoSizeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.VideoSizeChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 
@@ -23,7 +23,7 @@ public class VideoSettings extends MenuBarMenu {
         useIntegerScalingButton.addActionListener(_ -> {
             boolean useIntegerScaling = useIntegerScalingButton.isSelected();
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setUseIntegerScaling(useIntegerScaling);
-            mainWindow.pushEvent(new InternalUseIntegerScalingSettingChangedEvent(useIntegerScaling));
+            mainWindow.publishEvent(new InternalUseIntegerScalingSettingChangedEvent(useIntegerScaling));
         });
         useIntegerScalingButton.setSelected(mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getUseIntegerScaling());
 
@@ -34,7 +34,7 @@ public class VideoSettings extends MenuBarMenu {
         JRadioButtonMenuItem autoAspectRatioButton = new JRadioButtonMenuItem(AspectRatio.AUTO.getDisplayName());
         autoAspectRatioButton.addActionListener(_ -> {
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setAspectRatio(AspectRatio.AUTO);
-            mainWindow.pushEvent(new InternalAspectRatioSettingChangedEvent(AspectRatio.AUTO));
+            mainWindow.publishEvent(new InternalAspectRatioSettingChangedEvent(AspectRatio.AUTO));
         });
         aspectRatioButtonGroup.add(autoAspectRatioButton);
         autoAspectRatioButton.setSelected(selectedAspectRatio == AspectRatio.AUTO);
@@ -46,7 +46,7 @@ public class VideoSettings extends MenuBarMenu {
             JRadioButtonMenuItem aspectRatioButton = new JRadioButtonMenuItem(aspectRatio.getDisplayName());
             aspectRatioButton.addActionListener(_ -> {
                 mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setAspectRatio(aspectRatio);
-                mainWindow.pushEvent(new InternalAspectRatioSettingChangedEvent(aspectRatio));
+                mainWindow.publishEvent(new InternalAspectRatioSettingChangedEvent(aspectRatio));
             });
             aspectRatioButtonGroup.add(aspectRatioButton);
             aspectRatioMenu.add(aspectRatioButton);
@@ -64,7 +64,7 @@ public class VideoSettings extends MenuBarMenu {
             JRadioButtonMenuItem videoSizeButton = new JRadioButtonMenuItem(videoSize.getDisplayName());
             videoSizeButton.addActionListener(_ -> {
                 mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setVideoSize(videoSize);
-                mainWindow.pushEvent(new InternalVideoSizeChangedEvent(videoSize));
+                mainWindow.publishEvent(new VideoSizeChangedEvent(videoSize));
             });
             videoSizeButtonGroup.add(videoSizeButton);
             videoSizeMenu.add(videoSizeButton);
@@ -73,8 +73,8 @@ public class VideoSettings extends MenuBarMenu {
             videoSizeButton.setSelected(selectedVideoSize == videoSize);
         }
 
-        mainWindow.onEvent(InternalVideoSizeChangedEvent.class, internalVideoSizeChangedEvent -> {
-            VideoSize newVideoSize = internalVideoSizeChangedEvent.videoSize();
+        mainWindow.onEvent(VideoSizeChangedEvent.class, videoSizeChangedEvent -> {
+            VideoSize newVideoSize = videoSizeChangedEvent.videoSize();
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().setVideoSize(newVideoSize);
             if (newVideoSize == null) {
                 videoSizeButtonGroup.clearSelection();

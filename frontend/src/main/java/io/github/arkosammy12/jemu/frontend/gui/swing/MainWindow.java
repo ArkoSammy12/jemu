@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.frontend.config.ConfigurationManager;
 import io.github.arkosammy12.jemu.frontend.config.Configurations;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.config.internal.InternalConfigurations;
-import io.github.arkosammy12.jemu.frontend.events.internal.ExposableEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ListenableEvent;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.*;
 import io.github.arkosammy12.jemu.frontend.events.internal.InternalEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
@@ -47,7 +47,7 @@ public class MainWindow implements Closeable {
     private final ConfigurationManager configurationManager;
 
     private final Collection<EmulatorCommandCallback> emulatorCommandCallbacks = new CopyOnWriteArrayList<>();
-    private final Collection<PushedEventConsumer<?>> pushedEventConsumers = new CopyOnWriteArrayList<>();
+    private final Collection<EventListener<?>> eventListeners = new CopyOnWriteArrayList<>();
     private final Collection<SystemDescriptor> systemDescriptors;
 
     private final BlockingQueue<EmulatorCommand> emulatorCommandQueue = new LinkedBlockingDeque<>();
@@ -151,7 +151,7 @@ public class MainWindow implements Closeable {
 
             this.appFrame.addWindowStateListener(e -> {
                 this.getConfig().getState().getWindowState().setExtendedState(e.getNewState());
-                if ((e.getNewState() & Frame.MAXIMIZED_BOTH) == 0) {
+                if (appFrame != null && (e.getNewState() & Frame.MAXIMIZED_BOTH) == 0) {
                     this.getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                 }
             });
@@ -160,6 +160,9 @@ public class MainWindow implements Closeable {
 
                 @Override
                 public void componentMoved(ComponentEvent e) {
+                    if (appFrame == null) {
+                        return;
+                    }
                     if ((appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) == 0) {
                         getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                     }
@@ -167,6 +170,9 @@ public class MainWindow implements Closeable {
 
                 @Override
                 public void componentResized(ComponentEvent e) {
+                    if (appFrame == null) {
+                        return;
+                    }
                     if ((appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) == 0) {
                         getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                     }
@@ -246,6 +252,7 @@ public class MainWindow implements Closeable {
         SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getJOptionPaneMessageTypeId()));
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     public void submitEmulatorCommand(EmulatorCommand emulatorCommand) {
         this.emulatorCommandQueue.offer(emulatorCommand);
     }
@@ -259,8 +266,43 @@ public class MainWindow implements Closeable {
         return this.getEmulatorCommand(true);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    public void publishEvent(InternalEvent event) {
+        if (event instanceof Event externalEvent) {
+            this.eventQueue.offer(externalEvent);
+        }
+        if (event instanceof ListenableEvent listenableEvent) {
+            for (EventListener<?> eventListener : this.eventListeners) {
+                if (eventListener.eventType().isInstance(listenableEvent)) {
+                    this.dispatchToConsumer(eventListener, listenableEvent);
+                }
+            }
+        }
+    }
+
     public Event waitEvent() throws InterruptedException {
         return this.eventQueue.take();
+    }
+
+    @Override
+    public void close() {
+        Runnable closer = () -> {
+            this.configurationManager.save();
+            JFrame frame = this.appFrame;
+            if (frame != null) {
+                frame.dispose();
+            }
+        };
+        if (SwingUtilities.isEventDispatchThread()) {
+            closer.run();
+        } else {
+            try {
+                SwingUtilities.invokeAndWait(closer);
+            } catch (Exception e) {
+                Logger.error("Failed to properly close Main Window object: {}", e);
+            }
+        }
+
     }
 
     @Nullable
@@ -320,26 +362,8 @@ public class MainWindow implements Closeable {
         this.emulatorCommandCallbacks.add(callback);
     }
 
-    @ApiStatus.Internal
-    public void pushEvent(InternalEvent internalEvent) {
-        if (internalEvent instanceof ExposableEvent exposableEvent) {
-            this.eventQueue.offer(exposableEvent.getEvent());
-        }
-        for (PushedEventConsumer<?> pushedEventConsumer : this.pushedEventConsumers) {
-            if (pushedEventConsumer.eventType().isInstance(internalEvent)) {
-                this.dispatchToConsumer(pushedEventConsumer, internalEvent);
-            }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    private <T extends InternalEvent> void dispatchToConsumer(PushedEventConsumer<T> consumer, InternalEvent event) {
-        consumer.action().accept((T) event);
-    }
-
-    @ApiStatus.Internal
-    public <T extends InternalEvent> void onEvent(Class<T> eventType, Consumer<T> action) {
-        this.pushedEventConsumers.add(new PushedEventConsumer<>(eventType, action));
+    public <T extends ListenableEvent> void onEvent(Class<T> eventType, Consumer<T> action) {
+        this.eventListeners.add(new EventListener<>(eventType, action));
     }
 
     @ApiStatus.Internal
@@ -347,25 +371,9 @@ public class MainWindow implements Closeable {
         return Objects.requireNonNull(this.menuBar);
     }
 
-    @Override
-    public void close() {
-        Runnable closer = () -> {
-            this.configurationManager.save();
-            JFrame frame = this.appFrame;
-            if (frame != null) {
-                frame.dispose();
-            }
-        };
-        if (SwingUtilities.isEventDispatchThread()) {
-            closer.run();
-        } else {
-            try {
-                SwingUtilities.invokeAndWait(closer);
-            } catch (Exception e) {
-                Logger.error("Failed to properly close Main Window object: {}", e);
-            }
-        }
-
+    @SuppressWarnings("unchecked")
+    private <T extends ListenableEvent> void dispatchToConsumer(EventListener<T> consumer, InternalEvent event) {
+        consumer.action().accept((T) event);
     }
 
     public enum DialogType {
@@ -432,6 +440,6 @@ public class MainWindow implements Closeable {
 
     }
 
-    private record PushedEventConsumer<T extends InternalEvent>(Class<T> eventType, Consumer<T> action) {}
+    private record EventListener<T extends ListenableEvent>(Class<T> eventType, Consumer<T> action) {}
 
 }

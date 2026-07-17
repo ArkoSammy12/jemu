@@ -1,3 +1,9 @@
 package io.github.arkosammy12.jemu.frontend.events.core;
 
-public record UseIntegerScalingSettingChangedEvent(boolean useIntegerScaling) implements VideoSettingChangedEvent {}
+import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalUseIntegerScalingSettingChangedEvent;
+
+public sealed interface UseIntegerScalingSettingChangedEvent extends VideoSettingChangedEvent permits InternalUseIntegerScalingSettingChangedEvent {
+
+    boolean useIntegerScaling();
+
+}

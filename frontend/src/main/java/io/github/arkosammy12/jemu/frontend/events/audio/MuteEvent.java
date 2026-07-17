@@ -1,5 +1,10 @@
 package io.github.arkosammy12.jemu.frontend.events.audio;
 
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalMuteEvent;
 
-public record MuteEvent(boolean mute) implements AudioSettingChangeEvent {}
+public sealed interface MuteEvent extends AudioSettingChangeEvent permits InternalMuteEvent {
+
+    boolean getMute();
+
+}

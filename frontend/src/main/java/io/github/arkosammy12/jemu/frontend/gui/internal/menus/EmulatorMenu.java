@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PauseCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
@@ -158,13 +158,13 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             emulatorStopped = true;
         }));
 
-        mainWindow.onEvent(InternalFileLoadedEvent.class, _ -> {
+        mainWindow.onEvent(FileLoadedEvent.class, _ -> {
             if (this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect()) {
                 this.restartEmulator();
             }
         });
 
-        mainWindow.onEvent(InternalROMEjectedEvent.class, _ -> {
+        mainWindow.onEvent(ROMEjectedEvent.class, _ -> {
             this.submitStop();
         });
 

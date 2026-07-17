@@ -3,9 +3,9 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalFileLoadedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalROMEjectedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.InternalTriggerOpenFileEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEvent;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.swing.managers.FileManager;
@@ -22,7 +22,6 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
-import java.util.stream.Collectors;
 
 public class FileMenu extends MenuBarMenu implements FileManager {
 
@@ -37,7 +36,6 @@ public class FileMenu extends MenuBarMenu implements FileManager {
     private final JMenuItem clearRecentsButton;
     private final JMenuItem ejectRomButton;
     private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(RECENT_FILES_SIZE);
-    //private final String[] fileExtensions;
 
     public FileMenu(MainWindow mainWindow, JFrame jFrame) {
         super();
@@ -107,7 +105,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         this.ejectRomButton.addActionListener(_ -> {
             this.currentRomPath = null;
             this.ejectRomButton.setEnabled(false);
-            mainWindow.pushEvent(new InternalROMEjectedEvent());
+            mainWindow.publishEvent(new ROMEjectedEvent());
         });
 
         JRadioButtonMenuItem resetOnROMFileSelect = new JRadioButtonMenuItem("Reset on ROM file select");
@@ -129,7 +127,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
 
         resetOnROMFileSelect.setSelected(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect());
 
-        mainWindow.onEvent(InternalTriggerOpenFileEvent.class, _ -> openItem.doClick());
+        mainWindow.onEvent(TriggerOpenFileEvent.class, _ -> openItem.doClick());
     }
 
     @Override
@@ -142,7 +140,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         SwingUtilities.invokeLater(() -> {
             this.currentRomPath = filePath;
             this.ejectRomButton.setEnabled(true);
-            this.mainWindow.pushEvent(new InternalFileLoadedEvent(filePath));
+            this.mainWindow.publishEvent(new FileLoadedEvent(filePath));
         });
     }
 

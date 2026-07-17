@@ -19,7 +19,7 @@ public class SpeedSettings extends MenuBarMenu {
         JRadioButtonMenuItem normalSpeedModeButton = new JRadioButtonMenuItem(SpeedMode.NORMAL.getDisplayName());
         normalSpeedModeButton.addActionListener(_ -> {
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalSpeedSettings().setSpeedMode(SpeedMode.NORMAL);
-            mainWindow.pushEvent(new InternalSpeedModeSettingChangedEvent(SpeedMode.NORMAL));
+            mainWindow.publishEvent(new InternalSpeedModeSettingChangedEvent(SpeedMode.NORMAL));
         });
         speedModeButtonGroup.add(normalSpeedModeButton);
         normalSpeedModeButton.setSelected(selectedSpeedMode == SpeedMode.NORMAL);
@@ -31,7 +31,7 @@ public class SpeedSettings extends MenuBarMenu {
             JRadioButtonMenuItem speedModeButton = new JRadioButtonMenuItem(speedMode.getDisplayName());
             speedModeButton.addActionListener(_ -> {
                 mainWindow.getConfig().getInternalPreferenceSettings().getInternalSpeedSettings().setSpeedMode(speedMode);
-                mainWindow.pushEvent(new InternalSpeedModeSettingChangedEvent(speedMode));
+                mainWindow.publishEvent(new InternalSpeedModeSettingChangedEvent(speedMode));
             });
             speedModeButtonGroup.add(speedModeButton);
             this.getJMenu().add(speedModeButton);
