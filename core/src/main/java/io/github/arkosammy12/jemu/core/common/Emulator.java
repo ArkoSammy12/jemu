@@ -6,7 +6,7 @@ public interface Emulator extends AutoCloseable {
 
     VideoGenerator getVideoGenerator();
 
-     AudioGenerator getAudioGenerator();
+    AudioGenerator getAudioGenerator();
 
     SystemController getSystemController();
 
