@@ -11,9 +11,8 @@ import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine;
 
 import java.util.Collection;
-import java.util.Optional;
 
-public enum System implements DisplayNameProvider, SystemDescriptor {
+public enum System implements SystemDescriptor {
     COSMAC_VIP(new CosmacVIPManager(CosmacVIPHost.Chip8Interpreter.NONE)),
     VIP_CHIP_8(new CosmacVIPManager(CosmacVIPHost.Chip8Interpreter.CHIP_8)),
     VIP_CHIP_8X(new CosmacVIPManager(CosmacVIPHost.Chip8Interpreter.CHIP_8X)),
@@ -27,11 +26,6 @@ public enum System implements DisplayNameProvider, SystemDescriptor {
 
     System(SystemManager systemManager) {
         this.systemManager = systemManager;
-    }
-
-    @Override
-    public String getDisplayName() {
-        return this.systemManager.getName();
     }
 
     public static SystemAdapter getSystemAdapter(Jemu jemu, @Nullable System system) throws Exception {
