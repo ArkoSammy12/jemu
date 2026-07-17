@@ -92,12 +92,15 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
                         this.enablePA7Interrupt = (address & (1 << 1)) != 0;
                         this.pa7EdgeDetectMode = (address & 1) != 0 ? PA7EdgeDetect.POSITIVE : PA7EdgeDetect.NEGATIVE;
 
+                        // This behavior does not happen according to tests verified on a PAL Atari 2600 console
+                        /*
                         // According to the MOS 6532 RIOT datasheet, the flag may also be set by changing the polarity. So we take the current value of
                         // PA7 and use it as the new edge transition value, and depending on the selected edge detection mode, we may set the flag.
                         boolean currentPA7Level = (this.dataDirectionRegisterA & (1 << 7)) != 0 ? this.oldOutputLatchAPA7 : this.oldSWCHAAPA7;
                         if ((this.pa7EdgeDetectMode == PA7EdgeDetect.POSITIVE && currentPA7Level) || (this.pa7EdgeDetectMode == PA7EdgeDetect.NEGATIVE && !currentPA7Level)) {
                             this.pa7InterruptFlag = true;
                         }
+                         */
                     }
                 }
             }
