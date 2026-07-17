@@ -495,10 +495,10 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private final int[] video;
 
-        private final Missile missile0 = new Missile();
-        private final Missile missile1 = new Missile();
-        private final Player player0 = new Player(this.missile0);
-        private final Player player1 = new Player(this.missile1);
+        private final Player player0 = new Player();
+        private final Player player1 = new Player();
+        private final Missile missile0 = new Missile(player0);
+        private final Missile missile1 = new Missile(player1);
         private final Ball ball = new Ball();
 
         private int colorClockNumber;
@@ -914,7 +914,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private abstract static class Sprite {
 
-            private int horizontalMotion;
+            protected int horizontalMotion;
 
             protected int phaseCounter;
             protected int positionCounter;
@@ -955,8 +955,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private static class Player extends Sprite {
 
-            private final Missile associatedMissile;
-
             private int oldGraphics;
             private int newGraphics;
 
@@ -967,8 +965,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             private boolean drawingCopy;
 
-            private Player(Missile associatedMissile) {
-                this.associatedMissile = associatedMissile;
+            private Player() {
                 this.scanCounter = 8;
             }
 
@@ -1012,12 +1009,12 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                         this.drawingCopy = true;
                         this.start();
                     } else if (this.positionCounter == 39) {
-                        this.drawingCopy = false;
                         this.start();
                     }
 
                     this.positionCounter++;
                     if (this.positionCounter >= 40) {
+                        this.drawingCopy = false;
                         this.positionCounter = 0;
                     }
                 }
@@ -1037,17 +1034,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     int bit = this.reflectGraphics ? this.scanCounter : (7 - this.scanCounter);
                     this.pixel = (graphics & (1 << bit)) != 0;
 
-                    if (!this.drawingCopy && this.associatedMissile.getResetToPlayer()) {
-                        int missileOffset = switch (this.getWidth()) {
-                            case 2 -> 0;
-                            case 4 -> 1;
-                            default -> 3;
-                        };
-                        if (this.scanCounter == missileOffset) {
-                            this.associatedMissile.resetHorizontalPosition();
-                        }
-                    }
-
                     this.scanCounterIncrementDivisorCounter++;
                     if (this.scanCounterIncrementDivisorCounter >= this.getWidth()) {
                         this.scanCounter++;
@@ -1055,6 +1041,10 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     }
                 }
 
+            }
+
+            protected boolean isDrawingMiddleOfMainCopy() {
+                return this.scanCounter == 4 && !this.drawingCopy;
             }
 
             private void start() {
@@ -1073,14 +1063,24 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private static class Missile extends Sprite {
 
+            private final Player associatedPlayer;
+
             private int number;
             private int width;
 
             private boolean enabled;
             private boolean resetToPlayer;
 
-            private Missile() {
+            private Missile(Player associatedPlayer) {
+                this.associatedPlayer = associatedPlayer;
                 this.scanCounter = 1;
+            }
+
+            protected void applyHorizontalMotion() {
+                int clocks = this.horizontalMotion ^ 8;
+                for (int i = 0; i < clocks; i++) {
+                    this.clockCounters();
+                }
             }
 
             protected void setEnabled(boolean enabled) {
@@ -1096,12 +1096,28 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 this.resetToPlayer = resetToPlayer;
             }
 
-            protected boolean getResetToPlayer() {
-                return this.resetToPlayer;
-            }
-
             @Override
             protected void clock() {
+                this.clockCounters();
+                if (this.resetToPlayer && this.associatedPlayer.isDrawingMiddleOfMainCopy()) {
+                    switch (this.associatedPlayer.getWidth()) {
+                        case 2 -> {
+                            this.positionCounter = 1;
+                            this.phaseCounter = 3;
+                        }
+                        case 4 -> {
+                            this.positionCounter = 3;
+                            this.phaseCounter = 1;
+                        }
+                        default -> {
+                            this.positionCounter = 1;
+                            this.phaseCounter = 0;
+                        }
+                    }
+                }
+            }
+
+            private void clockCounters() {
                 this.phaseCounter++;
                 if (this.phaseCounter >= 4) {
                     this.phaseCounter = 0;
@@ -1147,7 +1163,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                     }
 
                 }
-
             }
 
             private void start() {
