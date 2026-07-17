@@ -14,8 +14,6 @@ import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.util.Optional;
 
-import static io.github.arkosammy12.jemu.app.util.System.COSMAC_VIP;
-
 public class CosmacVIPAdapter extends SystemAdapter implements CosmacVIPHost {
 
     private String romTitle;
