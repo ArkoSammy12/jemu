@@ -11,6 +11,7 @@ import org.jetbrains.annotations.Nullable;
 import picocli.CommandLine;
 
 import java.util.Collection;
+import java.util.Optional;
 
 public enum System implements SystemDescriptor {
     COSMAC_VIP(new CosmacVIPManager(CosmacVIPHost.Chip8Interpreter.NONE)),
@@ -57,6 +58,11 @@ public enum System implements SystemDescriptor {
     @Override
     public Collection<String> getFileExtensions() {
         return this.systemManager.getFileExtensions();
+    }
+
+    @Override
+    public Optional<Category> getCategory() {
+        return this.systemManager.getCategory();
     }
 
     public static class Converter implements CommandLine.ITypeConverter<System> {

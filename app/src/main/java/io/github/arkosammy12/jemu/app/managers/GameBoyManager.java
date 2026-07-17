@@ -47,4 +47,5 @@ public class GameBoyManager implements SystemManager {
             case CGB -> List.of("gbc");
         };
     }
+
 }

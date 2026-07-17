@@ -54,12 +54,18 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         this.systemDescriptorButtonMap = new HashMap<>();
 
+        Map<SystemDescriptor.Category, JMenu> categoryJMenuMap = new HashMap<>();
+
         for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
             item.addActionListener(_ -> this.setSystemDescriptor(systemDescriptor));
             buttonGroup.add(item);
-            systemMenu.add(item);
             this.systemDescriptorButtonMap.put(systemDescriptor, item);
+            systemDescriptor.getCategory().ifPresentOrElse(category -> categoryJMenuMap.computeIfAbsent(category, menuCategory -> {
+                JMenu categoryMenu = new JMenu(menuCategory.getName());
+                systemMenu.add(categoryMenu);
+                return categoryMenu;
+            }).add(item), () -> systemMenu.add(item));
         }
 
         JMenuItem powerCycleButton = new JMenuItem("Power Cycle");
