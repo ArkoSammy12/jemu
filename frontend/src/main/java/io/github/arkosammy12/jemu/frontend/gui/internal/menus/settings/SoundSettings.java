@@ -6,8 +6,8 @@ import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalMuteEve
 import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalSampleRateChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalSoundDeviceChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalVolumeChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 
 import javax.swing.*;
 import javax.swing.event.MenuEvent;

@@ -8,7 +8,7 @@ import io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings;
 import io.github.arkosammy12.jemu.frontend.events.core.AspectRatioSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.UseIntegerScalingSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.SystemDisplayComponent;
+import io.github.arkosammy12.jemu.frontend.gui.SystemDisplayComponent;
 import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
 

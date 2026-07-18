@@ -14,13 +14,13 @@ Multi-system emulator written in Java.
 
 | System                              | CLI identifier  | Status              |
 |-------------------------------------|-----------------|---------------------|
-| COSMAC VIP                          | `cosmac-vip`    | ✅ Supported         |
-| RCA Studio II                       | `rca-studioii`  | ✅ Supported         |
-| VIP CHIP-8                          | `vip-chip8`     | ✅ Supported         |
-| VIP CHIP-8X                         | `vip-chip8x`    | ✅ Supported         |
-| Game Boy (DMG)                      | `gameboy`       | ✅ Supported         |
-| Game Boy Color (CGB)                | `gameboy-color` | ✅ Supported         |
-| Nintendo Entertainment System       | `nes`           | ✅ Supported         |
+| COSMAC VIP                          | `cosmac-vip`    | ✅ Supported        |
+| RCA Studio II                       | `rca-studioii`  | ✅ Supported        |
+| VIP CHIP-8                          | `vip-chip8`     | ✅ Supported        |
+| VIP CHIP-8X                         | `vip-chip8x`    | ✅ Supported        |
+| Game Boy (DMG)                      | `gameboy`       | ✅ Supported        |
+| Game Boy Color (CGB)                | `gameboy-color` | ✅ Supported        |
+| Nintendo Entertainment System       | `nes`           | ✅ Supported        |
 | Atari 2600                          | `atari-2600`    | 🚧 Work-in-progress |
 | Apple II                            | —               | 🗓 Planned          |
 | Commodore 64                        | —               | 🗓 Planned          |

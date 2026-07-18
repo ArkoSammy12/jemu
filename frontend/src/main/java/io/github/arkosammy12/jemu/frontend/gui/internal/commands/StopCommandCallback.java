@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.commands;
 
-import io.github.arkosammy12.jemu.frontend.gui.swing.commands.StopEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.gui.commands.StopEmulatorCommand;
 
 public non-sealed interface StopCommandCallback extends EmulatorCommandCallback {
 

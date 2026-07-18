@@ -30,7 +30,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
 
     public Atari2600Emulator(Atari2600SystemHost systemHost) {
         this.systemHost = systemHost;
-        this.tvFormat = this.systemHost.getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getTVFormat).orElse(TVFormat.NTSC);
+        this.tvFormat = this.systemHost.getTVFormatOverride().or(() -> this.systemHost.getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getTVFormat)).orElse(TVFormat.NTSC);
 
         int clockSpeed;
         switch (this.tvFormat) {
@@ -165,11 +165,11 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
 
     @Override
     public int readSWCHB(int ddrB) {
-        int ret = this.getP1Difficulty() ? 1 << 7 : 0;
-        ret |= this.getP0Difficulty() ? 1 << 6 : 0;
-        ret |= this.getColor() ? 1 << 3 : 0;
-        ret |= this.getGameSelect() ? 1 << 1 : 0;
-        ret |= this.getGameReset() ? 1 : 0;
+        int ret = this.systemHost.getRightDifficulty() ? 1 << 7 : 0;
+        ret |= this.systemHost.getLeftDifficulty() ? 1 << 6 : 0;
+        ret |= this.systemHost.getColorSwitch() ? 1 << 3 : 0;
+        ret |= this.controller.isActionPressed(GAME_SELECT) ? 0 : 1 << 1;
+        ret |= this.controller.isActionPressed(GAME_RESET) ? 0 : 1;
         return ret;
     }
 
@@ -216,26 +216,6 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     @Override
     public int combineWithDataBus(int value, int validBitsMask) {
         return this.getBus().combineWithDataBus(value, validBitsMask);
-    }
-
-    private boolean getP1Difficulty() {
-        return false;
-    }
-
-    private boolean getP0Difficulty() {
-        return false;
-    }
-
-    private boolean getColor() {
-        return true;
-    }
-
-    private boolean getGameSelect() {
-        return !this.controller.isActionPressed(GAME_SELECT);
-    }
-
-    private boolean getGameReset() {
-        return !this.controller.isActionPressed(GAME_RESET);
     }
 
     @Override

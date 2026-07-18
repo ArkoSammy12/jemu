@@ -1,22 +1,23 @@
 package io.github.arkosammy12.jemu.app;
 
-import io.github.arkosammy12.jemu.app.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemRegistry;
+import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.CLIArgs;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.GitProperties;
-import io.github.arkosammy12.jemu.app.util.System;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.PendingEmulatorCommand;
-import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
+import io.github.arkosammy12.jemu.frontend.gui.commands.*;
+import io.github.arkosammy12.jemu.frontend.gui.PendingEmulatorCommand;
 import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.managers.HelpManager;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.managers.HelpManager;
 import net.harawata.appdirs.AppDirsFactory;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
@@ -29,12 +30,12 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
 public final class Jemu {
 
+    private final SystemRegistry systemRegistry;
     private final MainWindow mainWindow;
     private final AudioEngine audioEngine;
     private final Path appDataDirectory;
@@ -49,16 +50,26 @@ public final class Jemu {
     private volatile boolean running;
     private volatile boolean shutdownStarted;
 
-    public Jemu(@Nullable CLIArgs cliArgs) throws Exception {
+    public Jemu(String[] args) throws Exception {
         try {
             Thread.setDefaultUncaughtExceptionHandler((thread, throwable) -> {
                 Logger.error(throwable, "Uncaught exception in thread {}", thread.getName());
                 this.shutdown();
             });
 
+            this.systemRegistry = new SystemRegistry(this);
+
+            CLIArgs cliArgs = null;
+            if (args.length > 0) {
+                cliArgs = new CLIArgs(args, this.systemRegistry);
+                if (cliArgs.exitImmediately()) {
+                    System.exit(0);
+                }
+            }
+
             this.appDataDirectory = this.tryAcquireAndCreateDataDirectory();
 
-            this.mainWindow = new MainWindow(MavenProperties.ARTIFACT_ID, this.getAppDataDirectory().orElse(null), Arrays.stream(System.values()).toList());
+            this.mainWindow = new MainWindow(MavenProperties.ARTIFACT_ID, this.getAppDataDirectory().orElse(null), this.systemRegistry);
             this.initMainWindow();
 
             this.audioEngine = new AudioEngine("%s-audio-callback-thread".formatted(MavenProperties.ARTIFACT_ID));
@@ -119,6 +130,7 @@ public final class Jemu {
                 switch (uiEvent) {
                     case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
                     case CoreSettingChangeEvent coreSettingChangeEvent -> {
+                        this.systemRegistry.onCoreSettingEvent(coreSettingChangeEvent);
                         SystemAdapter currentSystem = this.currentSystem;
                         if (currentSystem != null) {
                             currentSystem.onCoreSettingEvent(coreSettingChangeEvent);
@@ -222,7 +234,7 @@ public final class Jemu {
     }
 
     private State onEmulatorPowerCycleCommand(PowerCycleCommand powerCycleCommand) throws Exception {
-        this.initializeEmulator(powerCycleCommand.systemDescriptor() instanceof System system ? system : null);
+        this.initializeEmulator(powerCycleCommand.systemDescriptor() instanceof SystemManager systemManager ? systemManager : null);
         boolean powerCycleIntoPaused = powerCycleCommand.powerCycleIntoPaused();
         this.audioEngine.setPaused(powerCycleIntoPaused);
         return powerCycleIntoPaused ? State.PAUSED : State.RUNNING;
@@ -233,8 +245,8 @@ public final class Jemu {
             return null;
         }
         Optional<SystemDescriptor> currentSystemDescriptor = resetEmulatorCommand.getSystemDescriptor();
-        if (currentSystemDescriptor.isPresent() && currentSystemDescriptor.get() instanceof System system && system != this.currentSystem.getSystem()) {
-            this.initializeEmulator(system);
+        if (currentSystemDescriptor.isPresent() && currentSystemDescriptor.get() instanceof SystemManager systemManger && !systemManger.manages(this.currentSystem)) {
+            this.initializeEmulator(systemManger);
         } else {
             this.currentSystem.reset(this.createEmulatorInitializer());
         }
@@ -276,12 +288,15 @@ public final class Jemu {
         return State.STEPPING_CYCLE;
     }
 
-    private void initializeEmulator(@Nullable System system) throws Exception {
+    private void initializeEmulator(@Nullable SystemManager systemManager) throws Exception {
         if (this.currentSystem != null) {
             this.currentSystem.close();
         }
-        this.currentSystem = System.getSystemAdapter(this, system);
-        this.currentSystem.powerCycle(createEmulatorInitializer());
+        if (systemManager == null) {
+            throw new EmulatorException("Must select a system!");
+        }
+        this.currentSystem = systemManager.createSystem();
+        this.currentSystem.powerCycle(this.createEmulatorInitializer());
         this.audioEngine.start();
     }
 
@@ -422,7 +437,7 @@ public final class Jemu {
         } else {
             Logger.error(t, "Forcing shutdown because of {}", t.getCause());
         }
-        java.lang.System.exit(1);
+        System.exit(1);
     }
 
     public static void tryJoinSafely(@Nullable Thread thread) {

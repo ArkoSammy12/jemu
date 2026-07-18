@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import com.formdev.flatlaf.util.SystemInfo;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
-import io.github.arkosammy12.jemu.frontend.gui.swing.managers.HelpManager;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.managers.HelpManager;
 import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;

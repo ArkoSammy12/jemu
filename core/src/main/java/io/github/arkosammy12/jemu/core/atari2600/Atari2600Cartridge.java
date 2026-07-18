@@ -38,7 +38,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
     protected abstract int mapROMAddress(int address);
 
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
-        Type cartridgeType = emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType).orElse(Type.CART_4K);
+        Type cartridgeType = emulator.getHost().getCartridgeTypeOverride().or(() -> emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType)).orElse(Type.CART_4K);
         return switch (cartridgeType) {
             case CART_0840 -> new Cartridge0840<>(emulator);
             case CART_3E -> new Cartridge3E<>(emulator);

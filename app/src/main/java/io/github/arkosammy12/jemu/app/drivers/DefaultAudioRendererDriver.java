@@ -11,8 +11,6 @@ import java.io.Closeable;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
-import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
-
 public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeable {
 
     protected final Jemu jemu;

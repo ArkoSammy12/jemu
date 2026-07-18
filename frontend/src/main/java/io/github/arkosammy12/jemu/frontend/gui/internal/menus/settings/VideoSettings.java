@@ -4,8 +4,8 @@ import io.github.arkosammy12.jemu.frontend.config.settings.internal.VideoSize;
 import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalAspectRatioSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.core.InternalUseIntegerScalingSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.VideoSizeChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 
 import javax.swing.*;
 import java.util.Arrays;

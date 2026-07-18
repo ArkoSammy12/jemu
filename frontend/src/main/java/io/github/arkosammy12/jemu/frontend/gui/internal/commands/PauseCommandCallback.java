@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.commands;
 
-import io.github.arkosammy12.jemu.frontend.gui.swing.commands.PauseEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.gui.commands.PauseEmulatorCommand;
 
 public non-sealed interface PauseCommandCallback extends EmulatorCommandCallback {
 

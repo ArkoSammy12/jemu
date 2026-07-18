@@ -2,13 +2,13 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
-import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEvent;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
-import io.github.arkosammy12.jemu.frontend.gui.swing.managers.FileManager;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.managers.FileManager;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -51,7 +51,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         openItem.setToolTipText("Load binary ROM data from a file.");
         openItem.addActionListener(_ -> {
             SystemFileChooser chooser = new SystemFileChooser();
-            Collection<String> fileExtensions = mainWindow.getSystemDescriptors().stream().map(SystemDescriptor::getFileExtensions).flatMap(Collection::stream).toList();
+            Collection<String> fileExtensions = mainWindow.getSystemCatalog().getSystemDescriptors().stream().map(SystemDescriptor::getFileExtensions).flatMap(Collection::stream).toList();
             if (!fileExtensions.isEmpty()) {
                 chooser.setFileFilter(new SystemFileChooser.FileNameExtensionFilter("ROMs", fileExtensions.toArray(String[]::new)));
             }

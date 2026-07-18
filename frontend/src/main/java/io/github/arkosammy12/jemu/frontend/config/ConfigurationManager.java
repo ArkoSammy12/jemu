@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.frontend.config;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import io.github.arkosammy12.jemu.frontend.config.internal.InternalConfigurations;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import org.jetbrains.annotations.ApiStatus;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -33,7 +34,7 @@ public class ConfigurationManager {
         return this.internalConfigurations;
     }
 
-    public void read() {
+    public void read(MainWindow mainWindow) {
         if (this.settingsFilePath == null) {
             return;
         }
@@ -47,13 +48,15 @@ public class ConfigurationManager {
         if (internalConfigurations != null) {
             this.internalConfigurations = internalConfigurations;
         }
+        this.internalConfigurations.getInternalPreferenceSettings().getInternalEmulatorSettings().getEmulationSettings().ifPresent(jsonElement -> mainWindow.getSystemCatalog().deserializeSettings(jsonElement));
     }
 
-    public void save() {
+    public void save(MainWindow mainWindow) {
         if (this.settingsFilePath == null) {
             return;
         }
         try {
+            mainWindow.getSystemCatalog().serializeSettings().ifPresent(jsonElement -> this.internalConfigurations.getInternalPreferenceSettings().getInternalEmulatorSettings().setEmulationSettings(jsonElement));
             String json = this.gson.toJson(this.internalConfigurations);
             Files.writeString(this.settingsFilePath, json);
         } catch (Exception e) {

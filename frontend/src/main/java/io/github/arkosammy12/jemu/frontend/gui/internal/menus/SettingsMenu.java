@@ -1,12 +1,9 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.SoundSettings;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.SpeedSettings;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.VideoSettings;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.WindowSettings;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
-import io.github.arkosammy12.jemu.frontend.gui.swing.managers.SettingsManager;
+import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.*;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.managers.SettingsManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -26,6 +23,7 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         VideoSettings videoSettings = new VideoSettings(mainWindow);
         SoundSettings soundSettings = new SoundSettings(mainWindow);
         SpeedSettings speedSettings = new SpeedSettings(mainWindow);
+        EmulationSettings emulationSettings = new EmulationSettings(mainWindow);
 
         JMenuItem openDataDirectoryButton = new JMenuItem("Open data directory");
         openDataDirectoryButton.addActionListener(_ -> {
@@ -55,6 +53,7 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         this.getJMenu().add(videoSettings.getJMenu());
         this.getJMenu().add(soundSettings.getJMenu());
         this.getJMenu().add(speedSettings.getJMenu());
+        this.getJMenu().add(emulationSettings.getJMenu());
         this.getJMenu().addSeparator();
         this.getJMenu().add(openDataDirectoryButton);
 

@@ -1,15 +1,15 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
-import io.github.arkosammy12.jemu.frontend.config.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
+import io.github.arkosammy12.jemu.frontend.gui.commands.*;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PauseCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MainWindow;
-import io.github.arkosammy12.jemu.frontend.gui.swing.MenuBarMenu;
-import io.github.arkosammy12.jemu.frontend.gui.swing.commands.*;
-import io.github.arkosammy12.jemu.frontend.gui.swing.managers.EmulatorManager;
+import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.managers.EmulatorManager;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -56,7 +56,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
 
         Map<SystemDescriptor.Category, JMenu> categoryJMenuMap = new HashMap<>();
 
-        for (SystemDescriptor systemDescriptor : mainWindow.getSystemDescriptors()) {
+        for (SystemDescriptor systemDescriptor : mainWindow.getSystemCatalog().getSystemDescriptors()) {
             JRadioButtonMenuItem item = new JRadioButtonMenuItem(systemDescriptor.getName());
             item.addActionListener(_ -> this.setSystemDescriptor(systemDescriptor));
             buttonGroup.add(item);
@@ -236,7 +236,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         if (fileExtension.isBlank()) {
             return new SystemDescriptorResult(null, "The file extension of the selected ROM path is blank!");
         }
-        outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemDescriptors()) {
+        outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemCatalog().getSystemDescriptors()) {
             for (String extension : descriptor.getFileExtensions()) {
                 if (fileExtension.equals(extension)) {
                     systemDescriptor = descriptor;

@@ -9,16 +9,20 @@ module frontend {
     requires org.jetbrains.annotations;
     requires org.tinylog.api;
     requires com.google.gson;
+    requires java.sql;
 
-    exports io.github.arkosammy12.jemu.frontend.gui.swing;
-    exports io.github.arkosammy12.jemu.frontend.gui.swing.commands;
-    exports io.github.arkosammy12.jemu.frontend.gui.swing.managers;
+    exports io.github.arkosammy12.jemu.frontend.gui;
+    exports io.github.arkosammy12.jemu.frontend.gui.commands;
+    exports io.github.arkosammy12.jemu.frontend.gui.managers;
+    exports io.github.arkosammy12.jemu.frontend.gui.system;
+    exports io.github.arkosammy12.jemu.frontend.gui.system.builder;
     exports io.github.arkosammy12.jemu.frontend.events;
     exports io.github.arkosammy12.jemu.frontend.events.audio;
     exports io.github.arkosammy12.jemu.frontend.events.core;
     exports io.github.arkosammy12.jemu.frontend.audio;
     exports io.github.arkosammy12.jemu.frontend.config;
     exports io.github.arkosammy12.jemu.frontend.config.settings;
+    exports io.github.arkosammy12.jemu.frontend.util;
 
     opens io.github.arkosammy12.jemu.frontend.audio to com.google.gson;
     opens io.github.arkosammy12.jemu.frontend.config.internal to com.google.gson;
