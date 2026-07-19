@@ -53,8 +53,8 @@ public final class SystemRegistry implements SystemCatalog {
         return this.emulationSettings;
     }
 
-    public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
-        this.getSystemDescriptors().forEach(systemManager -> systemManager.onCoreSettingEvent(coreSettingChangeEvent));
+    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
+        this.getSystemDescriptors().forEach(systemManager -> systemManager.onCoreSettingChangedEvent(coreSettingChangeEvent));
     }
 
     @Override
@@ -99,10 +99,17 @@ public final class SystemRegistry implements SystemCatalog {
     public static class EmulationSettings {
 
         @SerializedName("atari_2600")
-        private volatile Atari2600Manager.SystemSettings atari2600Settings = new Atari2600Manager.SystemSettings();
+        private volatile Atari2600Manager.EmulationSettings atari2600Settings = new Atari2600Manager.EmulationSettings();
 
-        public Atari2600Manager.SystemSettings getAtari2600Settings() {
+        @SerializedName("gameboy")
+        private volatile GameBoyManager.EmulationSettings gameboySettings = new GameBoyManager.EmulationSettings();
+
+        public Atari2600Manager.EmulationSettings getAtari2600Settings() {
             return this.atari2600Settings;
+        }
+
+        public GameBoyManager.EmulationSettings getGameBoySettings() {
+            return this.gameboySettings;
         }
 
     }

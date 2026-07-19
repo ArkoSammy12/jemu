@@ -11,7 +11,6 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
-import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
@@ -37,7 +36,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     protected byte[] rom;
     private Path path;
 
-    private Emulator emulator;
+    protected Emulator emulator;
     private DefaultAudioRendererDriver audioDriver;
 
     @Nullable
@@ -68,13 +67,21 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     @Override
-    public Optional<VideoDriver> getVideoDriver() {
+    public Optional<? extends DefaultSystemVideoDriver> getVideoDriver() {
         return Optional.ofNullable(this.videoDriver);
     }
 
     @Override
     public Optional<? extends DefaultAudioRendererDriver> getAudioDriver() {
         return Optional.of(this.audioDriver);
+    }
+
+    public void powerCycle(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
+        this.initialize(emulatorInitializer, false);
+    }
+
+    public void reset(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
+        this.initialize(emulatorInitializer, true);
     }
 
     public void onFrame() {
@@ -86,7 +93,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         }
     }
 
-    public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
+    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
         switch (coreSettingChangeEvent) {
             case SpeedModeSettingChangedEvent speedModeSettingChangedEvent -> {
                 this.audioDriver.clearAudioBuffer();
@@ -100,14 +107,6 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             }
             case null, default -> {}
         }
-    }
-
-    public void powerCycle(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
-        this.initialize(emulatorInitializer, false);
-    }
-
-    public void reset(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
-        this.initialize(emulatorInitializer, true);
     }
 
     protected abstract Emulator createEmulator();

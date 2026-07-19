@@ -10,4 +10,6 @@ public interface VideoGenerator {
         return 1.0;
     }
 
+    int mapToRGB8(int frameBufferValue);
+
 }

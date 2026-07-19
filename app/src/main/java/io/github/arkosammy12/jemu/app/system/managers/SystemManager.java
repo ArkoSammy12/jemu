@@ -30,7 +30,7 @@ public abstract class SystemManager implements SystemDescriptor {
         return systemSettingsBuilder;
     }
 
-    public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
 
     }
 

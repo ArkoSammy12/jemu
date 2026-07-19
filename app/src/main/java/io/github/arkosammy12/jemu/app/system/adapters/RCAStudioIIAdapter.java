@@ -26,6 +26,11 @@ public class RCAStudioIIAdapter extends SystemAdapter {
     }
 
     @Override
+    public Optional<String> getRomTitle() {
+        return Optional.ofNullable(this.romTitle);
+    }
+
+    @Override
     protected @Nullable RCAStudioIIKeypad.Action getActionForKeyCode(int keyCode) {
         return switch (keyCode) {
             case KeyEvent.VK_1 -> RCAStudioIIKeypad.Actions.KEYPADA_1;
@@ -51,11 +56,6 @@ public class RCAStudioIIAdapter extends SystemAdapter {
             case KeyEvent.VK_COMMA, KeyEvent.VK_NUMPAD0 -> RCAStudioIIKeypad.Actions.KEYPADB_0;
             default -> null;
         };
-    }
-
-    @Override
-    public Optional<String> getRomTitle() {
-        return Optional.ofNullable(this.romTitle);
     }
 
     @Override

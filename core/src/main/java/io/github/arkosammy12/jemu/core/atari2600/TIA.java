@@ -126,6 +126,11 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         return this.video.getPixelAspectRatio();
     }
 
+    @Override
+    public int mapToRGB8(int frameBufferValue) {
+        return this.video.mapToRGB8(frameBufferValue);
+    }
+
     public void setI4(boolean value) {
         if (this.latchesEnabled && !value) {
             this.i4Latch = false;
@@ -645,6 +650,11 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         }
 
         @Override
+        public int mapToRGB8(int frameBufferValue) {
+            return this.palette[frameBufferValue];
+        }
+
+        @Override
         public int readByte(int address) {
             return switch (address) {
                 case CXM0P -> emulator.combineWithDataBus(this.collisionLatchMissile0Player, 0xC0);
@@ -856,7 +866,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                         colorIndex = this.colorLuminanceBackground;
                     }
                 }
-                this.video[((this.scanlineNumber - this.vBlankEndScanline) * VISIBLE_CLOCKS + pixelX)] = this.palette[colorIndex];
+                this.video[((this.scanlineNumber - this.vBlankEndScanline) * VISIBLE_CLOCKS + pixelX)] = colorIndex;
             }
 
             this.colorClockNumber++;

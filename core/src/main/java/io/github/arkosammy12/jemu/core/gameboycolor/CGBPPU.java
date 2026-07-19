@@ -37,7 +37,12 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         super(emulator);
     }
 
-    protected int getLCDOffColor() {
+    @Override
+    public int mapToRGB8(int frameBufferValue) {
+        return frameBufferValue;
+    }
+
+    protected int getLCDOffValue() {
         return 0xFFFFFF;
     }
 

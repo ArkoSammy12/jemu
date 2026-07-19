@@ -31,6 +31,21 @@ public class NESAdapter extends SystemAdapter implements NESHost {
     }
 
     @Override
+    public Optional<String> getRomTitle() {
+        return Optional.ofNullable(this.romTitle);
+    }
+
+    @Override
+    public Optional<Path> getSaveDataDirectory() {
+        return this.jemu.getSavesDirectory();
+    }
+
+    @Override
+    public Optional<CartridgeInfo> getExternalCartridgeInfo(int totalRomSize, boolean hasByteTrainer) {
+        return this.nesManager.findDatabaseEntryFromNesFile(this.rom, totalRomSize, hasByteTrainer);
+    }
+
+    @Override
     @Nullable
     protected NESController.Actions getActionForKeyCode(int keyCode) {
         return switch (keyCode) {
@@ -44,21 +59,6 @@ public class NESAdapter extends SystemAdapter implements NESHost {
             case KeyEvent.VK_K -> NESController.Actions.JOY1_B;
             default -> null;
         };
-    }
-
-    @Override
-    public Optional<String> getRomTitle() {
-        return Optional.ofNullable(this.romTitle);
-    }
-
-    @Override
-    public Optional<Path> getSaveDataDirectory() {
-        return this.jemu.getSavesDirectory();
-    }
-
-    @Override
-    public Optional<CartridgeInfo> getExternalCartridgeInfo(int totalRomSize, boolean hasByteTrainer) {
-        return this.nesManager.findDatabaseEntryFromNesFile(this.rom, totalRomSize, hasByteTrainer);
     }
 
     @Override

@@ -8,6 +8,7 @@ import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.GitProperties;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.Emulator;
+import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
@@ -129,11 +130,17 @@ public final class Jemu {
                 }
                 switch (uiEvent) {
                     case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
-                    case CoreSettingChangeEvent coreSettingChangeEvent -> {
-                        this.systemRegistry.onCoreSettingEvent(coreSettingChangeEvent);
+                    case VideoSettingChangedEvent videoSettingChangedEvent -> {
                         SystemAdapter currentSystem = this.currentSystem;
                         if (currentSystem != null) {
-                            currentSystem.onCoreSettingEvent(coreSettingChangeEvent);
+                            currentSystem.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent));
+                        }
+                    }
+                    case CoreSettingChangeEvent coreSettingChangeEvent -> {
+                        this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangeEvent);
+                        SystemAdapter currentSystem = this.currentSystem;
+                        if (currentSystem != null) {
+                            currentSystem.onCoreSettingChangedEvent(coreSettingChangeEvent);
                         }
                     }
                     case null, default -> {}

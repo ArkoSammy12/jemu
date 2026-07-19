@@ -26,7 +26,7 @@ import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
 public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, SystemDisplayComponent, Closeable {
 
     private final VideoGenerator videoGenerator;
-    private final int[] renderBuffer;
+    private final int[] frameBuffer;
 
     private final int displayWidth;
     private final int displayHeight;
@@ -64,7 +64,7 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
         this.lastHeight = this.getHeight();
         this.lastPixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
 
-        this.renderBuffer = new int[displayWidth * displayHeight];
+        this.frameBuffer = new int[displayWidth * displayHeight];
         this.bufferedImage = new BufferedImage(displayWidth, displayHeight, BufferedImage.TYPE_INT_RGB);
 
         this.renderThread = new Thread(this::renderLoop, "%s-render-thread".formatted(MavenProperties.ARTIFACT_ID));
@@ -73,9 +73,9 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
     }
 
     @Override
-    public void outputFrame(int[] rgb) {
+    public void outputFrame(int[] frameBuffer) {
         synchronized (this.renderBufferLock) {
-            System.arraycopy(rgb, 0, this.renderBuffer, 0, rgb.length);
+            System.arraycopy(frameBuffer, 0, this.frameBuffer, 0, this.frameBuffer.length);
         }
     }
 
@@ -137,39 +137,6 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
         }
     }
 
-    private void updateTransformIfNeeded() {
-        int w = this.getWidth();
-        int h = this.getHeight();
-        double pixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
-
-        boolean forceUpdate = this.forceTransformUpdate;
-        this.forceTransformUpdate = false;
-
-        if (!forceUpdate && w == this.lastWidth && h == this.lastHeight && pixelAspectRatio == this.lastPixelAspectRatio) {
-            return;
-        }
-
-        double logicalWidth = (double) this.displayWidth * pixelAspectRatio;
-
-        double scale = this.currentScaleSupplier.getScale(w, h, logicalWidth, this.displayHeight);
-
-        double scaleX = scale * pixelAspectRatio;
-
-        double scaledWidth  = (double) this.displayWidth * scaleX;
-        double scaledHeight = (double) this.displayHeight * scale;
-
-        double offsetX = ((double) w - scaledWidth) / 2.0;
-        double offsetY = ((double) h - scaledHeight) / 2.0;
-
-        this.drawTransform.setToIdentity();
-        this.drawTransform.translate(offsetX, offsetY);
-        this.drawTransform.scale(scaleX, scale);
-
-        this.lastWidth = w;
-        this.lastHeight = h;
-        this.lastPixelAspectRatio = pixelAspectRatio;
-    }
-
     private void renderLoop() {
         while (this.running) {
             try {
@@ -201,8 +168,11 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
             return;
         }
         this.updateTransformIfNeeded();
+        int[] dataBufferInt = ((DataBufferInt) this.bufferedImage.getRaster().getDataBuffer()).getData();
         synchronized (this.renderBufferLock) {
-            System.arraycopy(this.renderBuffer, 0, ((DataBufferInt) this.bufferedImage.getRaster().getDataBuffer()).getData(), 0, this.renderBuffer.length);
+            for (int i = 0; i < this.frameBuffer.length; i++) {
+                dataBufferInt[i] = this.videoGenerator.mapToRGB8(this.frameBuffer[i]);
+            }
         }
         try {
             Graphics2D g = (Graphics2D) bufferStrategy.getDrawGraphics();
@@ -217,6 +187,39 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
         } catch (Exception e) {
             Logger.warn("Failed to render frame to canvas: {}", e.getMessage());
         }
+    }
+
+    private void updateTransformIfNeeded() {
+        int w = this.getWidth();
+        int h = this.getHeight();
+        double pixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
+
+        boolean forceUpdate = this.forceTransformUpdate;
+        this.forceTransformUpdate = false;
+
+        if (!forceUpdate && w == this.lastWidth && h == this.lastHeight && pixelAspectRatio == this.lastPixelAspectRatio) {
+            return;
+        }
+
+        double logicalWidth = (double) this.displayWidth * pixelAspectRatio;
+
+        double scale = this.currentScaleSupplier.getScale(w, h, logicalWidth, this.displayHeight);
+
+        double scaleX = scale * pixelAspectRatio;
+
+        double scaledWidth  = (double) this.displayWidth * scaleX;
+        double scaledHeight = (double) this.displayHeight * scale;
+
+        double offsetX = ((double) w - scaledWidth) / 2.0;
+        double offsetY = ((double) h - scaledHeight) / 2.0;
+
+        this.drawTransform.setToIdentity();
+        this.drawTransform.translate(offsetX, offsetY);
+        this.drawTransform.scale(scaleX, scale);
+
+        this.lastWidth = w;
+        this.lastHeight = h;
+        this.lastPixelAspectRatio = pixelAspectRatio;
     }
 
     @Override

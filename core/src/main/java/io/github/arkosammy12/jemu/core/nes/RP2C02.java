@@ -428,6 +428,11 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
         return 8.0 / 7.0;
     }
 
+    @Override
+    public int mapToRGB8(int frameBufferValue) {
+        return PALETTE_2C02G_COMPACT[frameBufferValue];
+    }
+
     protected int getScanlinesPerFrame() {
         return NTSC_SCANLINES_PER_FRAME;
     }
@@ -962,11 +967,11 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
             paletteByte &= 0x30;
         }
 
-        this.video[(this.scanlineNumber * WIDTH) + (this.dotNumber - 1)] = this.getRGBFromPaletteByte(paletteByte);
+        this.video[(this.scanlineNumber * WIDTH) + (this.dotNumber - 1)] = this.getPaletteIndexFromPaletteByte(paletteByte);
     }
 
-    protected int getRGBFromPaletteByte(int paletteByte) {
-        return PALETTE_2C02G_COMPACT[(this.getEmphasisBits() << 6) | (paletteByte & 0b111111)];
+    protected int getPaletteIndexFromPaletteByte(int paletteByte) {
+        return (this.getEmphasisBits() << 6) | (paletteByte & 0b111111);
     }
 
     private int shiftBackgroundRegister(int select) {

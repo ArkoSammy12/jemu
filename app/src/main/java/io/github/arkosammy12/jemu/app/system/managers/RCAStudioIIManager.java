@@ -16,16 +16,6 @@ public class RCAStudioIIManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
-        return new RCAStudioIIAdapter(this.jemu, this);
-    }
-
-    @Override
-    public boolean manages(SystemAdapter systemAdapter) {
-        return systemAdapter instanceof RCAStudioIIAdapter;
-    }
-
-    @Override
     public String getName() {
         return "RCA Studio II";
     }
@@ -38,6 +28,16 @@ public class RCAStudioIIManager extends SystemManager {
     @Override
     public Collection<String> getFileExtensions() {
         return List.of("st2");
+    }
+
+    @Override
+    public SystemAdapter createSystem() throws LineUnavailableException {
+        return new RCAStudioIIAdapter(this.jemu, this);
+    }
+
+    @Override
+    public boolean manages(SystemAdapter systemAdapter) {
+        return systemAdapter instanceof RCAStudioIIAdapter;
     }
 
 }

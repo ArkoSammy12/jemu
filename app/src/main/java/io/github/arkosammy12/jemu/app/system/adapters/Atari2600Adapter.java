@@ -43,17 +43,17 @@ public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHo
 
     @Override
     public Optional<Atari2600Emulator.TVFormat> getTVFormatOverride() {
-        return this.atari2600Manager.getSystemSettings().getTVFormatOverride().getHostTVFormat();
+        return this.atari2600Manager.getEmulationSettings().getTVFormatOverride().getHostTVFormat();
     }
 
     @Override
     public Optional<Atari2600Cartridge.Type> getCartridgeTypeOverride() {
-        return this.atari2600Manager.getSystemSettings().getCartridgeTypeOverride().getHostCartridgeType();
+        return this.atari2600Manager.getEmulationSettings().getCartridgeTypeOverride().getHostCartridgeType();
     }
 
     @Override
     public boolean getColorSwitch() {
-        return switch (this.atari2600Manager.getSystemSettings().getTVType()) {
+        return switch (this.atari2600Manager.getEmulationSettings().getTVType()) {
             case COLOR -> true;
             case BLACK_AND_WHITE -> false;
         };
@@ -61,7 +61,7 @@ public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHo
 
     @Override
     public boolean getLeftDifficulty() {
-        return switch (this.atari2600Manager.getSystemSettings().getLeftDifficulty()) {
+        return switch (this.atari2600Manager.getEmulationSettings().getLeftDifficulty()) {
             case ADVANCED -> true;
             case BEGINNER -> false;
         };
@@ -69,7 +69,7 @@ public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHo
 
     @Override
     public boolean getRightDifficulty() {
-        return switch (this.atari2600Manager.getSystemSettings().getRightDifficulty()) {
+        return switch (this.atari2600Manager.getEmulationSettings().getRightDifficulty()) {
             case ADVANCED -> true;
             case BEGINNER -> false;
         };

@@ -1,13 +1,15 @@
 package io.github.arkosammy12.jemu.app.system.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
+import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
+import io.github.arkosammy12.jemu.app.system.managers.GameBoyManager;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
 import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -21,11 +23,14 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     private static final int HEADER_TITLE_START = 0x0134;
     private static final int HEADER_TITLE_END = 0x0143;
 
+    private final GameBoyManager gameBoyManager;
+
     private String romTitle;
     private final Model model;
 
-    public GameBoyAdapter(Jemu jemu, Model model, SystemManager systemManager) throws LineUnavailableException {
+    public GameBoyAdapter(Jemu jemu, Model model, GameBoyManager systemManager) throws LineUnavailableException {
         this.model = model;
+        this.gameBoyManager = systemManager;
         super(jemu, systemManager);
     }
 
@@ -45,7 +50,6 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
 
     @Override
     protected Emulator createEmulator() {
-
         String title = null;
         Optional<byte[]> optionalROM = this.getRom();
         if (optionalROM.isPresent()) {
@@ -75,10 +79,24 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
             this.romTitle = title;
         }
 
-        return switch (this.model) {
+        GameBoyEmulator emulator = switch (this.model) {
             case CGB -> new GameBoyColorEmulator(this);
             case DMG -> new GameBoyEmulator(this);
         };
+        emulator.setDMGPalette(this.gameBoyManager.getEmulationSettings().getDMGPalette().mapToHost());
+
+        return emulator;
+    }
+
+    @Override
+    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
+        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
+        if (coreSettingChangeEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoyManager.DMGPalette dmgPalette)) {
+            if (this.emulator instanceof GameBoyEmulator gameBoyEmulator) {
+                gameBoyEmulator.setDMGPalette(dmgPalette.mapToHost());
+                this.getVideoDriver().ifPresent(DefaultSystemVideoDriver::requestFrame);
+            }
+        }
     }
 
     @Override

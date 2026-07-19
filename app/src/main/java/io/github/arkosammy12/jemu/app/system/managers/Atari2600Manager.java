@@ -42,29 +42,6 @@ public class Atari2600Manager extends SystemManager {
         this.databaseMap = Map.copyOf(map);
     }
 
-    public SystemAdapter createSystem() throws LineUnavailableException {
-        return new Atari2600Adapter(this.jemu, this);
-    }
-
-    @Override
-    public boolean manages(SystemAdapter systemAdapter) {
-        return systemAdapter instanceof Atari2600Adapter;
-    }
-
-    @Override
-    public SystemSettingsBuilder buildSystemSettings(SystemSettingsBuilder systemSettingsBuilder) {
-        return super.buildSystemSettings(systemSettingsBuilder)
-                .addSection(this.getName(), section -> {
-                    section.addEnumSetting("TV Type", this.getSystemSettings().getTVType(), TVTypeSettingChangedEvent::new);
-                    section.addEnumSetting("Left Difficulty", this.getSystemSettings().getLeftDifficulty(), playerDifficulty -> new PlayerDifficultyChangedEvent(PlayerSide.LEFT, playerDifficulty));
-                    section.addEnumSetting("Right Difficulty", this.getSystemSettings().getRightDifficulty(), playerDifficulty -> new PlayerDifficultyChangedEvent(PlayerSide.RIGHT, playerDifficulty));
-                    section.addSection("Overrides", overridesSection -> {
-                        overridesSection.addEnumSetting("TV Format", this.getSystemSettings().getTVFormatOverride(), TVFormatOverrideSettingChangedEvent::new);
-                        overridesSection.addEnumSetting("Cartridge Type", this.getSystemSettings().getCartridgeTypeOverride(), CartridgeTypeOverrideSettingChangedEvent::new);
-                    });
-        });
-    }
-
     @Override
     public String getName() {
         return "Atari 2600";
@@ -80,7 +57,46 @@ public class Atari2600Manager extends SystemManager {
         return List.of("a26");
     }
 
-    public Atari2600Manager.SystemSettings getSystemSettings() {
+    public SystemAdapter createSystem() throws LineUnavailableException {
+        return new Atari2600Adapter(this.jemu, this);
+    }
+
+    @Override
+    public boolean manages(SystemAdapter systemAdapter) {
+        return systemAdapter instanceof Atari2600Adapter;
+    }
+
+    @Override
+    public SystemSettingsBuilder buildSystemSettings(SystemSettingsBuilder systemSettingsBuilder) {
+        return super.buildSystemSettings(systemSettingsBuilder)
+                .addSection(this.getName(), section -> {
+                    section.addEnumSetting("TV Type", this.getEmulationSettings().getTVType(), TVTypeSettingChangedEvent::new);
+                    section.addEnumSetting("Left Difficulty", this.getEmulationSettings().getLeftDifficulty(), playerDifficulty -> new PlayerDifficultyChangedEvent(PlayerSide.LEFT, playerDifficulty));
+                    section.addEnumSetting("Right Difficulty", this.getEmulationSettings().getRightDifficulty(), playerDifficulty -> new PlayerDifficultyChangedEvent(PlayerSide.RIGHT, playerDifficulty));
+                    section.addSection("Overrides", overridesSection -> {
+                        overridesSection.addEnumSetting("TV Format", this.getEmulationSettings().getTVFormatOverride(), TVFormatOverrideSettingChangedEvent::new);
+                        overridesSection.addEnumSetting("Cartridge Type", this.getEmulationSettings().getCartridgeTypeOverride(), CartridgeTypeOverrideSettingChangedEvent::new);
+                    });
+        });
+    }
+
+    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
+        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
+        switch (coreSettingChangeEvent) {
+            case TVTypeSettingChangedEvent(TVType tvType) -> this.getEmulationSettings().setTVType(tvType);
+            case PlayerDifficultyChangedEvent(PlayerSide playerSide, PlayerDifficulty playerDifficulty) -> {
+                switch (playerSide) {
+                    case LEFT -> this.getEmulationSettings().setLeftDifficulty(playerDifficulty);
+                    case RIGHT -> this.getEmulationSettings().setRightDifficulty(playerDifficulty);
+                }
+            }
+            case TVFormatOverrideSettingChangedEvent(TVFormatOverride tvFormatOverride) -> this.getEmulationSettings().setTVFormatOverride(tvFormatOverride);
+            case CartridgeTypeOverrideSettingChangedEvent(CartridgeTypeOverride cartridgeTypeOverride) -> this.getEmulationSettings().setCartridgeTypeOverride(cartridgeTypeOverride);
+            default -> {}
+        }
+    }
+
+    public EmulationSettings getEmulationSettings() {
         return this.systemRegistry.getEmulationSettings().getAtari2600Settings();
     }
 
@@ -89,22 +105,6 @@ public class Atari2600Manager extends SystemManager {
             return Optional.ofNullable(this.databaseMap.get(SystemManager.getSha1Hash(rom)));
         } catch (Exception e) {
             return Optional.empty();
-        }
-    }
-
-    public void onCoreSettingEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
-        super.onCoreSettingEvent(coreSettingChangeEvent);
-        switch (coreSettingChangeEvent) {
-            case TVTypeSettingChangedEvent(TVType tvType) -> this.getSystemSettings().setTVType(tvType);
-            case PlayerDifficultyChangedEvent(PlayerSide playerSide, PlayerDifficulty playerDifficulty) -> {
-                switch (playerSide) {
-                    case LEFT -> this.getSystemSettings().setLeftDifficulty(playerDifficulty);
-                    case RIGHT -> this.getSystemSettings().setRightDifficulty(playerDifficulty);
-                }
-            }
-            case TVFormatOverrideSettingChangedEvent(TVFormatOverride tvFormatOverride) -> this.getSystemSettings().setTVFormatOverride(tvFormatOverride);
-            case CartridgeTypeOverrideSettingChangedEvent(CartridgeTypeOverride cartridgeTypeOverride) -> this.getSystemSettings().setCartridgeTypeOverride(cartridgeTypeOverride);
-            default -> {}
         }
     }
 
@@ -347,7 +347,7 @@ public class Atari2600Manager extends SystemManager {
 
     }
 
-    public static class SystemSettings {
+    public static class EmulationSettings {
 
         @SerializedName("tv_type")
         private volatile TVType tvType = TVType.COLOR;

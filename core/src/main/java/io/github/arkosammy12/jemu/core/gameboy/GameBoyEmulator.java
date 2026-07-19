@@ -109,6 +109,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return this.serialController;
     }
 
+    public void setDMGPalette(DMGPPU.Palette palette) {
+        this.ppu.setPalette(palette);
+    }
+
     @Override
     public void executeFrame() {
         for (int i = 0; i < M_CYCLES_PER_FRAME; i++) {

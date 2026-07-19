@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.hardware.SM83;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.util.ShiftRegister;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Arrays;
 
@@ -34,7 +35,16 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
             0x9BBC0F,
             0x8BAC0F,
             0x306230,
-            0x0F380F
+            0x0F380F,
+            0x9BBC0F // LCD off color
+    };
+
+    private static final int[] GREYSCALE_PATTERN = {
+            0xFFFFFF,
+            0xC0C0C0,
+            0x404040,
+            0x000000,
+            0xFFFFFF // LCD off color
     };
 
     protected final E emulator;
@@ -72,6 +82,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
     // TODO: Implement the PPU behavior when the CPU is in STOP mode for the DMG and CGB
     protected final int[] lcd;
+    private Palette palette = Palette.DMG_GREEN;
 
     protected Mode currentMode = Mode.HBLANK_0;
     private int dotNumber;
@@ -123,7 +134,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
     public DMGPPU(E emulator) {
         this.emulator = emulator;
         this.lcd = new int[this.getImageWidth() * this.getImageHeight()];
-        Arrays.fill(this.lcd, this.getLCDOffColor());
+        Arrays.fill(this.lcd, this.getLCDOffValue());
         Arrays.fill(this.spriteBuffer, -1);
     }
 
@@ -137,8 +148,17 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
         return HEIGHT;
     }
 
-    protected int getLCDOffColor() {
-        return 0x9BBC0F;
+    @Override
+    public int mapToRGB8(int frameBufferValue) {
+        return this.palette.rgb[frameBufferValue];
+    }
+
+    public void setPalette(@NotNull Palette palette) {
+        this.palette = palette;
+    }
+
+    protected int getLCDOffValue() {
+        return 4;
     }
 
     @Override
@@ -270,7 +290,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
         this.pendingVisibleMode = -1;
         this.armOAMBugRead = false;
         this.armOAMBugWrite = false;
-        Arrays.fill(this.lcd, this.getLCDOffColor());
+        Arrays.fill(this.lcd, this.getLCDOffValue());
         this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.lcd));
     }
 
@@ -837,8 +857,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
         if (!this.getBackgroundAndWindowEnable()) {
             bgPixel = 0;
         }
-        int bgPaletteIndex = (this.backgroundPalette >> (bgPixel * 2)) & 0b11;
-        int finalPixel = DMG_PALETTE[bgPaletteIndex];
+        int finalPixel = (this.backgroundPalette >> (bgPixel * 2)) & 0b11;
 
         int bgDiscardTarget = this.scrollX % 8;
         if (!this.isRenderingWindow() && this.discardedPixels < bgDiscardTarget) {
@@ -852,8 +871,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
             objColorNumber = 0;
         }
         if (objColorNumber != 0 && !(getDmgPriorityForObjPixelEntry(objPixel) && bgPixel != 0)) {
-            int objPaletteIndex = ((getDmgPaletteForObjPixelEntry(objPixel) ? this.objectPalette1 : this.objectPalette0) >>> (objColorNumber * 2)) & 0b11;
-            finalPixel = DMG_PALETTE[objPaletteIndex];
+            finalPixel = ((getDmgPaletteForObjPixelEntry(objPixel) ? this.objectPalette1 : this.objectPalette0) >>> (objColorNumber * 2)) & 0b11;
         }
 
         // TODO: Emulate color shown in the LCD during CPU STOP mode depending on which mode the STOP mode lands on. Same for CGB
@@ -1062,6 +1080,30 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
         public boolean matchesValue(int value) {
             return value == this.value;
+        }
+
+    }
+
+    public enum Palette {
+        DMG_GREEN(new int[] {
+                0x9BBC0F,
+                0x8BAC0F,
+                0x306230,
+                0x0F380F,
+                0x9BBC0F // LCD off color
+        }),
+        GREYSCALE(new int[] {
+                0xFFFFFF,
+                0xC0C0C0,
+                0x404040,
+                0x000000,
+                0xFFFFFF // LCD off color
+        });
+
+        private final int[] rgb;
+
+        Palette(int[] rgb) {
+            this.rgb = rgb;
         }
 
     }

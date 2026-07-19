@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.events.core;
 
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.Event;
 
-public interface VideoSettingChangedEvent extends CoreSettingChangeEvent {
+public interface VideoSettingChangedEvent extends Event {
 }

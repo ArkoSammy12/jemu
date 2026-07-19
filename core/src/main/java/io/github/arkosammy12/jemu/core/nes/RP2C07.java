@@ -156,6 +156,11 @@ public class RP2C07<E extends NESEmulator> extends RP2C02<E> {
     }
 
     @Override
+    public int mapToRGB8(int frameBufferValue) {
+        return PALETTE_2C07_COMPACT[frameBufferValue];
+    }
+
+    @Override
     protected int getScanlinesPerFrame() {
         return PAL_SCANLINES_PER_FRAME;
     }
@@ -181,15 +186,15 @@ public class RP2C07<E extends NESEmulator> extends RP2C02<E> {
     }
 
     @Override
-    protected int getRGBFromPaletteByte(int paletteByte) {
+    protected int getPaletteIndexFromPaletteByte(int paletteByte) {
         if (this.scanlineNumber == 0) {
-            return PALETTE_2C07_COMPACT[0xF];
+            return 0xF;
         }
         int column = this.dotNumber - 1;
         if (column <= 1 || column >= 254) {
-            return PALETTE_2C07_COMPACT[0xF];
+            return 0xF;
         }
-        return PALETTE_2C07_COMPACT[(this.getEmphasisBits() << 6) | (paletteByte & 0b111111)];
+        return (this.getEmphasisBits() << 6) | (paletteByte & 0b111111);
     }
 
 }

@@ -20,16 +20,6 @@ public class CosmacVIPManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
-        return new CosmacVIPAdapter(jemu, this.chip8Interpreter, this);
-    }
-
-    @Override
-    public boolean manages(SystemAdapter systemAdapter) {
-        return systemAdapter instanceof CosmacVIPAdapter cosmacVIPAdapter && this.chip8Interpreter == cosmacVIPAdapter.getChip8Interpreter();
-    }
-
-    @Override
     public String getName() {
         return switch (this.chip8Interpreter) {
             case NONE -> "COSMACV-VIP";
@@ -54,6 +44,16 @@ public class CosmacVIPManager extends SystemManager {
             case CHIP_8 -> List.of("ch8", "hc8");
             case CHIP_8X -> List.of("ch8", "c8x");
         };
+    }
+
+    @Override
+    public SystemAdapter createSystem() throws LineUnavailableException {
+        return new CosmacVIPAdapter(jemu, this.chip8Interpreter, this);
+    }
+
+    @Override
+    public boolean manages(SystemAdapter systemAdapter) {
+        return systemAdapter instanceof CosmacVIPAdapter cosmacVIPAdapter && this.chip8Interpreter == cosmacVIPAdapter.getChip8Interpreter();
     }
 
 }

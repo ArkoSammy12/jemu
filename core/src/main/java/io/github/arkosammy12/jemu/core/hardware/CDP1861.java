@@ -73,6 +73,11 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
         return 4.0;
     }
 
+    @Override
+    public int mapToRGB8(int frameBufferValue) {
+        return frameBufferValue;
+    }
+
     public boolean getINT() {
         return this.interrupting;
     }

@@ -54,16 +54,6 @@ public class NESManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
-        return new NESAdapter(this.jemu, this);
-    }
-
-    @Override
-    public boolean manages(SystemAdapter systemAdapter) {
-        return systemAdapter instanceof NESAdapter;
-    }
-
-    @Override
     public String getName() {
         return "Nintendo Entertainment System";
     }
@@ -78,9 +68,18 @@ public class NESManager extends SystemManager {
         return List.of("nes");
     }
 
+    @Override
+    public SystemAdapter createSystem() throws LineUnavailableException {
+        return new NESAdapter(this.jemu, this);
+    }
+
+    @Override
+    public boolean manages(SystemAdapter systemAdapter) {
+        return systemAdapter instanceof NESAdapter;
+    }
+
     public Optional<CartridgeInfo> findDatabaseEntryFromNesFile(byte[] nesFile, int totalRomSize, boolean hasByteTrainer) {
         try {
-
             if (totalRomSize < 0) {
                 throw new IllegalArgumentException("Total rom size cannot be negative!");
             }
