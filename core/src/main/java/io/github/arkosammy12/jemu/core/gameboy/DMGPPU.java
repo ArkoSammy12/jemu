@@ -153,7 +153,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
         return this.palette.rgb[frameBufferValue];
     }
 
-    public void setPalette(@NotNull Palette palette) {
+    public void setDMGPalette(@NotNull Palette palette) {
         this.palette = palette;
     }
 
@@ -1098,6 +1098,13 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
                 0x404040,
                 0x000000,
                 0xFFFFFF // LCD off color
+        }),
+        SAMEBOY(new int[] {
+                0xC6DE8C,
+                0x84A563,
+                0x396139,
+                0x081810,
+                0xD2E6A6 // LCD off color
         });
 
         private final int[] rgb;

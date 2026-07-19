@@ -110,7 +110,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     public void setDMGPalette(DMGPPU.Palette palette) {
-        this.ppu.setPalette(palette);
+        this.ppu.setDMGPalette(palette);
     }
 
     @Override

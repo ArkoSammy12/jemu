@@ -89,6 +89,9 @@ public class GameBoyManager extends SystemManager {
 
         @SerializedName("greyscale")
         GREYSCALE("Greyscale", DMGPPU.Palette.GREYSCALE),
+
+        @SerializedName("sameboy")
+        SAMEBOY("SameBoy", DMGPPU.Palette.SAMEBOY)
         ;
 
         private final String displayName;
