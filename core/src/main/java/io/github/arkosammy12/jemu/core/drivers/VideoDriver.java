@@ -2,6 +2,6 @@ package io.github.arkosammy12.jemu.core.drivers;
 
 public interface VideoDriver {
 
-    void outputFrame(int[] rgb);
+    void outputFrame(int[] frameBuffer);
 
 }
