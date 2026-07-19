@@ -103,7 +103,7 @@ public class SystemViewport {
         });
     }
 
-    public void setSystemDisplay(@Nullable Supplier<@Nullable SystemDisplayComponent> displaySupplier) {
+    public void setSystemDisplay(@Nullable Supplier<? extends @Nullable SystemDisplayComponent> displaySupplier) {
         SwingUtilities.invokeLater(() -> {
             if (this.systemDisplayComponent != null) {
                 this.viewportPanel.remove(this.systemDisplayComponent.getComponent());
