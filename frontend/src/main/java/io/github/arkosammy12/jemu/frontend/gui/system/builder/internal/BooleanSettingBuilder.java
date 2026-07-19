@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.gui.system.builder.internal;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.system.internal.settings.BooleanSystemSetting;
-import io.github.arkosammy12.jemu.frontend.gui.system.internal.settings.SystemSettingElement;
+import io.github.arkosammy12.jemu.frontend.gui.system.internal.settings.BooleanEmulationSetting;
+import io.github.arkosammy12.jemu.frontend.gui.system.internal.settings.EmulationSettingElement;
 
 import java.util.function.Function;
 
@@ -18,7 +18,7 @@ class BooleanSettingBuilder extends SystemSettingElementBuilder {
     }
 
     @Override
-    protected SystemSettingElement build() {
-        return new BooleanSystemSetting(this.name, this.startingValue, this.eventSupplier);
+    protected EmulationSettingElement build() {
+        return new BooleanEmulationSetting(this.name, this.startingValue, this.eventSupplier);
     }
 }

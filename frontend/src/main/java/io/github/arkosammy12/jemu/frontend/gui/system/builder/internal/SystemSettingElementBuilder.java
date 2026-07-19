@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.gui.system.builder.internal;
 
-import io.github.arkosammy12.jemu.frontend.gui.system.internal.settings.SystemSettingElement;
+import io.github.arkosammy12.jemu.frontend.gui.system.internal.settings.EmulationSettingElement;
 
 abstract class SystemSettingElementBuilder {
 
@@ -10,6 +10,6 @@ abstract class SystemSettingElementBuilder {
         this.name = name;
     }
 
-    protected abstract SystemSettingElement build();
+    protected abstract EmulationSettingElement build();
 
 }

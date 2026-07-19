@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.system.builder.SystemSettingsBuilder;
+import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
@@ -26,8 +26,8 @@ public abstract class SystemManager implements SystemDescriptor {
 
     public abstract boolean manages(SystemAdapter systemAdapter);
 
-    public SystemSettingsBuilder buildSystemSettings(SystemSettingsBuilder systemSettingsBuilder) {
-        return systemSettingsBuilder;
+    public EmulationSettingsBuilder buildSystemSettings(EmulationSettingsBuilder emulationSettingsBuilder) {
+        return emulationSettingsBuilder;
     }
 
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {

@@ -9,7 +9,7 @@ import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemCatalog;
-import io.github.arkosammy12.jemu.frontend.gui.system.builder.SystemSettingsBuilder;
+import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
 import picocli.CommandLine;
@@ -44,8 +44,8 @@ public final class SystemRegistry implements SystemCatalog {
     }
 
     @Override
-    public void buildSystemSettings(SystemSettingsBuilder systemSettingsBuilder) {
-        this.getSystemDescriptors().forEach(systemManager -> systemManager.buildSystemSettings(systemSettingsBuilder));
+    public void buildSystemSettings(EmulationSettingsBuilder emulationSettingsBuilder) {
+        this.getSystemDescriptors().forEach(systemManager -> systemManager.buildSystemSettings(emulationSettingsBuilder));
     }
 
     @NotNull

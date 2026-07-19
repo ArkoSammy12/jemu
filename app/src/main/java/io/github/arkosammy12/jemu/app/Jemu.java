@@ -124,26 +124,25 @@ public final class Jemu {
     private void eventListenerLoop() {
         while (this.running) {
             try {
-                Event uiEvent = this.mainWindow.waitEvent();
+                Event event = this.mainWindow.waitEvent();
                 if (!this.running) {
                     break;
                 }
-                switch (uiEvent) {
-                    case AudioSettingChangeEvent audioSettingChangeEvent -> this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
-                    case VideoSettingChangedEvent videoSettingChangedEvent -> {
-                        SystemAdapter currentSystem = this.currentSystem;
-                        if (currentSystem != null) {
-                            currentSystem.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent));
-                        }
+                if (event instanceof AudioSettingChangeEvent audioSettingChangeEvent) {
+                    this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
+                }
+                if (event instanceof VideoSettingChangedEvent videoSettingChangedEvent) {
+                    SystemAdapter currentSystem = this.currentSystem;
+                    if (currentSystem != null) {
+                        currentSystem.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent));
                     }
-                    case CoreSettingChangeEvent coreSettingChangeEvent -> {
-                        this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangeEvent);
-                        SystemAdapter currentSystem = this.currentSystem;
-                        if (currentSystem != null) {
-                            currentSystem.onCoreSettingChangedEvent(coreSettingChangeEvent);
-                        }
+                }
+                if (event instanceof CoreSettingChangeEvent coreSettingChangeEvent) {
+                    this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangeEvent);
+                    SystemAdapter currentSystem = this.currentSystem;
+                    if (currentSystem != null) {
+                        currentSystem.onCoreSettingChangedEvent(coreSettingChangeEvent);
                     }
-                    case null, default -> {}
                 }
             } catch (InterruptedException _) {
 
@@ -455,7 +454,7 @@ public final class Jemu {
         if (thread != null && !Thread.currentThread().equals(thread) && thread.isAlive()) {
             try {
                 thread.join(timeout);
-            } catch (InterruptedException e) {}
+            } catch (InterruptedException _) {}
         }
     }
 

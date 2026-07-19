@@ -103,15 +103,20 @@ public class SystemViewport {
         });
     }
 
-    public void setSystemDisplay(@Nullable Supplier<@NotNull SystemDisplayComponent> displaySupplier) {
+    public void setSystemDisplay(@Nullable Supplier<@Nullable SystemDisplayComponent> displaySupplier) {
         SwingUtilities.invokeLater(() -> {
             if (this.systemDisplayComponent != null) {
                 this.viewportPanel.remove(this.systemDisplayComponent.getComponent());
                 this.systemDisplayComponent = null;
             }
 
+            SystemDisplayComponent newSystemDisplayComponent = null;
             if (displaySupplier != null) {
-                this.systemDisplayComponent = displaySupplier.get();
+                newSystemDisplayComponent = displaySupplier.get();
+            }
+
+            if (newSystemDisplayComponent != null) {
+                this.systemDisplayComponent = newSystemDisplayComponent;
                 Component component = this.systemDisplayComponent.getComponent();
                 component.setFocusable(true);
                 component.setBackground(Color.BLACK);

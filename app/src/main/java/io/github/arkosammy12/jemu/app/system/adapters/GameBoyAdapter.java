@@ -1,7 +1,6 @@
 package io.github.arkosammy12.jemu.app.system.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
 import io.github.arkosammy12.jemu.app.system.managers.GameBoyManager;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
@@ -94,7 +93,6 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
         if (coreSettingChangeEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoyManager.DMGPalette dmgPalette)) {
             if (this.emulator instanceof GameBoyEmulator gameBoyEmulator) {
                 gameBoyEmulator.setDMGPalette(dmgPalette.mapToHost());
-                this.getVideoDriver().ifPresent(DefaultSystemVideoDriver::requestFrame);
             }
         }
     }

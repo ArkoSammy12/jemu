@@ -10,7 +10,7 @@ import io.github.arkosammy12.jemu.core.atari2600.Atari2600Cartridge;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600SystemHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
-import io.github.arkosammy12.jemu.frontend.gui.system.builder.SystemSettingsBuilder;
+import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
 import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
@@ -67,8 +67,8 @@ public class Atari2600Manager extends SystemManager {
     }
 
     @Override
-    public SystemSettingsBuilder buildSystemSettings(SystemSettingsBuilder systemSettingsBuilder) {
-        return super.buildSystemSettings(systemSettingsBuilder)
+    public EmulationSettingsBuilder buildSystemSettings(EmulationSettingsBuilder emulationSettingsBuilder) {
+        return super.buildSystemSettings(emulationSettingsBuilder)
                 .addSection(this.getName(), section -> {
                     section.addEnumSetting("TV Type", this.getEmulationSettings().getTVType(), TVTypeSettingChangedEvent::new);
                     section.addEnumSetting("Left Difficulty", this.getEmulationSettings().getLeftDifficulty(), playerDifficulty -> new PlayerDifficultyChangedEvent(PlayerSide.LEFT, playerDifficulty));

@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.app.drivers;
 
 import io.github.arkosammy12.jemu.app.Jemu;
+import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
@@ -118,6 +119,9 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
                 this.requestFrame(true);
             }
             case null, default -> {}
+        }
+        if (videoSettingChangedEvent instanceof FrameRequesterVideoEvent frameRequesterVideoEvent) {
+            this.requestFrame(frameRequesterVideoEvent.invalidatesDisplay());
         }
     }
 

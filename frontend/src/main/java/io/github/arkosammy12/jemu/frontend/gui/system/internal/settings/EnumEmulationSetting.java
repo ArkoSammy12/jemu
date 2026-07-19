@@ -6,9 +6,9 @@ import org.jetbrains.annotations.NotNull;
 
 import java.util.function.Function;
 
-public final class EnumSystemSetting<E extends Enum<E> & DisplayNamerProvider> extends SystemSetting<E> {
+public final class EnumEmulationSetting<E extends Enum<E> & DisplayNamerProvider> extends EmulationSetting<E> {
 
-    public EnumSystemSetting(@NotNull String name, @NotNull E startingValue, @NotNull Function<? super E, ? extends Event> eventSupplier) {
+    public EnumEmulationSetting(@NotNull String name, @NotNull E startingValue, @NotNull Function<? super E, ? extends Event> eventSupplier) {
         super(name, startingValue, eventSupplier);
     }
 

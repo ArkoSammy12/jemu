@@ -11,6 +11,7 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
+import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
@@ -36,11 +37,14 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     protected byte[] rom;
     private Path path;
 
-    protected Emulator emulator;
-    private DefaultAudioRendererDriver audioDriver;
+    @Nullable
+    protected volatile Emulator emulator;
 
     @Nullable
-    private DefaultSystemVideoDriver videoDriver;
+    private volatile DefaultAudioRendererDriver audioDriver;
+
+    @Nullable
+    private volatile DefaultSystemVideoDriver videoDriver;
 
     public SystemAdapter(Jemu jemu, SystemManager systemManager) throws LineUnavailableException {
         this.jemu = jemu;
@@ -73,7 +77,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
     @Override
     public Optional<? extends DefaultAudioRendererDriver> getAudioDriver() {
-        return Optional.of(this.audioDriver);
+        return Optional.ofNullable(this.audioDriver);
     }
 
     public void powerCycle(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
@@ -85,19 +89,22 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     public void onFrame() {
-        if (this.videoDriver != null) {
-            this.videoDriver.requestFrame();
+        DefaultSystemVideoDriver videoDriver = this.videoDriver;
+        if (videoDriver != null) {
+            videoDriver.requestFrame();
         }
-        if (this.audioDriver != null) {
-            this.audioDriver.onFrame();
+
+        DefaultAudioRendererDriver audioDriver = this.audioDriver;
+        if (audioDriver != null) {
+            audioDriver.onFrame();
         }
     }
 
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
         switch (coreSettingChangeEvent) {
             case SpeedModeSettingChangedEvent speedModeSettingChangedEvent -> {
-                this.audioDriver.clearAudioBuffer();
-                this.jemu.getAudioEngine().setFramerate(speedModeSettingChangedEvent.getSpeedMode().scaleFramerate(emulator.getFramerate()));
+                this.getAudioDriver().ifPresent(DefaultAudioRendererDriver::clearAudioBuffer);
+                this.getEmulator().ifPresent(emulator -> speedModeSettingChangedEvent.getSpeedMode().scaleFramerate(emulator.getFramerate()));
             }
             case VideoSettingChangedEvent videoSettingChangedEvent -> {
                 DefaultSystemVideoDriver videoDriver = this.videoDriver;
@@ -130,14 +137,24 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             this.emulator = this.createEmulator();
         }
 
-        if (this.emulator != null) {
-            if (this.audioDriver != null) {
-                this.audioDriver.close();
-            }
-            this.audioDriver = this.emulator.getAudioGenerator().isStereo() ? new StereoAudioRendererDriver(this.jemu, this.emulator) : new MonoAudioRendererDriver(jemu, this.emulator);
+        Emulator emulator = this.emulator;
+        if (emulator != null) {
+            this.getAudioDriver().ifPresent(DefaultAudioRendererDriver::close);
+            this.audioDriver = emulator.getAudioGenerator().isStereo() ? new StereoAudioRendererDriver(jemu, emulator) : new MonoAudioRendererDriver(jemu, emulator);
         }
 
-        KeyListener keyListener = new KeyAdapter() {
+        this.jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
+            this.getVideoDriver().ifPresent(DefaultSystemVideoDriver::close);
+            this.videoDriver = null;
+
+            Emulator emu = this.emulator;
+            if (emu != null) {
+                this.videoDriver = new DefaultSystemVideoDriver(this.jemu, emu.getVideoGenerator());
+            }
+            return this.videoDriver;
+        });
+
+        this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(new KeyAdapter() {
 
             @Override
             public void keyPressed(KeyEvent e) {
@@ -157,29 +174,24 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
                 }
             }
 
-        };
-
-        this.jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
-            if (this.videoDriver != null) {
-                this.videoDriver.close();
-            }
-            this.videoDriver = new DefaultSystemVideoDriver(this.jemu, this.emulator.getVideoGenerator());
-            return this.videoDriver;
         });
-        this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(keyListener);
     }
 
     @Override
     public void close() {
-        if (this.videoDriver != null) {
-            this.videoDriver.close();
+        DefaultSystemVideoDriver videoDriver = this.videoDriver;
+        if (videoDriver != null) {
+            videoDriver.close();
         }
-        if (this.audioDriver != null) {
-            this.audioDriver.close();
+
+        DefaultAudioRendererDriver audioDriver = this.audioDriver;
+        if (audioDriver != null) {
+            audioDriver.close();
         }
         try {
-            if (this.emulator != null) {
-                this.emulator.close();
+            Emulator emulator = this.emulator;
+            if (emulator != null) {
+                emulator.close();
             }
         } catch (Exception e) {
             Logger.error("Error attempting to release %s emulator resources: {}".formatted(this.getSystemName()), e);
