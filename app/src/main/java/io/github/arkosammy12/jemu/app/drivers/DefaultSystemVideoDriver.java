@@ -34,6 +34,7 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
 
     private final BufferedImage bufferedImage;
     private final AffineTransform drawTransform = new AffineTransform();
+    private final AffineTransform rotationTransform = new AffineTransform();
     private final ScaleSupplier scaleSupplier;
 
     private final Thread renderThread;
@@ -48,8 +49,9 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
 
     private int lastWidth;
     private int lastHeight;
-
     private double lastPixelAspectRatio;
+    private VideoGenerator.DisplayOrientation lastDisplayOrientation = VideoGenerator.DisplayOrientation.DEG_0;
+
     private volatile boolean forceTransformUpdate = false;
 
     public DefaultSystemVideoDriver(Jemu jemu, VideoGenerator videoGenerator) {
@@ -64,9 +66,12 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
         this.lastWidth = this.getWidth();
         this.lastHeight = this.getHeight();
         this.lastPixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
+        this.lastDisplayOrientation = this.videoGenerator.getDisplayOrientation();
 
         this.frameBuffer = new int[displayWidth * displayHeight];
         this.bufferedImage = new BufferedImage(displayWidth, displayHeight, BufferedImage.TYPE_INT_RGB);
+
+        this.updateRotationTransform(this.videoGenerator.getDisplayOrientation());
 
         this.renderThread = new Thread(this::renderLoop, "%s-render-thread".formatted(MavenProperties.ARTIFACT_ID));
         this.renderThread.setDaemon(true);
@@ -101,6 +106,9 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
     }
 
     private void requestFrame(boolean forceTransformUpdate) {
+        if (!this.running) {
+            return;
+        }
         this.forceTransformUpdate = forceTransformUpdate;
         synchronized (this.renderLock) {
             this.frameRequested = true;
@@ -171,7 +179,7 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
             }
             return;
         }
-        this.updateTransformIfNeeded();
+        this.updateTransformsIfNeeded();
         int[] dataBufferInt = ((DataBufferInt) this.bufferedImage.getRaster().getDataBuffer()).getData();
         synchronized (this.renderBufferLock) {
             for (int i = 0; i < this.frameBuffer.length; i++) {
@@ -193,37 +201,63 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
         }
     }
 
-    private void updateTransformIfNeeded() {
+    private void updateTransformsIfNeeded() {
         int w = this.getWidth();
         int h = this.getHeight();
         double pixelAspectRatio = this.pixelAspectRatioSupplier.getAsDouble();
+        VideoGenerator.DisplayOrientation displayOrientation = this.videoGenerator.getDisplayOrientation();
 
         boolean forceUpdate = this.forceTransformUpdate;
         this.forceTransformUpdate = false;
 
-        if (!forceUpdate && w == this.lastWidth && h == this.lastHeight && pixelAspectRatio == this.lastPixelAspectRatio) {
+        if (!forceUpdate && w == this.lastWidth && h == this.lastHeight && pixelAspectRatio == this.lastPixelAspectRatio && displayOrientation == this.lastDisplayOrientation) {
             return;
         }
 
-        double logicalWidth = (double) this.displayWidth * pixelAspectRatio;
+        double logicalWidth = (displayOrientation == VideoGenerator.DisplayOrientation.DEG_90 || displayOrientation == VideoGenerator.DisplayOrientation.DEG_270) ? this.displayHeight : this.displayWidth;
+        double logicalHeight = (displayOrientation == VideoGenerator.DisplayOrientation.DEG_90 || displayOrientation == VideoGenerator.DisplayOrientation.DEG_270) ? this.displayWidth : this.displayHeight;
 
-        double scale = this.currentScaleSupplier.getScale(w, h, logicalWidth, this.displayHeight);
-
+        double scale = this.currentScaleSupplier.getScale(w, h, logicalWidth * pixelAspectRatio, logicalHeight);
         double scaleX = scale * pixelAspectRatio;
 
-        double scaledWidth  = (double) this.displayWidth * scaleX;
-        double scaledHeight = (double) this.displayHeight * scale;
+        double scaledWidth = logicalWidth * scaleX;
+        double scaledHeight = logicalHeight * scale;
 
         double offsetX = ((double) w - scaledWidth) / 2.0;
         double offsetY = ((double) h - scaledHeight) / 2.0;
 
+        if (displayOrientation != this.lastDisplayOrientation) {
+            this.updateRotationTransform(displayOrientation);
+            this.lastDisplayOrientation = displayOrientation;
+        }
+
         this.drawTransform.setToIdentity();
         this.drawTransform.translate(offsetX, offsetY);
         this.drawTransform.scale(scaleX, scale);
+        this.drawTransform.concatenate(this.rotationTransform);
 
         this.lastWidth = w;
         this.lastHeight = h;
         this.lastPixelAspectRatio = pixelAspectRatio;
+    }
+
+    private void updateRotationTransform(VideoGenerator.DisplayOrientation displayOrientation) {
+        this.rotationTransform.setToIdentity();
+        switch (displayOrientation) {
+            case DEG_0 -> {}
+            case DEG_90 -> {
+                this.rotationTransform.translate(this.displayHeight, 0);
+                this.rotationTransform.rotate(Math.toRadians(90));
+            }
+            case DEG_180 -> {
+                this.rotationTransform.translate(this.displayWidth, this.displayHeight);
+                this.rotationTransform.rotate(Math.toRadians(180));
+            }
+            case DEG_270 -> {
+                this.rotationTransform.translate(0, this.displayWidth);
+                this.rotationTransform.rotate(Math.toRadians(270));
+            }
+        }
     }
 
     @Override

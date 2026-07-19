@@ -10,6 +10,17 @@ public interface VideoGenerator {
         return 1.0;
     }
 
+    default DisplayOrientation getDisplayOrientation() {
+        return DisplayOrientation.DEG_0;
+    }
+
     int mapToRGB8(int frameBufferValue);
+
+    enum DisplayOrientation {
+        DEG_0,
+        DEG_90,
+        DEG_180,
+        DEG_270
+    }
 
 }
