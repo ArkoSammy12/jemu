@@ -44,6 +44,8 @@ import java.util.stream.Collectors;
 
 public class MainWindow implements Closeable {
 
+    private final String title;
+
     @Nullable
     private final Path dataDirectory;
     private final ConfigurationManager configurationManager;
@@ -68,6 +70,8 @@ public class MainWindow implements Closeable {
     private TitleManager titleManager;
 
     public MainWindow(String title, @Nullable Path dataDirectory, SystemCatalog systemCatalog) throws InterruptedException, InvocationTargetException {
+
+        this.title = title;
 
         Map<String, List<SystemDescriptor>> byId = systemCatalog.getSystemDescriptors().stream()
                 .collect(Collectors.groupingBy(SystemDescriptor::getId));
@@ -134,9 +138,9 @@ public class MainWindow implements Closeable {
             this.appFrame.setBackground(Color.BLACK);
             this.appFrame.getRootPane().putClientProperty("apple.awt.fullscreenable", true);
 
-            this.systemViewport = new SystemViewport(this);
-            this.menuBar = new MainMenuBar(this);
-            this.titleManager = new TitleManager(this);
+            this.systemViewport = new SystemViewport(this, appFrame);
+            this.menuBar = new MainMenuBar(this, appFrame);
+            this.titleManager = new TitleManager(this, appFrame);
 
             this.appFrame.setJMenuBar(this.menuBar.getJMenuBar());
             this.appFrame.add(this.systemViewport.getJPanel(), new CC().grow().push().wrap());
@@ -189,6 +193,10 @@ public class MainWindow implements Closeable {
 
     }
 
+    public String getTitle() {
+        return this.title;
+    }
+
     public Configurations getConfigurations() {
         return this.configurationManager.getConfig();
     }
@@ -222,7 +230,10 @@ public class MainWindow implements Closeable {
     }
 
     public void show() {
-        SwingUtilities.invokeLater(() -> this.getJFrame().setVisible(true));
+        JFrame appFrame = this.appFrame;
+        if (appFrame != null) {
+            SwingUtilities.invokeLater(() -> appFrame.setVisible(true));
+        }
     }
 
     public void setIcons(List<Image> icons) {
@@ -234,14 +245,17 @@ public class MainWindow implements Closeable {
     }
 
     public void setClosingHook(Runnable runnable) {
-        this.getJFrame().addWindowListener(new WindowAdapter() {
+        JFrame appFrame = this.appFrame;
+        if (appFrame != null) {
+            appFrame.addWindowListener(new WindowAdapter() {
 
-            @Override
-            public void windowClosing(WindowEvent e) {
-                runnable.run();
-            }
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    runnable.run();
+                }
 
-        });
+            });
+        }
     }
 
     public void showCoreError(Throwable e) {
@@ -249,7 +263,10 @@ public class MainWindow implements Closeable {
     }
 
     public void showDialog(String title, String message, DialogType dialogType) {
-        SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(this.getJFrame(), message, title, dialogType.getJOptionPaneMessageTypeId()));
+        JFrame appFrame = this.appFrame;
+        if (appFrame != null) {
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(appFrame, message, title, dialogType.getJOptionPaneMessageTypeId()));
+        }
     }
 
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -351,11 +368,13 @@ public class MainWindow implements Closeable {
         return this.configurationManager.getConfig();
     }
 
+    /*
     @NotNull
     @ApiStatus.Internal
     JFrame getJFrame() {
         return Objects.requireNonNull(this.appFrame);
     }
+     */
 
     @ApiStatus.Internal
     public <T extends EmulatorCommandCallback> void onEmulatorCommand(T callback) {
@@ -407,14 +426,18 @@ public class MainWindow implements Closeable {
         private void handleException(Throwable t) {
             Logger.error("Uncaught Swing exception", t);
 
-            SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(
-                            getJFrame(),
-                            t.toString(),
-                            "Uncaught Swing UI exception",
-                            JOptionPane.ERROR_MESSAGE
-                    )
-            );
+            JFrame appFrame = MainWindow.this.appFrame;
+
+            if (appFrame != null) {
+                SwingUtilities.invokeLater(() ->
+                        JOptionPane.showMessageDialog(
+                                appFrame,
+                                t.toString(),
+                                "Uncaught Swing UI exception",
+                                JOptionPane.ERROR_MESSAGE
+                        )
+                );
+            }
         }
     }
 

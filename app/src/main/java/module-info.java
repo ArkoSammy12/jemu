@@ -10,6 +10,8 @@ module app {
     requires org.apache.commons.io;
     requires com.google.gson;
     requires tools.jackson.dataformat.xml;
+    requires com.miglayout.swing;
+    requires com.miglayout.core;
 
     opens io.github.arkosammy12.jemu.app.io to info.picocli;
     opens io.github.arkosammy12.jemu.app.system to com.google.gson;

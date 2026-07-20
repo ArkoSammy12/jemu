@@ -15,11 +15,11 @@ import java.util.Optional;
 
 public class SettingsMenu extends MenuBarMenu implements SettingsManager {
 
-    public SettingsMenu(MainWindow mainWindow, JFrame jFrame) {
+    public SettingsMenu(MainWindow mainWindow, JFrame appFrame) {
         this.getJMenu().setText("Settings");
         this.getJMenu().setMnemonic(KeyEvent.VK_S);
 
-        WindowSettings windowSettings = new WindowSettings(mainWindow, jFrame);
+        WindowSettings windowSettings = new WindowSettings(mainWindow, appFrame);
         VideoSettings videoSettings = new VideoSettings(mainWindow);
         SoundSettings soundSettings = new SoundSettings(mainWindow);
         SpeedSettings speedSettings = new SpeedSettings(mainWindow);

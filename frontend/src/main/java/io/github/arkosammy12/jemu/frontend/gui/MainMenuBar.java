@@ -17,13 +17,13 @@ public class MainMenuBar {
     private final SettingsMenu settingsMenu;
     private final HelpMenu helpMenu;
 
-    public MainMenuBar(MainWindow mainWindow) {
+    public MainMenuBar(MainWindow mainWindow, JFrame appFrame) {
         this.jMenuBar = new JMenuBar();
 
-        this.fileMenu = new FileMenu(mainWindow, mainWindow.getJFrame());
+        this.fileMenu = new FileMenu(mainWindow, appFrame);
         this.emulatorMenu = new EmulatorMenu(mainWindow);
-        this.settingsMenu = new SettingsMenu(mainWindow, mainWindow.getJFrame());
-        this.helpMenu = new HelpMenu(mainWindow);
+        this.settingsMenu = new SettingsMenu(mainWindow, appFrame);
+        this.helpMenu = new HelpMenu(mainWindow, appFrame);
 
         this.jMenuBar.add(this.fileMenu.getJMenu());
         this.jMenuBar.add(this.emulatorMenu.getJMenu());

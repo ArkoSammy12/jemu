@@ -23,6 +23,7 @@ import java.util.function.Supplier;
 public class SystemViewport {
 
     private final MainWindow mainWindow;
+    private final JFrame appFrame;
     private final IdleViewport idleViewport;
     private final JPanel viewportPanel;
 
@@ -32,8 +33,9 @@ public class SystemViewport {
 
     private Dimension lastFitVideoSizeFrameDimension = null;
 
-    public SystemViewport(MainWindow mainWindow) {
+    public SystemViewport(MainWindow mainWindow, JFrame appFrame) {
         this.mainWindow = mainWindow;
+        this.appFrame = appFrame;
         this.idleViewport = new IdleViewport(mainWindow);
         MigLayout viewportPanelLayout = new MigLayout(new LC().insets("0"));
         this.viewportPanel = new JPanel(viewportPanelLayout);
@@ -68,19 +70,19 @@ public class SystemViewport {
         });
 
 
-        mainWindow.getJFrame().addWindowStateListener(e -> {
+        appFrame.addWindowStateListener(e -> {
             // Clear the video size selection if there's a system running and the window is maximized
             if (this.systemDisplayComponent != null && (e.getNewState() & Frame.MAXIMIZED_BOTH) != 0) {
                 SwingUtilities.invokeLater(() -> this.mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
             }
         });
 
-        mainWindow.getJFrame().addComponentListener(new ComponentAdapter() {
+        appFrame.addComponentListener(new ComponentAdapter() {
 
             @Override
             public void componentResized(ComponentEvent e) {
                 // Clear the video size selection if there's a system running and the window is resized away from the video size
-                if (systemDisplayComponent != null && !mainWindow.getJFrame().getSize().equals(lastFitVideoSizeFrameDimension)) {
+                if (systemDisplayComponent != null && !appFrame.getSize().equals(lastFitVideoSizeFrameDimension)) {
                     SwingUtilities.invokeLater(() -> mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
                 }
             }
@@ -153,13 +155,13 @@ public class SystemViewport {
         }
         Dimension newSize = this.getFrameDimensionsForVideoSize(videoSize);
         if (newSize != null) {
-            this.mainWindow.getJFrame().setSize(newSize);
-            this.lastFitVideoSizeFrameDimension = this.mainWindow.getJFrame().getSize();
+            this.appFrame.setSize(newSize);
+            this.lastFitVideoSizeFrameDimension = this.appFrame.getSize();
         }
     }
 
     private boolean isMainWindowMaximized() {
-        return (this.mainWindow.getJFrame().getExtendedState() & Frame.MAXIMIZED_BOTH) != 0;
+        return (this.appFrame.getExtendedState() & Frame.MAXIMIZED_BOTH) != 0;
     }
 
     @Nullable
@@ -174,8 +176,8 @@ public class SystemViewport {
         int displayWidth = systemDisplayComponent.getSystemDisplayWidth() * videoSize.getScaleFactor();
         int displayHeight = systemDisplayComponent.getSystemDisplayHeight() * videoSize.getScaleFactor();
 
-        int horizontalPadding = Math.max(0, this.mainWindow.getJFrame().getWidth() - viewportPanel.getWidth());
-        int verticalPadding = Math.max(0, this.mainWindow.getJFrame().getHeight() - viewportPanel.getHeight());
+        int horizontalPadding = Math.max(0, this.appFrame.getWidth() - viewportPanel.getWidth());
+        int verticalPadding = Math.max(0, this.appFrame.getHeight() - viewportPanel.getHeight());
 
         return new Dimension(displayWidth + horizontalPadding, displayHeight + verticalPadding);
     }

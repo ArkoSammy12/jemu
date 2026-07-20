@@ -37,7 +37,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
     private final JMenuItem ejectRomButton;
     private final CircularFifoQueue<Path> recentFilePaths = new CircularFifoQueue<>(RECENT_FILES_SIZE);
 
-    public FileMenu(MainWindow mainWindow, JFrame jFrame) {
+    public FileMenu(MainWindow mainWindow, JFrame appFrame) {
         super();
 
         this.mainWindow = mainWindow;
@@ -64,7 +64,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
             }
         });
 
-        jFrame.setTransferHandler(new TransferHandler() {
+        appFrame.setTransferHandler(new TransferHandler() {
 
             @Override
             public boolean canImport(TransferSupport support) {
@@ -112,7 +112,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         resetOnROMFileSelect.addActionListener(_ -> this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().setResetOnRomFileSelect(resetOnROMFileSelect.isSelected()));
 
         JMenuItem exitButton = new JMenuItem("Exit");
-        exitButton.addActionListener(_ -> jFrame.dispatchEvent(new WindowEvent(jFrame, WindowEvent.WINDOW_CLOSING)));
+        exitButton.addActionListener(_ -> appFrame.dispatchEvent(new WindowEvent(appFrame, WindowEvent.WINDOW_CLOSING)));
 
         openRecentMenu.add(clearRecentsButton);
         this.jMenu.add(openItem);

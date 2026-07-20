@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.app.io.CLIArgs;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
 import io.github.arkosammy12.jemu.app.util.GitProperties;
+import io.github.arkosammy12.jemu.app.util.HelpDialog;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
@@ -25,6 +26,7 @@ import org.tinylog.Logger;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
+import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -343,11 +345,7 @@ public final class Jemu {
     private void initMainWindow() {
         this.mainWindow.setClosingHook(this::shutdown);
         HelpManager helpManager = this.mainWindow.getHelpManager();
-        helpManager.setProjectName(MavenProperties.ARTIFACT_ID);
-        helpManager.setAuthorString(MavenProperties.AUTHOR);
-        helpManager.setVersionString(MavenProperties.VERSION);
-        helpManager.setCommitIDString(GitProperties.COMMIT_ID);
-        helpManager.setBuildDateString(MavenProperties.BUILD_DATE);
+        helpManager.setHelpDialogContentsSupplier(HelpDialog::new);
         helpManager.setProjectSourceLink("https://github.com/ArkoSammy12/jemu");
         helpManager.setProjectBugReportLink("https://github.com/ArkoSammy12/jemu/issues");
 

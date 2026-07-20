@@ -8,8 +8,9 @@ import javax.swing.*;
 public class TitleManager {
 
     private final MainWindow mainWindow;
+    private final JFrame appFrame;
 
-    private volatile String projectNameString = "unknown";
+    private volatile String mainTitle = "unknown";
     private volatile String romTitleString = "No title";
     private volatile String fpsString = "0 FPS (0 ms)";
 
@@ -18,8 +19,9 @@ public class TitleManager {
     private int framesSinceLastUpdate = 0;
     private double totalFrameTimeSinceLastUpdate = 0;
 
-    public TitleManager(MainWindow mainWindow) {
+    public TitleManager(MainWindow mainWindow, JFrame appFrame) {
         this.mainWindow = mainWindow;
+        this.appFrame = appFrame;
 
         mainWindow.<StopCommandCallback>onEmulatorCommand(_ -> {
             lastWindowTitleUpdate = 0;
@@ -29,13 +31,13 @@ public class TitleManager {
             SwingUtilities.invokeLater(() -> {
                 this.romTitleString = "";
                 this.fpsString = "";
-                this.projectNameString = this.mainWindow.getMainMenuBar().getHelpMenu().getProjectName();
-                this.mainWindow.getJFrame().setTitle(this.projectNameString);
+                this.mainTitle = mainWindow.getTitle();
+                appFrame.setTitle(this.mainTitle);
             });
         });
 
         mainWindow.<PowerCycleCommandCallback>onEmulatorCommand(_ -> {
-            this.projectNameString = this.mainWindow.getMainMenuBar().getHelpMenu().getProjectName();
+            this.mainTitle = this.mainWindow.getTitle();
         });
 
     }
@@ -67,7 +69,7 @@ public class TitleManager {
         if (updateTitleNow || updateStatsNow) {
             final String titleSnapshot = updateTitleNow ? romTitle : this.romTitleString;
             final String fpsSnapshot = updateStatsNow ? newFpsString : this.fpsString;
-            final String fullTitle = this.projectNameString + " - " + titleSnapshot + " - " + fpsSnapshot;
+            final String fullTitle = this.mainTitle + " - " + titleSnapshot + " - " + fpsSnapshot;
 
             if (updateTitleNow) {
                 this.romTitleString = titleSnapshot;
@@ -76,7 +78,7 @@ public class TitleManager {
                 this.fpsString = fpsSnapshot;
             }
 
-            SwingUtilities.invokeLater(() -> this.mainWindow.getJFrame().setTitle(fullTitle));
+            SwingUtilities.invokeLater(() -> this.appFrame.setTitle(fullTitle));
         }
     }
 

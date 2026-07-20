@@ -14,18 +14,18 @@ public class WindowSettings extends MenuBarMenu {
     private Rectangle windowBounds;
     private int windowExtendedState;
 
-    public WindowSettings(MainWindow mainWindow, JFrame jFrame) {
+    public WindowSettings(MainWindow mainWindow, JFrame appFrame) {
         this.getJMenu().setText("Window");
 
         JRadioButtonMenuItem alwaysOnTopButton = new JRadioButtonMenuItem("Always on Top");
         alwaysOnTopButton.addActionListener(_ -> {
             boolean alwaysOnTop = alwaysOnTopButton.isSelected();
-            jFrame.setAlwaysOnTop(alwaysOnTop);
+            appFrame.setAlwaysOnTop(alwaysOnTop);
             mainWindow.getConfig().getInternalPreferenceSettings().getInternalWindowSettings().setAlwaysOnTop(alwaysOnTop);
         });
 
         JMenuItem fullScreenButton = new JMenuItem("Toggle Fullscreen");
-        fullScreenButton.addActionListener(_ -> this.toggleFullScreen(jFrame, false));
+        fullScreenButton.addActionListener(_ -> this.toggleFullScreen(appFrame, false));
         fullScreenButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_F11, 0, true));
 
         JRadioButtonMenuItem startInFullScreenButton = new JRadioButtonMenuItem("Start in Fullscreen");
@@ -41,7 +41,7 @@ public class WindowSettings extends MenuBarMenu {
 
         if (mainWindow.getConfig().getInternalPreferenceSettings().getInternalWindowSettings().getStartInFullscreen()) {
             startInFullScreenButton.doClick();
-            SwingUtilities.invokeLater(() -> this.toggleFullScreen(jFrame, true));
+            SwingUtilities.invokeLater(() -> this.toggleFullScreen(appFrame, true));
         }
     }
 
