@@ -32,18 +32,7 @@ public class NESManager extends SystemManager {
                 Logger.error("NES database file not found!");
                 break dbInit;
             }
-
-            XmlMapper xmlMapper = new XmlMapper();
-            NES20Database nes20Database = xmlMapper.readValue(bytes, NES20Database.class);
-            for (NES20Database.Game game : nes20Database.getGames()) {
-                map.put(game.getRom().getSha1().toLowerCase(), game);
-            }
-        } catch (Exception e) {
-            Logger.error(e, "Failed to load NES 2.0 database!");
-        }
-        try {
-            XmlMapper xmlMapper = new XmlMapper();
-            NES20Database nes20Database = xmlMapper.readValue(Path.of("app", "src", "main", "resources", "system", "nes", "nes20db", "nes20db.xml"), NES20Database.class);
+            NES20Database nes20Database = new XmlMapper().readValue(bytes, NES20Database.class);
             for (NES20Database.Game game : nes20Database.getGames()) {
                 map.put(game.getRom().getSha1().toLowerCase(), game);
             }

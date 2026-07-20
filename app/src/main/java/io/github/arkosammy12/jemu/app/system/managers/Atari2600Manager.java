@@ -31,8 +31,7 @@ public class Atari2600Manager extends SystemManager {
                 Logger.error("Atari 2600 database file not found!");
                 break dbInit;
             }
-            String json = new String(bytes);
-            Atari2600Database db = new Gson().fromJson(json, Atari2600Database.class);
+            Atari2600Database db = new Gson().fromJson(new String(bytes), Atari2600Database.class);
             for (Atari2600Database.Entry entry : db.getRoms()) {
                 map.put(entry.getSha1(), entry);
             }
