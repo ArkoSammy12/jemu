@@ -6,6 +6,7 @@ import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.managers.*;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemCatalog;
 import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
@@ -35,8 +36,8 @@ public final class SystemRegistry implements SystemCatalog {
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8X),
             new RCAStudioIIManager(jemu, this),
-            new GameBoyManager(jemu, this, GameBoyManager.GameBoyModel.DMG),
-            new GameBoyManager(jemu, this, GameBoyManager.GameBoyModel.CGB),
+            new GameBoyManager(jemu, this, GameBoyHost.Model.DMG),
+            new GameBoyManager(jemu, this, GameBoyHost.Model.CGB),
             new NESManager(jemu, this),
             new Atari2600Manager(jemu, this)
         );

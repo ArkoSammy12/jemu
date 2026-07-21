@@ -9,4 +9,9 @@ public interface GameBoyHost extends SystemHost {
 
     Optional<Path> getSaveDataDirectory();
 
+    enum Model {
+        DMG,
+        CGB
+    }
+
 }
