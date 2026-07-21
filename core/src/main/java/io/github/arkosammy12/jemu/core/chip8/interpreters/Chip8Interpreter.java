@@ -304,7 +304,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 Chip8Display<?> display = this.emulator.getVideoGenerator();
                 int spriteX = getV(getX(firstByte, NN)) % display.getWidth();
                 int spriteHeight = getN(firstByte, NN);
-                this.setV(0xF, display.draw(spriteX, getV(getY(firstByte, NN)) % display.getHeight(), spriteHeight, getI()));
+                setV(0xF, display.draw(spriteX, getV(getY(firstByte, NN)) % display.getHeight(), spriteHeight, getI()));
                 yield VALID_INSTRUCTION | DRAW_EXECUTED | ((spriteHeight > 4 && (spriteHeight + (spriteX & 7) > 9)) ? LONG_INSTRUCTION : 0);
             }
             case 0xE -> switch (NN) {
