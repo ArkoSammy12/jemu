@@ -57,7 +57,7 @@ public class Chip8AudioGenerator<E extends Chip8Emulator> extends AbstractChip8A
     }
 
     public void onFrame() {
-        this.playBuzz = this.emulator.getInterpreter().shouldBuzz();
+        this.playBuzz = this.emulator.getInterpreter().getST() > 0;
     }
 
     record SampleFrame(boolean playBuzz) implements AudioGenerator.SampleFrame {}

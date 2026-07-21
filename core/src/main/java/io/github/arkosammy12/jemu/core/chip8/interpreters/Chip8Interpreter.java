@@ -93,12 +93,8 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
         this.soundTimer = value & 0xFF;
     }
 
-    private int getST() {
+    public int getST() {
         return this.soundTimer;
-    }
-
-    public boolean shouldBuzz() {
-        return this.soundTimer > 0;
     }
 
     public void decrementTimers() {
@@ -239,39 +235,39 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 }
                 case 0x4 -> { // 8XY4: vX += vY
                     int X = getX(firstByte, NN);
-                    int value = this.getV(X) + this.getV(getY(firstByte, NN));
+                    int value = getV(X) + getV(getY(firstByte, NN));
                     this.setV(X, value);
                     this.setVF(value > 0xFF);
                     yield VALID_INSTRUCTION;
                 }
                 case 0x5 -> { // 8XY5: vX -= vY
                     int X = getX(firstByte, NN);
-                    int vX = this.getV(X);
-                    int vY = this.getV(getY(firstByte, NN));
-                    this.setV(X, vX - vY);
-                    this.setVF(vX >= vY);
+                    int vX = getV(X);
+                    int vY = getV(getY(firstByte, NN));
+                    setV(X, vX - vY);
+                    setVF(vX >= vY);
                     yield VALID_INSTRUCTION;
                 }
                 case 0x6 -> { // 8XY6: vX >>= vY
                     int X = getX(firstByte, NN);
-                    int operand = this.emulator.getSettings().doShiftVXInPlace() ? this.getV(X) : this.getV(getY(firstByte, NN));
-                    this.setV(X, operand >>> 1);
-                    this.setVF((operand & 1) != 0);
+                    int operand = this.emulator.getSettings().doShiftVXInPlace() ? getV(X) : getV(getY(firstByte, NN));
+                    setV(X, operand >>> 1);
+                    setVF((operand & 1) != 0);
                     yield VALID_INSTRUCTION;
                 }
                 case 0x7 -> { // 8XY7: vX =- vY
                     int X = getX(firstByte, NN);
-                    int vX = this.getV(X);
-                    int vY = this.getV(getY(firstByte, NN));
-                    this.setV(X, vY - vX);
-                    this.setVF(vY >= vX);
+                    int vX = getV(X);
+                    int vY = getV(getY(firstByte, NN));
+                    setV(X, vY - vX);
+                    setVF(vY >= vX);
                     yield VALID_INSTRUCTION;
                 }
                 case 0xE -> { // 8XYE: vX <<= vY
                     int X = getX(firstByte, NN);
-                    int operand = this.emulator.getSettings().doShiftVXInPlace() ? this.getV(X) : this.getV(getY(firstByte, NN));
-                    this.setV(X, operand << 1);
-                    this.setVF((operand & 128) != 0);
+                    int operand = this.emulator.getSettings().doShiftVXInPlace() ? getV(X) : getV(getY(firstByte, NN));
+                    setV(X, operand << 1);
+                    setVF((operand & 128) != 0);
                     yield VALID_INSTRUCTION;
                 }
                 default -> 0;
@@ -293,7 +289,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 yield VALID_INSTRUCTION;
             }
             case 0xB -> { // BNNN: jump0 NNN / BXNN: jump0 NNN + vX
-                this.setPC(getNNN(firstByte, NN) + this.getV(this.emulator.getSettings().doJumpWithVX() ? getX(firstByte, NN) : 0x0));
+                setPC(getNNN(firstByte, NN) + getV(this.emulator.getSettings().doJumpWithVX() ? getX(firstByte, NN) : 0x0));
                 yield VALID_INSTRUCTION;
             }
             case 0xC -> { // CXNN: vX := random NN
@@ -337,7 +333,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                     int waitingKey = keypad.getWaitingKeypadKey();
                     if (waitingKey >= 0) {
                         if (firstPressedKey < 0 || waitingKey != firstPressedKey) {
-                            this.setV(getX(firstByte, NN), waitingKey);
+                            setV(getX(firstByte, NN), waitingKey);
                             keypad.resetWaitingKeypadKey();
                         } else {
                             decrementPC();
@@ -368,8 +364,8 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 }
                 case 0x33 -> { // FX33: bcd vX
                     Chip8Bus bus = this.emulator.getBus();
-                    int I = this.getI();
-                    int vX = this.getV(getX(firstByte, NN));
+                    int I = getI();
+                    int vX = getV(getX(firstByte, NN));
                     long hundreds = (vX * 0x51EB851FL) >>> 37;
                     long remainder = vX - hundreds * 100;
                     long tens = (remainder * 0xCCCDL) >>> 19;
