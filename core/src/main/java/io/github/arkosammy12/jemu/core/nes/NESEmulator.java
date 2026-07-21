@@ -53,7 +53,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
         this.systemHost = systemHost;
         Optional<byte[]> optionalROM = systemHost.getRom();
         if (optionalROM.isEmpty()) {
-            throw new MissingROMException(systemHost.getSystemName());
+            throw new MissingROMException(systemHost);
         }
 
         byte[] rom = optionalROM.get();

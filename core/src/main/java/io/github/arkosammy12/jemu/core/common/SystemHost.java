@@ -36,4 +36,16 @@ public interface SystemHost {
         return arr;
     }
 
+    static byte[][] intToByteArray(int[][] intArray) {
+        byte[][] outerArray = new byte[intArray.length][];
+        for (int i = 0; i < outerArray.length; i++) {
+            byte[] innerArray = new byte[intArray[i].length];
+            for (int j = 0; j < innerArray.length; j++) {
+                innerArray[j] = (byte) intArray[i][j];
+            }
+            outerArray[i] = innerArray;
+        }
+        return outerArray;
+    }
+
 }

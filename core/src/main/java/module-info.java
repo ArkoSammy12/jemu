@@ -17,5 +17,10 @@ module core {
     exports io.github.arkosammy12.jemu.core.nes.mappers;
     exports io.github.arkosammy12.jemu.core.gameboy.mbcs;
     exports io.github.arkosammy12.jemu.core.atari2600;
+    exports io.github.arkosammy12.jemu.core.chip8;
+    exports io.github.arkosammy12.jemu.core.chip8.audio;
+    exports io.github.arkosammy12.jemu.core.chip8.bus;
+    exports io.github.arkosammy12.jemu.core.chip8.display;
+    exports io.github.arkosammy12.jemu.core.chip8.interpreters;
 
 }

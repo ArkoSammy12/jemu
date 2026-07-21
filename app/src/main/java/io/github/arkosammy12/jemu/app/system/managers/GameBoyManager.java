@@ -7,7 +7,6 @@ import io.github.arkosammy12.jemu.app.system.adapters.GameBoyAdapter;
 import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.core.gameboy.DMGPPU;
-import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
 import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
@@ -18,9 +17,9 @@ import java.util.List;
 
 public class GameBoyManager extends SystemManager {
 
-    private final GameBoyHost.Model gameboyModel;
+    private final GameBoyModel gameboyModel;
 
-    public GameBoyManager(Jemu jemu, SystemRegistry systemRegistry, GameBoyHost.Model gameboyModel) {
+    public GameBoyManager(Jemu jemu, SystemRegistry systemRegistry, GameBoyModel gameboyModel) {
         super(jemu, systemRegistry);
         this.gameboyModel = gameboyModel;
     }
@@ -51,7 +50,7 @@ public class GameBoyManager extends SystemManager {
 
     @Override
     public SystemAdapter createSystem() throws LineUnavailableException {
-        return new GameBoyAdapter(jemu, this.gameboyModel, this);
+        return new GameBoyAdapter(jemu, this, this.gameboyModel);
     }
 
     @Override
@@ -62,7 +61,7 @@ public class GameBoyManager extends SystemManager {
     @Override
     public EmulationSettingsBuilder buildSystemSettings(EmulationSettingsBuilder emulationSettingsBuilder) {
         EmulationSettingsBuilder builder = super.buildSystemSettings(emulationSettingsBuilder);
-        if (this.gameboyModel != GameBoyHost.Model.DMG) {
+        if (this.gameboyModel != GameBoyModel.DMG) {
             return builder;
         }
         return builder.addSection("Game Boy", section -> {
@@ -82,6 +81,11 @@ public class GameBoyManager extends SystemManager {
     }
 
     public record DMGPaletteSettingChangedEvent(DMGPalette dmgPalette) implements CoreSettingChangeEvent, FrameRequesterVideoEvent {}
+
+    public enum GameBoyModel {
+        DMG,
+        CGB
+    }
 
     public enum DMGPalette implements DisplayNamerProvider {
         @SerializedName("gameboy_green")

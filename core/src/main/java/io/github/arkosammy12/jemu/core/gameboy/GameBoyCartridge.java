@@ -38,7 +38,7 @@ public abstract class GameBoyCartridge implements Bus {
         this.emulator = emulator;
         Optional<byte[]> optionalROM = emulator.getHost().getRom();
         if (optionalROM.isEmpty()) {
-            throw new MissingROMException(emulator.getHost().getSystemName());
+            throw new MissingROMException(emulator);
         }
         this.cartridgeType = cartridgeType;
         this.romSizeHeader = romImage[ROM_SIZE_ADDRESS];
@@ -68,7 +68,7 @@ public abstract class GameBoyCartridge implements Bus {
     public static GameBoyCartridge getCartridge(GameBoyEmulator emulator) {
         Optional<byte[]> optionalROM = emulator.getHost().getRom();
         if (optionalROM.isEmpty()) {
-            throw new MissingROMException(emulator.getHost().getSystemName());
+            throw new MissingROMException(emulator);
         }
         byte[] rom = optionalROM.get();
         int cartridgeType = SystemHost.byteToIntArray(rom)[CARTRIDGE_TYPE_ADDRESS];

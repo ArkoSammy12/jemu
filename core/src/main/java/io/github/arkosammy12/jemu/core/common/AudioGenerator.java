@@ -11,7 +11,7 @@ public interface AudioGenerator {
     @NotNull
     SampleSize getBytesPerSample();
 
-    Optional<SampleFrame> getSampleFrame();
+    Optional<? extends SampleFrame> getSampleFrame();
 
     SampleFrameResampler getSampleFrameResampler();
 

@@ -18,7 +18,7 @@ public class CosmacVIPAdapter extends SystemAdapter implements CosmacVIPHost {
     private String romTitle;
     private final Chip8Interpreter chip8Interpreter;
 
-    public CosmacVIPAdapter(Jemu jemu, Chip8Interpreter chip8Interpreter, SystemManager systemManager) throws LineUnavailableException {
+    public CosmacVIPAdapter(Jemu jemu, SystemManager systemManager, Chip8Interpreter chip8Interpreter) throws LineUnavailableException {
         this.chip8Interpreter = chip8Interpreter;
         super(jemu, systemManager);
     }

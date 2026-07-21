@@ -25,9 +25,9 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     private final GameBoyManager gameBoyManager;
 
     private String romTitle;
-    private final Model model;
+    private final GameBoyManager.GameBoyModel model;
 
-    public GameBoyAdapter(Jemu jemu, Model model, GameBoyManager systemManager) throws LineUnavailableException {
+    public GameBoyAdapter(Jemu jemu, GameBoyManager systemManager, GameBoyManager.GameBoyModel model) throws LineUnavailableException {
         this.model = model;
         this.gameBoyManager = systemManager;
         super(jemu, systemManager);
@@ -43,7 +43,7 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
         return this.jemu.getSavesDirectory();
     }
 
-    public Model getModel() {
+    public GameBoyManager.GameBoyModel getModel() {
         return this.model;
     }
 

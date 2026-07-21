@@ -266,7 +266,7 @@ public class CosmacVIPBus implements Bus {
 
             if (chip8Interpreter != null) {
                 if (rom == null) {
-                    throw new MissingROMException(emulator.getHost().getSystemName());
+                    throw new MissingROMException(emulator);
                 }
                 System.arraycopy(chip8Interpreter, 0, this.ram, 0, chip8Interpreter.length);
                 System.arraycopy(rom, 0, this.ram, chip8Interpreter.length, rom.length);

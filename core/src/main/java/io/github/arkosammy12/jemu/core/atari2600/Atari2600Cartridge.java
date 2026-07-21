@@ -16,7 +16,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
         this.emulator = emulator;
         Optional<byte[]> rom = emulator.getHost().getRom();
         if (rom.isEmpty()) {
-            throw new MissingROMException(emulator.getHost().getSystemName());
+            throw new MissingROMException(emulator);
         }
         this.rom = rom.get();
     }
