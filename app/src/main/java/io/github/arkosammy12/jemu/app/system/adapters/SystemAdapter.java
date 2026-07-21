@@ -104,7 +104,11 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         switch (coreSettingChangeEvent) {
             case SpeedModeSettingChangedEvent speedModeSettingChangedEvent -> {
                 this.getAudioDriver().ifPresent(DefaultAudioRendererDriver::clearAudioBuffer);
-                this.getEmulator().ifPresent(emulator -> speedModeSettingChangedEvent.getSpeedMode().scaleFramerate(emulator.getFramerate()));
+                Emulator emulator = this.emulator;
+                if (emulator != null) {
+                    this.jemu.getAudioEngine().setFramerate(speedModeSettingChangedEvent.getSpeedMode().scaleFramerate(emulator.getFramerate()));
+                }
+
             }
             case VideoSettingChangedEvent videoSettingChangedEvent -> {
                 DefaultSystemVideoDriver videoDriver = this.videoDriver;
