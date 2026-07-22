@@ -23,7 +23,7 @@ public class CosmacVIPManager extends SystemManager {
     @Override
     public String getName() {
         return switch (this.chip8Interpreter) {
-            case NONE -> "COSMACV-VIP";
+            case NONE -> "COSMAC-VIP";
             case CHIP_8 -> "VIP CHIP-8";
             case CHIP_8X -> "VIP CHIP-8X";
         };
