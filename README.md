@@ -12,33 +12,33 @@ Multi-system emulator written in Java.
 
 ## Supported systems
 
-| System                              | CLI identifier     | Status              |
-|-------------------------------------|--------------------|---------------------|
-| CHIP-8                              | `chip8`            | ✅ Supported        |
-| STRICT CHIP-8                       | `strict-chip8`     | 🚧 Work-in-progress |
-| CHIP-8X                             | `chip8x`           | 🚧 Work-in-progress |
-| CHIP-48                             | `chip48`           | ✅ Supported        |
-| SUPER-CHIP 1.0                      | `schip10`          | ✅ Supported        |
-| SUPER-CHIP 1.1                      | `schip11`          | ✅ Supported        |
-| SUPER-CHIP MODERN                   | `schip-modern`     | ✅ Supported        |
-| XO-CHIP                             | `xochip`           | ✅ Supported        |
-| MEGA-CHIP                           | `megachip`         | ✅ Supported        |
-| HyperWaveCHIP-64                    | `hyperwave-chip64` | 🚧 Work-in-progress |
-| COSMAC VIP                          | `cosmac-vip`       | ✅ Supported        |
-| RCA Studio II                       | `rca-studioii`     | ✅ Supported        |
-| VIP CHIP-8                          | `vip-chip8`        | ✅ Supported        |
-| VIP CHIP-8X                         | `vip-chip8x`       | ✅ Supported        |
-| Game Boy (DMG)                      | `gameboy`          | ✅ Supported        |
-| Game Boy Color (CGB)                | `gameboy-color`    | ✅ Supported        |
-| Nintendo Entertainment System       | `nes`              | ✅ Supported        |
-| Atari 2600                          | `atari-2600`       | 🚧 Work-in-progress |
-| Apple II                            | —                  | 🗓 Planned          |
-| Commodore 64                        | —                  | 🗓 Planned          |
-| Space Invaders arcade cabinet       | —                  | 🗓 Planned          |
-| Sega Master System                  | —                  | 🗓 Planned          |
-| ZX Spectrum                         | —                  | 🗓 Planned          |
-| Sega Genesis                        | —                  | 🗓 Planned          |
-| Super Nintendo Entertainment System | —                  | 🗓 Planned          |
+| System                              | CLI identifier     | Status       |
+|-------------------------------------|--------------------|--------------|
+| CHIP-8                              | `chip8`            | ✅ Supported |
+| STRICT CHIP-8                       | `strict-chip8`     | ✅ Supported |
+| CHIP-8X                             | `chip8x`           | ✅ Supported |
+| CHIP-48                             | `chip48`           | ✅ Supported |
+| SUPER-CHIP 1.0                      | `schip10`          | ✅ Supported |
+| SUPER-CHIP 1.1                      | `schip11`          | ✅ Supported |
+| SUPER-CHIP MODERN                   | `schip-modern`     | ✅ Supported |
+| XO-CHIP                             | `xochip`           | ✅ Supported |
+| MEGA-CHIP                           | `megachip`         | ✅ Supported |
+| HyperWaveCHIP-64                    | `hyperwave-chip64` | ✅ Supported |
+| COSMAC VIP                          | `cosmac-vip`       | ✅ Supported |
+| RCA Studio II                       | `rca-studioii`     | ✅ Supported |
+| VIP CHIP-8                          | `vip-chip8`        | ✅ Supported |
+| VIP CHIP-8X                         | `vip-chip8x`       | ✅ Supported |
+| Game Boy (DMG)                      | `gameboy`          | ✅ Supported |
+| Game Boy Color (CGB)                | `gameboy-color`    | ✅ Supported |
+| Nintendo Entertainment System       | `nes`              | ✅ Supported |
+| Atari 2600                          | `atari-2600`       | ✅ Supported |
+| Apple II                            | —                  | 🗓 Planned   |
+| Commodore 64                        | —                  | 🗓 Planned   |
+| Space Invaders arcade cabinet       | —                  | 🗓 Planned   |
+| Sega Master System                  | —                  | 🗓 Planned   |
+| ZX Spectrum                         | —                  | 🗓 Planned   |
+| Sega Genesis                        | —                  | 🗓 Planned   |
+| Super Nintendo Entertainment System | —                  | 🗓 Planned   |
 
 ## Keybindings
 
