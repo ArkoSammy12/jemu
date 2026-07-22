@@ -14,7 +14,7 @@ import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
 
 public class Chip8Manager extends SystemManager {
 
-    private static final Category CATEGORY = () -> "CHIP-8";
+    public static final Category CATEGORY = () -> "CHIP-8";
 
     private final Variant variant;
 

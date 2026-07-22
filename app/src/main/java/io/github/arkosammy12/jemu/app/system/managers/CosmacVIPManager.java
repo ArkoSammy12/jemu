@@ -9,6 +9,7 @@ import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public class CosmacVIPManager extends SystemManager {
 
@@ -43,6 +44,14 @@ public class CosmacVIPManager extends SystemManager {
             case NONE -> List.of("cos");
             case CHIP_8 -> List.of("ch8", "hc8");
             case CHIP_8X -> List.of("ch8", "c8x");
+        };
+    }
+
+    @Override
+    public Optional<Category> getCategory() {
+        return switch (this.chip8Interpreter) {
+            case CHIP_8, CHIP_8X -> Optional.of(Chip8Manager.CATEGORY);
+            default -> Optional.empty();
         };
     }
 
