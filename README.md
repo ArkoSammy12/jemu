@@ -42,7 +42,7 @@ Multi-system emulator written in Java.
 
 ## Keybindings
 
-### CHIP-8 / STRICT CHIP-8 / CHIP-8X / CHIP-48 / SUPER-CHIP 1.0 / SUPER-CHIP 1.1 / SUPER-CHIP MODERN / XO-CHIP / MEGA-CHIP / HyperWavevCHIP-64 / COSMAC VIP / VIP CHIP-8 / VIP CHIP-8X
+### CHIP-8 / STRICT CHIP-8 / CHIP-8X / CHIP-48 / SUPER-CHIP 1.0 / SUPER-CHIP 1.1 / SUPER-CHIP MODERN / XO-CHIP / MEGA-CHIP / HyperWaveCHIP-64 / COSMAC VIP / VIP CHIP-8 / VIP CHIP-8X
 
 | CHIP-8 key | Keyboard key |
 |------------|--------------|
@@ -51,7 +51,7 @@ Multi-system emulator written in Java.
 | `7 8 9 E`  | `A S D F`    |
 | `A 0 B F`  | `Z X C V`    |
 
-## RCA Studio II
+### RCA Studio II
 
 | Keypad A | Keyboard key |
 |----------|--------------|
