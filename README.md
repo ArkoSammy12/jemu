@@ -21,9 +21,9 @@ Multi-system emulator written in Java.
 | SUPER-CHIP 1.0                      | `schip10`          | ✅ Supported        |
 | SUPER-CHIP 1.1                      | `schip11`          | ✅ Supported        |
 | SUPER-CHIP MODERN                   | `schip-modern`     | ✅ Supported        |
-| XO-CHIP                             | `xochip`           | 🚧 Work-in-progress |
-| MEGA-CHIP                           | `megachip`         | 🚧 Work-in-progress |
-| HyperWaveCHIP-64                    | `hyperwave-chip64` | 🚧 Work-in-progress |                                    |                 |                     |
+| XO-CHIP                             | `xochip`           | ✅ Supported        |
+| MEGA-CHIP                           | `megachip`         | ✅ Supported        |
+| HyperWaveCHIP-64                    | `hyperwave-chip64` | 🚧 Work-in-progress |
 | COSMAC VIP                          | `cosmac-vip`       | ✅ Supported        |
 | RCA Studio II                       | `rca-studioii`     | ✅ Supported        |
 | VIP CHIP-8                          | `vip-chip8`        | ✅ Supported        |
@@ -42,7 +42,7 @@ Multi-system emulator written in Java.
 
 ## Keybindings
 
-### CHIP-8 / STRICT CHIP-8 / CHIP-8X / CHIP-48 / SUPER-CHIP 1.0 / SUPER-CHIP 1.1 / SUPER-CHIP MODERN / XO-CHIP / MEGA-CHIP / HyperWavevCHIP-64 COSMAC VIP / VIP CHIP-8 / VIP CHIP-8X
+### CHIP-8 / STRICT CHIP-8 / CHIP-8X / CHIP-48 / SUPER-CHIP 1.0 / SUPER-CHIP 1.1 / SUPER-CHIP MODERN / XO-CHIP / MEGA-CHIP / HyperWavevCHIP-64 / COSMAC VIP / VIP CHIP-8 / VIP CHIP-8X
 
 | CHIP-8 key | Keyboard key |
 |------------|--------------|

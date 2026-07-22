@@ -18,12 +18,9 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
     public static final int GET_KEY_EXECUTED = 1 << 4;
     public static final int FONT_SPRITE_POINTER = 1 << 5;
     public static final int CLS_EXECUTED = 1 << 6;
-    public static final int WAITING = 1 << 7;
-
-    public static final int BASE_SLICE_MASK_8 = 1 << 7;
 
     protected final E emulator;
-    private final Random random = new Random();
+    protected final Random random = new Random();
     private final int memoryBoundsMask;
 
     private final int[] registers = new int[16];
@@ -47,19 +44,19 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
         return this.instructionCounter;
     }
 
-    private void setPC(int value) {
+    protected void setPC(int value) {
         this.programCounter = value & this.memoryBoundsMask;
     }
 
-    private int getPC() {
+    protected int getPC() {
         return this.programCounter;
     }
 
-    private void incrementPC() {
+    protected void incrementPC() {
         this.programCounter = (this.programCounter + 2) & this.memoryBoundsMask;
     }
 
-    private void decrementPC() {
+    protected void decrementPC() {
         this.programCounter = (this.programCounter - 2) & this.memoryBoundsMask;
     }
 
@@ -67,29 +64,29 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
         this.indexRegister = value & this.memoryBoundsMask;
     }
 
-    private int getI() {
+    protected int getI() {
         return this.indexRegister;
     }
 
-    private void push(int value) {
+    protected void push(int value) {
         this.stack[this.stackPointer] = value;
         this.stackPointer = (this.stackPointer + 1) & 0xF;
     }
 
-    private int pop() {
+    protected int pop() {
         this.stackPointer = (this.stackPointer - 1) & 0xF;
         return this.stack[this.stackPointer];
     }
 
-    private void setDT(int value) {
+    protected void setDT(int value) {
         this.delayTimer = value & 0xFF;
     }
 
-    private int getDT() {
+    public int getDT() {
         return this.delayTimer;
     }
 
-    private void setST(int value) {
+    protected void setST(int value) {
         this.soundTimer = value & 0xFF;
     }
 
@@ -106,11 +103,11 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
         }
     }
 
-    private void setV(int index, int value) {
+    protected void setV(int index, int value) {
         this.registers[index] = value & 0xFF;
     }
 
-    private void setVF(boolean value) {
+    protected void setVF(boolean value) {
         this.registers[0xF] = value ? 1 : 0;
     }
 

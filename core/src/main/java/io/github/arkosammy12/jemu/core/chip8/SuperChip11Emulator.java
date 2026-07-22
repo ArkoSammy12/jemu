@@ -37,5 +37,4 @@ public class SuperChip11Emulator extends SuperChip10Emulator {
         return this.display;
     }
 
-
 }

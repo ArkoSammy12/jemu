@@ -7,7 +7,7 @@ import java.util.Optional;
 
 public class Chip8AudioGenerator<E extends Chip8Emulator> extends AbstractChip8AudioGenerator<E> {
 
-    private boolean playBuzz;
+    protected boolean playBuzz;
 
     public Chip8AudioGenerator(E emulator) {
         super(emulator);
@@ -60,6 +60,6 @@ public class Chip8AudioGenerator<E extends Chip8Emulator> extends AbstractChip8A
         this.playBuzz = this.emulator.getInterpreter().getST() > 0;
     }
 
-    record SampleFrame(boolean playBuzz) implements AudioGenerator.SampleFrame {}
+    protected record SampleFrame(boolean playBuzz) implements AudioGenerator.SampleFrame {}
 
 }

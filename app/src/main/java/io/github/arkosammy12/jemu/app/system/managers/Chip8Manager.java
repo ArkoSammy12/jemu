@@ -233,6 +233,7 @@ public class Chip8Manager extends SystemManager {
         public String getDisplayName() {
             return this.displayName;
         }
+
     }
 
     private record HexSpriteFont(byte[][] smallFont, byte[][] bigFont) implements Chip8Host.SpriteFont {

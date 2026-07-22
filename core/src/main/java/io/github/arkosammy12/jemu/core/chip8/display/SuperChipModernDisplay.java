@@ -9,6 +9,7 @@ public class SuperChipModernDisplay<E extends SuperChipModernEmulator> extends S
         super(emulator);
     }
 
+    @Override
     public void scrollDown(int scrollAmount) {
         if (!this.hires) {
             scrollAmount *= 2;
@@ -16,6 +17,7 @@ public class SuperChipModernDisplay<E extends SuperChipModernEmulator> extends S
         super.scrollDown(scrollAmount);
     }
 
+    @Override
     public void scrollRight(int scrollAmount) {
         if (!this.hires) {
             scrollAmount *= 2;
@@ -23,6 +25,7 @@ public class SuperChipModernDisplay<E extends SuperChipModernEmulator> extends S
         super.scrollRight(scrollAmount);
     }
 
+    @Override
     public void scrollLeft(int scrollAmount) {
         if (!this.hires) {
             scrollAmount *= 2;

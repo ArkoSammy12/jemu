@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.app.system.adapters;
 
 import io.github.arkosammy12.jemu.app.Jemu;
+import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.managers.Chip8Manager;
 import io.github.arkosammy12.jemu.core.chip8.*;
 import io.github.arkosammy12.jemu.core.common.Emulator;
@@ -17,6 +18,8 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     private final Chip8Manager chip8Manager;
     private final Chip8Manager.Variant variant;
     private final Chip8Host.Settings settings;
+
+    private String romTitle;
 
     public Chip8Adapter(Jemu jemu, Chip8Manager systemManager, Chip8Manager.Variant variant) throws LineUnavailableException {
         super(jemu, systemManager);
@@ -61,11 +64,15 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     protected Emulator createEmulator() {
         Chip8Emulator emulator = switch (this.variant) {
             case CHIP_8 -> new Chip8Emulator(this);
+            case STRICT_CHIP_8 -> new StrictChip8Emulator(this);
+            case CHIP_8X -> new Chip8XEmulator(this);
             case CHIP_48 -> new Chip48Emulator(this);
             case SUPER_CHIP_10 -> new SuperChip10Emulator(this);
             case SUPER_CHIP_11 -> new SuperChip11Emulator(this);
             case SUPER_CHIP_MODERN -> new SuperChipModernEmulator(this);
-            default -> throw new EmulatorException("Unsupported CHIP-8 variant %s".formatted(this.variant.getName()));
+            case XO_CHIP -> new XOChipEmulator(this);
+            case MEGA_CHIP -> new MegaChipEmulator(this);
+            case HYPERWAVE_CHIP_8 -> new HyperWaveChip64Emulator(this);
         };
         emulator.setTargetInstructionsPerFrame(this.variant.getDefaultQuirkset().instructionsPerFrameSupplier().applyAsInt(this.variant.getDefaultQuirkset().doDisplayWait()));
         return emulator;
@@ -115,7 +122,13 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public Optional<String> getRomTitle() {
-        return Optional.empty();
+        return Optional.ofNullable(this.romTitle);
+    }
+
+    @Override
+    protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
+        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+        super.initialize(initializer, tryReset);
     }
 
 }

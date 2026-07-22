@@ -28,10 +28,15 @@ public final class SystemRegistry implements SystemCatalog {
     public SystemRegistry(Jemu jemu) {
         this.systemManagers = List.of(
             new Chip8Manager(jemu, this, Chip8Manager.Variant.CHIP_8),
+            new Chip8Manager(jemu, this, Chip8Manager.Variant.STRICT_CHIP_8),
+            new Chip8Manager(jemu, this, Chip8Manager.Variant.CHIP_8X),
             new Chip8Manager(jemu, this, Chip8Manager.Variant.CHIP_48),
             new Chip8Manager(jemu, this, Chip8Manager.Variant.SUPER_CHIP_10),
             new Chip8Manager(jemu, this, Chip8Manager.Variant.SUPER_CHIP_11),
             new Chip8Manager(jemu, this, Chip8Manager.Variant.SUPER_CHIP_MODERN),
+            new Chip8Manager(jemu, this, Chip8Manager.Variant.XO_CHIP),
+            new Chip8Manager(jemu, this, Chip8Manager.Variant.MEGA_CHIP),
+            new Chip8Manager(jemu, this, Chip8Manager.Variant.HYPERWAVE_CHIP_8),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.NONE),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8X),

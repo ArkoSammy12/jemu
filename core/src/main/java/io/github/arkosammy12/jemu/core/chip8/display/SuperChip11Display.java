@@ -64,6 +64,7 @@ public class SuperChip11Display<E extends SuperChip11Emulator> extends SuperChip
     }
 
     @Override
+    @SuppressWarnings("DuplicatedCode")
     public int draw(int spriteX, int spriteY, int spriteHeight, int indexRegister) {
         Chip8Bus bus = this.emulator.getBus();
 
