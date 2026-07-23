@@ -30,6 +30,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -325,7 +326,7 @@ public final class Jemu {
     private Path tryAcquireAndCreateDataDirectory() {
         Path appDataDirectory = null;
         try {
-            appDataDirectory = Path.of(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
+            appDataDirectory = Paths.get(AppDirsFactory.getInstance().getUserDataDir(MavenProperties.ARTIFACT_ID, null, null));
         } catch (Exception e) {
             Logger.error("Error obtaining data directory path: {}", e);
         }

@@ -4,6 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -24,7 +25,7 @@ public class FileState {
     }
 
     public List<Path> getRecentFilePaths() {
-        return this.recentFilePaths.stream().map(Path::of).collect(Collectors.toList());
+        return this.recentFilePaths.stream().map(Paths::get).collect(Collectors.toList());
     }
 
     public void setCurrentDirectoryPath(Path currentDirectoryPath) {
@@ -32,7 +33,7 @@ public class FileState {
     }
 
     public Optional<Path> getCurrentDirectoryPath() {
-        return Optional.ofNullable(this.currentDirectoryPath).map(Path::of);
+        return Optional.ofNullable(this.currentDirectoryPath).map(Paths::get);
     }
 
 }

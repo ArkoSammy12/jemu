@@ -9,6 +9,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -30,7 +31,7 @@ public final class TestRoms {
             Logger.warn("Test ROMs not configured (-Djemu.gb.testRoms); skipping");
             return Optional.empty();
         }
-        Path directory = Path.of(property).resolve(relativePath);
+        Path directory = Paths.get(property).resolve(relativePath);
         if (!Files.isDirectory(directory)) {
             Logger.warn("Test ROM directory not found at {}; skipping", directory);
             return Optional.empty();
