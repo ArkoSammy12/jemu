@@ -1,8 +1,8 @@
-package io.github.arkosammy12.jemu.app.system.adapters;
+package io.github.arkosammy12.jemu.app.system.atari2600;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.app.system.managers.Atari2600Manager;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Cartridge;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Controller;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;

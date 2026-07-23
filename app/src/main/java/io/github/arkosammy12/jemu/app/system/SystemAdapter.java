@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.app.system.adapters;
+package io.github.arkosammy12.jemu.app.system;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
@@ -6,12 +6,10 @@ import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
 import io.github.arkosammy12.jemu.app.drivers.MonoAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.drivers.StereoAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
-import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
@@ -22,7 +20,6 @@ import org.tinylog.Logger;
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyAdapter;
 import java.awt.event.KeyEvent;
-import java.awt.event.KeyListener;
 import java.io.Closeable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,7 +31,9 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     protected final Jemu jemu;
     protected final SystemManager systemManager;
 
-    protected byte[] rom;
+    protected byte @Nullable [] rom;
+
+    @Nullable
     private Path path;
 
     @Nullable

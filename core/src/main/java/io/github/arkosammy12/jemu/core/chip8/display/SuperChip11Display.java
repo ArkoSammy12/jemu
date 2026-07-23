@@ -75,7 +75,7 @@ public class SuperChip11Display<E extends SuperChip11Emulator> extends SuperChip
         spriteY %= displayHeight;
         spriteHeight = spriteHeight < 1 ? 16 : spriteHeight;
 
-        boolean doClipping = this.emulator.getSettings().doClipping();
+        boolean doClipping = this.emulator.getHost().doClipping();
         boolean draw16WideSprite = this.hires && spriteHeight >= 16;
 
         int sliceLength;

@@ -1,7 +1,7 @@
-package io.github.arkosammy12.jemu.app.system.adapters;
+package io.github.arkosammy12.jemu.app.system.gameboy;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.system.managers.GameBoyManager;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
@@ -90,7 +90,7 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     @Override
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
         super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        if (coreSettingChangeEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoyManager.DMGPalette dmgPalette)) {
+        if (coreSettingChangeEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette)) {
             if (this.emulator instanceof GameBoyEmulator gameBoyEmulator) {
                 gameBoyEmulator.setDMGPalette(dmgPalette.mapToHost());
             }

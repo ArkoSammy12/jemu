@@ -9,7 +9,7 @@ public class Main {
             Jemu jemu = new Jemu(args);
             jemu.start();
         } catch (Throwable t) {
-            Logger.error("jemu has crashed! {}", t);
+            Logger.error(t, "jemu has crashed!");
         }
     }
 

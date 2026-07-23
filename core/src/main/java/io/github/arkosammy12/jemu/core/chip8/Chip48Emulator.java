@@ -33,7 +33,7 @@ public class Chip48Emulator extends Chip8Emulator {
 
     @Override
     protected boolean waitVBlank(int flags) {
-        return this.getSettings().doDisplayWait() && (flags & DRAW_EXECUTED) != 0;
+        return this.getHost().doDisplayWait() && (flags & DRAW_EXECUTED) != 0;
     }
 
 }

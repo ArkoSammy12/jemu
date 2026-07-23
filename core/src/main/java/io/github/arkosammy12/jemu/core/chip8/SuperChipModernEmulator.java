@@ -61,7 +61,7 @@ public class SuperChipModernEmulator extends SuperChip11Emulator {
 
     @Override
     protected boolean waitVBlank(int flags) {
-        return this.getSettings().doDisplayWait() && (flags & DRAW_EXECUTED) != 0;
+        return this.getHost().doDisplayWait() && (flags & DRAW_EXECUTED) != 0;
     }
 
 }

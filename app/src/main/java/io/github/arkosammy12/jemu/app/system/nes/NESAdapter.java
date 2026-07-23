@@ -1,8 +1,8 @@
-package io.github.arkosammy12.jemu.app.system.adapters;
+package io.github.arkosammy12.jemu.app.system.nes;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.app.system.managers.NESManager;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.nes.NESController;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;

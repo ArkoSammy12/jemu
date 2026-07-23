@@ -1,8 +1,6 @@
-package io.github.arkosammy12.jemu.app.system.managers;
+package io.github.arkosammy12.jemu.app.system;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.system.SystemRegistry;
-import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
@@ -34,8 +32,8 @@ public abstract class SystemManager implements SystemDescriptor {
 
     }
 
-    protected byte @Nullable [] loadFromResources(String path) throws Exception {
-        try (InputStream in = this.getClass().getResourceAsStream(path)) {
+    public static byte @Nullable [] loadFromResources(Class<?> clazz, String path) throws Exception {
+        try (InputStream in = clazz.getResourceAsStream(path)) {
             if (in == null) {
                 return null;
             } else {
@@ -44,7 +42,7 @@ public abstract class SystemManager implements SystemDescriptor {
         }
     }
 
-    static String getSha1Hash(byte[] data) throws Exception {
+    public static String getSha1Hash(byte[] data) throws Exception {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-1").digest(data));
     }
 

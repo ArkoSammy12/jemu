@@ -1,8 +1,9 @@
-package io.github.arkosammy12.jemu.app.system.adapters;
+package io.github.arkosammy12.jemu.app.system.cosmacvip;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPEmulator;

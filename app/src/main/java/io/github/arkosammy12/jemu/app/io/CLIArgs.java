@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.app.io;
 
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
-import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
+import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import picocli.CommandLine;
 

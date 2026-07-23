@@ -4,7 +4,16 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.system.managers.*;
+import io.github.arkosammy12.jemu.app.system.chip8.Chip8Manager;
+import io.github.arkosammy12.jemu.app.system.chip8.Chip8Settings;
+import io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant;
+import io.github.arkosammy12.jemu.app.system.cosmacvip.CosmacVIPManager;
+import io.github.arkosammy12.jemu.app.system.gameboy.GameBoyManager;
+import io.github.arkosammy12.jemu.app.system.atari2600.Atari2600Manager;
+import io.github.arkosammy12.jemu.app.system.atari2600.Atari2600Settings;
+import io.github.arkosammy12.jemu.app.system.gameboy.GameBoySettings;
+import io.github.arkosammy12.jemu.app.system.nes.NESManager;
+import io.github.arkosammy12.jemu.app.system.rcastudioii.RCAStudioIIManager;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
@@ -27,16 +36,16 @@ public final class SystemRegistry implements SystemCatalog {
 
     public SystemRegistry(Jemu jemu) {
         this.systemManagers = List.of(
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.CHIP_8),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.STRICT_CHIP_8),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.CHIP_8X),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.CHIP_48),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.SUPER_CHIP_10),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.SUPER_CHIP_11),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.SUPER_CHIP_MODERN),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.XO_CHIP),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.MEGA_CHIP),
-            new Chip8Manager(jemu, this, Chip8Manager.Variant.HYPERWAVE_CHIP_8),
+            new Chip8Manager(jemu, this, Chip8Variant.CHIP_8),
+            new Chip8Manager(jemu, this, Chip8Variant.STRICT_CHIP_8),
+            new Chip8Manager(jemu, this, Chip8Variant.CHIP_8X),
+            new Chip8Manager(jemu, this, Chip8Variant.CHIP_48),
+            new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_10),
+            new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_11),
+            new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_MODERN),
+            new Chip8Manager(jemu, this, Chip8Variant.XO_CHIP),
+            new Chip8Manager(jemu, this, Chip8Variant.MEGA_CHIP),
+            new Chip8Manager(jemu, this, Chip8Variant.HYPERWAVE_CHIP_8),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.NONE),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8),
             new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8X),
@@ -108,17 +117,24 @@ public final class SystemRegistry implements SystemCatalog {
 
     public static class EmulationSettings {
 
+        @SerializedName("chip8")
+        private volatile Chip8Settings chip8Settings = new Chip8Settings();
+
         @SerializedName("atari_2600")
-        private volatile Atari2600Manager.EmulationSettings atari2600Settings = new Atari2600Manager.EmulationSettings();
+        private volatile Atari2600Settings atari2600Settings = new Atari2600Settings();
 
         @SerializedName("gameboy")
-        private volatile GameBoyManager.EmulationSettings gameboySettings = new GameBoyManager.EmulationSettings();
+        private volatile GameBoySettings gameboySettings = new GameBoySettings();
 
-        public Atari2600Manager.EmulationSettings getAtari2600Settings() {
+        public Chip8Settings getChip8Settings() {
+            return this.chip8Settings;
+        }
+
+        public Atari2600Settings getAtari2600Settings() {
             return this.atari2600Settings;
         }
 
-        public GameBoyManager.EmulationSettings getGameBoySettings() {
+        public GameBoySettings getGameBoySettings() {
             return this.gameboySettings;
         }
 

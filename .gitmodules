@@ -7,3 +7,6 @@
 [submodule "app/src/main/resources/system/atari2600/vcs_cart_db"]
 	path = app/src/main/resources/system/atari2600/vcs_cart_db
 	url = https://github.com/munsie/vcs_cart_db
+[submodule "app/src/main/resources/system/chip8/chip-8-database"]
+	path = app/src/main/resources/system/chip8/chip-8-database
+	url = https://github.com/ArkoSammy12/chip-8-database

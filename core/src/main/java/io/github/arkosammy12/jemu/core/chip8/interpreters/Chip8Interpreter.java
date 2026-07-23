@@ -209,7 +209,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 case 0x1 -> { // 8XY1: vX |= vY
                     int X = getX(firstByte, NN);
                     setV(X, getV(X) | getV(getY(firstByte, NN)));
-                    if (this.emulator.getSettings().doVFReset()) {
+                    if (this.emulator.getHost().doVFReset()) {
                         setVF(false);
                     }
                     yield VALID_INSTRUCTION;
@@ -217,7 +217,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 case 0x2 -> { // 8XY2: vX &= vY
                     int X = getX(firstByte, NN);
                     setV(X, getV(X) & getV(getY(firstByte, NN)));
-                    if (this.emulator.getSettings().doVFReset()) {
+                    if (this.emulator.getHost().doVFReset()) {
                         setVF(false);
                     }
                     yield VALID_INSTRUCTION;
@@ -225,7 +225,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 case 0x3 -> { // 8XY3: vX ^= vY
                     int X = getX(firstByte, NN);
                     setV(X, getV(X) ^ getV(getY(firstByte, NN)));
-                    if (this.emulator.getSettings().doVFReset()) {
+                    if (this.emulator.getHost().doVFReset()) {
                         setVF(false);
                     }
                     yield VALID_INSTRUCTION;
@@ -247,7 +247,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 }
                 case 0x6 -> { // 8XY6: vX >>= vY
                     int X = getX(firstByte, NN);
-                    int operand = this.emulator.getSettings().doShiftVXInPlace() ? getV(X) : getV(getY(firstByte, NN));
+                    int operand = this.emulator.getHost().doShiftVXInPlace() ? getV(X) : getV(getY(firstByte, NN));
                     setV(X, operand >>> 1);
                     setVF((operand & 1) != 0);
                     yield VALID_INSTRUCTION;
@@ -262,7 +262,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 }
                 case 0xE -> { // 8XYE: vX <<= vY
                     int X = getX(firstByte, NN);
-                    int operand = this.emulator.getSettings().doShiftVXInPlace() ? getV(X) : getV(getY(firstByte, NN));
+                    int operand = this.emulator.getHost().doShiftVXInPlace() ? getV(X) : getV(getY(firstByte, NN));
                     setV(X, operand << 1);
                     setVF((operand & 128) != 0);
                     yield VALID_INSTRUCTION;
@@ -286,7 +286,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 yield VALID_INSTRUCTION;
             }
             case 0xB -> { // BNNN: jump0 NNN / BXNN: jump0 NNN + vX
-                setPC(getNNN(firstByte, NN) + getV(this.emulator.getSettings().doJumpWithVX() ? getX(firstByte, NN) : 0x0));
+                setPC(getNNN(firstByte, NN) + getV(this.emulator.getHost().doJumpWithVX() ? getX(firstByte, NN) : 0x0));
                 yield VALID_INSTRUCTION;
             }
             case 0xC -> { // CXNN: vX := random NN
@@ -379,7 +379,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                     for (int i = 0; i <= X; i++) {
                         bus.writeByte(I + i, getV(i));
                     }
-                    switch (this.emulator.getSettings().getMemoryIncrementQuirk()) {
+                    switch (this.emulator.getHost().getMemoryIncrementQuirk()) {
                         case INCREMENT_BY_X -> setI(I + X);
                         case INCREMENT_BY_X_PLUS_1 -> setI(I + X + 1);
                     }
@@ -392,7 +392,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                     for (int i = 0; i <= X; i++) {
                         setV(i, bus.readByte(I + i));
                     }
-                    switch (this.emulator.getSettings().getMemoryIncrementQuirk()) {
+                    switch (this.emulator.getHost().getMemoryIncrementQuirk()) {
                         case INCREMENT_BY_X -> setI(I + X);
                         case INCREMENT_BY_X_PLUS_1 -> setI(I + X + 1);
                     }

@@ -83,10 +83,6 @@ public class Chip8Emulator implements Emulator {
         return this.bus;
     }
 
-    public Chip8Host.Settings getSettings() {
-        return this.systemHost.getSettings();
-    }
-
     @Override
     public int getFramerate() {
         return 60;
@@ -150,7 +146,7 @@ public class Chip8Emulator implements Emulator {
     }
 
     protected boolean waitVBlank(int flags) {
-        if (this.getSettings().doDisplayWait()) {
+        if (this.getHost().doDisplayWait()) {
             if ((flags & LONG_INSTRUCTION) != 0) {
                 this.longInstruction = true;
                 return true;

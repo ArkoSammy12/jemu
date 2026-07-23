@@ -1,11 +1,10 @@
 package io.github.arkosammy12.jemu.app;
 
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
-import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.io.CLIArgs;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
-import io.github.arkosammy12.jemu.app.system.managers.SystemManager;
-import io.github.arkosammy12.jemu.app.util.GitProperties;
+import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.HelpDialog;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.Emulator;
@@ -26,7 +25,6 @@ import org.tinylog.Logger;
 
 import javax.imageio.ImageIO;
 import javax.sound.sampled.LineUnavailableException;
-import javax.swing.*;
 import java.awt.*;
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,7 +89,7 @@ public final class Jemu {
 
             this.mainWindow.show();
         } catch (Exception e) {
-            Logger.error("Failed to initialize %s: ".formatted(MavenProperties.ARTIFACT_ID), e);
+            Logger.error(e, "Failed to initialize %s: ".formatted(MavenProperties.ARTIFACT_ID));
             this.shutdown();
             throw new RuntimeException(e);
         }
@@ -130,6 +128,13 @@ public final class Jemu {
                 if (!this.running) {
                     break;
                 }
+                if (event instanceof CoreSettingChangeEvent coreSettingChangeEvent) {
+                    this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangeEvent);
+                    SystemAdapter currentSystem = this.currentSystem;
+                    if (currentSystem != null) {
+                        currentSystem.onCoreSettingChangedEvent(coreSettingChangeEvent);
+                    }
+                }
                 if (event instanceof AudioSettingChangeEvent audioSettingChangeEvent) {
                     this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
                 }
@@ -137,13 +142,6 @@ public final class Jemu {
                     SystemAdapter currentSystem = this.currentSystem;
                     if (currentSystem != null) {
                         currentSystem.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent));
-                    }
-                }
-                if (event instanceof CoreSettingChangeEvent coreSettingChangeEvent) {
-                    this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangeEvent);
-                    SystemAdapter currentSystem = this.currentSystem;
-                    if (currentSystem != null) {
-                        currentSystem.onCoreSettingChangedEvent(coreSettingChangeEvent);
                     }
                 }
             } catch (InterruptedException _) {

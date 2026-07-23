@@ -122,7 +122,7 @@ public class XOChipDisplay<E extends XOChipEmulator> extends SuperChipModernDisp
         spriteY %= displayHeight;
         spriteHeight = spriteHeight < 1 ? 16 : spriteHeight;
 
-        boolean doClipping = this.emulator.getSettings().doClipping();
+        boolean doClipping = this.emulator.getHost().doClipping();
         boolean draw16WideSprite = spriteHeight >= 16;
 
         int sliceLength;

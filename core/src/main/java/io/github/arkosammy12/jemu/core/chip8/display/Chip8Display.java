@@ -48,7 +48,7 @@ public class Chip8Display<E extends Chip8Emulator> implements VideoGenerator {
 
     @Nullable
     public DisplayOrientation getDisplayOrientation() {
-        return DisplayOrientation.DEG_0;
+        return this.emulator.getHost().getDisplayOrientation();
     }
 
     public int draw(int spriteX, int spriteY, int spriteHeight, int indexRegister) {
@@ -60,7 +60,7 @@ public class Chip8Display<E extends Chip8Emulator> implements VideoGenerator {
         spriteX %= displayWidth;
         spriteY %= displayHeight;
 
-        boolean doClipping = this.emulator.getSettings().doClipping();
+        boolean doClipping = this.emulator.getHost().doClipping();
 
         int collision = 0;
         for (int i = 0; i < spriteHeight; i++) {

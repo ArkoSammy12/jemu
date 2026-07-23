@@ -1,32 +1,29 @@
 package io.github.arkosammy12.jemu.core.chip8;
 
 import io.github.arkosammy12.jemu.core.common.SystemHost;
+import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 
 import java.util.Optional;
 
 public interface Chip8Host extends SystemHost {
 
-    Settings getSettings();
-
     ColorPalette getColorPalette();
+
+    VideoGenerator.DisplayOrientation getDisplayOrientation();
 
     SpriteFont getSpriteFont();
 
-    interface Settings {
+    boolean doVFReset();
 
-        boolean doVFReset();
+    MemoryIncrementQuirk getMemoryIncrementQuirk();
 
-        MemoryIncrementQuirk getMemoryIncrementQuirk();
+    boolean doDisplayWait();
 
-        boolean doDisplayWait();
+    boolean doClipping();
 
-        boolean doClipping();
+    boolean doShiftVXInPlace();
 
-        boolean doShiftVXInPlace();
-
-        boolean doJumpWithVX();
-
-    }
+    boolean doJumpWithVX();
 
     interface SpriteFont {
 

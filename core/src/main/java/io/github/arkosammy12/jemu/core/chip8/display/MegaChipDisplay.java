@@ -200,7 +200,7 @@ public class MegaChipDisplay<E extends MegaChipEmulator> extends SuperChip11Disp
         spriteY %= displayHeight;
 
         boolean megaModeEnabled = interpreter.isMegaModeEnabled();
-        boolean doClipping = this.emulator.getSettings().doClipping();
+        boolean doClipping = this.emulator.getHost().doClipping();
 
         int collision = 0;
         if (interpreter.isPointingToFontSprite() || !megaModeEnabled) {

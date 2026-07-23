@@ -1,9 +1,10 @@
-package io.github.arkosammy12.jemu.app.system.managers;
+package io.github.arkosammy12.jemu.app.system.cosmacvip;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
-import io.github.arkosammy12.jemu.app.system.adapters.CosmacVIPAdapter;
-import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.chip8.Chip8Manager;
+import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 
 import javax.sound.sampled.LineUnavailableException;

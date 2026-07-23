@@ -1,16 +1,13 @@
-package io.github.arkosammy12.jemu.app.system.managers;
+package io.github.arkosammy12.jemu.app.system.gameboy;
 
-import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
-import io.github.arkosammy12.jemu.app.system.adapters.GameBoyAdapter;
-import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
-import io.github.arkosammy12.jemu.core.gameboy.DMGPPU;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Collection;
@@ -59,6 +56,10 @@ public class GameBoyManager extends SystemManager {
         return systemAdapter instanceof GameBoyAdapter gameBoyAdapter && this.gameboyModel == gameBoyAdapter.getModel();
     }
 
+    public GameBoySettings getEmulationSettings() {
+        return this.systemRegistry.getEmulationSettings().getGameBoySettings();
+    }
+
     @Override
     public EmulationSettingsBuilder buildSystemSettings(EmulationSettingsBuilder emulationSettingsBuilder) {
         EmulationSettingsBuilder builder = super.buildSystemSettings(emulationSettingsBuilder);
@@ -70,62 +71,15 @@ public class GameBoyManager extends SystemManager {
         });
     }
 
+    @Override
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
         super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        if (coreSettingChangeEvent instanceof DMGPaletteSettingChangedEvent(DMGPalette dmgPalette)) {
+        if (coreSettingChangeEvent instanceof DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette)) {
             this.getEmulationSettings().setDMGPalette(dmgPalette);
         }
     }
 
-    public EmulationSettings getEmulationSettings() {
-        return this.systemRegistry.getEmulationSettings().getGameBoySettings();
-    }
+    public record DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) implements CoreSettingChangeEvent, FrameRequesterVideoEvent {}
 
-    public record DMGPaletteSettingChangedEvent(DMGPalette dmgPalette) implements CoreSettingChangeEvent, FrameRequesterVideoEvent {}
-
-    public enum DMGPalette implements DisplayNamerProvider {
-        @SerializedName("gameboy_green")
-        DMG_GREEN("Game Boy Green", DMGPPU.Palette.DMG_GREEN),
-
-        @SerializedName("greyscale")
-        GREYSCALE("Greyscale", DMGPPU.Palette.GREYSCALE),
-
-        @SerializedName("sameboy")
-        SAMEBOY("SameBoy", DMGPPU.Palette.SAMEBOY)
-        ;
-
-        private final String displayName;
-        private final DMGPPU.Palette dmgPalette;
-
-        DMGPalette(String displayName, DMGPPU.Palette dmgPalette) {
-            this.displayName = displayName;
-            this.dmgPalette = dmgPalette;
-        }
-
-        @Override
-        public String getDisplayName() {
-            return this.displayName;
-        }
-
-        public DMGPPU.Palette mapToHost() {
-            return this.dmgPalette;
-        }
-
-    }
-
-    public static class EmulationSettings {
-
-        @SerializedName("palette")
-        private volatile DMGPalette dmgPalette = DMGPalette.DMG_GREEN;
-
-        private void setDMGPalette(DMGPalette dmgPalette) {
-            this.dmgPalette = dmgPalette;
-        }
-
-        public DMGPalette getDMGPalette() {
-            return this.dmgPalette;
-        }
-
-    }
 
 }

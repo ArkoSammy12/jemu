@@ -1,9 +1,9 @@
-package io.github.arkosammy12.jemu.app.system.managers;
+package io.github.arkosammy12.jemu.app.system.rcastudioii;
 
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
-import io.github.arkosammy12.jemu.app.system.adapters.RCAStudioIIAdapter;
-import io.github.arkosammy12.jemu.app.system.adapters.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemAdapter;
+import io.github.arkosammy12.jemu.app.system.SystemManager;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Collection;
