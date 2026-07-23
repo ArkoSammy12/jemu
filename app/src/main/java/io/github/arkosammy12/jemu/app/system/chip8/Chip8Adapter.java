@@ -17,6 +17,7 @@ import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.text.NumberFormat;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
@@ -40,7 +41,7 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     private final NumberFormat ipfFormatter = NumberFormat.getIntegerInstance();
     private final NumberFormat mipsFormatter = NumberFormat.getNumberInstance();
 
-    private volatile int framesUntilTitleUpdate;
+    private int framesUntilTitleUpdate;
 
     public Chip8Adapter(Jemu jemu, Chip8Manager systemManager, @NotNull Chip8Variant variant) throws LineUnavailableException {
         super(jemu, systemManager);
@@ -100,6 +101,7 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
         super.onFrame();
         Emulator emulator = this.emulator;
         if (emulator != null) {
+            AtomicInteger integer = new AtomicInteger(12);
             this.framesUntilTitleUpdate++;
             if (this.framesUntilTitleUpdate >= emulator.getFramerate()) {
                 this.framesUntilTitleUpdate = 0;
