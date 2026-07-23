@@ -118,9 +118,6 @@ public class Chip8Emulator implements Emulator {
             this.interpreter.decrementTimers();
         }
         this.interpreter.cycle();
-        if (this.interpreter.shouldExit()) {
-            this.terminate();
-        }
         this.display.onFrame();
         this.audio.onFrame();
     }
@@ -134,12 +131,7 @@ public class Chip8Emulator implements Emulator {
 
         int ipf = this.currentInstructionsPerFrame;
         for (int i = 0; i < ipf; i++) {
-            int flags = this.interpreter.cycle();
-            if (this.waitVBlank(flags)) {
-                break;
-            }
-            if (this.interpreter.shouldExit()) {
-                this.terminate();
+            if (this.waitVBlank(this.interpreter.cycle())) {
                 break;
             }
         }
@@ -153,10 +145,6 @@ public class Chip8Emulator implements Emulator {
             } else return (flags & DRAW_EXECUTED) != 0;
         }
         return false;
-    }
-
-    private void terminate() {
-        // TODO
     }
 
     @Override

@@ -25,6 +25,12 @@ public interface Chip8Host extends SystemHost {
 
     boolean doJumpWithVX();
 
+    void setPersistentFlag(int index, int value);
+
+    int getPersistentFlag(int index);
+
+    void exit();
+
     interface SpriteFont {
 
         Optional<byte[][]> getSmallFont();

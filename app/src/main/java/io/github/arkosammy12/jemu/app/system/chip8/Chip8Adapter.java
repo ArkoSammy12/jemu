@@ -9,6 +9,7 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.gui.commands.StopEmulatorCommand;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -223,6 +224,21 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::doJumpWithVX))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doJumpWithVX());
         };
+    }
+
+    @Override
+    public void setPersistentFlag(int index, int value) {
+        this.chip8Manager.getSettings().setPersistentFlag(index, value);
+    }
+
+    @Override
+    public int getPersistentFlag(int index) {
+        return this.chip8Manager.getSettings().getPersistentFlag(index);
+    }
+
+    @Override
+    public void exit() {
+        this.jemu.getMainWindow().submitEmulatorCommand(new StopEmulatorCommand());
     }
 
     @Override

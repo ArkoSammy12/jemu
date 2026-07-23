@@ -24,10 +24,10 @@ Multi-system emulator written in Java.
 | XO-CHIP                             | `xochip`           | ✅ Supported |
 | MEGA-CHIP                           | `megachip`         | ✅ Supported |
 | HyperWaveCHIP-64                    | `hyperwave-chip64` | ✅ Supported |
-| COSMAC VIP                          | `cosmac-vip`       | ✅ Supported |
-| RCA Studio II                       | `rca-studioii`     | ✅ Supported |
 | VIP CHIP-8                          | `vip-chip8`        | ✅ Supported |
 | VIP CHIP-8X                         | `vip-chip8x`       | ✅ Supported |
+| COSMAC VIP                          | `cosmac-vip`       | ✅ Supported |
+| RCA Studio II                       | `rca-studioii`     | ✅ Supported |
 | Game Boy (DMG)                      | `gameboy`          | ✅ Supported |
 | Game Boy Color (CGB)                | `gameboy-color`    | ✅ Supported |
 | Nintendo Entertainment System       | `nes`              | ✅ Supported |

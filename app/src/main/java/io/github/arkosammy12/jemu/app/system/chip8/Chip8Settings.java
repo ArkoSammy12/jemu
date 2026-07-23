@@ -8,11 +8,12 @@ import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
-import java.util.OptionalInt;
 
 public class Chip8Settings {
 
     private volatile transient Chip8Database chip8Database;
+
+    private final transient byte[] persistentFlags = new byte[16];
 
     @SerializedName("setting_source_preference")
     private volatile SettingSourcePreference settingSourcePreference = SettingSourcePreference.PREFER_DATABASE;
@@ -59,6 +60,14 @@ public class Chip8Settings {
         } else {
             return this.chip8Database.getEntryForRom(rom);
         }
+    }
+
+    void setPersistentFlag(int index, int value) {
+        this.persistentFlags[index] = (byte) value;
+    }
+
+    int getPersistentFlag(int index) {
+        return (int) this.persistentFlags[index] & 0xFF;
     }
 
     void setSettingSourcePreference(SettingSourcePreference settingSourcePreference) {

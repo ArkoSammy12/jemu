@@ -23,7 +23,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
     protected final Random random = new Random();
     private final int memoryBoundsMask;
 
-    private final int[] registers = new int[16];
+    private final byte[] registers = new byte[16];
     protected final int[] stack = new int[16];
     protected int programCounter;
     protected int indexRegister;
@@ -32,7 +32,6 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
     private int soundTimer;
 
     private long instructionCounter;
-    protected boolean shouldExit;
 
     public Chip8Interpreter(E emulator) {
         this.emulator = emulator;
@@ -104,19 +103,15 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
     }
 
     protected void setV(int index, int value) {
-        this.registers[index] = value & 0xFF;
+        this.registers[index] = (byte) value;
     }
 
     protected void setVF(boolean value) {
-        this.registers[0xF] = value ? 1 : 0;
+        this.registers[0xF] = (byte) (value ? 1 : 0);
     }
 
     protected int getV(int index) {
-        return this.registers[index];
-    }
-
-    public final boolean shouldExit() {
-        return this.shouldExit;
+        return (int) this.registers[index] & 0xFF;
     }
 
     @Override
@@ -293,7 +288,7 @@ public class Chip8Interpreter<E extends Chip8Emulator> implements Processor {
                 setV(getX(firstByte, NN), this.random.nextInt() & NN);
                 yield VALID_INSTRUCTION;
             }
-            case 0xD -> { // DXYN: sprite vX vX N
+            case 0xD -> { // DXYN: sprite vX vY N
                 Chip8Display<?> display = this.emulator.getVideoGenerator();
                 int spriteX = getV(getX(firstByte, NN)) % display.getWidth();
                 int spriteHeight = getN(firstByte, NN);
