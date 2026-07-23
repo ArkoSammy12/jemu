@@ -71,6 +71,8 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
         };
 
         emulator.setTargetInstructionsPerFrame(this.getIpf());
+
+        this.romTitle = this.getVariant().getName() + " - " + this.romTitle;
         return emulator;
     }
 
