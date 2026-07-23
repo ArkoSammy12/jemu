@@ -30,7 +30,7 @@ public class CosmacVIPAdapter extends SystemAdapter implements CosmacVIPHost {
     }
 
     @Override
-    public Optional<String> getRomTitle() {
+    public Optional<String> getProgramTitle() {
         return Optional.ofNullable(this.romTitle);
     }
 

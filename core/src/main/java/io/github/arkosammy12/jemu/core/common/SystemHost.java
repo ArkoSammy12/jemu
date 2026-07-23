@@ -14,7 +14,7 @@ public interface SystemHost {
 
     String getSystemName();
 
-    Optional<String> getRomTitle();
+    Optional<String> getProgramTitle();
 
     Optional<? extends VideoDriver> getVideoDriver();
 

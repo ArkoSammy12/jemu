@@ -11,7 +11,7 @@ public class TitleManager {
     private final JFrame appFrame;
 
     private volatile String mainTitle = "unknown";
-    private volatile String romTitleString = "No title";
+    private volatile String programTitleString = "No title";
     private volatile String fpsString = "0 FPS (0 ms)";
 
     private long lastWindowTitleUpdate = 0;
@@ -29,7 +29,7 @@ public class TitleManager {
             framesSinceLastUpdate = 0;
             totalFrameTimeSinceLastUpdate = 0;
             SwingUtilities.invokeLater(() -> {
-                this.romTitleString = "";
+                this.programTitleString = "";
                 this.fpsString = "";
                 this.mainTitle = mainWindow.getTitle();
                 appFrame.setTitle(this.mainTitle);
@@ -42,8 +42,8 @@ public class TitleManager {
 
     }
 
-    public void update(String romTitle) {
-        boolean updateTitleNow = !romTitle.equals(this.romTitleString);
+    public void update(String programTitle) {
+        boolean updateTitleNow = !programTitle.equals(this.programTitleString);
 
         long now = System.nanoTime();
         double lastFrameDuration = (double) (now - lastFrameTime);
@@ -67,12 +67,12 @@ public class TitleManager {
         }
 
         if (updateTitleNow || updateStatsNow) {
-            final String titleSnapshot = updateTitleNow ? romTitle : this.romTitleString;
+            final String titleSnapshot = updateTitleNow ? programTitle : this.programTitleString;
             final String fpsSnapshot = updateStatsNow ? newFpsString : this.fpsString;
             final String fullTitle = this.mainTitle + " - " + titleSnapshot + " - " + fpsSnapshot;
 
             if (updateTitleNow) {
-                this.romTitleString = titleSnapshot;
+                this.programTitleString = titleSnapshot;
             }
             if (updateStatsNow) {
                 this.fpsString = fpsSnapshot;

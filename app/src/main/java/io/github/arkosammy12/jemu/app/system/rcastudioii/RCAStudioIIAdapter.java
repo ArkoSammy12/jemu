@@ -27,7 +27,7 @@ public class RCAStudioIIAdapter extends SystemAdapter {
     }
 
     @Override
-    public Optional<String> getRomTitle() {
+    public Optional<String> getProgramTitle() {
         return Optional.ofNullable(this.romTitle);
     }
 

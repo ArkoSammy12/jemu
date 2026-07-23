@@ -34,7 +34,7 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     }
 
     @Override
-    public Optional<String> getRomTitle() {
+    public Optional<String> getProgramTitle() {
         return Optional.ofNullable(this.romTitle);
     }
 

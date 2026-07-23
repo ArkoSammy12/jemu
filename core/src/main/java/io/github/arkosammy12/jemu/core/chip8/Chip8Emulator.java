@@ -88,6 +88,10 @@ public class Chip8Emulator implements Emulator {
         return 60;
     }
 
+    public int getCurrentInstructionsPerFrame() {
+        return this.currentInstructionsPerFrame;
+    }
+
     public void setTargetInstructionsPerFrame(int ipf) {
         if (ipf < 1) {
             throw new IllegalArgumentException("The IPF value cannot be less than 1!");

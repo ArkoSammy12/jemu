@@ -63,6 +63,8 @@ public class Chip8Manager extends SystemManager {
             return builder;
         }
         return builder.addSection("CHIP-8", section -> {
+            section.addBooleanSetting("Show used variant", this.getSettings().showUsedVariant(), ShowUsedVariantSettingChangedEvent::new);
+            section.addBooleanSetting("Show IPF metrics", this.getSettings().showIpfMetrics(), ShowIpfMetricsSettingChangedEvent::new);
             section.addEnumSetting("Use settings from", this.getSettings().getSettingSourcePreference(), SettingSourcePreferenceSettingsChangedEvent::new);
             section.addEnumSetting("Use variant from", this.getSettings().getVariantSource(), VariantSourceSettingChangedEvent::new);
             section.addEnumSetting("Color Palette", this.getSettings().getColorPaletteSetting(), ColorPaletteSettingChangedEVent::new);
@@ -85,6 +87,8 @@ public class Chip8Manager extends SystemManager {
     @Override
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
         switch (coreSettingChangeEvent) {
+            case ShowUsedVariantSettingChangedEvent(boolean value) -> this.getSettings().setShowUsedVariant(value);
+            case ShowIpfMetricsSettingChangedEvent(boolean value) -> this.getSettings().setShowIpfMetrics(value);
             case SettingSourcePreferenceSettingsChangedEvent(Chip8Settings.SettingSourcePreference settingSourcePreference) -> this.getSettings().setSettingSourcePreference(settingSourcePreference);
             case VariantSourceSettingChangedEvent(Chip8Settings.VariantSource variantSource) -> this.getSettings().setVariantSource(variantSource);
             case ColorPaletteSettingChangedEVent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) -> this.getSettings().setColorPaletteSetting(colorPaletteSetting);
@@ -106,6 +110,10 @@ public class Chip8Manager extends SystemManager {
     }
 
     public interface TriggerIpfUpdate extends Event {}
+
+    record ShowUsedVariantSettingChangedEvent(boolean value) implements CoreSettingChangeEvent {}
+
+    record ShowIpfMetricsSettingChangedEvent(boolean value) implements CoreSettingChangeEvent {}
 
     record SettingSourcePreferenceSettingsChangedEvent(Chip8Settings.SettingSourcePreference settingSourcePreference) implements CoreSettingChangeEvent, TriggerIpfUpdate, FrameRequesterVideoEvent {}
 

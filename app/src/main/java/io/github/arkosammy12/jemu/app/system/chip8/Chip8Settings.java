@@ -15,6 +15,12 @@ public class Chip8Settings {
 
     private final transient byte[] persistentFlags = new byte[16];
 
+    @SerializedName("show_used_variant")
+    private volatile boolean showUsedVariant = false;
+
+    @SerializedName("show_ipf_metrics")
+    private volatile boolean showIpfMetrics = false;
+
     @SerializedName("setting_source_preference")
     private volatile SettingSourcePreference settingSourcePreference = SettingSourcePreference.PREFER_DATABASE;
 
@@ -68,6 +74,22 @@ public class Chip8Settings {
 
     int getPersistentFlag(int index) {
         return (int) this.persistentFlags[index] & 0xFF;
+    }
+
+    void setShowUsedVariant(boolean showUsedVariant) {
+        this.showUsedVariant = showUsedVariant;
+    }
+
+    boolean showUsedVariant() {
+        return this.showUsedVariant;
+    }
+
+    void setShowIpfMetrics(boolean showIpfMetrics) {
+        this.showIpfMetrics = showIpfMetrics;
+    }
+
+    boolean showIpfMetrics() {
+        return this.showIpfMetrics;
     }
 
     void setSettingSourcePreference(SettingSourcePreference settingSourcePreference) {

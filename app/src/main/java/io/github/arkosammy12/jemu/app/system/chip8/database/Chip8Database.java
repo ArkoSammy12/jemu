@@ -148,7 +148,7 @@ public class Chip8Database {
     public static class Entry {
 
         @Nullable
-        private final String programTitle;
+        private final String romName;
 
         @Nullable
         private final Integer ipf;
@@ -181,7 +181,7 @@ public class Chip8Database {
         private final Boolean doJumpWithVX;
 
         private Entry(@Nullable ProgramEntry programEntry, @Nullable RomEntry romEntry, @Nullable PlatformEntry platformEntry) {
-            this.programTitle = Optional.ofNullable(programEntry).flatMap(ProgramEntry::getTitle).orElse(null);
+            this.romName = Optional.ofNullable(programEntry).flatMap(ProgramEntry::getTitle).orElse(null);
             this.ipf = Optional.ofNullable(romEntry).flatMap(RomEntry::getTickRate).orElse(null);
             this.colorPalette =  Optional.ofNullable(romEntry)
                     .flatMap(RomEntry::getColors)
@@ -225,8 +225,8 @@ public class Chip8Database {
             this.doJumpWithVX = getQuirk(romEntry, platformEntry, Quirks::getJump).orElse(null);
         }
 
-        public Optional<String> getProgramTitle() {
-            return Optional.ofNullable(this.programTitle);
+        public Optional<String> getRomName() {
+            return Optional.ofNullable(this.romName);
         }
 
         public Optional<Integer> getIpf() {

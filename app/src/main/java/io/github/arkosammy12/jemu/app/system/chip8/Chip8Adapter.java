@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
+import java.text.NumberFormat;
 import java.util.Optional;
 
 public class Chip8Adapter extends SystemAdapter implements Chip8Host {
@@ -27,12 +28,27 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     @Nullable
     private Chip8Database.Entry databaseEntry;
 
-    private String romTitle;
+    @NotNull
+    private String programTitle = "No title";
+
+    @NotNull
+    private String romTitle = "No ROM";
+
+    @NotNull
+    private String variantName;
+
+    private final NumberFormat ipfFormatter = NumberFormat.getIntegerInstance();
+    private final NumberFormat mipsFormatter = NumberFormat.getNumberInstance();
+
+    private volatile int framesUntilTitleUpdate;
 
     public Chip8Adapter(Jemu jemu, Chip8Manager systemManager, @NotNull Chip8Variant variant) throws LineUnavailableException {
         super(jemu, systemManager);
         this.chip8Manager = systemManager;
         this.variant = variant;
+        this.variantName = this.variant.getName();
+        this.mipsFormatter.setMinimumFractionDigits(2);
+        this.mipsFormatter.setMaximumFractionDigits(2);
     }
 
     @NotNull
@@ -51,9 +67,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
         }
 
         if (this.databaseEntry != null) {
-            this.databaseEntry.getProgramTitle().ifPresent(programTitle -> this.romTitle = programTitle);
+            this.databaseEntry.getRomName().ifPresent(programTitle -> this.romTitle = programTitle);
             if (this.chip8Manager.getSettings().getVariantSource() == Chip8Settings.VariantSource.USE_FROM_DATABASE) {
-                this.databaseEntry.getVariant().ifPresent(variant -> this.variant = variant);
+                this.databaseEntry.getVariant().ifPresent(variant -> {
+                    this.variant = variant;
+                    this.variantName = variant.getName();
+                });
             }
         }
 
@@ -72,15 +91,40 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
         emulator.setTargetInstructionsPerFrame(this.getIpf());
 
-        this.romTitle = this.getVariant().getName() + " - " + this.romTitle;
+        this.updateTitle();
         return emulator;
+    }
+
+    @Override
+    public void onFrame() {
+        super.onFrame();
+        Emulator emulator = this.emulator;
+        if (emulator != null) {
+            this.framesUntilTitleUpdate++;
+            if (this.framesUntilTitleUpdate >= emulator.getFramerate()) {
+                this.framesUntilTitleUpdate = 0;
+                this.updateTitle();
+            }
+        }
     }
 
     @Override
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
         super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        if (coreSettingChangeEvent instanceof Chip8Manager.TriggerIpfUpdate && this.emulator instanceof Chip8Emulator chip8Emulator) {
-            chip8Emulator.setTargetInstructionsPerFrame(this.getIpf());
+        switch (coreSettingChangeEvent) {
+            case Chip8Manager.ShowUsedVariantSettingChangedEvent _ -> this.updateTitle();
+            case Chip8Manager.ShowIpfMetricsSettingChangedEvent _ -> {
+                this.framesUntilTitleUpdate = 0;
+                this.updateTitle();
+            }
+            case Chip8Manager.TriggerIpfUpdate _ -> {
+                if (this.emulator instanceof Chip8Emulator chip8Emulator) {
+                    chip8Emulator.setTargetInstructionsPerFrame(this.getIpf());
+                    this.updateTitle();
+                    this.framesUntilTitleUpdate = 0;
+                }
+            }
+            default -> {}
         }
     }
 
@@ -244,14 +288,31 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     }
 
     @Override
-    public Optional<String> getRomTitle() {
-        return Optional.ofNullable(this.romTitle);
+    public Optional<String> getProgramTitle() {
+        return Optional.of(this.programTitle);
     }
 
     @Override
     protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
-        this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
+        initializer.getRomPath().map(path -> path.getFileName().toString()).ifPresent(fileName -> this.romTitle = fileName);
         super.initialize(initializer, tryReset);
+    }
+
+    private void updateTitle() {
+        Emulator emulator = this.emulator;
+        Chip8Settings settings = this.chip8Manager.getSettings();
+        String title = this.romTitle;
+
+        if (settings.showUsedVariant()) {
+            title = this.variantName + " - " + title;
+        }
+        if (settings.showIpfMetrics()) {
+            int ipf = emulator instanceof Chip8Emulator chip8Emulator ? chip8Emulator.getCurrentInstructionsPerFrame() : this.getIpf();
+            double mips = emulator != null ? (ipf * emulator.getFramerate()) / 1_000_000.0 : 0.0;
+            title = title + " - " + "%s IPF (%s MIPS)".formatted(this.ipfFormatter.format(ipf), this.mipsFormatter.format(mips));
+        }
+
+        this.programTitle = title;
     }
 
 }

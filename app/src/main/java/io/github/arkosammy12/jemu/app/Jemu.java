@@ -220,7 +220,7 @@ public final class Jemu {
             return;
         }
         this.currentSystem.getEmulator().ifPresent(Emulator::executeFrame);
-        this.mainWindow.getTitleManager().update(this.currentSystem.getRomTitle().orElse("No title"));
+        this.mainWindow.getTitleManager().update(this.currentSystem.getProgramTitle().orElse("No title"));
     }
 
     private void onEmulatorSteppingFrame() {

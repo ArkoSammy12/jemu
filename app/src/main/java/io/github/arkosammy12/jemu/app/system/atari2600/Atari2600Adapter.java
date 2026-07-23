@@ -32,7 +32,7 @@ public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHo
     }
 
     @Override
-    public Optional<String> getRomTitle() {
+    public Optional<String> getProgramTitle() {
         return Optional.ofNullable(this.romTitle);
     }
 

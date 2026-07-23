@@ -36,7 +36,7 @@ final class HeadlessGameBoyHost implements GameBoyHost {
     }
 
     @Override
-    public Optional<String> getRomTitle() {
+    public Optional<String> getProgramTitle() {
         return Optional.empty();
     }
 
