@@ -922,7 +922,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             return b;
         }
 
-        private abstract static class Sprite {
+        private abstract class Sprite {
 
             protected int horizontalMotion;
 
@@ -936,7 +936,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             protected boolean pixel;
 
             protected void resetHorizontalPosition() {
-                this.phaseCounter = 0;
+                this.phaseCounter = isHBlank() ? 2 : 0;
                 this.positionCounter = 0;
             }
 
@@ -963,7 +963,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         }
 
-        private static class Player extends Sprite {
+        private class Player extends Sprite {
 
             private int oldGraphics;
             private int newGraphics;
@@ -1071,7 +1071,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         }
 
-        private static class Missile extends Sprite {
+        private class Missile extends Sprite {
 
             private final Player associatedPlayer;
 
@@ -1185,7 +1185,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         }
 
-        private static class Ball extends Sprite {
+        private class Ball extends Sprite {
 
             private int width;
 
