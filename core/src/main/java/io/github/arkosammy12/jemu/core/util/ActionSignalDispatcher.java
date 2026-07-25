@@ -11,7 +11,7 @@ public class ActionSignalDispatcher {
     private IntArrayFIFOQueue[][] buffers = new IntArrayFIFOQueue[0][];
     private int[] positions = new int[0];
 
-    public int addSignal(int delay, IntConsumer action) {
+    public int addSignal(int maximumDelay, IntConsumer action) {
         int index = this.buffers.length;
         IntConsumer[] newActions = new IntConsumer[this.actions.length + 1];
         IntArrayFIFOQueue[][] newBuffers = new IntArrayFIFOQueue[this.buffers.length + 1][];
@@ -26,12 +26,12 @@ public class ActionSignalDispatcher {
         }
 
         newActions[index] = action;
-        IntArrayFIFOQueue[] newBuffer = new IntArrayFIFOQueue[delay + 1];
+        IntArrayFIFOQueue[] newBuffer = new IntArrayFIFOQueue[maximumDelay + 1];
         for (int i = 0; i < newBuffer.length; i++) {
             newBuffer[i] = new IntArrayFIFOQueue();
         }
         newBuffers[index] = newBuffer;
-        newDelays[index] = delay;
+        newDelays[index] = maximumDelay;
         newPositions[index] = 0;
 
         this.actions = newActions;
@@ -43,7 +43,11 @@ public class ActionSignalDispatcher {
     }
 
     public void trigger(int id, int value) {
-        int index = (this.positions[id] + this.delays[id]) % this.buffers[id].length;
+        this.trigger(id, value, this.delays[id]);
+    }
+
+    public void trigger(int id, int value, int delay) {
+        int index = (this.positions[id] + delay) % this.buffers[id].length;
         this.buffers[id][index].enqueue(value);
     }
 

@@ -470,7 +470,7 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
         private static final int HBLANK_CLOCKS = 68;
         private static final int VISIBLE_CLOCKS = 160;
 
-        private static final int STUFF_PHASE = 2;
+        private static final int STUFF_PHASE = 0;
         private static final int COUNT_PHASE = 2;
 
         private final ActionSignalDispatcher actionSignalDispatcher = new ActionSignalDispatcher();
@@ -514,6 +514,7 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
         private boolean hMoveLatch;
         private boolean extendHBlank;
 
+        private boolean hMoveSecQ;
         private int hMoveCounter = 15;
         private boolean hMoveCountdownActive = false;
 
@@ -624,15 +625,9 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
             this.horizontalMotionMissile0WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile0.setHorizontalMotion(value >>> 4));
             this.horizontalMotionMissile1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile1.setHorizontalMotion(value >>> 4));
             this.horizontalMotionBallWriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.ball.setHorizontalMotion(value >>> 4));
-            this.applyHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(6, _ -> {
+            this.applyHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(7, _ -> {
                 this.hMoveLatch = true;
-                this.hMoveCountdownActive = true;
-                this.hMoveCounter = 15;
-                this.player0.applyHorizontalMotion();
-                this.player1.applyHorizontalMotion();
-                this.missile0.applyHorizontalMotion();
-                this.missile1.applyHorizontalMotion();
-                this.ball.applyHorizontalMotion();
+                this.hMoveSecQ = true;
             });
             this.clearHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(2, _ -> {
                 this.player0.clearHorizontalMotion();
@@ -691,9 +686,7 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
                 }
                 case VBLANK -> this.actionSignalDispatcher.trigger(this.vBlankWriteSignal, value);
                 case WSYNC -> this.wSync = true;
-                case RSYNC -> {
-                    this.actionSignalDispatcher.trigger(this.rSyncWriteSignal, value);
-                }
+                case RSYNC -> this.actionSignalDispatcher.trigger(this.rSyncWriteSignal, value);
                 case NUSIZ0 -> {
                     this.missile0.setNumberSize(value);
                     this.player0.setNumberSize(value);
@@ -737,7 +730,7 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
                 case VDELBL -> this.ball.setVerticalDelay((value & 1) != 0);
                 case RESMP0 -> this.missile0.resetToPlayer((value & (1 << 1)) != 0);
                 case RESMP1 -> this.missile1.resetToPlayer((value & (1 << 1)) != 0);
-                case HMOVE -> this.actionSignalDispatcher.trigger(this.applyHorizontalMotionWriteSignal, value);
+                case HMOVE -> this.actionSignalDispatcher.trigger(this.applyHorizontalMotionWriteSignal, value, (this.getHSyncPhase() & 1) != 0 ? 7 : 6);
                 case HMCLR -> this.actionSignalDispatcher.trigger(this.clearHorizontalMotionWriteSignal, value);
                 case CXCLR -> {
                     this.collisionLatchMissile0Player = 0;
@@ -765,7 +758,6 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
         }
 
         private void cycle() {
-
             this.actionSignalDispatcher.tick();
 
             if (this.colorClockNumber == 0) {
@@ -774,13 +766,26 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
                 this.extendHBlank = true;
             }
 
+            int hSyncPhase = this.getHSyncPhase();
+
+            if (this.hMoveSecQ && hSyncPhase == STUFF_PHASE) {
+                this.hMoveSecQ = false;
+                this.hMoveCountdownActive = true;
+                this.hMoveCounter = 15;
+                this.player0.applyHorizontalMotion();
+                this.player1.applyHorizontalMotion();
+                this.missile0.applyHorizontalMotion();
+                this.missile1.applyHorizontalMotion();
+                this.ball.applyHorizontalMotion();
+            }
+
             this.player0.tick();
             this.player1.tick();
             this.missile0.tick();
             this.missile1.tick();
             this.ball.tick();
 
-            if (this.getHSyncPhase() == COUNT_PHASE) {
+            if (hSyncPhase == COUNT_PHASE) {
                 if (this.hMoveCountdownActive) {
                     int oldHMoveCounter = this.hMoveCounter;
                     this.hMoveCounter = (this.hMoveCounter - 1) & 0xF;
