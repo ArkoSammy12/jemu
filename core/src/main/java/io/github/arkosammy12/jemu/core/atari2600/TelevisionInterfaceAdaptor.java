@@ -11,7 +11,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.Arrays;
 import java.util.Optional;
 
-public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, VideoGenerator, AudioGenerator {
+public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & TelevisionInterfaceAdaptor.SystemBus> implements Bus, VideoGenerator, AudioGenerator {
 
     private static final int CXM0P = 0x00;
     private static final int CXM1P = 0x01;
@@ -85,7 +85,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
     private boolean i4Latch = true;
     private boolean i5Latch = true;
 
-    public TIA(E emulator, int samplesPerFrame) {
+    public TelevisionInterfaceAdaptor(E emulator, int samplesPerFrame) {
         this.emulator = emulator;
         this.video = new Video(emulator);
         this.audio = new Audio(samplesPerFrame);
@@ -469,10 +469,13 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         private static final int CLOCKS_PER_SCANLINE = 228;
         private static final int HBLANK_CLOCKS = 68;
         private static final int VISIBLE_CLOCKS = 160;
-        private static final int COLOR_CLOCK_DIVISOR = 4;
+
+        private static final int STUFF_PHASE = 2;
+        private static final int COUNT_PHASE = 2;
 
         private final ActionSignalDispatcher actionSignalDispatcher = new ActionSignalDispatcher();
         private final int vBlankWriteSignal;
+        private final int rSyncWriteSignal;
         private final int reflectPlayer0WriteSignal;
         private final int reflectPlayer1WriteSignal;
         private final int playfield0WriteSignal;
@@ -507,8 +510,12 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         private final Ball ball = new Ball();
 
         private int colorClockNumber;
-        private int hSyncCounter;
+
         private boolean hMoveLatch;
+        private boolean extendHBlank;
+
+        private int hMoveCounter = 15;
+        private boolean hMoveCountdownActive = false;
 
         private int scanlineNumber;
 
@@ -536,6 +543,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         private int collisionLatchMissile1PlayfieldBall;
         private int collisionLatchBallPlayfield;
         private int collisionLatchPlayerPlayerMissileMissile;
+
 
         private Video(E emulator) {
             switch (emulator.getTVFormat()) {
@@ -593,6 +601,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 setLatch((value & (1 << 6)) != 0);
                 this.vBlank = (value & (1 << 1)) != 0;
             });
+            this.rSyncWriteSignal = this.actionSignalDispatcher.addSignal(4, _ -> this.nextScanline());
             this.reflectPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.player0.setReflectGraphics((value & (1 << 3)) != 0));
             this.reflectPlayer1WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.player1.setReflectGraphics((value & (1 << 3)) != 0));
             this.playfield0WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = ((reverseBits(value) & 0xF) << 16) | (this.playfield & 0x0FFFF));
@@ -616,9 +625,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             this.horizontalMotionMissile1WriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.missile1.setHorizontalMotion(value >>> 4));
             this.horizontalMotionBallWriteSignal = this.actionSignalDispatcher.addSignal(2, value -> this.ball.setHorizontalMotion(value >>> 4));
             this.applyHorizontalMotionWriteSignal = this.actionSignalDispatcher.addSignal(6, _ -> {
-                if (this.isHBlank()) {
-                    this.hMoveLatch = true;
-                }
+                this.hMoveLatch = true;
+                this.hMoveCountdownActive = true;
+                this.hMoveCounter = 15;
                 this.player0.applyHorizontalMotion();
                 this.player1.applyHorizontalMotion();
                 this.missile0.applyHorizontalMotion();
@@ -682,7 +691,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 }
                 case VBLANK -> this.actionSignalDispatcher.trigger(this.vBlankWriteSignal, value);
                 case WSYNC -> this.wSync = true;
-                case RSYNC -> this.hSyncCounter = 0;
+                case RSYNC -> {
+                    this.actionSignalDispatcher.trigger(this.rSyncWriteSignal, value);
+                }
                 case NUSIZ0 -> {
                     this.missile0.setNumberSize(value);
                     this.player0.setNumberSize(value);
@@ -745,22 +756,38 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             return this.wSync;
         }
 
+        private int getHSyncCounter() {
+            return (this.colorClockNumber & 0xFD) >>> 2;
+        }
+
+        private int getHSyncPhase() {
+            return this.colorClockNumber & 0b11;
+        }
+
         private void cycle() {
 
             this.actionSignalDispatcher.tick();
 
             if (this.colorClockNumber == 0) {
                 this.wSync = false;
+            } else if (this.colorClockNumber == 64 && this.hMoveLatch) {
+                this.extendHBlank = true;
             }
 
-            boolean hBlank = this.isHBlank();
+            this.player0.tick();
+            this.player1.tick();
+            this.missile0.tick();
+            this.missile1.tick();
+            this.ball.tick();
 
-            if (!hBlank) {
-                this.player0.clock();
-                this.player1.clock();
-                this.missile0.clock();
-                this.missile1.clock();
-                this.ball.clock();
+            if (this.getHSyncPhase() == COUNT_PHASE) {
+                if (this.hMoveCountdownActive) {
+                    int oldHMoveCounter = this.hMoveCounter;
+                    this.hMoveCounter = (this.hMoveCounter - 1) & 0xF;
+                    if (this.hMoveCounter > oldHMoveCounter) {
+                        this.hMoveCountdownActive = false;
+                    }
+                }
             }
 
             boolean pf = this.getPlayfieldPixel();
@@ -833,7 +860,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             int pixelX = this.colorClockNumber - HBLANK_CLOCKS;
             if (this.isKernelScanline() && pixelX >= 0 && pixelX < 160) {
                 int colorIndex;
-                if (hBlank || this.vBlank || this.vSync) {
+                if (this.isHBlank() || this.vBlank || this.vSync) {
                     colorIndex = 0;
                 } else if (this.playfieldPriority) {
                     if (bl || pf) {
@@ -869,30 +896,30 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 this.video[((this.scanlineNumber - this.vBlankEndScanline) * VISIBLE_CLOCKS + pixelX)] = colorIndex;
             }
 
+
             this.colorClockNumber++;
-            if (this.colorClockNumber % COLOR_CLOCK_DIVISOR == 0) {
-                this.hSyncCounter++;
-                if (this.hSyncCounter >= 57) {
-                    this.hSyncCounter = 0;
-                    this.hMoveLatch = false;
-                }
-            }
             if (this.colorClockNumber >= CLOCKS_PER_SCANLINE) {
-                this.scanlineNumber++;
-                if (this.scanlineNumber >= this.scanlinesPerFrame) {
-                    this.scanlineNumber = 0;
-                }
-                this.colorClockNumber = 0;
-                this.hSyncCounter = 0;
+                this.nextScanline();
             }
         }
 
+        private void nextScanline() {
+            this.colorClockNumber = 0;
+            this.scanlineNumber++;
+            if (this.scanlineNumber >= this.scanlinesPerFrame) {
+                this.scanlineNumber = 0;
+            }
+            this.hMoveLatch = false;
+            this.extendHBlank = false;
+        }
+
         private boolean getPlayfieldPixel() {
-            if (this.hSyncCounter < 17) {
+            int hSyncCounter = this.getHSyncCounter();
+            if (hSyncCounter < 17) {
                 return false;
             }
             int playfieldBit;
-            int playfieldColumn = this.hSyncCounter - 17;
+            int playfieldColumn = hSyncCounter - 17;
             if (playfieldColumn < 20) {
                 playfieldBit = 19 - playfieldColumn;
             } else {
@@ -911,7 +938,7 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
         }
 
         private boolean isHBlank() {
-            return this.colorClockNumber < HBLANK_CLOCKS || (this.hMoveLatch && this.colorClockNumber < HBLANK_CLOCKS + 8);
+            return this.colorClockNumber < HBLANK_CLOCKS || (this.extendHBlank && this.colorClockNumber < HBLANK_CLOCKS + 8);
         }
 
         private static int reverseBits(int b) {
@@ -924,9 +951,12 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
         private abstract class Sprite {
 
-            protected int horizontalMotion;
+            protected static final int POSITION_COUNTER_DIVISOR = 4;
 
-            protected int phaseCounter;
+            private int horizontalMotion;
+            public boolean hMoving;
+
+            protected int positionCounterPhase;
             protected int positionCounter;
 
             protected int startCounter;
@@ -936,23 +966,36 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
             protected boolean pixel;
 
             protected void resetHorizontalPosition() {
-                this.phaseCounter = isHBlank() ? 2 : 0;
+                this.positionCounterPhase = isHBlank() ? 2 : 0;
                 this.positionCounter = 0;
             }
 
             protected void setHorizontalMotion(int value) {
-                this.horizontalMotion = value & 0xF;
+                this.horizontalMotion = (value & 0xF) ^ 8;
             }
 
             protected void applyHorizontalMotion() {
-                int clocks = this.horizontalMotion ^ 8;
-                for (int i = 0; i < clocks; i++) {
-                    this.clock();
-                }
+                this.hMoving = true;
             }
 
             protected void clearHorizontalMotion() {
-                this.horizontalMotion = 0;
+                this.horizontalMotion = 8;
+            }
+
+            protected void tick() {
+                boolean clock = !isHBlank();
+                if (getHSyncPhase() == STUFF_PHASE) {
+                    if (this.hMoving) {
+                        if (hMoveCounter == (this.horizontalMotion ^ 0xF)) {
+                            this.hMoving = false;
+                        } else {
+                            clock = true;
+                        }
+                    }
+                }
+                if (clock) {
+                    this.clock();
+                }
             }
 
             protected abstract void clock();
@@ -1001,9 +1044,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             @Override
             protected void clock() {
-                this.phaseCounter++;
-                if (this.phaseCounter >= 4) {
-                    this.phaseCounter = 0;
+                this.positionCounterPhase++;
+                if (this.positionCounterPhase >= POSITION_COUNTER_DIVISOR) {
+                    this.positionCounterPhase = 0;
 
                     boolean firstCopy = this.numberSize == 1 || this.numberSize == 3;
                     boolean secondCopy = this.numberSize == 2 || this.numberSize == 3 || this.numberSize == 6;
@@ -1086,13 +1129,6 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                 this.scanCounter = 1;
             }
 
-            protected void applyHorizontalMotion() {
-                int clocks = this.horizontalMotion ^ 8;
-                for (int i = 0; i < clocks; i++) {
-                    this.clockCounters();
-                }
-            }
-
             protected void setEnabled(boolean enabled) {
                 this.enabled = enabled;
             }
@@ -1108,29 +1144,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             @Override
             protected void clock() {
-                this.clockCounters();
-                if (this.resetToPlayer && this.associatedPlayer.isDrawingMiddleOfMainCopy()) {
-                    switch (this.associatedPlayer.getWidth()) {
-                        case 2 -> {
-                            this.positionCounter = 1;
-                            this.phaseCounter = 3;
-                        }
-                        case 4 -> {
-                            this.positionCounter = 3;
-                            this.phaseCounter = 1;
-                        }
-                        default -> {
-                            this.positionCounter = 1;
-                            this.phaseCounter = 0;
-                        }
-                    }
-                }
-            }
-
-            private void clockCounters() {
-                this.phaseCounter++;
-                if (this.phaseCounter >= 4) {
-                    this.phaseCounter = 0;
+                this.positionCounterPhase++;
+                if (this.positionCounterPhase >= POSITION_COUNTER_DIVISOR) {
+                    this.positionCounterPhase = 0;
 
                     boolean firstCopy = this.number == 1 || this.number == 3;
                     boolean secondCopy = this.number == 2 || this.number == 3 || this.number == 6;
@@ -1172,6 +1188,23 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
                         this.scanCounterIncrementDivisorCounter = 0;
                     }
 
+                }
+
+                if (this.resetToPlayer && this.associatedPlayer.isDrawingMiddleOfMainCopy()) {
+                    switch (this.associatedPlayer.getWidth()) {
+                        case 2 -> {
+                            this.positionCounter = 1;
+                            this.positionCounterPhase = 3;
+                        }
+                        case 4 -> {
+                            this.positionCounter = 3;
+                            this.positionCounterPhase = 1;
+                        }
+                        default -> {
+                            this.positionCounter = 1;
+                            this.positionCounterPhase = 0;
+                        }
+                    }
                 }
             }
 
@@ -1222,9 +1255,9 @@ public class TIA<E extends Atari2600Emulator & TIA.SystemBus> implements Bus, Vi
 
             @Override
             protected void clock() {
-                this.phaseCounter++;
-                if (this.phaseCounter >= 4) {
-                    this.phaseCounter = 0;
+                this.positionCounterPhase++;
+                if (this.positionCounterPhase >= POSITION_COUNTER_DIVISOR) {
+                    this.positionCounterPhase = 0;
 
                     if (this.positionCounter == 39) {
                         this.start();

@@ -7,7 +7,7 @@ import io.github.arkosammy12.jemu.core.hardware.NMOS6507;
 
 import static io.github.arkosammy12.jemu.core.atari2600.Atari2600Controller.Actions.*;
 
-public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.SystemBus, TIA.SystemBus {
+public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.SystemBus, TelevisionInterfaceAdaptor.SystemBus {
 
     private static final int NTSC_CPU_CLOCK_SPEED = 1193182;
     private static final int NTSC_FRAMERATE = 60;
@@ -19,7 +19,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     private final TVFormat tvFormat;
 
     private final NMOS6507 cpu;
-    private final TIA<?> tia;
+    private final TelevisionInterfaceAdaptor<?> tia;
     private final MOS6532<?> pia;
     private final Atari2600Bus<?> bus;
     private final Atari2600Controller<?> controller;
@@ -57,7 +57,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
 
         this.controller = new Atari2600Controller<>(this);
         this.cpu = new NMOS6507(this);
-        this.tia = new TIA<>(this, this.iterationsPerFrame);
+        this.tia = new TelevisionInterfaceAdaptor<>(this, this.iterationsPerFrame);
         this.pia = new MOS6532<>(this);
         this.bus = new Atari2600Bus<>(this);
         this.cartridge = Atari2600Cartridge.getCartridge(this);
@@ -93,7 +93,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
         return this.controller;
     }
 
-    public TIA<?> getTIA() {
+    public TelevisionInterfaceAdaptor<?> getTIA() {
         return this.tia;
     }
 
