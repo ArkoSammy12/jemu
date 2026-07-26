@@ -31,22 +31,6 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
     private static final int CYCLES_PER_SCANLINE = 456;
     private static final int SCANLINES_PER_FRAME = 154;
 
-    private static final int[] DMG_PALETTE = {
-            0x9BBC0F,
-            0x8BAC0F,
-            0x306230,
-            0x0F380F,
-            0x9BBC0F // LCD off color
-    };
-
-    private static final int[] GREYSCALE_PATTERN = {
-            0xFFFFFF,
-            0xC0C0C0,
-            0x404040,
-            0x000000,
-            0xFFFFFF // LCD off color
-    };
-
     protected final E emulator;
 
     protected final byte[] vram = new byte[0x2000];
