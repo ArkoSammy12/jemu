@@ -546,7 +546,6 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
         private int collisionLatchBallPlayfield;
         private int collisionLatchPlayerPlayerMissileMissile;
 
-
         private Video(E emulator) {
             switch (emulator.getTVFormat()) {
                 case NTSC -> {
