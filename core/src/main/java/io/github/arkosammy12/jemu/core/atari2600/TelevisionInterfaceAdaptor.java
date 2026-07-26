@@ -264,7 +264,8 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
         }
 
         @Override
-        public @NotNull SampleSize getBytesPerSample() {
+        @NotNull
+        public SampleSize getBytesPerSample() {
             return SampleSize.BYTES_2;
         }
 
@@ -730,7 +731,7 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
                 case VDELBL -> this.ball.setVerticalDelay((value & 1) != 0);
                 case RESMP0 -> this.missile0.resetToPlayer((value & (1 << 1)) != 0);
                 case RESMP1 -> this.missile1.resetToPlayer((value & (1 << 1)) != 0);
-                case HMOVE -> this.actionSignalDispatcher.trigger(this.applyHorizontalMotionWriteSignal, value, (this.getHSyncPhase() & 1) != 0 ? 7 : 6);
+                case HMOVE -> this.actionSignalDispatcher.trigger(this.applyHorizontalMotionWriteSignal, value, (this.getHSyncPhase() & 1) == 0 ? 6 : 7);
                 case HMCLR -> this.actionSignalDispatcher.trigger(this.clearHorizontalMotionWriteSignal, value);
                 case CXCLR -> {
                     this.collisionLatchMissile0Player = 0;
