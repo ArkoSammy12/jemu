@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.gui;
 
 import io.github.arkosammy12.jemu.frontend.config.settings.internal.VideoSize;
+import io.github.arkosammy12.jemu.frontend.events.core.AspectRatioSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEvent;
@@ -11,7 +12,6 @@ import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -69,6 +69,7 @@ public class SystemViewport {
             }
         });
 
+        mainWindow.onEvent(AspectRatioSettingChangedEvent.class, _ -> SwingUtilities.invokeLater(this::resizeWindowToDisplay));
 
         appFrame.addWindowStateListener(e -> {
             // Clear the video size selection if there's a system running and the window is maximized
@@ -137,7 +138,7 @@ public class SystemViewport {
                     if (this.isMainWindowMaximized()) {
                         SwingUtilities.invokeLater(() -> this.mainWindow.publishEvent(new VideoSizeChangedEvent(null)));
                     } else {
-                        this.resizeWindowToFitDisplay(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getVideoSize().orElse(null));
+                        this.resizeWindowToDisplay();
                     }
                 });
             } else {
@@ -147,6 +148,10 @@ public class SystemViewport {
             this.viewportPanel.revalidate();
             this.viewportPanel.repaint();
         });
+    }
+
+    private void resizeWindowToDisplay() {
+        this.resizeWindowToFitDisplay(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getVideoSize().orElse(null));
     }
 
     private void resizeWindowToFitDisplay(@Nullable VideoSize videoSize) {
@@ -173,7 +178,7 @@ public class SystemViewport {
             return null;
         }
 
-        int displayWidth = systemDisplayComponent.getSystemDisplayWidth() * videoSize.getScaleFactor();
+        int displayWidth = (int) Math.round(systemDisplayComponent.getSystemDisplayWidth() * videoSize.getScaleFactor() * systemDisplayComponent.getSystemAspectRatio());
         int displayHeight = systemDisplayComponent.getSystemDisplayHeight() * videoSize.getScaleFactor();
 
         int horizontalPadding = Math.max(0, this.appFrame.getWidth() - viewportPanel.getWidth());

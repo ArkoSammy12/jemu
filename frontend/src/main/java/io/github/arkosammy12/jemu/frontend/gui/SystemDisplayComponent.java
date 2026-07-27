@@ -10,6 +10,8 @@ public interface SystemDisplayComponent {
 
     int getSystemDisplayHeight();
 
+    double getSystemAspectRatio();
+
     @NotNull
     Component getComponent();
 

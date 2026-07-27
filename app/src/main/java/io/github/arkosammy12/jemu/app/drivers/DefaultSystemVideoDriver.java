@@ -96,6 +96,11 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
     }
 
     @Override
+    public double getSystemAspectRatio() {
+        return this.pixelAspectRatioSupplier.getAsDouble();
+    }
+
+    @Override
     @NotNull
     public Component getComponent() {
         return this;
