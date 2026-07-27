@@ -20,6 +20,7 @@
 - Add per-system settings:
   - Added Game Boy palette settings when playing with the DMG.
   - Added Atari 2600 settings for controlling the console switches, and overriding the TV format and cartridge type.
+- When adjusting the window size based on the selected video size, take into account the system's pixel aspect ratio or the selected aspect ratio setting.
 
 ## 1.0.0
 
