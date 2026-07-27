@@ -221,7 +221,6 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
 
     private class Audio implements AudioGenerator, Bus {
 
-        private static final int AUDIO_CPU_CLK_DIVISOR = 38;
         private static final double OUTPUT_GAIN = Short.MAX_VALUE;
 
         private final SampleFrameResampler sampleFrameResampler;
@@ -231,8 +230,6 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
 
         private final double[] sampleBuffer;
         private int currentSampleIndex;
-
-        private int audioClockDivisor = AUDIO_CPU_CLK_DIVISOR;
 
         private Audio(int samplesPerFrame) {
             this.sampleBuffer = new double[samplesPerFrame];
@@ -284,19 +281,6 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
             return this.sampleFrameResampler;
         }
 
-        private void cycle() {
-            this.audioClockDivisor--;
-            if (this.audioClockDivisor <= 0) {
-                this.audioClockDivisor = AUDIO_CPU_CLK_DIVISOR;
-                this.channel0.clock();
-                this.channel1.clock();
-            }
-            double ch0 = this.channel0.getDigitalOutput();
-            double ch1 = this.channel1.getDigitalOutput();
-            this.sampleBuffer[this.currentSampleIndex] = (ch0 + ch1) / 30.0;
-            this.currentSampleIndex++;
-        }
-
         @Override
         public int readByte(int address) {
             return emulator.combineWithDataBus(0, 0x00);
@@ -314,6 +298,13 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
             }
         }
 
+        private void cycle() {
+            double ch0 = this.channel0.getDigitalOutput();
+            double ch1 = this.channel1.getDigitalOutput();
+            this.sampleBuffer[this.currentSampleIndex] = (ch0 + ch1) / 30.0;
+            this.currentSampleIndex++;
+        }
+
         private record SampleFrame(double[] sampleFrame) implements AudioGenerator.SampleFrame {}
 
         private static class AudioChannel {
@@ -322,7 +313,10 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
             private int frequency;
             private int volume;
 
+            private boolean clockEnable;
+            private boolean noiseFeedback;
             private boolean holdPulseCounter;
+            private boolean nineBitPolyBit4; // Corresponds to bit 0 of the 5-bit poly counter
 
             private int frequencyDivisorCounter;
             private int pulseCounter;
@@ -344,12 +338,11 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
             // using the source file https://github.com/stella-emu/stella/blob/master/src/emucore/tia/AudioChannel.cxx,
             // itself based on Christian Speckner's 6502.ts (https://github.com/6502ts/6502.ts/blob/master/src/machine/stella/tia/PCMChannel.ts).
             // Many thanks to Stephen Anthony and Christian Speckner for letting me borrow their implementation.
-            private void clock() {
+            private void phase0() {
                 if (this.frequencyDivisorCounter == this.frequency) {
-                    this.frequencyDivisorCounter = 0;
+                    this.clockEnable = true;
 
-                    // Corresponds to bit 0 of the 5-bit poly counter
-                    boolean nineBitPolyBit4 = (this.noiseCounter & 1) != 0;
+                    this.nineBitPolyBit4 = (this.noiseCounter & 1) != 0;
 
                     switch (this.control & 0b11) {
                         case 0, 1 -> this.holdPulseCounter = false;
@@ -357,23 +350,31 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
                         case 3 -> this.holdPulseCounter = !nineBitPolyBit4;
                     }
 
-                    boolean noiseFeedback;
                     if ((this.control & 0b11) == 0) {
-                        noiseFeedback = ((this.pulseCounter ^ this.noiseCounter) & 1) != 0 || !(this.noiseCounter != 0 || (this.pulseCounter != 0xA)) || (this.control & 0xC) == 0;
+                        this.noiseFeedback = ((this.pulseCounter ^ this.noiseCounter) & 1) != 0 || !(this.noiseCounter != 0 || (this.pulseCounter != 0xA)) || (this.control & 0xC) == 0;
                     } else {
-                        noiseFeedback = ((((this.noiseCounter & (1 << 2)) != 0) ? 1 : 0) ^ (this.noiseCounter & 1)) != 0 || this.noiseCounter == 0;
+                        this.noiseFeedback = ((((this.noiseCounter & (1 << 2)) != 0) ? 1 : 0) ^ (this.noiseCounter & 1)) != 0 || this.noiseCounter == 0;
                     }
+                } else {
+                    this.clockEnable = false;
+                }
+            }
+
+            private void phase1() {
+                if (this.clockEnable) {
+                    this.clockEnable = false;
+                    this.frequencyDivisorCounter = 0;
 
                     boolean pulseFeedback = switch ((this.control >>> 2) & 0b11) {
                         case 0 -> ((((this.pulseCounter & (1 << 1)) != 0) ? 1 : 0) ^ (this.pulseCounter & 1)) != 0 && (this.pulseCounter != 0xA) && ((this.control & 0b11) != 0);
                         case 1 -> (this.pulseCounter & (1 << 3)) == 0;
-                        case 2 -> !nineBitPolyBit4;
+                        case 2 -> !this.nineBitPolyBit4;
                         case 3 -> !(((this.pulseCounter & (1 << 1)) != 0) || (this.pulseCounter & 0xE) == 0);
                         default -> false;
                     };
 
                     this.noiseCounter >>>= 1;
-                    if (noiseFeedback) {
+                    if (this.noiseFeedback) {
                         this.noiseCounter |= (1 << 4);
                     }
 
@@ -389,12 +390,17 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
                 }
             }
 
+            private void onScanlineBegin() {
+                if (this.clockEnable) {
+                    this.phase1();
+                }
+            }
+
             private int getDigitalOutput() {
                 return (this.pulseCounter & 1) * this.volume;
             }
 
         }
-
     }
 
     private class Video implements VideoGenerator, Bus {
@@ -473,6 +479,11 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
 
         private static final int STUFF_PHASE = 0;
         private static final int COUNT_PHASE = 2;
+
+        private static final int AUD_FIRST_PHASE0_CLK = 9;
+        private static final int AUD_SECOND_PHASE0_CLK = 81;
+        private static final int AUD_FIRST_PHASE1_CLK = 37;
+        private static final int AUD_SECOND_PHASE1_CLK = 149;
 
         private final ActionSignalDispatcher actionSignalDispatcher = new ActionSignalDispatcher();
         private final int vBlankWriteSignal;
@@ -760,7 +771,20 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
         private void cycle() {
             this.actionSignalDispatcher.tick();
 
+            switch (this.colorClockNumber) {
+                case AUD_FIRST_PHASE0_CLK, AUD_SECOND_PHASE0_CLK -> {
+                    audio.channel0.phase0();
+                    audio.channel1.phase0();
+                }
+                case AUD_FIRST_PHASE1_CLK, AUD_SECOND_PHASE1_CLK -> {
+                    audio.channel0.phase1();
+                    audio.channel1.phase1();
+                }
+            }
+
             if (this.colorClockNumber == 0) {
+                audio.channel0.onScanlineBegin();
+                audio.channel1.onScanlineBegin();
                 this.wSync = false;
             } else if (this.colorClockNumber == 64 && this.hMoveLatch) {
                 this.extendHBlank = true;
