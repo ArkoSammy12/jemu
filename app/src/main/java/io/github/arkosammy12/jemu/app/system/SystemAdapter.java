@@ -154,7 +154,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             if (emu != null) {
                 this.videoDriver = new DefaultSystemVideoDriver(this.jemu, emu.getVideoGenerator());
             }
-            return this.videoDriver;
+            return Optional.ofNullable(this.videoDriver);
         });
 
         this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(new KeyAdapter() {

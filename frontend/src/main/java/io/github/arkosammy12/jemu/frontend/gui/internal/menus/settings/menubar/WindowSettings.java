@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings;
+package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.menubar;
 
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;

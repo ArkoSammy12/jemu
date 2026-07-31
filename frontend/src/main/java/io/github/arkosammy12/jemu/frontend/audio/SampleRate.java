@@ -1,8 +1,9 @@
 package io.github.arkosammy12.jemu.frontend.audio;
 
 import com.google.gson.annotations.SerializedName;
+import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
 
-public enum SampleRate {
+public enum SampleRate implements DisplayNamerProvider {
 
     @SerializedName("96000_hz")
     HZ_96000(96000, "96000 Hz"),
@@ -19,7 +20,6 @@ public enum SampleRate {
     @SerializedName("8000_hz")
     HZ_8000(8000, "8000 Hz");
 
-
     private final int intValue;
     private final String displayName;
 
@@ -32,6 +32,7 @@ public enum SampleRate {
         return this.intValue;
     }
 
+    @Override
     public String getDisplayName() {
         return this.displayName;
     }

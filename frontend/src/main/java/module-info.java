@@ -15,7 +15,6 @@ module frontend {
     exports io.github.arkosammy12.jemu.frontend.gui.commands;
     exports io.github.arkosammy12.jemu.frontend.gui.managers;
     exports io.github.arkosammy12.jemu.frontend.gui.system;
-    exports io.github.arkosammy12.jemu.frontend.gui.system.builder;
     exports io.github.arkosammy12.jemu.frontend.events;
     exports io.github.arkosammy12.jemu.frontend.events.audio;
     exports io.github.arkosammy12.jemu.frontend.events.core;
@@ -28,5 +27,8 @@ module frontend {
     opens io.github.arkosammy12.jemu.frontend.config.internal to com.google.gson;
     opens io.github.arkosammy12.jemu.frontend.config.settings.internal to com.google.gson;
     opens io.github.arkosammy12.jemu.frontend.config.state to com.google.gson;
+    exports io.github.arkosammy12.jemu.frontend.util.settings.menubar;
+    exports io.github.arkosammy12.jemu.frontend.util.settings.panel;
+    exports io.github.arkosammy12.jemu.frontend.util.settings;
 
 }

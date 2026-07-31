@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.config.settings;
 
 import com.google.gson.annotations.SerializedName;
+import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
 
 public interface VideoSettings {
 
@@ -8,12 +9,12 @@ public interface VideoSettings {
 
     AspectRatio getAspectRatio();
 
-    enum AspectRatio {
-        @SerializedName("pixel_perfect")
-        PIXEL_PERFECT(1.0, "Pixel Perfect (1:1)"),
-
+    enum AspectRatio implements DisplayNamerProvider {
         @SerializedName("auto")
         AUTO(1.0, "Auto"),
+
+        @SerializedName("pixel_perfect")
+        PIXEL_PERFECT(1.0, "Pixel Perfect (1:1)"),
 
         @SerializedName("ntsc")
         NTSC(8.0 / 7.0, "NTSC (8:7)"),
@@ -39,6 +40,7 @@ public interface VideoSettings {
             return this.pixelAspectRatio;
         }
 
+        @Override
         public String getDisplayName() {
             return this.displayName;
         }

@@ -64,12 +64,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     @Override
     protected Emulator createEmulator() {
         if (this.rom != null) {
-            this.databaseEntry = this.chip8Manager.getSettings().getEntryForRom(this.rom).orElse(null);
+            this.databaseEntry = this.chip8Manager.getEmulationSettings().getEntryForRom(this.rom).orElse(null);
         }
 
         if (this.databaseEntry != null) {
             this.databaseEntry.getRomName().ifPresent(programTitle -> this.romTitle = programTitle);
-            if (this.chip8Manager.getSettings().getVariantSource() == Chip8Settings.VariantSource.USE_FROM_DATABASE) {
+            if (this.chip8Manager.getEmulationSettings().getVariantSource() == Chip8Settings.VariantSource.USE_FROM_DATABASE) {
                 this.databaseEntry.getVariant().ifPresent(variant -> {
                     this.variant = variant;
                     this.variantName = variant.getName();
@@ -155,12 +155,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public ColorPalette getColorPalette() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> BuiltInChip8Palette.CADMIUM;
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::getColorPalette)
                     .orElse(BuiltInChip8Palette.CADMIUM);
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getColorPalette()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getColorPalette()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::getColorPalette))
                     .orElse(BuiltInChip8Palette.CADMIUM);
         };
@@ -168,24 +168,24 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public VideoGenerator.DisplayOrientation getDisplayOrientation() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> VideoGenerator.DisplayOrientation.DEG_0;
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::getDisplayOrientation)
                     .orElse(VideoGenerator.DisplayOrientation.DEG_0);
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getDisplayOrientation()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getDisplayOrientation()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::getDisplayOrientation))
                     .orElse(VideoGenerator.DisplayOrientation.DEG_0);
         };
     }
 
     private int getIpf() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().instructionsPerFrameSupplier().applyAsInt(this.doDisplayWait());
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::getIpf)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().instructionsPerFrameSupplier().applyAsInt(this.doDisplayWait()));
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getIpf()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getIpf()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::getIpf))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().instructionsPerFrameSupplier().applyAsInt(this.doDisplayWait()));
         };
@@ -198,12 +198,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public boolean doVFReset() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().doVFReset();
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::doVFReset)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doVFReset());
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getDoVFReset()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getDoVFReset()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::doVFReset))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doVFReset());
         };
@@ -211,12 +211,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public MemoryIncrementQuirk getMemoryIncrementQuirk() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().memoryIncrementQuirk();
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::getMemoryIncrementQuirk)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().memoryIncrementQuirk());
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getMemoryIncrementQuirk()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getMemoryIncrementQuirk()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::getMemoryIncrementQuirk))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().memoryIncrementQuirk());
         };
@@ -224,12 +224,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public boolean doDisplayWait() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().doDisplayWait();
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::doDisplayWait)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doDisplayWait());
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getDoDisplayWait()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getDoDisplayWait()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::doDisplayWait))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doDisplayWait());
         };
@@ -237,12 +237,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public boolean doClipping() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().doClipping();
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::doClipping)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doClipping());
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getDoClipping()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getDoClipping()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::doClipping))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doClipping());
         };
@@ -250,12 +250,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public boolean doShiftVXInPlace() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().doShiftVXInPlace();
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::doShiftVXInPlace)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doShiftVXInPlace());
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getDoShiftVXInPlace()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getDoShiftVXInPlace()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::doShiftVXInPlace))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doShiftVXInPlace());
         };
@@ -263,12 +263,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public boolean doJumpWithVX() {
-        return switch (this.chip8Manager.getSettings().getSettingSourcePreference()) {
+        return switch (this.chip8Manager.getEmulationSettings().getSettingSourcePreference()) {
             case PREFER_VARIANT -> this.variant.getDefaultQuirkset().doJumpWithVX();
             case PREFER_DATABASE -> this.getDatabaseEntry()
                     .flatMap(Chip8Database.Entry::doJumpWithVX)
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doJumpWithVX());
-            case PREFER_OVERRIDES -> this.chip8Manager.getSettings().getDoJumpWithVX()
+            case PREFER_OVERRIDES -> this.chip8Manager.getEmulationSettings().getDoJumpWithVX()
                     .or(() -> this.getDatabaseEntry().flatMap(Chip8Database.Entry::doJumpWithVX))
                     .orElseGet(() -> this.variant.getDefaultQuirkset().doJumpWithVX());
         };
@@ -276,12 +276,12 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     @Override
     public void setPersistentFlag(int index, int value) {
-        this.chip8Manager.getSettings().setPersistentFlag(index, value);
+        this.chip8Manager.getEmulationSettings().setPersistentFlag(index, value);
     }
 
     @Override
     public int getPersistentFlag(int index) {
-        return this.chip8Manager.getSettings().getPersistentFlag(index);
+        return this.chip8Manager.getEmulationSettings().getPersistentFlag(index);
     }
 
     @Override
@@ -302,7 +302,7 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
     private void updateTitle() {
         Emulator emulator = this.emulator;
-        Chip8Settings settings = this.chip8Manager.getSettings();
+        Chip8Settings settings = this.chip8Manager.getEmulationSettings();
         String title = this.romTitle;
 
         if (settings.showUsedVariant()) {

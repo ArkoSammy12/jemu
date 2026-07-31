@@ -1,4 +1,4 @@
-package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings;
+package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.menubar;
 
 import io.github.arkosammy12.jemu.frontend.audio.SampleRate;
 import io.github.arkosammy12.jemu.frontend.audio.SoundDevice;
@@ -10,11 +10,14 @@ import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 
 import javax.swing.*;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.MenuEvent;
 import javax.swing.event.MenuListener;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class SoundSettings extends MenuBarMenu {
 
@@ -38,38 +41,49 @@ public class SoundSettings extends MenuBarMenu {
         this.volumeSlider.setPaintLabels(true);
         this.volumeSlider.setMajorTickSpacing(25);
         this.volumeSlider.setMinorTickSpacing(5);
-        this.volumeSlider.addChangeListener(_ -> {
-            int volume = Math.clamp(this.volumeSlider.getValue(), 0, 100);
-            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setVolume(volume);
-            mainWindow.publishEvent(new InternalVolumeChangedEvent(volume));
-        });
+        ChangeListener volumeSiderChangeListener = _ -> mainWindow.publishEvent(new InternalVolumeChangedEvent(Math.clamp(this.volumeSlider.getValue(), 0, 100)));
+        this.volumeSlider.addChangeListener(volumeSiderChangeListener);
         JPanel volumePanel = new JPanel();
         volumePanel.add(this.volumeSlider);
         volumeMenu.add(volumePanel);
+        mainWindow.onEvent(InternalVolumeChangedEvent.class, volumeChangedEvent -> {
+            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setVolume(volumeChangedEvent.getNewVolume());
+            this.volumeSlider.removeChangeListener(volumeSiderChangeListener);
+            this.volumeSlider.setValue(volumeChangedEvent.getNewVolume());
+            this.volumeSlider.addChangeListener(volumeSiderChangeListener);
+        });
 
         this.muteButton = new JRadioButtonMenuItem("Mute");
-        this.muteButton.addActionListener(_ -> {
-            boolean mute = this.muteButton.isSelected();
-            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setMute(mute);
-            mainWindow.publishEvent(new InternalMuteEvent(mute));
-        });
+        this.muteButton.addActionListener(_ -> mainWindow.publishEvent(new InternalMuteEvent(this.muteButton.isSelected())));
         this.muteButton.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, InputEvent.CTRL_DOWN_MASK, true));
+        mainWindow.onEvent(InternalMuteEvent.class, muteEvent -> {
+            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setMute(muteEvent.getMute());
+            this.muteButton.setSelected(muteEvent.getMute());
+        });
 
         JMenu sampleRateMenu = new JMenu("Sample Rate");
         ButtonGroup sampleRateButtonGroup = new ButtonGroup();
+        Map<SampleRate, JRadioButtonMenuItem> sampleRateButtonMap = new HashMap<>();
         SampleRate selectedSampleRate = mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getSampleRate();
 
         for (SampleRate sampleRate : SampleRate.values()) {
             JRadioButtonMenuItem sampleRateButton = new JRadioButtonMenuItem(sampleRate.getDisplayName());
-            sampleRateButton.addActionListener(_ -> {
-                mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSampleRate(sampleRate);
-                mainWindow.publishEvent(new InternalSampleRateChangedEvent(sampleRate));
-            });
+            sampleRateButton.addActionListener(_ -> mainWindow.publishEvent(new InternalSampleRateChangedEvent(sampleRate)));
             sampleRateButtonGroup.add(sampleRateButton);
+            sampleRateButtonMap.put(sampleRate, sampleRateButton);
             sampleRateMenu.add(sampleRateButton);
 
             sampleRateButton.setSelected(sampleRate == selectedSampleRate);
         }
+        mainWindow.onEvent(InternalSampleRateChangedEvent.class, sampleRateChangedEvent -> {
+            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setSampleRate(sampleRateChangedEvent.getSampleRate());
+
+            sampleRateButtonGroup.clearSelection();
+            JRadioButtonMenuItem sampleRateButton = sampleRateButtonMap.get(sampleRateChangedEvent.getSampleRate());
+            if (sampleRateButton != null) {
+                sampleRateButton.setSelected(true);
+            }
+        });
 
         this.soundDeviceMenu = new JMenu("Sound Device");
         this.soundDeviceMenu.addMenuListener(new MenuListener() {

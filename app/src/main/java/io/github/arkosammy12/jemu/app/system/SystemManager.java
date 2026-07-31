@@ -3,7 +3,6 @@ package io.github.arkosammy12.jemu.app.system;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.gui.system.builder.EmulationSettingsBuilder;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
@@ -23,10 +22,6 @@ public abstract class SystemManager implements SystemDescriptor {
     public abstract SystemAdapter createSystem() throws Exception;
 
     public abstract boolean manages(SystemAdapter systemAdapter);
-
-    public EmulationSettingsBuilder buildSystemSettings(EmulationSettingsBuilder emulationSettingsBuilder) {
-        return emulationSettingsBuilder;
-    }
 
     public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
 

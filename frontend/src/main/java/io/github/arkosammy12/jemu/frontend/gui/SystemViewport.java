@@ -18,6 +18,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
 import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 public class SystemViewport {
@@ -106,7 +107,7 @@ public class SystemViewport {
         });
     }
 
-    public void setSystemDisplay(@Nullable Supplier<? extends @Nullable SystemDisplayComponent> displaySupplier) {
+    public void setSystemDisplay(@Nullable Supplier<? extends Optional<? extends SystemDisplayComponent>> displaySupplier) {
         SwingUtilities.invokeLater(() -> {
             if (this.systemDisplayComponent != null) {
                 this.viewportPanel.remove(this.systemDisplayComponent.getComponent());
@@ -115,7 +116,7 @@ public class SystemViewport {
 
             SystemDisplayComponent newSystemDisplayComponent = null;
             if (displaySupplier != null) {
-                newSystemDisplayComponent = displaySupplier.get();
+                newSystemDisplayComponent = displaySupplier.get().orElse(null);
             }
 
             if (newSystemDisplayComponent != null) {

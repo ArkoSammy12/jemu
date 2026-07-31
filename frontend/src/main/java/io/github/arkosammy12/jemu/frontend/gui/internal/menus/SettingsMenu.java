@@ -1,13 +1,17 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.*;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
+import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.menubar.*;
+import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.panel.SettingsWindow;
 import io.github.arkosammy12.jemu.frontend.gui.managers.SettingsManager;
+import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -57,6 +61,20 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         this.getJMenu().addSeparator();
         this.getJMenu().add(openDataDirectoryButton);
 
+        JFrame settingsWindow = new SettingsWindow(mainWindow, appFrame);
+
+        JMenuItem openSettingsButton = new JMenuItem("Settings...");
+        openSettingsButton.addActionListener(_ -> {
+            Image appFrameIconImage = appFrame.getIconImage();
+            if (appFrameIconImage != null) {
+                settingsWindow.setIconImage(appFrameIconImage);
+            }
+            settingsWindow.pack();
+            settingsWindow.setLocationRelativeTo(appFrame);
+            settingsWindow.setVisible(true);
+        });
+
+        this.getJMenu().add(openSettingsButton);
     }
 
 }
