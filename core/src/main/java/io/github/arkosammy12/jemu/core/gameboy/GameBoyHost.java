@@ -7,6 +7,10 @@ import java.util.Optional;
 
 public interface GameBoyHost extends SystemHost {
 
+    boolean useBuiltInBootROM();
+
+    Optional<Path> getBootROMPath();
+
     Optional<Path> getSaveDataDirectory();
 
     enum Model {

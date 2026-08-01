@@ -8,6 +8,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.function.IntUnaryOperator;
 
+import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
 import static io.github.arkosammy12.jemu.core.gameboycolor.CGBAPU.PCM12_ADDR;
 import static io.github.arkosammy12.jemu.core.gameboycolor.CGBAPU.PCM34_ADDR;
 import static io.github.arkosammy12.jemu.core.gameboycolor.CGBPPU.*;
@@ -16,7 +17,7 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
 
     // Boot ROM derived from SameBoy (Expat License)
     // See THIRD_PARTY_LICENSES.txt for details
-    private static final int[] SAMEBOY_CGB_BOOT_ROM = {
+    private static final byte[] SAMEBOY_CGB_BOOT_ROM = intToByteArray(new int[] {
             0x31, 0xfe, 0xff, 0xcd, 0x26, 0x06, 0x26, 0xfe, 0x0e, 0xa0, 0x22, 0x0d,
             0x20, 0xfc, 0x0e, 0x10, 0x21, 0x30, 0xff, 0x22, 0x2f, 0x0d, 0x20, 0xfb,
             0xe0, 0xc1, 0xe0, 0x80, 0x3e, 0x80, 0xe0, 0x26, 0xe0, 0x11, 0x3e, 0xf3,
@@ -209,7 +210,9 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
             0x19, 0x0d, 0x20, 0xfb, 0xc9, 0xf5, 0xcd, 0x09, 0x06, 0x3e, 0x19, 0xea,
             0x10, 0x99, 0x21, 0x2f, 0x99, 0x0e, 0x0c, 0x3d, 0x28, 0x08, 0x32, 0x0d,
             0x20, 0xf9, 0x2e, 0x0f, 0x18, 0xf5, 0xf1, 0xc9, 0x00, 0x00, 0x00, 0x00
-    };
+    });
+
+    private static final int BOOTROM_LENGTH = 0x900;
 
     public static final int KEY_0_ADDR = 0xFF4C;
     public static final int KEY_1_ADDR = 0xFF4D;
@@ -258,15 +261,25 @@ public class CGBBus<E extends GameBoyColorEmulator> extends DMGBus<E> {
     }
 
     @Override
+    protected int getBootROMLength() {
+        return BOOTROM_LENGTH;
+    }
+
+    @Override
     protected byte[] createWorkRAM() {
         return new byte[8 * 0x1000];
+    }
+
+    @Override
+    protected void initializeDefaultBootROM(byte[] bootROM) {
+        System.arraycopy(SAMEBOY_CGB_BOOT_ROM, 0, bootROM, 0, BOOTROM_LENGTH);
     }
 
     @Override
     protected IntUnaryOperator getBootRomEnabledCartridgeReadFunction() {
         return address -> {
             if ((address >= 0x0000 && address <= 0x00FF) || (address >= 0x0200 && address <= 0x08FF)) {
-                return SAMEBOY_CGB_BOOT_ROM[address];
+                return this.bootROM[address];
             } else {
                 return this.emulator.getCartridge().readByte(address);
             }

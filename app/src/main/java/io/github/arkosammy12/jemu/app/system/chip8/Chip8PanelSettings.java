@@ -26,7 +26,7 @@ public class Chip8PanelSettings extends PanelSettingsMenu {
         ipfSetting.getJSpinner().setEnabled(chip8Manager.getEmulationSettings().getOverrideIpfSetting());
 
         BooleanPanelSetting<Chip8Manager.OverrideIpfSettingChangedEvent> overrideIpfButton = this.addBooleanSetting("Override", chip8Manager.getEmulationSettings().getOverrideIpfSetting(), Chip8Manager.OverrideIpfSettingChangedEvent.class, null, Chip8Manager.OverrideIpfSettingChangedEvent::new);
-        overrideIpfButton.setOnEventCallback(value -> SwingUtilities.invokeLater(() -> ipfSetting.getJSpinner().setEnabled(value)));
+        overrideIpfButton.setOnValueSetCallback(value -> SwingUtilities.invokeLater(() -> ipfSetting.getJSpinner().setEnabled(value)));
 
         this.addIntegerSetting(ipfSetting);
         this.addEmptyLine();

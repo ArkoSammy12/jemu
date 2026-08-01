@@ -39,6 +39,19 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     }
 
     @Override
+    public boolean useBuiltInBootROM() {
+        return false;
+    }
+
+    @Override
+    public Optional<Path> getBootROMPath() {
+        return switch (this.model) {
+            case DMG -> this.gameBoyManager.getEmulationSettings().getGameBoyBootROMPath();
+            case CGB -> this.gameBoyManager.getEmulationSettings().getGameBoyColorBootRomPath();
+        };
+    }
+
+    @Override
     public Optional<Path> getSaveDataDirectory() {
         return this.jemu.getSavesDirectory();
     }

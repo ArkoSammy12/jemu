@@ -9,24 +9,38 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.event.ActionListener;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class PathUISetting<E extends Event & Supplier<Path>> extends UISetting<Path, E> implements PanelSetting {
+public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends UISetting<@Nullable Path, E> implements PanelSetting {
 
     private final JLabel jLabel;
     private final JTextField jTextField = new JTextField();
     private final JButton selectPathButton = new JButton("Select...");
     private final ActionListener jTextFieldActionListener;
 
-    public PathUISetting(MainWindow mainWindow, PathSelectionMode pathSelectionMode, @NotNull String name, @NotNull Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Path, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+    public PathUISetting(MainWindow mainWindow, PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
+        super(mainWindow, name, eventClass, eventPredicate, eventSupplier);
         this.jLabel = new JLabel(name);
-        this.jTextFieldActionListener = _ -> this.onPathChanged(Paths.get(this.jTextField.getText()));
+        Runnable textFieldCommitRunnable = () -> {
+            String text = this.jTextField.getText().trim();
+            this.onPathChanged(text.isBlank() ? null : Paths.get(text));
+        };
+        this.jTextFieldActionListener = _ -> textFieldCommitRunnable.run();
         this.jTextField.addActionListener(this.jTextFieldActionListener);
+        this.jTextField.addFocusListener(new FocusAdapter() {
+
+            @Override
+            public void focusLost(FocusEvent e) {
+                textFieldCommitRunnable.run();
+            }
+
+        });
         this.selectPathButton.addActionListener(_ -> {
             SystemFileChooser fileChooser = new SystemFileChooser();
             fileChooser.setFileSelectionMode(pathSelectionMode.getFileSelectionMode());
@@ -37,13 +51,14 @@ public class PathUISetting<E extends Event & Supplier<Path>> extends UISetting<P
                 this.setValue(selectedPath);
             }
         });
+        this.setValue(startingValue);
     }
 
     @Override
-    public void setValue(Path value) {
+    public void setValue(@Nullable Path value) {
         SwingUtilities.invokeLater(() -> {
             this.jTextField.removeActionListener(this.jTextFieldActionListener);
-            this.jTextField.setText(value.toString());
+            this.jTextField.setText(value == null ? "" : value.toString());
             this.jTextField.addActionListener(this.jTextFieldActionListener);
         });
     }
@@ -55,7 +70,15 @@ public class PathUISetting<E extends Event & Supplier<Path>> extends UISetting<P
         jPanel.add(this.selectPathButton, constraints.length >= 3 ? constraints[2] : null);
     }
 
-    private void onPathChanged(Path path) {
+    public JTextField getJTextField() {
+        return this.jTextField;
+    }
+
+    public JButton getSelectPathButton() {
+        return this.selectPathButton;
+    }
+
+    private void onPathChanged(@Nullable Path path) {
         this.mainWindow.publishEvent(this.eventSupplier.apply(path));
     }
 

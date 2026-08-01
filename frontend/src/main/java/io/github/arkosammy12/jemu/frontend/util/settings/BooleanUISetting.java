@@ -12,7 +12,7 @@ import java.util.function.Supplier;
 public abstract class BooleanUISetting<E extends Event & Supplier<Boolean>> extends UISetting<Boolean, E> {
 
     public BooleanUISetting(MainWindow mainWindow, @NotNull String name, @NotNull Boolean startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Boolean, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+        super(mainWindow, name, eventClass, eventPredicate, eventSupplier);
     }
 
 }

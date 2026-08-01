@@ -21,31 +21,29 @@ public abstract class UISetting<T, E extends Event & Supplier<T>> {
     private final Predicate<E> eventPredicate;
 
     protected final String name;
-    protected final T startingValue;
     protected final Function<? super T, ? extends Event> eventSupplier;
 
     @Nullable
-    private volatile Consumer<T> onEventCallback;
+    private volatile Consumer<T> valueSetCallback;
 
-    public UISetting(MainWindow mainWindow, @NotNull String name, @NotNull T startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super T, ? extends Event> eventSupplier) {
+    public UISetting(MainWindow mainWindow, @NotNull String name, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super T, ? extends Event> eventSupplier) {
         this.mainWindow = mainWindow;
         this.eventClass = eventClass;
         this.eventPredicate = eventPredicate;
         this.name = name;
-        this.startingValue = startingValue;
         this.eventSupplier = eventSupplier;
     }
 
-    public UISetting(MainWindow mainWindow, @NotNull String name, @NotNull T startingValue, @Nullable Class<E> eventClass, @NotNull Function<? super T, ? extends Event> eventSupplier) {
-        this(mainWindow, name, startingValue, eventClass, null, eventSupplier);
+    public UISetting(MainWindow mainWindow, @NotNull String name, @Nullable Class<E> eventClass, @NotNull Function<? super T, ? extends Event> eventSupplier) {
+        this(mainWindow, name, eventClass, null, eventSupplier);
     }
 
-    public UISetting(MainWindow mainWindow, @NotNull String name, @NotNull T startingValue, @NotNull Function<? super T, ? extends Event> eventSupplier) {
-        this(mainWindow, name, startingValue, null, null, eventSupplier);
+    public UISetting(MainWindow mainWindow, @NotNull String name, @NotNull Function<? super T, ? extends Event> eventSupplier) {
+        this(mainWindow, name, null, null, eventSupplier);
     }
 
-    public void setOnEventCallback(@Nullable Consumer<T> onEventCallback) {
-        this.onEventCallback = onEventCallback;
+    public void setOnValueSetCallback(@Nullable Consumer<T> onEventCallback) {
+        this.valueSetCallback = onEventCallback;
     }
 
     @SuppressWarnings("unchecked")
@@ -55,7 +53,7 @@ public abstract class UISetting<T, E extends Event & Supplier<T>> {
             if (this.eventPredicate == null || this.eventPredicate.test(eventInstance)) {
                 T value = eventInstance.get();
                 this.setValue(value);
-                Consumer<T> callback = this.onEventCallback;
+                Consumer<T> callback = this.valueSetCallback;
                 if (callback != null) {
                     callback.accept(value);
                 }

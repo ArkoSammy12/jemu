@@ -18,7 +18,7 @@ public abstract class IntegerUISetting<E extends Event & Supplier<Integer>> exte
     protected final Integer maximumValue;
 
     public IntegerUISetting(MainWindow mainWindow, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+        super(mainWindow, name, eventClass, eventPredicate, eventSupplier);
         this.minimumValue = minimumValue;
         this.maximumValue = maximumValue;
 

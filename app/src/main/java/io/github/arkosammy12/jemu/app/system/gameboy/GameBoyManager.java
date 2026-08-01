@@ -12,6 +12,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import javax.swing.*;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -110,8 +111,12 @@ public class GameBoyManager extends SystemManager {
         super.onCoreSettingChangedEvent(coreSettingChangeEvent);
         this.getMenuBarSettings().ifPresent(gameBoyMenuBarSettings -> gameBoyMenuBarSettings.onEvent(coreSettingChangeEvent));
         this.getPanelSettings().ifPresent(gameBoyPanelSettings -> gameBoyPanelSettings.onEvent(coreSettingChangeEvent));
-        if (coreSettingChangeEvent instanceof DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette)) {
-            this.getEmulationSettings().setDMGPalette(dmgPalette);
+        switch (coreSettingChangeEvent) {
+            case DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) -> this.getEmulationSettings().setDMGPalette(dmgPalette);
+            case UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) -> this.getEmulationSettings().setUseBuiltInBootROM(useBuiltInBootRom);
+            case GameBoyBootRomPathChangedEvent(@Nullable Path path) -> this.getEmulationSettings().setGameBoyBootRomPath(path);
+            case GameBoyColorBootRomPathChangedEvent(@Nullable Path path) -> this.getEmulationSettings().setGameBoyColorBootROMPath(path);
+            default -> {}
         }
     }
 
@@ -120,6 +125,35 @@ public class GameBoyManager extends SystemManager {
         @Override
         public GameBoySettings.DMGPalette get() {
             return this.dmgPalette();
+        }
+
+    }
+
+    public record UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) implements CoreSettingChangeEvent, Supplier<Boolean> {
+
+        @Override
+        public Boolean get() {
+            return this.useBuiltInBootRom();
+        }
+
+    }
+
+    public record GameBoyBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
+
+        @Override
+        @Nullable
+        public Path get() {
+            return this.path();
+        }
+
+    }
+
+    public record GameBoyColorBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
+
+        @Override
+        @Nullable
+        public Path get() {
+            return this.path();
         }
 
     }

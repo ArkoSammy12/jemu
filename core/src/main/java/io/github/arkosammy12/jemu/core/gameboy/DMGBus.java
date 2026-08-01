@@ -2,9 +2,15 @@ package io.github.arkosammy12.jemu.core.gameboy;
 
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
+import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.util.Optional;
 import java.util.function.IntUnaryOperator;
 
+import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
 import static io.github.arkosammy12.jemu.core.gameboy.DMGAPU.*;
 import static io.github.arkosammy12.jemu.core.gameboy.DMGPPU.*;
 import static io.github.arkosammy12.jemu.core.gameboy.DMGSerialController.SB_ADDR;
@@ -15,7 +21,7 @@ import static io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad.JOYP_ADDR;
 public class DMGBus<E extends GameBoyEmulator> implements Bus {
 
     // Bootix boot-rom for the DMG. Courtesy of Ashiepaws https://github.com/Ashiepaws/Bootix
-    protected static final int[] BOOTIX = {
+    private static final byte[] BOOTIX = intToByteArray(new int[] {
             0x31, 0xfe, 0xff, 0x21, 0xff, 0x9f, 0xaf, 0x32, 0xcb, 0x7c, 0x20, 0xfa,
             0x0e, 0x11, 0x21, 0x26, 0xff, 0x3e, 0x80, 0x32, 0xe2, 0x0c, 0x3e, 0xf3,
             0x32, 0xe2, 0x0c, 0x3e, 0x77, 0x32, 0xe2, 0x11, 0x04, 0x01, 0x21, 0x10,
@@ -38,7 +44,9 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus {
             0x31, 0x2e, 0x32, 0x00, 0x3e, 0xff, 0xc6, 0x01, 0x0b, 0x1e, 0xd8, 0x21,
             0x4d, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
             0x3e, 0x01, 0xe0, 0x50
-    };
+    });
+
+    private static final int BOOTROM_LENGTH = 256;
 
     public static final int ROM0_START = 0x0000;
     public static final int ROMX_END = 0x7FFF;
@@ -74,6 +82,7 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus {
     private final IntUnaryOperator bootRomDisabledReadCartridgeReadFunction;
     protected IntUnaryOperator currentReadCartridgeFunction;
 
+    protected final byte[] bootROM;
     protected final byte[] workRAM;
 
     private int interruptFlag;
@@ -92,16 +101,48 @@ public class DMGBus<E extends GameBoyEmulator> implements Bus {
         this.workRAM = this.createWorkRAM();
         this.bootRomDisabledReadCartridgeReadFunction = address -> this.emulator.getCartridge().readByte(address);
         this.currentReadCartridgeFunction = this.getBootRomEnabledCartridgeReadFunction();
+
+        int bootROMLength = this.getBootROMLength();
+        this.bootROM = new byte[bootROMLength];
+        if (emulator.getHost().useBuiltInBootROM()) {
+            this.initializeDefaultBootROM(bootROM);
+        } else {
+            Optional<Path> bootROMPathOptional = emulator.getHost().getBootROMPath();
+            if (bootROMPathOptional.isEmpty()) {
+                throw new ROMInitializationException("No %s boot ROM file provided!".formatted(emulator.getHost().getSystemName()));
+            }
+            Path bootROMPath = bootROMPathOptional.get();
+            byte[] bootROM;
+            try {
+                bootROM = Files.readAllBytes(bootROMPath);
+            } catch (NoSuchFileException e) {
+                throw new ROMInitializationException("The specified path \"%s\" for the %s boot ROM file does not exist!".formatted(bootROMPath.toString(), emulator.getHost().getSystemName()));
+            } catch (Exception e) {
+                throw new ROMInitializationException("Failed to read %s boot ROM file from the specified path \"%s\"!".formatted(emulator.getHost().getSystemName(), bootROMPath.toString()), e);
+            }
+            if (bootROM.length != bootROMLength) {
+                throw new ROMInitializationException("The provided %s boot ROM file must be %d bytes, but was %d bytes instead!".formatted(emulator.getHost().getSystemName(), bootROMLength, bootROM.length));
+            }
+            System.arraycopy(bootROM, 0, this.bootROM, 0, bootROMLength);
+        }
+    }
+
+    protected int getBootROMLength() {
+        return BOOTROM_LENGTH;
     }
 
     protected byte[] createWorkRAM() {
         return new byte[0x2000];
     }
 
+    protected void initializeDefaultBootROM(byte[] bootROM) {
+        System.arraycopy(BOOTIX, 0, bootROM, 0, BOOTROM_LENGTH);
+    }
+
     protected IntUnaryOperator getBootRomEnabledCartridgeReadFunction() {
         return address -> {
             if (address <= 0x00FF) {
-                return BOOTIX[address];
+                return (int) this.bootROM[address] & 0xFF;
             } else {
                 return this.emulator.getCartridge().readByte(address);
             }

@@ -16,7 +16,7 @@ public abstract class EnumUISetting<V extends Enum<V> & DisplayNamerProvider, E 
 
     public EnumUISetting(MainWindow mainWindow, @NotNull String name, @NotNull V startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super V, ? extends Event> eventSupplier) {
         this.enumClass = startingValue.getDeclaringClass();
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+        super(mainWindow, name, eventClass, eventPredicate, eventSupplier);
     }
 
 }
