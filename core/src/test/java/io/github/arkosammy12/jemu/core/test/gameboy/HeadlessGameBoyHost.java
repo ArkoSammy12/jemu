@@ -51,6 +51,16 @@ final class HeadlessGameBoyHost implements GameBoyHost {
     }
 
     @Override
+    public boolean useBuiltInBootROM() {
+        return true;
+    }
+
+    @Override
+    public Optional<Path> getBootROMPath() {
+        return Optional.empty();
+    }
+
+    @Override
     public Optional<Path> getSaveDataDirectory() {
         return Optional.empty();
     }
