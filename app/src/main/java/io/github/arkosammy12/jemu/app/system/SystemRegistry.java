@@ -4,6 +4,7 @@ import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.app.Jemu;
+import io.github.arkosammy12.jemu.app.system.appleii.AppleIIManager;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Manager;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Settings;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant;
@@ -52,7 +53,8 @@ public final class SystemRegistry implements SystemCatalog {
             new GameBoyManager(jemu, this, GameBoyHost.Model.DMG),
             new GameBoyManager(jemu, this, GameBoyHost.Model.CGB),
             new NESManager(jemu, this),
-            new Atari2600Manager(jemu, this)
+            new Atari2600Manager(jemu, this),
+            new AppleIIManager(jemu, this)
         );
     }
 
