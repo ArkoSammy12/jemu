@@ -80,7 +80,7 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
                 this.databaseEntry.getPlatformId().ifPresent(platformId -> {
                     this.variant = switch (platformId) {
                         case "originalChip8", "modernChip8" -> CHIP_8;
-                        case "hybridVIP" -> throw new SystemRedirectException(this.chip8Manager.getSystemRegistry().getGameBoyColorManager());
+                        case "hybridVIP" -> throw new SystemRedirectException(this.chip8Manager.getSystemRegistry().getHybridChip8Manager());
                         case "chip8x" -> CHIP_8X;
                         case "chip48" -> CHIP_48;
                         case "superchip1" -> SUPER_CHIP_10;

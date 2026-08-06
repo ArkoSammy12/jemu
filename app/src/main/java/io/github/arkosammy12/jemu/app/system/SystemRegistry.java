@@ -72,7 +72,6 @@ public final class SystemRegistry implements SystemCatalog {
         this.nesManager = new NESManager(jemu, this);
         this.atari2600Manager = new Atari2600Manager(jemu, this);
 
-
         this.systemManagers = List.of(
                 this.chip8Manager,
                 this.strictChip8Manager,
