@@ -11,6 +11,9 @@ import java.util.Optional;
 
 public class GameBoySettings {
 
+    @SerializedName("prefer_gameboy_color")
+    private volatile boolean preferGameboyColor = false;
+
     @SerializedName("palette")
     private volatile DMGPalette dmgPalette = DMGPalette.DMG_GREEN;
 
@@ -24,6 +27,14 @@ public class GameBoySettings {
     @Nullable
     @SerializedName("gameboy_color_bootrom_path")
     private volatile String gameBoyColorBootRomPath;
+
+    void setPreferGameboyColor(boolean preferGameboyColor) {
+        this.preferGameboyColor = preferGameboyColor;
+    }
+
+    public boolean preferGameBoyColor() {
+        return this.preferGameboyColor;
+    }
 
     void setDMGPalette(DMGPalette dmgPalette) {
         this.dmgPalette = dmgPalette;

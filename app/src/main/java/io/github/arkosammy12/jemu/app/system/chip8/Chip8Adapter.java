@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.chip8.database.Chip8Database;
+import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.chip8.*;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
@@ -18,6 +19,12 @@ import java.awt.event.KeyEvent;
 import java.text.NumberFormat;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.*;
+import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.MEGA_CHIP;
+import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.SUPER_CHIP_10;
+import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.SUPER_CHIP_11;
+import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.XO_CHIP;
 
 public class Chip8Adapter extends SystemAdapter implements Chip8Host {
 
@@ -70,9 +77,19 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
         if (this.databaseEntry != null) {
             this.databaseEntry.getRomName().ifPresent(programTitle -> this.romTitle = programTitle);
             if (this.chip8Manager.getEmulationSettings().getVariantSource() == Chip8Settings.VariantSource.USE_FROM_DATABASE) {
-                this.databaseEntry.getVariant().ifPresent(variant -> {
-                    this.variant = variant;
-                    this.variantName = variant.getName();
+                this.databaseEntry.getPlatformId().ifPresent(platformId -> {
+                    this.variant = switch (platformId) {
+                        case "originalChip8", "modernChip8" -> CHIP_8;
+                        case "hybridVIP" -> throw new SystemRedirectException(this.chip8Manager.getSystemRegistry().getGameBoyColorManager());
+                        case "chip8x" -> CHIP_8X;
+                        case "chip48" -> CHIP_48;
+                        case "superchip1" -> SUPER_CHIP_10;
+                        case "superchip" -> SUPER_CHIP_11;
+                        case "megachip8" -> MEGA_CHIP;
+                        case "xochip" -> XO_CHIP;
+                        default -> throw new IllegalArgumentException("Invalid CHIP-8 database platform id \"%s\"!".formatted(platformId));
+                    };
+                    this.variantName = this.variant.getName();
                 });
             }
         }

@@ -53,7 +53,7 @@ public class Chip8Manager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws Exception {
+    public SystemAdapter createSystem(boolean detectedAutomatically) throws Exception {
         return new Chip8Adapter(this.jemu, this, this.variant);
     }
 
@@ -62,7 +62,7 @@ public class Chip8Manager extends SystemManager {
         return systemAdapter instanceof Chip8Adapter chip8Adapter && this.variant == chip8Adapter.getVariant();
     }
 
-    public Chip8Settings getEmulationSettings() {
+    Chip8Settings getEmulationSettings() {
         return this.systemRegistry.getEmulationSettings().getChip8Settings();
     }
 
@@ -128,7 +128,7 @@ public class Chip8Manager extends SystemManager {
         }
     }
 
-    public interface TriggerIpfUpdate extends Event {}
+    interface TriggerIpfUpdate extends Event {}
 
     record ShowUsedVariantSettingChangedEvent(boolean value) implements CoreSettingChangeEvent, Supplier<Boolean> {
 

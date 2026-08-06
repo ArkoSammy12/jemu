@@ -31,7 +31,7 @@ public class RCAStudioIIManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
+    public SystemAdapter createSystem(boolean detectedAutomatically) throws LineUnavailableException {
         return new RCAStudioIIAdapter(this.jemu, this);
     }
 

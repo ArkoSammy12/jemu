@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
+import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
@@ -59,7 +60,10 @@ public class GameBoyManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
+    public SystemAdapter createSystem(boolean detectedAutomatically) throws LineUnavailableException {
+        if (detectedAutomatically && this.getEmulationSettings().preferGameBoyColor() && this.gameboyModel != GameBoyHost.Model.CGB) {
+            throw new SystemRedirectException(this.systemRegistry.getGameBoyColorManager());
+        }
         return new GameBoyAdapter(jemu, this, this.gameboyModel);
     }
 
@@ -68,7 +72,7 @@ public class GameBoyManager extends SystemManager {
         return systemAdapter instanceof GameBoyAdapter gameBoyAdapter && this.gameboyModel == gameBoyAdapter.getModel();
     }
 
-    public GameBoySettings getEmulationSettings() {
+    GameBoySettings getEmulationSettings() {
         return this.systemRegistry.getEmulationSettings().getGameBoySettings();
     }
 
@@ -112,6 +116,7 @@ public class GameBoyManager extends SystemManager {
         this.getMenuBarSettings().ifPresent(gameBoyMenuBarSettings -> gameBoyMenuBarSettings.onEvent(coreSettingChangeEvent));
         this.getPanelSettings().ifPresent(gameBoyPanelSettings -> gameBoyPanelSettings.onEvent(coreSettingChangeEvent));
         switch (coreSettingChangeEvent) {
+            case PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) -> this.getEmulationSettings().setPreferGameboyColor(preferGameBoyColor);
             case DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) -> this.getEmulationSettings().setDMGPalette(dmgPalette);
             case UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) -> this.getEmulationSettings().setUseBuiltInBootROM(useBuiltInBootRom);
             case GameBoyBootRomPathChangedEvent(@Nullable Path path) -> this.getEmulationSettings().setGameBoyBootRomPath(path);
@@ -120,7 +125,16 @@ public class GameBoyManager extends SystemManager {
         }
     }
 
-    public record DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) implements CoreSettingChangeEvent, FrameRequesterVideoEvent, Supplier<GameBoySettings.DMGPalette> {
+    record PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) implements CoreSettingChangeEvent, Supplier<Boolean> {
+
+        @Override
+        public Boolean get() {
+            return this.preferGameBoyColor();
+        }
+
+    }
+
+    record DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) implements CoreSettingChangeEvent, FrameRequesterVideoEvent, Supplier<GameBoySettings.DMGPalette> {
 
         @Override
         public GameBoySettings.DMGPalette get() {
@@ -129,7 +143,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    public record UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) implements CoreSettingChangeEvent, Supplier<Boolean> {
+    record UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) implements CoreSettingChangeEvent, Supplier<Boolean> {
 
         @Override
         public Boolean get() {
@@ -138,7 +152,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    public record GameBoyBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
+    record GameBoyBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
 
         @Override
         @Nullable
@@ -148,7 +162,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    public record GameBoyColorBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
+    record GameBoyColorBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
 
         @Override
         @Nullable

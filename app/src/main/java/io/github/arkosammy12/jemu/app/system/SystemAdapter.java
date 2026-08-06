@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
 import io.github.arkosammy12.jemu.app.drivers.MonoAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.drivers.StereoAudioRendererDriver;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
+import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
@@ -79,11 +80,11 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         return Optional.ofNullable(this.audioDriver);
     }
 
-    public void powerCycle(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
+    public void powerCycle(EmulatorInitializer emulatorInitializer) throws LineUnavailableException, SystemRedirectException {
         this.initialize(emulatorInitializer, false);
     }
 
-    public void reset(EmulatorInitializer emulatorInitializer) throws LineUnavailableException {
+    public void reset(EmulatorInitializer emulatorInitializer) throws LineUnavailableException, SystemRedirectException {
         this.initialize(emulatorInitializer, true);
     }
 

@@ -7,6 +7,8 @@ import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.HelpDialog;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
+import io.github.arkosammy12.jemu.app.util.ThrowableConsumer;
+import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
@@ -241,7 +243,7 @@ public final class Jemu {
     }
 
     private State onEmulatorPowerCycleCommand(PowerCycleCommand powerCycleCommand) throws Exception {
-        this.initializeEmulator(powerCycleCommand.systemDescriptor() instanceof SystemManager systemManager ? systemManager : null);
+        this.resolveSystemInitialization(powerCycleCommand.systemDescriptor(), systemDescriptor -> this.initializeEmulator(systemDescriptor instanceof SystemManager systemManager ? systemManager : null, powerCycleCommand.systemDescriptorAutomaticallyDetected()));
         boolean powerCycleIntoPaused = powerCycleCommand.powerCycleIntoPaused();
         this.audioEngine.setPaused(powerCycleIntoPaused);
         return powerCycleIntoPaused ? State.PAUSED : State.RUNNING;
@@ -251,12 +253,13 @@ public final class Jemu {
         if (this.currentSystem == null) {
             return null;
         }
-        Optional<SystemDescriptor> currentSystemDescriptor = resetEmulatorCommand.getSystemDescriptor();
-        if (currentSystemDescriptor.isPresent() && currentSystemDescriptor.get() instanceof SystemManager systemManger && !systemManger.manages(this.currentSystem)) {
-            this.initializeEmulator(systemManger);
-        } else {
-            this.currentSystem.reset(this.createEmulatorInitializer());
-        }
+        this.resolveSystemInitialization(resetEmulatorCommand.getSystemDescriptor().orElse(null), systemDescriptor -> {
+            if (systemDescriptor instanceof SystemManager systemManager && !systemManager.manages(this.currentSystem)) {
+                this.initializeEmulator(systemManager, resetEmulatorCommand.systemDescriptorAutomaticallyDetected());
+            } else {
+                this.currentSystem.reset(this.createEmulatorInitializer());
+            }
+        });
         boolean resetIntoPaused = resetEmulatorCommand.resetIntoPaused();
         this.audioEngine.setPaused(resetIntoPaused);
         return resetIntoPaused ? State.PAUSED : State.RUNNING;
@@ -295,16 +298,34 @@ public final class Jemu {
         return State.STEPPING_CYCLE;
     }
 
-    private void initializeEmulator(@Nullable SystemManager systemManager) throws Exception {
+    private void initializeEmulator(@Nullable SystemManager systemManager, boolean detectedAutomatically) throws Exception {
         if (this.currentSystem != null) {
             this.currentSystem.close();
         }
         if (systemManager == null) {
             throw new EmulatorException("Must select a system!");
         }
-        this.currentSystem = systemManager.createSystem();
+        this.currentSystem = systemManager.createSystem(detectedAutomatically);
         this.currentSystem.powerCycle(this.createEmulatorInitializer());
         this.audioEngine.start();
+    }
+
+    private void resolveSystemInitialization(@Nullable SystemDescriptor initialSystemDescriptor, ThrowableConsumer<SystemDescriptor> initializer) throws Exception {
+        SystemDescriptor target = initialSystemDescriptor;
+        final int maxAttempts = 10;
+        int attempts = 0;
+        while (true) {
+            attempts++;
+            try {
+                initializer.accept(target);
+                break;
+            } catch (SystemRedirectException systemRedirectException) {
+                if (attempts >= maxAttempts) {
+                    throw new IllegalStateException("Attempted too many system redirect initializations. Max attempts are: %d!".formatted(maxAttempts));
+                }
+                target = systemRedirectException.getTargetSystemDescriptor();
+            }
+        }
     }
 
     private EmulatorInitializer createEmulatorInitializer() {

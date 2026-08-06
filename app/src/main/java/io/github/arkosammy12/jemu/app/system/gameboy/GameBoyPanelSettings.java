@@ -10,6 +10,10 @@ public class GameBoyPanelSettings extends PanelSettingsMenu {
     public GameBoyPanelSettings(GameBoyManager gameBoyManager, MainWindow mainWindow) {
         super(mainWindow);
 
+        this.addHeader("General");
+        this.addBooleanSetting("Prefer GameBoy Color", gameBoyManager.getEmulationSettings().preferGameBoyColor(), GameBoyManager.PreferGameBoyColorSettingChangedEvent.class, null, GameBoyManager.PreferGameBoyColorSettingChangedEvent::new);
+        this.addEmptyLine();
+
         this.addHeader("Video");
         this.addEnumSetting("Palette", gameBoyManager.getEmulationSettings().getDMGPalette(), GameBoyManager.DMGPaletteSettingChangedEvent.class, null, GameBoyManager.DMGPaletteSettingChangedEvent::new);
         this.addEmptyLine();

@@ -52,7 +52,7 @@ public class NESManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
+    public SystemAdapter createSystem(boolean detectedAutomatically) throws LineUnavailableException {
         return new NESAdapter(this.jemu, this);
     }
 
@@ -61,7 +61,7 @@ public class NESManager extends SystemManager {
         return systemAdapter instanceof NESAdapter;
     }
 
-    public Optional<CartridgeInfo> findDatabaseEntryFromNesFile(byte[] nesFile, int totalRomSize, boolean hasByteTrainer) {
+    Optional<CartridgeInfo> findDatabaseEntryFromNesFile(byte[] nesFile, int totalRomSize, boolean hasByteTrainer) {
         try {
             if (totalRomSize < 0) {
                 throw new IllegalArgumentException("Total rom size cannot be negative!");

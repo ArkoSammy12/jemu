@@ -57,7 +57,7 @@ public class CosmacVIPManager extends SystemManager {
     }
 
     @Override
-    public SystemAdapter createSystem() throws LineUnavailableException {
+    public SystemAdapter createSystem(boolean detectedAutomatically) throws LineUnavailableException {
         return new CosmacVIPAdapter(jemu, this, this.chip8Interpreter);
     }
 

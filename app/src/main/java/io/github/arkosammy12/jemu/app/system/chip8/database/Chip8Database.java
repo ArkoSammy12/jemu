@@ -160,7 +160,7 @@ public class Chip8Database {
         private final VideoGenerator.DisplayOrientation displayOrientation;
 
         @Nullable
-        private final Chip8Variant chip8Variant;
+        private final String platformId;
 
         @Nullable
         private final Boolean doVFReset;
@@ -204,9 +204,9 @@ public class Chip8Database {
                     .flatMap(RomEntry::getScreenRotation)
                     .flatMap(Entry::getDisplayOrientationForIntValue)
                     .orElse(null);
-            this.chip8Variant = Optional.ofNullable(platformEntry)
+
+            this.platformId = Optional.ofNullable(platformEntry)
                     .flatMap(PlatformEntry::getId)
-                    .flatMap(Entry::getVariantForPlatformId)
                     .orElse(null);
 
             this.doVFReset = getQuirk(romEntry, platformEntry, Quirks::getLogic).orElse(null);
@@ -241,8 +241,8 @@ public class Chip8Database {
             return Optional.ofNullable(this.displayOrientation);
         }
 
-        public Optional<Chip8Variant> getVariant() {
-            return Optional.ofNullable(this.chip8Variant);
+        public Optional<String> getPlatformId() {
+            return Optional.ofNullable(this.platformId);
         }
 
         public Optional<Boolean> doVFReset() {
@@ -292,20 +292,6 @@ public class Chip8Database {
                 case 270 -> VideoGenerator.DisplayOrientation.DEG_270;
                 default -> null;
             });
-        }
-
-        private static Optional<Chip8Variant> getVariantForPlatformId(String id) {
-            return switch (id) {
-                case "originalChip8", "modernChip8" -> Optional.of(CHIP_8);
-                case "hybridVIP" -> Optional.empty(); // TODO: Either find a way to use the VIP CHIP-8 variant instead, or just show an error
-                case "chip8x" -> Optional.of(CHIP_8X);
-                case "chip48" -> Optional.of(CHIP_48);
-                case "superchip1" -> Optional.of(SUPER_CHIP_10);
-                case "superchip" -> Optional.of(SUPER_CHIP_11);
-                case "megachip8" -> Optional.of(MEGA_CHIP);
-                case "xochip" -> Optional.of(XO_CHIP);
-                default -> Optional.empty();
-            };
         }
 
     }

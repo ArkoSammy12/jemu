@@ -60,7 +60,7 @@ public class Atari2600Manager extends SystemManager {
         return List.of("a26");
     }
 
-    public SystemAdapter createSystem() throws LineUnavailableException {
+    public SystemAdapter createSystem(boolean detectedAutomatically) throws LineUnavailableException {
         return new Atari2600Adapter(this.jemu, this);
     }
 
@@ -69,7 +69,7 @@ public class Atari2600Manager extends SystemManager {
         return systemAdapter instanceof Atari2600Adapter;
     }
 
-    public Atari2600Settings getEmulationSettings() {
+    Atari2600Settings getEmulationSettings() {
         return this.systemRegistry.getEmulationSettings().getAtari2600Settings();
     }
 
@@ -81,7 +81,7 @@ public class Atari2600Manager extends SystemManager {
         return Optional.ofNullable(this.atari2600PanelSettings);
     }
 
-    public Optional<Atari2600Database.Entry> getDatabaseEntryForRom(byte[] rom) {
+    Optional<Atari2600Database.Entry> getDatabaseEntryForRom(byte[] rom) {
         try {
             return Optional.ofNullable(this.databaseMap.get(SystemManager.getSha1Hash(rom)));
         } catch (Exception e) {

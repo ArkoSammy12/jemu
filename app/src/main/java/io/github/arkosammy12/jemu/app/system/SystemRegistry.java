@@ -28,31 +28,70 @@ import java.util.Optional;
 
 public final class SystemRegistry implements SystemCatalog {
 
+    private final Chip8Manager chip8Manager;
+    private final Chip8Manager strictChip8Manager;
+    private final Chip8Manager chip8Xmanager ;
+    private final Chip8Manager chip48Manger;
+    private final Chip8Manager superChip10Manager;
+    private final Chip8Manager superChip11Manager;
+    private final Chip8Manager superChipModernManager;
+    private final Chip8Manager xoChipManager;
+    private final Chip8Manager megaChipManager;
+    private final Chip8Manager hyperwaveChip64Manager;
+    private final CosmacVIPManager cosmacVIPManager;
+    private final CosmacVIPManager hybridChip8Manager;
+    private final CosmacVIPManager hybridChip8xManager;
+    private final RCAStudioIIManager rcaStudioIIManager;
+    private final GameBoyManager gameBoyManager;
+    private final GameBoyManager gameBoyColorManager;
+    private final NESManager nesManager;
+    private final Atari2600Manager atari2600Manager;
+
     private final List<SystemManager> systemManagers;
 
     @NotNull
     private volatile EmulationSettings emulationSettings = new EmulationSettings();
 
     public SystemRegistry(Jemu jemu) {
+        this.chip8Manager = new Chip8Manager(jemu, this, Chip8Variant.CHIP_8);
+        this.strictChip8Manager = new Chip8Manager(jemu, this, Chip8Variant.STRICT_CHIP_8);
+        this.chip8Xmanager  = new Chip8Manager(jemu, this, Chip8Variant.CHIP_8X);
+        this.chip48Manger = new Chip8Manager(jemu, this, Chip8Variant.CHIP_48);
+        this.superChip10Manager = new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_10);
+        this.superChip11Manager = new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_11);
+        this.superChipModernManager = new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_MODERN);
+        this.xoChipManager = new Chip8Manager(jemu, this, Chip8Variant.XO_CHIP);
+        this.megaChipManager = new Chip8Manager(jemu, this, Chip8Variant.MEGA_CHIP);
+        this.hyperwaveChip64Manager = new Chip8Manager(jemu, this, Chip8Variant.HYPERWAVE_CHIP_8);
+        this.cosmacVIPManager = new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.NONE);
+        this.hybridChip8Manager = new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8);
+        this.hybridChip8xManager = new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8X);
+        this.rcaStudioIIManager = new RCAStudioIIManager(jemu, this);
+        this.gameBoyManager = new GameBoyManager(jemu, this, GameBoyHost.Model.DMG);
+        this.gameBoyColorManager = new GameBoyManager(jemu, this, GameBoyHost.Model.CGB);
+        this.nesManager = new NESManager(jemu, this);
+        this.atari2600Manager = new Atari2600Manager(jemu, this);
+
+
         this.systemManagers = List.of(
-            new Chip8Manager(jemu, this, Chip8Variant.CHIP_8),
-            new Chip8Manager(jemu, this, Chip8Variant.STRICT_CHIP_8),
-            new Chip8Manager(jemu, this, Chip8Variant.CHIP_8X),
-            new Chip8Manager(jemu, this, Chip8Variant.CHIP_48),
-            new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_10),
-            new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_11),
-            new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_MODERN),
-            new Chip8Manager(jemu, this, Chip8Variant.XO_CHIP),
-            new Chip8Manager(jemu, this, Chip8Variant.MEGA_CHIP),
-            new Chip8Manager(jemu, this, Chip8Variant.HYPERWAVE_CHIP_8),
-            new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.NONE),
-            new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8),
-            new CosmacVIPManager(jemu, this, CosmacVIPHost.Chip8Interpreter.CHIP_8X),
-            new RCAStudioIIManager(jemu, this),
-            new GameBoyManager(jemu, this, GameBoyHost.Model.DMG),
-            new GameBoyManager(jemu, this, GameBoyHost.Model.CGB),
-            new NESManager(jemu, this),
-            new Atari2600Manager(jemu, this)
+                this.chip8Manager,
+                this.strictChip8Manager,
+                this.chip8Xmanager,
+                this.chip48Manger,
+                this.superChip10Manager,
+                this.superChip11Manager,
+                this.superChipModernManager,
+                this.xoChipManager,
+                this.megaChipManager,
+                this.hyperwaveChip64Manager,
+                this.cosmacVIPManager,
+                this.hybridChip8Manager,
+                this.hybridChip8xManager,
+                this.rcaStudioIIManager,
+                this.gameBoyManager,
+                this.gameBoyColorManager,
+                this.nesManager,
+                this.atari2600Manager
         );
     }
 
@@ -93,6 +132,14 @@ public final class SystemRegistry implements SystemCatalog {
         if (deserializedEmulationSettings != null) {
             this.emulationSettings = deserializedEmulationSettings;
         }
+    }
+
+    public CosmacVIPManager getHybridChip8Manager() {
+        return this.hybridChip8Manager;
+    }
+
+    public GameBoyManager getGameBoyColorManager() {
+        return this.gameBoyColorManager;
     }
 
     public class SystemManagerConverter implements CommandLine.ITypeConverter<SystemManager> {

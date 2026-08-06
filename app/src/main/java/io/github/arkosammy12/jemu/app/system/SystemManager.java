@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.app.system;
 
 import io.github.arkosammy12.jemu.app.Jemu;
+import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import org.jetbrains.annotations.Nullable;
@@ -19,7 +20,11 @@ public abstract class SystemManager implements SystemDescriptor {
         this.systemRegistry = systemRegistry;
     }
 
-    public abstract SystemAdapter createSystem() throws Exception;
+    public SystemRegistry getSystemRegistry() {
+        return this.systemRegistry;
+    }
+
+    public abstract SystemAdapter createSystem(boolean detectedAutomatically) throws Exception;
 
     public abstract boolean manages(SystemAdapter systemAdapter);
 
