@@ -101,7 +101,6 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
         super.onFrame();
         Emulator emulator = this.emulator;
         if (emulator != null) {
-            AtomicInteger integer = new AtomicInteger(12);
             this.framesUntilTitleUpdate++;
             if (this.framesUntilTitleUpdate >= emulator.getFramerate()) {
                 this.framesUntilTitleUpdate = 0;
