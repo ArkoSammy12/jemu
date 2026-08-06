@@ -29,29 +29,34 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
         this.singleSpeedRunCycleFunction = () -> {
             CGBSM83<?> cpu = this.getCpu();
             CGBBus<?> bus = this.getBus();
+            CGBAPU<?> apu = this.getAudioGenerator();
 
             this.mCycleDot = 0;
             this.cpuMCycleDotBase = 0;
             this.cpuMCycleDotSpan = 4;
-            boolean apuFrameSequencerTick = false;
             if (bus.haltCPU()) {
                 if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick = this.getTimerController().cycle();
+                    this.getTimerController().cycle();
                 }
             } else {
                 this.cpuOnBus = true;
                 cpu.cycle();
                 this.cpuOnBus = false;
                 if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick = this.getTimerController().cycle();
+                    this.getTimerController().cycle();
                 }
                 cpu.nextState();
             }
 
             this.syncPPUToDot(4);
-            this.getAudioGenerator().cycle(apuFrameSequencerTick);
-            this.getSerialController().cycle();
+
+            apu.cycle();
+            apu.cycle();
+            apu.cycle();
+            apu.cycle();
+
             this.getCartridge().cycle();
+
             bus.cycleOAMDMA();
             bus.cycleVDMA();
         };
@@ -59,16 +64,15 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
         this.doubleSpeedRunCycleFunction = () -> {
             CGBSM83<?> cpu = this.getCpu();
             CGBBus<?> bus = this.getBus();
+            CGBAPU<?> apu = this.getAudioGenerator();
             CGBTimerController<?> timerController = this.getTimerController();
-            DMGSerialController<?> serialController = this.getSerialController();
 
             this.mCycleDot = 0;
             this.cpuMCycleDotSpan = 2;
-            boolean apuFrameSequencerTick = false;
             if (bus.haltCPU()) {
                 if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick |= timerController.cycle();
-                    apuFrameSequencerTick |= timerController.cycle();
+                    timerController.cycle();
+                    timerController.cycle();
                 }
             } else {
                 this.cpuMCycleDotBase = 0;
@@ -76,7 +80,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
                 cpu.cycle();
                 this.cpuOnBus = false;
                 if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick |= timerController.cycle();
+                    timerController.cycle();
                 }
                 cpu.nextState();
 
@@ -85,22 +89,22 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
                 cpu.cycle();
                 this.cpuOnBus = false;
                 if (cpu.getMode() != SM83.Mode.STOPPED) {
-                    apuFrameSequencerTick |= timerController.cycle();
+                    timerController.cycle();
                 }
                 cpu.nextState();
             }
 
             this.syncPPUToDot(4);
-            this.getAudioGenerator().cycle(apuFrameSequencerTick);
 
-            serialController.cycle();
-            serialController.cycle();
+            apu.cycle();
+            apu.cycle();
+            apu.cycle();
+            apu.cycle();
 
             this.getCartridge().cycle();
 
             bus.cycleOAMDMA();
             bus.cycleOAMDMA();
-
             bus.cycleVDMA();
         };
 
@@ -108,7 +112,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     }
 
     @Override
-    protected CGBSM83<?> createCpu() {
+    protected CGBSM83<?> createCPU() {
         this.cpu = new CGBSM83<>(this);
         return this.cpu;
     }
@@ -130,7 +134,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     }
 
     @Override
-    protected CGBPPU<?> createPpu() {
+    protected CGBPPU<?> createPPU() {
         this.ppu = new CGBPPU<>(this);
         return this.ppu;
     }
@@ -141,7 +145,7 @@ public class GameBoyColorEmulator extends GameBoyEmulator implements CGBSM83.Sys
     }
 
     @Override
-    protected CGBAPU<?> createApu() {
+    protected CGBAPU<?> createAPU() {
         this.apu = new CGBAPU<>(this);
         return this.apu;
     }

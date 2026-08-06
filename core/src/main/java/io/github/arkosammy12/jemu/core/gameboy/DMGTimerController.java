@@ -78,21 +78,17 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
     }
 
     // It is assumed that this is called once per M-cycle, after the Processor performs the action of the current cycle, but before it fetches (if instruction ended), or polls for interrupts (if any)
-    public boolean cycle() {
+    public void cycle() {
         this.reloadOccurred = false;
-
-        boolean apuFrameSequencerTick = false;
-
-        apuFrameSequencerTick |= this.cycleSystemClock();
-        apuFrameSequencerTick |= this.cycleSystemClock();
-        apuFrameSequencerTick |= this.cycleSystemClock();
-        apuFrameSequencerTick |= this.cycleSystemClock();
-
-        return apuFrameSequencerTick;
+        this.cycleSystemClock();
+        this.cycleSystemClock();
+        this.cycleSystemClock();
+        this.cycleSystemClock();
     }
 
-    protected boolean cycleSystemClock() {
+    protected void cycleSystemClock() {
         this.systemClock = (this.systemClock + 1) & 0xFFFF;
+
         this.tickPendingReloadIfPresent();
         boolean timerInput = this.getFrequencyBit() && (this.timerControl & TAC_ENABLE_BIT) != 0;
 
@@ -105,10 +101,14 @@ public class DMGTimerController<E extends GameBoyEmulator> implements Bus {
         }
 
         this.oldTimerInput = timerInput;
-        return this.getAPUFrameSequencerTick();
+
+        this.emulator.getSerialController().cycle();
+        if (this.tickAPUFrameSequencer()) {
+            this.emulator.getAudioGenerator().tickFrameSequencer();
+        }
     }
 
-    protected boolean getAPUFrameSequencerTick() {
+    protected boolean tickAPUFrameSequencer() {
         boolean divBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
         boolean tick = this.oldDivBit4 && !divBit4;
         this.oldDivBit4 = divBit4;

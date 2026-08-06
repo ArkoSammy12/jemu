@@ -33,10 +33,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.host = host;
 
         this.joypad = new GameBoyJoypad<>(this);
-        this.cpu = this.createCpu();
+        this.cpu = this.createCPU();
         this.bus = this.createBus();
-        this.ppu = this.createPpu();
-        this.apu = this.createApu();
+        this.ppu = this.createPPU();
+        this.apu = this.createAPU();
 
         this.timerController = this.createTimerController();
         this.serialController = this.createSerialController();
@@ -44,7 +44,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.cartridge = GameBoyCartridge.getCartridge(this);
     }
 
-    protected SM83<?> createCpu() {
+    protected SM83<?> createCPU() {
         return new SM83<>(this);
     }
 
@@ -52,11 +52,11 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         return new DMGBus<>(this);
     }
 
-    protected DMGPPU<?> createPpu() {
+    protected DMGPPU<?> createPPU() {
         return new DMGPPU<>(this);
     }
 
-    protected DMGAPU<?> createApu() {
+    protected DMGAPU<?> createAPU() {
         return new DMGAPU<>(this);
     }
 
@@ -131,14 +131,18 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.cpuOnBus = true;
         this.cpu.cycle();
         this.cpuOnBus = false;
-        boolean apuFrameSequencerTick = false;
         if (this.cpu.getMode() != SM83.Mode.STOPPED) {
-            apuFrameSequencerTick = this.timerController.cycle();
+            this.timerController.cycle();
         }
         this.cpu.nextState();
+
         this.syncPPUToDot(4);
-        this.apu.cycle(apuFrameSequencerTick);
-        this.serialController.cycle();
+
+        this.apu.cycle();
+        this.apu.cycle();
+        this.apu.cycle();
+        this.apu.cycle();
+
         this.cartridge.cycle();
         this.bus.cycleOAMDMA();
     }

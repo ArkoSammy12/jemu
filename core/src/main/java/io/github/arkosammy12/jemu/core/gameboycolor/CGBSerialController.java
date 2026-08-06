@@ -11,7 +11,7 @@ public class CGBSerialController<E extends GameBoyColorEmulator> extends DMGSeri
     @Override
     public int readByte(int address) {
         if (address == SC_ADDR) {
-            return (this.serialControl & 0x7F) | (this.transferring ? 1 << 7 : 0) | (this.emulator.isDMGCompatibilityMode() ? 0b01111110 : 0b01111100);
+            return this.serialControl | (this.emulator.isDMGCompatibilityMode() ? 0b01111110 : 0b01111100);
         } else {
             return super.readByte(address);
         }

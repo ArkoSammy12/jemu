@@ -10,18 +10,17 @@ public class DMGSerialController<E extends GameBoyEmulator> implements Bus {
     public static final int SC_ADDR = 0xFF02;
 
     // Shift the masks once to the left to account for extra clocking caused by falling edge bit 2/7
-    private static final int FREQUENCY_BIT_2_MASK = 1 << (2 + 1);
-    private static final int FREQUENCY_BIT_7_MASK = 1 << (7 + 1);
+    private static final int FREQUENCY_BIT_2_MASK = 1 << 2;
+    private static final int FREQUENCY_BIT_7_MASK = 1 << 7;
 
     protected final E emulator;
 
-    private boolean oldSerialInput;
-
-    protected boolean transferring;
-    private int transferredBits;
-
     private int serialData = 0xFF;
     protected int serialControl;
+
+    private boolean oldSerialInput;
+    private boolean dLatch;
+    private int transferredBits;
 
     public DMGSerialController(E emulator) {
         this.emulator = emulator;
@@ -31,7 +30,7 @@ public class DMGSerialController<E extends GameBoyEmulator> implements Bus {
     public int readByte(int address) {
         return switch (address) {
             case SB_ADDR -> this.serialData;
-            case SC_ADDR -> (this.serialControl & 0x7F) | (this.transferring ? 1 << 7 : 0) | 0b01111110;
+            case SC_ADDR -> this.serialControl | 0b01111110;
             default -> throw new EmulatorException("Invalid address $%04X for GameBoy serial controller!".formatted(address));
         };
     }
@@ -42,41 +41,36 @@ public class DMGSerialController<E extends GameBoyEmulator> implements Bus {
             case SB_ADDR -> this.serialData = value & 0xFF;
             case SC_ADDR -> {
                 this.serialControl = value & 0xFF;
-                if (this.getSerialEnable()) {
-                    this.transferring = true;
-                    this.transferredBits = 0;
-                }
+                this.transferredBits = 0;
+                this.dLatch = false;
             }
             default -> throw new EmulatorException("Invalid address $%04X for GameBoy serial controller!".formatted(address));
         }
     }
 
     public void cycle() {
-        this.cycleSerial();
-        this.cycleSerial();
-        this.cycleSerial();
-        this.cycleSerial();
-    }
-
-    private void cycleSerial() {
         boolean frequencyBit = ((this.getClockSpeed() ? FREQUENCY_BIT_2_MASK : FREQUENCY_BIT_7_MASK) & this.emulator.getTimerController().getSystemClock()) != 0;
         boolean serialInput = frequencyBit && this.getClockSelect();
 
-        if (this.oldSerialInput && !serialInput && this.transferring) {
-            // Shift 1s into SB as there is no GameBoy supplying serial data
-            this.serialData = ((this.serialData << 1) | 1) & 0xFF;
-            this.transferredBits++;
-            if (this.transferredBits >= 8) {
-                this.transferring = false;
-                this.transferredBits = 0;
-                this.triggerSerialInterrupt();
+        if (this.oldSerialInput && !serialInput) {
+            if (this.dLatch && this.getTransferEnable()) {
+                // Shift 1s into SB as there is no GameBoy supplying serial data
+                this.serialData = ((this.serialData << 1) | 1) & 0xFF;
+                this.transferredBits++;
+                if (this.transferredBits >= 8) {
+                    this.serialControl &= ~(1 << 7);
+                    this.transferredBits = 0;
+                    this.triggerSerialInterrupt();
+                }
             }
+            this.dLatch = !this.dLatch;
         }
+
         this.oldSerialInput = serialInput;
     }
 
 
-    private boolean getSerialEnable() {
+    private boolean getTransferEnable() {
         return (this.serialControl & (1 << 7)) != 0;
     }
 

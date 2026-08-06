@@ -40,7 +40,7 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
 
     @Override
     public boolean useBuiltInBootROM() {
-        return false;
+        return this.gameBoyManager.getEmulationSettings().useBuiltInBootROM();
     }
 
     @Override

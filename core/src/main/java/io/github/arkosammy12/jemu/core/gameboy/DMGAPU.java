@@ -325,85 +325,80 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
         return this.resampler;
     }
 
-    public void cycle(boolean tickFrameSequencer) {
-        if (tickFrameSequencer) {
-            this.tickFrameSequencer();
+    public void cycle() {
+        double ch1 = 0;
+        double ch2 = 0;
+        double ch3 = 0;
+        double ch4 = 0;
+        if (this.masterAudioEnable) {
+            this.channel1.tick();
+            this.channel2.tick();
+            this.channel3.tick();
+            this.channel4.tick();
+            ch1 = this.channel1.getDigitalOutput();
+            ch2 = this.channel2.getDigitalOutput();
+            ch3 = this.channel3.getDigitalOutput();
+            ch4 = this.channel4.getDigitalOutput();
+
+            // Hack to avoid aliasing at extremely high frequencies for the square channels
+            if (this.channel1.getPeriodFull() > 2046) {
+                ch1 = 0;
+            }
+            if (this.channel2.getPeriodFull() > 2046) {
+                ch2 = 0;
+            }
         }
-        for (int i = 0; i < 4; i++) {
-            double ch1 = 0;
-            double ch2 = 0;
-            double ch3 = 0;
-            double ch4 = 0;
-            if (this.masterAudioEnable) {
-                this.channel1.tick();
-                this.channel2.tick();
-                this.channel3.tick();
-                this.channel4.tick();
-                ch1 = this.channel1.getDigitalOutput();
-                ch2 = this.channel2.getDigitalOutput();
-                ch3 = this.channel3.getDigitalOutput();
-                ch4 = this.channel4.getDigitalOutput();
 
-                // Hack to avoid aliasing at extremely high frequencies for the square channels
-                if (this.channel1.getPeriodFull() > 2046) {
-                    ch1 = 0;
-                }
-                if (this.channel2.getPeriodFull() > 2046) {
-                    ch2 = 0;
-                }
-            }
+        ch1 = ((ch1 - ((double) this.channel1.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+        ch2 = ((ch2 - ((double) this.channel2.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
 
-            ch1 = ((ch1 - ((double) this.channel1.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
-            ch2 = ((ch2 - ((double) this.channel2.envelopeCurrentVolume / 2.0)) / MAX_VOLUME);
+        ch3 /= MAX_VOLUME;
+        ch4 = (ch4 - ((double) this.channel4.envelopeCurrentVolume / 2.0)) / MAX_VOLUME;
 
-            ch3 /= MAX_VOLUME;
-            ch4 = (ch4 - ((double) this.channel4.envelopeCurrentVolume / 2.0)) / MAX_VOLUME;
+        double left = 0;
+        double right = 0;
 
-            double left = 0;
-            double right = 0;
-
-            if (this.channel1.getLeft()) {
-                left += ch1;
-            }
-            if (this.channel2.getLeft()) {
-                left += ch2;
-            }
-            if (this.channel3.getLeft()) {
-                left += ch3;
-            }
-            if (this.channel4.getLeft()) {
-                left += ch4;
-            }
-
-            if (this.channel1.getRight()) {
-                right += ch1;
-            }
-            if (this.channel2.getRight()) {
-                right += ch2;
-            }
-            if (this.channel3.getRight()) {
-                right += ch3;
-            }
-            if (this.channel4.getRight()) {
-                right += ch4;
-            }
-
-            left *= -1.0 * (this.leftVolume + 1.0) / 8.0f;
-            right *= -1.0 * (this.rightVolume + 1.0) / 8.0f;
-
-            left /= 4.0f;
-            right /= 4.0f;
-
-            boolean dacEnable = this.channel1.getDacEnable() || this.channel2.getDacEnable() || this.channel3.getDacEnable() || this.channel4.getDacEnable();
-
-            this.leftChannelSamples[this.currentSampleIndex] = left;
-            this.rightChannelSamples[this.currentSampleIndex] = right;
-            this.dacEnableSamples[this.currentSampleIndex] = dacEnable;
-            this.currentSampleIndex = (this.currentSampleIndex + 1) % GameBoyEmulator.T_CYCLES_PER_FRAME;
+        if (this.channel1.getLeft()) {
+            left += ch1;
         }
+        if (this.channel2.getLeft()) {
+            left += ch2;
+        }
+        if (this.channel3.getLeft()) {
+            left += ch3;
+        }
+        if (this.channel4.getLeft()) {
+            left += ch4;
+        }
+
+        if (this.channel1.getRight()) {
+            right += ch1;
+        }
+        if (this.channel2.getRight()) {
+            right += ch2;
+        }
+        if (this.channel3.getRight()) {
+            right += ch3;
+        }
+        if (this.channel4.getRight()) {
+            right += ch4;
+        }
+
+        left *= -1.0 * (this.leftVolume + 1.0) / 8.0f;
+        right *= -1.0 * (this.rightVolume + 1.0) / 8.0f;
+
+        left /= 4.0f;
+        right /= 4.0f;
+
+        boolean dacEnable = this.channel1.getDacEnable() || this.channel2.getDacEnable() || this.channel3.getDacEnable() || this.channel4.getDacEnable();
+
+        this.leftChannelSamples[this.currentSampleIndex] = left;
+        this.rightChannelSamples[this.currentSampleIndex] = right;
+        this.dacEnableSamples[this.currentSampleIndex] = dacEnable;
+        this.currentSampleIndex = (this.currentSampleIndex + 1) % GameBoyEmulator.T_CYCLES_PER_FRAME;
     }
 
-    private void tickFrameSequencer() {
+    void tickFrameSequencer() {
         if (!this.masterAudioEnable) {
             return;
         }

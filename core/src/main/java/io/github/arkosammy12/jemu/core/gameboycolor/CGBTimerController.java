@@ -12,7 +12,7 @@ public class CGBTimerController<E extends GameBoyColorEmulator> extends DMGTimer
     }
 
     @Override
-    protected boolean getAPUFrameSequencerTick() {
+    protected boolean tickAPUFrameSequencer() {
         boolean divBit4 = (this.systemClock & DIV_BIT_4_MASK) != 0;
         boolean divBit5 = (this.systemClock & DIV_BIT_5_MASK) != 0;
 

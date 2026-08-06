@@ -278,7 +278,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
         this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.lcd));
     }
 
-    void cycleDot(int tCycle) {
+    public void cycleDot(int tCycle) {
         if (!this.getLCDPPUEnable()) {
             return;
         }
