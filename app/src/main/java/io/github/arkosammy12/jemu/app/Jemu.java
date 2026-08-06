@@ -84,7 +84,7 @@ public final class Jemu {
                 cliArgs.getRomPath().ifPresent(romPath -> this.mainWindow.getFileManager().loadFile(romPath));
                 cliArgs.getSystem().ifPresent(system -> {
                     this.mainWindow.getEmulatorManager().setCurrentSystemDescriptor(system);
-                    this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(system, false));
+                    this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(system, false, false));
                 });
             }
 
