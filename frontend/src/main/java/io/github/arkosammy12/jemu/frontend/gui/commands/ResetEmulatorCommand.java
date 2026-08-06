@@ -5,7 +5,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;
 
-public record ResetEmulatorCommand(@Nullable SystemDescriptor systemDescriptor, boolean resetIntoPaused) implements EmulatorCommand {
+public record ResetEmulatorCommand(@Nullable SystemDescriptor systemDescriptor, boolean systemDescriptorFromAutomaticDetection, boolean resetIntoPaused) implements EmulatorCommand {
 
     public Optional<SystemDescriptor> getSystemDescriptor() {
         return Optional.ofNullable(this.systemDescriptor);

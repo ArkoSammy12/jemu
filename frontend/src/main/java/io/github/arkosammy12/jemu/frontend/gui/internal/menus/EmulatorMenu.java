@@ -201,7 +201,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         SystemDescriptorResult systemDescriptorResult = this.getCurrentSystemDescriptor();
         Optional<SystemDescriptor> systemDescriptor = systemDescriptorResult.getSystemDescriptor();
         if (systemDescriptor.isPresent()) {
-            this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(systemDescriptor.get(), this.pauseButton.isSelected()));
+            this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(systemDescriptor.get(), systemDescriptorResult.descriptorFromAutomaticDetection(), this.pauseButton.isSelected()));
         } else {
             this.mainWindow.showDialog("Error attempting to power cycle", systemDescriptorResult.errorMessage(), MainWindow.DialogType.ERROR);
         }
@@ -216,7 +216,8 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
     }
 
     private void submitReset() {
-        mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(this.getCurrentSystemDescriptor().systemDescriptor(), this.pauseButton.isSelected()));
+        SystemDescriptorResult systemDescriptorResult = this.getCurrentSystemDescriptor();
+        mainWindow.submitEmulatorCommand(new ResetEmulatorCommand(systemDescriptorResult.systemDescriptor(), systemDescriptorResult.descriptorFromAutomaticDetection(), this.pauseButton.isSelected()));
     }
 
     private void submitStop() {
@@ -226,15 +227,15 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
     private SystemDescriptorResult getCurrentSystemDescriptor() {
         SystemDescriptor systemDescriptor = this.currentSystemDescriptor;
         if (systemDescriptor != null) {
-            return new SystemDescriptorResult(systemDescriptor, null);
+            return new SystemDescriptorResult(systemDescriptor, false, null);
         }
         Optional<Path> optionalRomPath = this.mainWindow.getMainMenuBar().getFileMenu().getSelectedRomPath();
         if (optionalRomPath.isEmpty()) {
-            return new SystemDescriptorResult(null, "No selected ROM path to determine system from!");
+            return new SystemDescriptorResult(null, false, "No selected ROM path to determine system from!");
         }
         String fileExtension = FilenameUtils.getExtension(optionalRomPath.get().toString());
         if (fileExtension.isBlank()) {
-            return new SystemDescriptorResult(null, "The file extension of the selected ROM path is blank!");
+            return new SystemDescriptorResult(null, false, "The file extension of the selected ROM path is blank!");
         }
         outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemCatalog().getSystemDescriptors()) {
             for (String extension : descriptor.getFileExtensions()) {
@@ -246,13 +247,13 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         }
 
         if (systemDescriptor == null) {
-            return new SystemDescriptorResult(null, "File extension of selected ROM path does not match of system descriptors!");
+            return new SystemDescriptorResult(null, false, "File extension of selected ROM path does not match of system descriptors!");
         }
 
-        return new SystemDescriptorResult(systemDescriptor, null);
+        return new SystemDescriptorResult(systemDescriptor, true, null);
     }
 
-    private record SystemDescriptorResult(@Nullable SystemDescriptor systemDescriptor, @Nullable String errorMessage) {
+    private record SystemDescriptorResult(@Nullable SystemDescriptor systemDescriptor, boolean descriptorFromAutomaticDetection, @Nullable String errorMessage) {
 
         private Optional<SystemDescriptor> getSystemDescriptor() {
             return Optional.ofNullable(this.systemDescriptor);
