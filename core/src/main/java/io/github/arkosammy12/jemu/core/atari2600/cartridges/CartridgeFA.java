@@ -14,14 +14,14 @@ public class CartridgeFA<E extends Atari2600Emulator> extends Atari2600Cartridge
     }
 
     @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         int readValue;
         if (address >= 0x1000 && address <= 0x10FF) {
             readValue = this.emulator.combineWithDataBus(0, 0x00);
         } else if (address >= 0x1100 && address <= 0x11FF) {
             readValue = (int) this.ram[address & 0xFF] & 0xFF;
         } else {
-            readValue = super.readByte(address);
+            readValue = super.readByte(address, dataBus);
         }
         this.checkBankswitch(address, readValue);
         return readValue;

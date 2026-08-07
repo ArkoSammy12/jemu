@@ -1,13 +1,12 @@
 package io.github.arkosammy12.jemu.core.atari2600;
 
 import io.github.arkosammy12.jemu.core.atari2600.cartridges.*;
-import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
 import java.util.Optional;
 
-public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements Bus {
+public abstract class Atari2600Cartridge<E extends Atari2600Emulator> {
 
     protected final E emulator;
     protected final byte[] rom;
@@ -21,12 +20,10 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
         this.rom = rom.get();
     }
 
-    @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         return (int) this.rom[this.mapROMAddress(address) % this.rom.length] & 0xFF;
     }
 
-    @Override
     public void writeByte(int address, int value) {
 
     }
@@ -42,6 +39,7 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> implements
         return switch (cartridgeType) {
             case CART_0840 -> new Cartridge0840<>(emulator);
             case CART_3E -> new Cartridge3E<>(emulator);
+            case CART_3F -> new Cartridge3F<>(emulator);
             case CART_2K -> new Cartridge2K<>(emulator);
             case CART_4K -> new Cartridge4K<>(emulator);
             case CART_F4 -> new CartridgeF4<>(emulator);

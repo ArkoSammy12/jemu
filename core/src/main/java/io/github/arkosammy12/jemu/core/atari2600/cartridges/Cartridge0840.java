@@ -12,9 +12,9 @@ public class Cartridge0840<E extends Atari2600Emulator> extends Atari2600Cartrid
     }
 
     @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         this.checkBankswitch(address);
-        return super.readByte(address);
+        return super.readByte(address, dataBus);
     }
 
     @Override

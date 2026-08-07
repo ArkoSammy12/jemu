@@ -15,15 +15,22 @@ public class Atari2600Bus<E extends Atari2600Emulator> implements Bus {
     @Override
     public int readByte(int address) {
         address &= 0x1FFF;
-        int ret;
-        int cartridgeByte = this.emulator.getCartridge().readByte(address);
-        if ((address & 0x1000) != 0) {
-            ret = cartridgeByte;
-        } else if ((address & 0x80) != 0) {
-            ret = this.emulator.getPIA().readByte(address);
-        } else {
-            ret = this.emulator.getTIA().readByte(address);
+        int ret = this.dataBus;
+        boolean A12 = (address & 0x1000) != 0;
+
+        if (!A12) {
+            if ((address & 0x80) != 0) {
+                ret = this.emulator.getPIA().readByte(address);
+            } else {
+                ret = this.emulator.getTIA().readByte(address);
+            }
         }
+
+        int cartridgeByte = this.emulator.getCartridge().readByte(address, ret & 0xFF);
+        if (A12) {
+            ret = cartridgeByte;
+        }
+
         this.dataBus = ret & 0xFF;
         return this.dataBus;
     }

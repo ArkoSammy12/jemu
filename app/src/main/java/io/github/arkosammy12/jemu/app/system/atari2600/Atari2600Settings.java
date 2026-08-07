@@ -209,8 +209,8 @@ public class Atari2600Settings {
         //@SerializedName("3e+")
         //CART_3EPLUS("3E+", Atari2600Cartridge.Type.CART_3EPLUS),
 
-        //@SerializedName("3f")
-        //CART_3F("3F", Atari2600Cartridge.Type.CART_3F),
+        @SerializedName("3f")
+        CART_3F("3F", Atari2600Cartridge.Type.CART_3F),
 
         @SerializedName("0840")
         CART_0840("0840", Atari2600Cartridge.Type.CART_0840),
