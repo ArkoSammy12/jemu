@@ -23,10 +23,12 @@ public class SuperChip10Display<E extends SuperChip10Emulator> extends Chip8Disp
         return 64;
     }
 
+    @Override
     public int getWidth() {
         return this.hires ? 128 : 64;
     }
 
+    @Override
     public int getHeight() {
         return this.hires ? 64 : 32;
     }

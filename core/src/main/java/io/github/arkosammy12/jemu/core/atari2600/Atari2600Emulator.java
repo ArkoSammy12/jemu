@@ -61,7 +61,6 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
         this.pia = new MOS6532<>(this);
         this.bus = new Atari2600Bus<>(this);
         this.cartridge = Atari2600Cartridge.getCartridge(this);
-
     }
 
     public TVFormat getTVFormat() {
