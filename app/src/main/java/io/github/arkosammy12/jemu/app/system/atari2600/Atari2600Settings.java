@@ -65,11 +65,6 @@ public class Atari2600Settings {
         return this.cartridgeTypeOverride;
     }
 
-    enum PlayerSide {
-        LEFT,
-        RIGHT
-    }
-
     public enum PlayerDifficulty implements DisplayNamerProvider {
         @SerializedName("advanced")
         ADVANCED("Advanced"),

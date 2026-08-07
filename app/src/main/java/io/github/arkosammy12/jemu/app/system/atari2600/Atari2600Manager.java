@@ -151,7 +151,6 @@ public class Atari2600Manager extends SystemManager {
 
     record TVFormatOverrideSettingChangedEvent(Atari2600Settings.TVFormatOverride tvFormatOverride) implements CoreSettingChangeEvent, Supplier<Atari2600Settings.TVFormatOverride> {
 
-
         @Override
         public Atari2600Settings.TVFormatOverride get() {
             return this.tvFormatOverride();

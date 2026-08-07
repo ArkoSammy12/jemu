@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.app.system.chip8;
 
-import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.core.chip8.Chip8Host;
 import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
 
