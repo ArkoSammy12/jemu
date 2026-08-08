@@ -16,7 +16,6 @@ public class RP2A07<E extends NESEmulator> extends RP2A03<E> {
         switch (this.cpu.getHalfCyclePhase()) {
             case PHI_1 -> super.cycleHalf();
             case PHI_2 -> {
-
                 // Place checks before cycling PHI2 of the CPU to halt it on its fetch cycle if a DMA is pending
                 if (this.cpu.getSYNC()) {
                     if (this.oamDMAStartPending) {
@@ -30,7 +29,6 @@ public class RP2A07<E extends NESEmulator> extends RP2A03<E> {
                 }
 
                 super.onCPUPHI2();
-
             }
         }
     }

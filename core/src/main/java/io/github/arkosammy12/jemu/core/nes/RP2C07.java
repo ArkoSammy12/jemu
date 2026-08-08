@@ -171,7 +171,7 @@ public class RP2C07<E extends NESEmulator> extends RP2C02<E> {
     }
 
     @Override
-    protected int getVblScanline() {
+    protected int getVBlankScanline() {
         return PAL_VBL_SCANLINE;
     }
 
