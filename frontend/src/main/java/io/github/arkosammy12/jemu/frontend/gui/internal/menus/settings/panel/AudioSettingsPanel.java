@@ -1,6 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.panel;
 
+import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.audio.SampleRate;
+import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalAudioLatencyChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalMuteEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalSampleRateChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalVolumeChangedEvent;
@@ -23,7 +25,7 @@ public class AudioSettingsPanel extends PanelSettingsMenu {
         mainWindow.onEvent(InternalMuteEvent.class, muteEvent -> muteSetting.setValue(muteEvent.getMute()));
 
         int startingVolume = mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getVolume();
-        JSlider volumeSlider = new JSlider(0, 100, startingVolume);
+        JSlider volumeSlider = new JSlider(AudioEngine.MIN_VOLUME, AudioEngine.MAX_VOLUME, startingVolume);
         volumeSlider.setPaintTrack(true);
         volumeSlider.setPaintTicks(true);
         volumeSlider.setPaintLabels(true);
@@ -34,7 +36,7 @@ public class AudioSettingsPanel extends PanelSettingsMenu {
 
         volumeSlider.addChangeListener(volumeSiderChangeListener);
 
-        IntegerPanelSpinnerSetting<?> volumeSpinnerSetting = new IntegerPanelSpinnerSetting<>(mainWindow, "Volume", "%", startingVolume, 0, 100, null, null, InternalVolumeChangedEvent::new);
+        IntegerPanelSpinnerSetting<?> volumeSpinnerSetting = new IntegerPanelSpinnerSetting<>(mainWindow, "Volume: ", "%", startingVolume, 0, 100, null, null, InternalVolumeChangedEvent::new);
 
         mainWindow.onEvent(InternalVolumeChangedEvent.class, volumeChangedEvent -> {
             volumeSlider.removeChangeListener(volumeSiderChangeListener);
@@ -49,6 +51,9 @@ public class AudioSettingsPanel extends PanelSettingsMenu {
 
         EnumPanelSetting<SampleRate, ?> sampleRateSetting = this.addEnumSetting("Sample Rate", mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getSampleRate(), null, null, InternalSampleRateChangedEvent::new);
         mainWindow.onEvent(InternalSampleRateChangedEvent.class, sampleRateChangedEvent -> sampleRateSetting.setValue(sampleRateChangedEvent.getSampleRate()));
+
+        IntegerPanelSpinnerSetting<?> latencySetting = this.addIntegerSetting("Latency: ", "ms", mainWindow.getConfigurations().getSettings().getAudioSettings().getLatencyMs(), AudioEngine.MIN_LATENCY_MS, AudioEngine.MAX_LATENCY_MS, null, null, InternalAudioLatencyChangedEvent::new);
+        mainWindow.onEvent(InternalAudioLatencyChangedEvent.class, internalAudioLatencyChangedEvent -> latencySetting.setValue(internalAudioLatencyChangedEvent.getLatencyMs()));
     }
 
 }

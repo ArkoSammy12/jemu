@@ -1,10 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.audio;
 
 import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
-import io.github.arkosammy12.jemu.frontend.events.audio.MuteEvent;
-import io.github.arkosammy12.jemu.frontend.events.audio.SampleRateChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.audio.SoundDeviceChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.audio.VolumeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.audio.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,10 +12,15 @@ import java.util.function.Supplier;
 
 public class AudioEngine implements Closeable {
 
+    public static final int MAX_VOLUME = 100;
+    public static final int MIN_VOLUME = 0;
+
+    public static final int MAX_LATENCY_MS = 100;
+    public static final int MIN_LATENCY_MS = 0;
+
     private static final int BYTES_PER_SAMPLE = 2;
     private static final boolean SIGNED_SAMPLES = true;
     private static final boolean BIG_ENDIAN_SAMPLES = false;
-    private static final int TARGET_FRAME_LATENCY = 2;
 
     private volatile AudioLine audioLine;
     private volatile Supplier<byte @Nullable []> sampleFrameCallback;
@@ -30,6 +32,7 @@ public class AudioEngine implements Closeable {
     private volatile boolean muted;
     private volatile int volume;
     private volatile int framerate;
+    private volatile int latencyMs;
     private volatile boolean paused;
 
     private volatile int samplesPerFrame;
@@ -98,6 +101,21 @@ public class AudioEngine implements Closeable {
         }
     }
 
+    public void setLatency(int latencyMs) throws LineUnavailableException {
+        if (latencyMs < MIN_LATENCY_MS || latencyMs > MAX_LATENCY_MS) {
+            throw new IllegalArgumentException("Attempted to set audio engine latency to %d ms, but it can only be in the range [%d, %d]!".formatted(latencyMs, MIN_LATENCY_MS, MAX_LATENCY_MS));
+        }
+        synchronized (this.audioLineLock) {
+            boolean audioLineWasRunning = this.audioLineRunning;
+            this.stop();
+            this.latencyMs = latencyMs;
+            this.recalculateFrameMetrics();
+            if (audioLineWasRunning) {
+                this.start();
+            }
+        }
+    }
+
     public void setMuted(boolean muted) {
         synchronized (this.audioLineLock) {
             this.muted = muted;
@@ -108,6 +126,9 @@ public class AudioEngine implements Closeable {
     }
 
     public void setVolume(int volume) {
+        if (volume < MIN_LATENCY_MS || volume > MAX_LATENCY_MS) {
+            throw new IllegalArgumentException("Attempted to set audio engine volume to %d, but it can only be in the range [%d, %d]!".formatted(volume, MIN_VOLUME, MAX_VOLUME));
+        }
         synchronized (this.audioLineLock) {
             this.volume = volume;
             if (this.audioLine != null) {
@@ -150,6 +171,7 @@ public class AudioEngine implements Closeable {
             case SampleRateChangedEvent sampleRateChangedEvent -> this.setSampleRate(sampleRateChangedEvent.getSampleRate());
             case MuteEvent muteEvent -> this.setMuted(muteEvent.getMute());
             case VolumeChangedEvent volumeChangedEvent -> this.setVolume(volumeChangedEvent.getNewVolume());
+            case AudioLatencyChangedEvent audioLatencyChangedEvent -> this.setLatency(audioLatencyChangedEvent.getLatencyMs());
             case null, default -> {}
         }
     }
@@ -173,7 +195,7 @@ public class AudioEngine implements Closeable {
                 }
             }
 
-            this.audioLine.open(this.bytesPerFrame * (TARGET_FRAME_LATENCY + 1));
+            this.audioLine.open(this.bytesPerFrame + ((this.latencyMs * this.framerate * this.bytesPerFrame) / 1000));
 
             this.setVolume(this.volume);
             this.setMuted(this.muted);

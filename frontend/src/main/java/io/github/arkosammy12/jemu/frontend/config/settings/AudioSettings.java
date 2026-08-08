@@ -13,6 +13,8 @@ public interface AudioSettings {
 
     SampleRate getSampleRate();
 
+    int getLatencyMs();
+
     Optional<SoundDevice> getSoundDevice();
 
 }

@@ -1,11 +1,9 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.menubar;
 
+import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
 import io.github.arkosammy12.jemu.frontend.audio.SampleRate;
 import io.github.arkosammy12.jemu.frontend.audio.SoundDevice;
-import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalMuteEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalSampleRateChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalSoundDeviceChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.audio.InternalVolumeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.audio.*;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 
@@ -35,7 +33,7 @@ public class SoundSettings extends MenuBarMenu {
         this.mainWindow = mainWindow;
 
         JMenu volumeMenu = new JMenu("Volume");
-        this.volumeSlider = new JSlider(0, 100, mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getVolume());
+        this.volumeSlider = new JSlider(AudioEngine.MIN_VOLUME, AudioEngine.MAX_VOLUME, mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getVolume());
         this.volumeSlider.setPaintTrack(true);
         this.volumeSlider.setPaintTicks(true);
         this.volumeSlider.setPaintLabels(true);
@@ -85,6 +83,28 @@ public class SoundSettings extends MenuBarMenu {
             }
         });
 
+        JMenu audioLatencyMenu = new JMenu("Latency");
+        SpinnerNumberModel audioLatencySpinnerModel = new SpinnerNumberModel();
+        audioLatencySpinnerModel.setMinimum(AudioEngine.MIN_LATENCY_MS);
+        audioLatencySpinnerModel.setMaximum(AudioEngine.MAX_LATENCY_MS);
+        JSpinner audioLatencySpinner = new JSpinner(audioLatencySpinnerModel);
+        audioLatencySpinner.setValue(mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getLatencyMs());
+        ChangeListener audioLatencySpinnerChangeListener = _ -> {
+            if (audioLatencySpinner.getValue() instanceof Integer value) {
+                mainWindow.publishEvent(new InternalAudioLatencyChangedEvent(value));
+            }
+        };
+        audioLatencySpinner.addChangeListener(audioLatencySpinnerChangeListener);
+
+        mainWindow.onEvent(InternalAudioLatencyChangedEvent.class, internalAudioLatencyChangedEvent -> {
+            mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().setLatencyMs(internalAudioLatencyChangedEvent.getLatencyMs());
+
+            audioLatencySpinner.removeChangeListener(audioLatencySpinnerChangeListener);
+            audioLatencySpinner.setValue(internalAudioLatencyChangedEvent.getLatencyMs());
+            audioLatencySpinner.addChangeListener(audioLatencySpinnerChangeListener);
+        });
+        audioLatencyMenu.add(audioLatencySpinner);
+
         this.soundDeviceMenu = new JMenu("Sound Device");
         this.soundDeviceMenu.addMenuListener(new MenuListener() {
 
@@ -114,6 +134,7 @@ public class SoundSettings extends MenuBarMenu {
         this.getJMenu().add(muteButton);
         this.getJMenu().add(volumeMenu);
         this.getJMenu().add(sampleRateMenu);
+        this.getJMenu().add(audioLatencyMenu);
         this.getJMenu().add(soundDeviceMenu);
 
         this.volumeSlider.setValue(mainWindow.getConfig().getInternalPreferenceSettings().getInternalAudioSettings().getVolume());

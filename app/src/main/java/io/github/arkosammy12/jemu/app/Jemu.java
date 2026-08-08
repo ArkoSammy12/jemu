@@ -397,6 +397,7 @@ public final class Jemu {
         this.audioEngine.setSampleRate(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getSampleRate());
         this.audioEngine.setMuted(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getMute());
         this.audioEngine.setVolume(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getVolume());
+        this.audioEngine.setLatency(this.mainWindow.getConfigurations().getSettings().getAudioSettings().getLatencyMs());
     }
 
     private void onEmulatorException(Exception e) {

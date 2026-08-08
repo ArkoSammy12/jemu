@@ -21,6 +21,9 @@ public class InternalAudioSettings implements AudioSettings {
     @SerializedName("sample_rate")
     private volatile SampleRate sampleRate = SampleRate.HZ_44100;
 
+    @SerializedName("latency_ms")
+    private volatile int latencyMs = 50;
+
     @SerializedName("sound_device")
     private volatile SoundDevice soundDevice;
 
@@ -49,6 +52,15 @@ public class InternalAudioSettings implements AudioSettings {
     @Override
     public SampleRate getSampleRate() {
         return this.sampleRate;
+    }
+
+    public void setLatencyMs(int latencyMs) {
+        this.latencyMs = latencyMs;
+    }
+
+    @Override
+    public int getLatencyMs() {
+        return this.latencyMs;
     }
 
     public void setSoundDevice(@Nullable SoundDevice soundDevice) {
