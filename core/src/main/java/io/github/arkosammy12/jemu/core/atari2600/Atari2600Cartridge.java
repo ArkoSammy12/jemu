@@ -34,6 +34,10 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> {
 
     protected abstract int mapROMAddress(int address);
 
+    protected final int getLastROMBankNumber(int bankWindowSize, int bankNumberMask) {
+        return ((this.rom.length / bankWindowSize) - 1) & bankNumberMask;
+    }
+
     public static <E extends Atari2600Emulator> Atari2600Cartridge<E> getCartridge(E emulator) {
         Type cartridgeType = emulator.getHost().getCartridgeTypeOverride().or(() -> emulator.getHost().getCartridgeInfo().flatMap(Atari2600SystemHost.CartridgeInfo::getCartridgeType)).orElse(Type.CART_4K);
         return switch (cartridgeType) {
