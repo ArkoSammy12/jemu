@@ -84,6 +84,7 @@ public class SoundSettings extends MenuBarMenu {
         });
 
         JMenu audioLatencyMenu = new JMenu("Latency");
+        JPanel audioLatencyPanel = new JPanel();
         SpinnerNumberModel audioLatencySpinnerModel = new SpinnerNumberModel();
         audioLatencySpinnerModel.setMinimum(AudioEngine.MIN_LATENCY_MS);
         audioLatencySpinnerModel.setMaximum(AudioEngine.MAX_LATENCY_MS);
@@ -103,7 +104,10 @@ public class SoundSettings extends MenuBarMenu {
             audioLatencySpinner.setValue(internalAudioLatencyChangedEvent.getLatencyMs());
             audioLatencySpinner.addChangeListener(audioLatencySpinnerChangeListener);
         });
-        audioLatencyMenu.add(audioLatencySpinner);
+
+        audioLatencyPanel.add(audioLatencySpinner);
+        audioLatencyPanel.add(new JLabel("ms"));
+        audioLatencyMenu.add(audioLatencyPanel);
 
         this.soundDeviceMenu = new JMenu("Sound Device");
         this.soundDeviceMenu.addMenuListener(new MenuListener() {
