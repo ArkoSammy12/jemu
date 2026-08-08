@@ -618,7 +618,7 @@ public class TelevisionInterfaceAdaptor<E extends Atari2600Emulator & Television
             this.reflectPlayer1WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> this.player1.setReflectGraphics((value & (1 << 3)) != 0));
             this.playfield0WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = ((reverseBits(value) & 0xF) << 16) | (this.playfield & 0x0FFFF));
             this.playfield1WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = (value << 8) | (this.playfield & 0xF00FF));
-            this.playfield2WriteSignal = this.actionSignalDispatcher.addSignal(3, value -> this.playfield = (reverseBits(value)) | (this.playfield & 0xFFF00));
+            this.playfield2WriteSignal = this.actionSignalDispatcher.addSignal(5, value -> this.playfield = (reverseBits(value)) | (this.playfield & 0xFFF00));
             this.graphicsPlayer0WriteSignal = this.actionSignalDispatcher.addSignal(1, value -> {
                 this.player0.setGraphics(value);
                 this.player1.copyNewGraphicsToOld();
