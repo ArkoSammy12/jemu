@@ -18,7 +18,6 @@ import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
 import java.text.NumberFormat;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.*;
 import static io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant.MEGA_CHIP;

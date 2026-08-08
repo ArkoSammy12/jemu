@@ -116,7 +116,7 @@ public class GameBoyManager extends SystemManager {
         this.getMenuBarSettings().ifPresent(gameBoyMenuBarSettings -> gameBoyMenuBarSettings.onEvent(coreSettingChangeEvent));
         this.getPanelSettings().ifPresent(gameBoyPanelSettings -> gameBoyPanelSettings.onEvent(coreSettingChangeEvent));
         switch (coreSettingChangeEvent) {
-            case PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) -> this.getEmulationSettings().setPreferGameboyColor(preferGameBoyColor);
+            case PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) -> this.getEmulationSettings().setPreferGameBoyColor(preferGameBoyColor);
             case DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) -> this.getEmulationSettings().setDMGPalette(dmgPalette);
             case UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) -> this.getEmulationSettings().setUseBuiltInBootROM(useBuiltInBootRom);
             case GameBoyBootRomPathChangedEvent(@Nullable Path path) -> this.getEmulationSettings().setGameBoyBootRomPath(path);
