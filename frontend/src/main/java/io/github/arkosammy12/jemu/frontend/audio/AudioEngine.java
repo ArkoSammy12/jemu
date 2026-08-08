@@ -126,7 +126,7 @@ public class AudioEngine implements Closeable {
     }
 
     public void setVolume(int volume) {
-        if (volume < MIN_LATENCY_MS || volume > MAX_LATENCY_MS) {
+        if (volume < MIN_VOLUME || volume > MAX_VOLUME) {
             throw new IllegalArgumentException("Attempted to set audio engine volume to %d, but it can only be in the range [%d, %d]!".formatted(volume, MIN_VOLUME, MAX_VOLUME));
         }
         synchronized (this.audioLineLock) {
