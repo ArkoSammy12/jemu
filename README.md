@@ -44,7 +44,7 @@ Multi-system emulator written in Java.
 
 ### CHIP-8 / STRICT CHIP-8 / CHIP-8X / CHIP-48 / SUPER-CHIP 1.0 / SUPER-CHIP 1.1 / SUPER-CHIP MODERN / XO-CHIP / MEGA-CHIP / HyperWaveCHIP-64 / COSMAC VIP / VIP CHIP-8 / VIP CHIP-8X
 
-| CHIP-8 key | Keyboard key |
+| Keypad key | Keyboard key |
 |------------|--------------|
 | `1 2 3 C`  | `1 2 3 4`    |
 | `4 5 6 D`  | `Q W E R`    |
