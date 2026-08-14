@@ -10,13 +10,13 @@ import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.app.util.ThrowableConsumer;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.audio.AudioEngine;
-import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.commands.*;
-import io.github.arkosammy12.jemu.frontend.gui.PendingEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.util.PendingEmulatorCommand;
 import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
@@ -131,15 +131,15 @@ public final class Jemu {
                 if (!this.running) {
                     break;
                 }
-                if (event instanceof CoreSettingChangeEvent coreSettingChangeEvent) {
-                    this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangeEvent);
+                if (event instanceof CoreSettingChangedEvent coreSettingChangedEvent) {
+                    this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangedEvent);
                     SystemAdapter currentSystem = this.currentSystem;
                     if (currentSystem != null) {
-                        currentSystem.onCoreSettingChangedEvent(coreSettingChangeEvent);
+                        currentSystem.onCoreSettingChangedEvent(coreSettingChangedEvent);
                     }
                 }
-                if (event instanceof AudioSettingChangeEvent audioSettingChangeEvent) {
-                    this.audioEngine.onAudioSettingChanged(audioSettingChangeEvent);
+                if (event instanceof AudioSettingChangedEvent audioSettingChangedEvent) {
+                    this.audioEngine.onAudioSettingChanged(audioSettingChangedEvent);
                 }
                 if (event instanceof VideoSettingChangedEvent videoSettingChangedEvent) {
                     SystemAdapter currentSystem = this.currentSystem;

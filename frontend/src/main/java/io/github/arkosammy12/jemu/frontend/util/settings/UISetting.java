@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.frontend.util.settings;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,7 +13,7 @@ import java.util.function.Supplier;
 
 public abstract class UISetting<T, E extends Event & Supplier<T>> {
 
-    protected final MainWindow mainWindow;
+    protected final EventPublisher eventPublisher;
 
     @Nullable
     private final Class<E> eventClass;
@@ -26,20 +27,20 @@ public abstract class UISetting<T, E extends Event & Supplier<T>> {
     @Nullable
     private volatile Consumer<T> valueSetCallback;
 
-    public UISetting(MainWindow mainWindow, @NotNull String name, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super T, ? extends Event> eventSupplier) {
-        this.mainWindow = mainWindow;
+    public UISetting(EventPublisher eventPublisher, @NotNull String name, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super T, ? extends Event> eventSupplier) {
+        this.eventPublisher = eventPublisher;
         this.eventClass = eventClass;
         this.eventPredicate = eventPredicate;
         this.name = name;
         this.eventSupplier = eventSupplier;
     }
 
-    public UISetting(MainWindow mainWindow, @NotNull String name, @Nullable Class<E> eventClass, @NotNull Function<? super T, ? extends Event> eventSupplier) {
-        this(mainWindow, name, eventClass, null, eventSupplier);
+    public UISetting(EventPublisher eventPublisher, @NotNull String name, @Nullable Class<E> eventClass, @NotNull Function<? super T, ? extends Event> eventSupplier) {
+        this(eventPublisher, name, eventClass, null, eventSupplier);
     }
 
-    public UISetting(MainWindow mainWindow, @NotNull String name, @NotNull Function<? super T, ? extends Event> eventSupplier) {
-        this(mainWindow, name, null, null, eventSupplier);
+    public UISetting(EventPublisher eventPublisher, @NotNull String name, @NotNull Function<? super T, ? extends Event> eventSupplier) {
+        this(eventPublisher, name, null, null, eventSupplier);
     }
 
     public void setOnValueSetCallback(@Nullable Consumer<T> onEventCallback) {

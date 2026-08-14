@@ -1,4 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.events.internal;
 
-public interface InternalEvent {
+import io.github.arkosammy12.jemu.frontend.events.BaseEvent;
+
+public non-sealed interface InternalEvent extends BaseEvent {
+
 }

@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.frontend.util.settings.panel;
 
 import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.UISetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -24,8 +24,8 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
     private final JButton selectPathButton = new JButton("Select...");
     private final ActionListener jTextFieldActionListener;
 
-    public PathUISetting(MainWindow mainWindow, PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
-        super(mainWindow, name, eventClass, eventPredicate, eventSupplier);
+    public PathUISetting(EventPublisher eventPublisher, PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, eventClass, eventPredicate, eventSupplier);
         this.jLabel = new JLabel(name);
         Runnable textFieldCommitRunnable = () -> {
             String text = this.jTextField.getText().trim();
@@ -79,7 +79,7 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
     }
 
     private void onPathChanged(@Nullable Path path) {
-        this.mainWindow.publishEvent(this.eventSupplier.apply(path));
+        this.eventPublisher.publishEvent(this.eventSupplier.apply(path));
     }
 
     public enum PathSelectionMode {

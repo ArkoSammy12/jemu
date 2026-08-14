@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.util.settings;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,8 +17,8 @@ public abstract class IntegerUISetting<E extends Event & Supplier<Integer>> exte
     @Nullable
     protected final Integer maximumValue;
 
-    public IntegerUISetting(MainWindow mainWindow, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
-        super(mainWindow, name, eventClass, eventPredicate, eventSupplier);
+    public IntegerUISetting(EventPublisher eventPublisher, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, eventClass, eventPredicate, eventSupplier);
         this.minimumValue = minimumValue;
         this.maximumValue = maximumValue;
 

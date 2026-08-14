@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.panel;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.EnumUISetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -21,8 +21,8 @@ public class EnumPanelSetting<V extends Enum<V> & DisplayNamerProvider, E extend
     private final ActionListener actionListener;
 
     @SuppressWarnings("unchecked")
-    public EnumPanelSetting(MainWindow mainWindow, @NotNull String name, @NotNull V startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super V, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+    public EnumPanelSetting(EventPublisher eventPublisher, @NotNull String name, @NotNull V startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super V, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, eventClass, eventPredicate, eventSupplier);
         this.jLabel = new JLabel(name + ": ");
         this.jComboBox = new JComboBox<>(startingValue.getDeclaringClass().getEnumConstants());
         this.jComboBox.setRenderer(new DefaultListCellRenderer() {
@@ -42,7 +42,7 @@ public class EnumPanelSetting<V extends Enum<V> & DisplayNamerProvider, E extend
         this.actionListener = _ -> {
             Object selectedItem = this.jComboBox.getSelectedItem();
             if (this.enumClass.isInstance(selectedItem)) {
-                this.mainWindow.publishEvent(eventSupplier.apply((V) selectedItem));
+                this.eventPublisher.publishEvent(eventSupplier.apply((V) selectedItem));
             }
         };
 

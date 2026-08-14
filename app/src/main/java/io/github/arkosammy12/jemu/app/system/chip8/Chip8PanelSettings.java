@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.app.system.chip8;
 
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
 import io.github.arkosammy12.jemu.frontend.util.settings.panel.BooleanPanelSetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.panel.IntegerPanelSpinnerSetting;
@@ -9,8 +9,8 @@ import javax.swing.*;
 
 public class Chip8PanelSettings extends PanelSettingsMenu {
 
-    public Chip8PanelSettings(Chip8Manager chip8Manager, MainWindow mainWindow) {
-        super(mainWindow);
+    public Chip8PanelSettings(Chip8Manager chip8Manager, EventPublisher eventPublisher) {
+        super(eventPublisher);
 
         this.addHeader("General");
         this.addBooleanSetting("Show used variant", chip8Manager.getEmulationSettings().showUsedVariant(), Chip8Manager.ShowUsedVariantSettingChangedEvent.class, null, Chip8Manager.ShowUsedVariantSettingChangedEvent::new);
@@ -22,7 +22,7 @@ public class Chip8PanelSettings extends PanelSettingsMenu {
         this.addEmptyLine();
 
         this.addHeader("Instructions per frame");
-        IntegerPanelSpinnerSetting<Chip8Manager.IpfSettingChangedEvent> ipfSetting = new IntegerPanelSpinnerSetting<>(mainWindow, "IPF", "instructions per frame", chip8Manager.getEmulationSettings().getIpfSetting(), 1, null, Chip8Manager.IpfSettingChangedEvent.class, null, Chip8Manager.IpfSettingChangedEvent::new);
+        IntegerPanelSpinnerSetting<Chip8Manager.IpfSettingChangedEvent> ipfSetting = new IntegerPanelSpinnerSetting<>(eventPublisher, "IPF", "instructions per frame", chip8Manager.getEmulationSettings().getIpfSetting(), 1, null, Chip8Manager.IpfSettingChangedEvent.class, null, Chip8Manager.IpfSettingChangedEvent::new);
         ipfSetting.getJSpinner().setEnabled(chip8Manager.getEmulationSettings().getOverrideIpfSetting());
 
         BooleanPanelSetting<Chip8Manager.OverrideIpfSettingChangedEvent> overrideIpfButton = this.addBooleanSetting("Override", chip8Manager.getEmulationSettings().getOverrideIpfSetting(), Chip8Manager.OverrideIpfSettingChangedEvent.class, null, Chip8Manager.OverrideIpfSettingChangedEvent::new);

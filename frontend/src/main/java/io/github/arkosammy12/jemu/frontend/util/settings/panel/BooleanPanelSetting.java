@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.panel;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.BooleanUISetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,11 +15,15 @@ public class BooleanPanelSetting<E extends Event & Supplier<Boolean>> extends Bo
 
     private final JCheckBox jCheckBox = new JCheckBox();
 
-    public BooleanPanelSetting(MainWindow mainWindow, @NotNull String name, @NotNull Boolean startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Boolean, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+    public BooleanPanelSetting(EventPublisher eventPublisher, @NotNull String name, @NotNull Boolean startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Boolean, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, eventClass, eventPredicate, eventSupplier);
         this.jCheckBox.setText(name);
         this.jCheckBox.setSelected(startingValue);
-        this.jCheckBox.addActionListener(_ -> this.mainWindow.publishEvent(eventSupplier.apply(this.jCheckBox.isSelected())));
+        this.jCheckBox.addActionListener(_ -> this.eventPublisher.publishEvent(eventSupplier.apply(this.jCheckBox.isSelected())));
+    }
+
+    public JCheckBox getJCheckBox() {
+        return this.jCheckBox;
     }
 
     @Override

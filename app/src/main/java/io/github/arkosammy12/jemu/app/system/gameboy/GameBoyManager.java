@@ -7,8 +7,8 @@ import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -85,7 +85,7 @@ public class GameBoyManager extends SystemManager {
     }
 
     @Override
-    public Optional<? extends Function<? super MainWindow, ? extends JMenu>> getSettingsMenuBarContents() {
+    public Optional<? extends Function<? super EventPublisher, ? extends JMenu>> getSettingsMenuBarContents() {
         if (this.gameboyModel == GameBoyHost.Model.DMG) {
             return Optional.of(mainWindow -> {
                 GameBoyMenuBarSettings gameBoyMenuBarSettings = new GameBoyMenuBarSettings(this, mainWindow);
@@ -98,7 +98,7 @@ public class GameBoyManager extends SystemManager {
     }
 
     @Override
-    public Optional<? extends Function<? super MainWindow, ? extends JPanel>> getSettingsWindowContents() {
+    public Optional<? extends Function<? super EventPublisher, ? extends JPanel>> getSettingsWindowContents() {
         if (this.gameboyModel == GameBoyHost.Model.DMG) {
             return Optional.of(mainWindow -> {
                 GameBoyPanelSettings gameBoyPanelSettings = new GameBoyPanelSettings(this, mainWindow);
@@ -111,11 +111,11 @@ public class GameBoyManager extends SystemManager {
     }
 
     @Override
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
-        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        this.getMenuBarSettings().ifPresent(gameBoyMenuBarSettings -> gameBoyMenuBarSettings.onEvent(coreSettingChangeEvent));
-        this.getPanelSettings().ifPresent(gameBoyPanelSettings -> gameBoyPanelSettings.onEvent(coreSettingChangeEvent));
-        switch (coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {
+        super.onCoreSettingChangedEvent(coreSettingChangedEvent);
+        this.getMenuBarSettings().ifPresent(gameBoyMenuBarSettings -> gameBoyMenuBarSettings.onEvent(coreSettingChangedEvent));
+        this.getPanelSettings().ifPresent(gameBoyPanelSettings -> gameBoyPanelSettings.onEvent(coreSettingChangedEvent));
+        switch (coreSettingChangedEvent) {
             case PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) -> this.getEmulationSettings().setPreferGameBoyColor(preferGameBoyColor);
             case DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) -> this.getEmulationSettings().setDMGPalette(dmgPalette);
             case UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) -> this.getEmulationSettings().setUseBuiltInBootROM(useBuiltInBootRom);
@@ -125,7 +125,7 @@ public class GameBoyManager extends SystemManager {
         }
     }
 
-    record PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) implements CoreSettingChangeEvent, Supplier<Boolean> {
+    record PreferGameBoyColorSettingChangedEvent(boolean preferGameBoyColor) implements CoreSettingChangedEvent, Supplier<Boolean> {
 
         @Override
         public Boolean get() {
@@ -134,7 +134,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    record DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) implements CoreSettingChangeEvent, FrameRequesterVideoEvent, Supplier<GameBoySettings.DMGPalette> {
+    record DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<GameBoySettings.DMGPalette> {
 
         @Override
         public GameBoySettings.DMGPalette get() {
@@ -143,7 +143,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    record UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) implements CoreSettingChangeEvent, Supplier<Boolean> {
+    record UseBuiltInBootRomSettingChangedEvent(boolean useBuiltInBootRom) implements CoreSettingChangedEvent, Supplier<Boolean> {
 
         @Override
         public Boolean get() {
@@ -152,7 +152,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    record GameBoyBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
+    record GameBoyBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangedEvent, Supplier<@Nullable Path> {
 
         @Override
         @Nullable
@@ -162,7 +162,7 @@ public class GameBoyManager extends SystemManager {
 
     }
 
-    record GameBoyColorBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangeEvent, Supplier<@Nullable Path> {
+    record GameBoyColorBootRomPathChangedEvent(@Nullable Path path) implements CoreSettingChangedEvent, Supplier<@Nullable Path> {
 
         @Override
         @Nullable

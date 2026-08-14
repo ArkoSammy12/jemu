@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.menubar;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.SpinnerIntegerSetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,8 +15,8 @@ public class IntegerItemSetting<E extends Event & Supplier<Integer>> extends Spi
 
     protected final JMenu jMenu;
 
-    public IntegerItemSetting(MainWindow mainWindow, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, minimumValue, maximumValue, eventClass, eventPredicate, eventSupplier);
+    public IntegerItemSetting(EventPublisher eventPublisher, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, minimumValue, maximumValue, eventClass, eventPredicate, eventSupplier);
         this.jMenu = new JMenu(name);
         this.jMenu.add(this.jSpinner);
     }

@@ -1,12 +1,12 @@
 package io.github.arkosammy12.jemu.app.system.atari2600;
 
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
 
 public class Atari2600PanelSettings extends PanelSettingsMenu {
 
-    public Atari2600PanelSettings(Atari2600Manager atari2600Manager, MainWindow mainWindow) {
-        super(mainWindow);
+    public Atari2600PanelSettings(Atari2600Manager atari2600Manager, EventPublisher eventPublisher) {
+        super(eventPublisher);
 
         this.addHeader("Console");
         this.addEnumSetting("TV Type", atari2600Manager.getEmulationSettings().getTVType(), Atari2600Manager.TVTypeSettingChangedEvent.class, null, Atari2600Manager.TVTypeSettingChangedEvent::new);

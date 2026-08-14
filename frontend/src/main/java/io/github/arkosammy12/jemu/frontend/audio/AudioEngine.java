@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.audio;
 
-import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.audio.*;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -165,7 +165,7 @@ public class AudioEngine implements Closeable {
         return this.bytesPerFrame;
     }
 
-    public void onAudioSettingChanged(AudioSettingChangeEvent event) throws LineUnavailableException {
+    public void onAudioSettingChanged(AudioSettingChangedEvent event) throws LineUnavailableException {
         switch (event) {
             case SoundDeviceChangedEvent soundDeviceChangedEvent -> this.soundDevice(soundDeviceChangedEvent.getSoundDevice().orElse(null));
             case SampleRateChangedEvent sampleRateChangedEvent -> this.setSampleRate(sampleRateChangedEvent.getSampleRate());

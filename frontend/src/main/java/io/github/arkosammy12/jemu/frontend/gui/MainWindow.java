@@ -4,6 +4,8 @@ import com.formdev.flatlaf.FlatDarkLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.config.ConfigurationManager;
 import io.github.arkosammy12.jemu.frontend.config.Configurations;
+import io.github.arkosammy12.jemu.frontend.events.BaseEvent;
+import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.panel.SettingsWindow;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemCatalog;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.config.internal.InternalConfigurations;
@@ -15,12 +17,15 @@ import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.frontend.gui.managers.EmulatorManager;
 import io.github.arkosammy12.jemu.frontend.gui.managers.FileManager;
 import io.github.arkosammy12.jemu.frontend.gui.managers.HelpManager;
+import io.github.arkosammy12.jemu.frontend.util.DialogType;
+import io.github.arkosammy12.jemu.frontend.util.PendingEmulatorCommand;
+import io.github.arkosammy12.jemu.frontend.util.internal.PendingEmulatorCommandImpl;
+import io.github.arkosammy12.jemu.frontend.util.internal.SafeSwingEDTQueue;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
 import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.ApiStatus;
-import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -42,7 +47,7 @@ import java.util.concurrent.LinkedBlockingDeque;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-public class MainWindow implements Closeable {
+public class MainWindow implements io.github.arkosammy12.jemu.frontend.util.EventPublisher, Closeable {
 
     private final String title;
 
@@ -68,6 +73,9 @@ public class MainWindow implements Closeable {
 
     @Nullable
     private TitleManager titleManager;
+
+    @Nullable
+    private SettingsWindow.State settingsWindowState;
 
     public MainWindow(String title, @Nullable Path dataDirectory, SystemCatalog systemCatalog) throws InterruptedException, InvocationTargetException {
 
@@ -111,7 +119,7 @@ public class MainWindow implements Closeable {
         System.setProperty("flatlaf.menuBarEmbedded", Boolean.FALSE.toString());
 
         SwingUtilities.invokeAndWait(() -> {
-            Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SafeEventQueue());
+            Toolkit.getDefaultToolkit().getSystemEventQueue().push(new SafeSwingEDTQueue(() -> this.appFrame));
 
             UIManager.put("TitlePane.useWindowDecorations", false);
             UIManager.put("Component.hideMnemonics", false);
@@ -181,6 +189,21 @@ public class MainWindow implements Closeable {
                         getConfig().getState().getWindowState().getBounds().setFromBounds(appFrame.getBounds());
                     }
                 }
+            });
+
+            this.settingsWindowState = new SettingsWindow.State(this, this.appFrame);
+
+            this.appFrame.addWindowListener(new WindowAdapter() {
+
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    super.windowClosing(e);
+                    SettingsWindow.State settingsWindowState = MainWindow.this.settingsWindowState;
+                    if (settingsWindowState != null) {
+                        settingsWindowState.disposeWindow();
+                    }
+                }
+
             });
 
             this.getConfig().getState().getWindowState().getBounds().getX().ifPresent(x -> this.appFrame.setLocation(x, this.appFrame.getY()));
@@ -283,8 +306,9 @@ public class MainWindow implements Closeable {
         return this.getEmulatorCommand(true);
     }
 
+    @Override
     @SuppressWarnings("ResultOfMethodCallIgnored")
-    public void publishEvent(InternalEvent event) {
+    public void publishEvent(BaseEvent event) {
         if (event instanceof Event externalEvent) {
             this.eventQueue.offer(externalEvent);
         }
@@ -368,14 +392,6 @@ public class MainWindow implements Closeable {
         return this.configurationManager.getConfig();
     }
 
-    /*
-    @NotNull
-    @ApiStatus.Internal
-    JFrame getJFrame() {
-        return Objects.requireNonNull(this.appFrame);
-    }
-     */
-
     @ApiStatus.Internal
     public <T extends EmulatorCommandCallback> void onEmulatorCommand(T callback) {
         this.emulatorCommandCallbacks.add(callback);
@@ -393,74 +409,6 @@ public class MainWindow implements Closeable {
     @SuppressWarnings("unchecked")
     private <T extends ListenableEvent> void dispatchToConsumer(EventListener<T> consumer, InternalEvent event) {
         consumer.action().accept((T) event);
-    }
-
-    public enum DialogType {
-        INFORMATION(JOptionPane.INFORMATION_MESSAGE),
-        WARNING(JOptionPane.WARNING_MESSAGE),
-        ERROR(JOptionPane.ERROR_MESSAGE);
-
-        private final int jOptionPaneMessageTypeId;
-
-        DialogType(int jOptionPaneMessageTypeId) {
-            this.jOptionPaneMessageTypeId = jOptionPaneMessageTypeId;
-        }
-
-        private int getJOptionPaneMessageTypeId() {
-            return this.jOptionPaneMessageTypeId;
-        }
-
-    }
-
-    private class SafeEventQueue extends EventQueue {
-
-        @Override
-        protected void dispatchEvent(AWTEvent event) {
-            try {
-                super.dispatchEvent(event);
-            } catch (Throwable t) {
-                this.handleException(t);
-            }
-        }
-
-        private void handleException(Throwable t) {
-            Logger.error("Uncaught Swing exception", t);
-
-            JFrame appFrame = MainWindow.this.appFrame;
-
-            if (appFrame != null) {
-                SwingUtilities.invokeLater(() ->
-                        JOptionPane.showMessageDialog(
-                                appFrame,
-                                t.toString(),
-                                "Uncaught Swing UI exception",
-                                JOptionPane.ERROR_MESSAGE
-                        )
-                );
-            }
-        }
-    }
-
-    static final class PendingEmulatorCommandImpl implements PendingEmulatorCommand {
-
-        private final EmulatorCommand emulatorCommand;
-        private final Runnable acknowledgeFunction;
-
-        private PendingEmulatorCommandImpl(EmulatorCommand emulatorCommand, Runnable acknowledgeFunction) {
-            this.emulatorCommand = emulatorCommand;
-            this.acknowledgeFunction = acknowledgeFunction;
-        }
-
-        @Override
-        public EmulatorCommand getEmulatorCommand() {
-            return this.emulatorCommand;
-        }
-
-        @Override
-        public void acknowledge() {
-            this.acknowledgeFunction.run();
-        }
-
     }
 
     private record EventListener<T extends ListenableEvent>(Class<T> eventType, Consumer<T> action) {}

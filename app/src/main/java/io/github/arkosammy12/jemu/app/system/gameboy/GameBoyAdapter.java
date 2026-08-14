@@ -8,7 +8,7 @@ import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
 import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -101,9 +101,9 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     }
 
     @Override
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
-        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        if (coreSettingChangeEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette)) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
+        super.onCoreSettingChangedEvent(coreSettingChangedEvent);
+        if (coreSettingChangedEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette)) {
             if (this.emulator instanceof GameBoyEmulator gameBoyEmulator) {
                 gameBoyEmulator.setDMGPalette(dmgPalette.mapToHost());
             }

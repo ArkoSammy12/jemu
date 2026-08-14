@@ -1,17 +1,16 @@
 package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.OpenDataDirectoryEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.OpenSettingsWindowEvent;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.menubar.*;
-import io.github.arkosammy12.jemu.frontend.gui.internal.menus.settings.panel.SettingsWindow;
 import io.github.arkosammy12.jemu.frontend.gui.managers.SettingsManager;
-import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
+import io.github.arkosammy12.jemu.frontend.util.DialogType;
 
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -30,26 +29,28 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         EmulationSettings emulationSettings = new EmulationSettings(mainWindow);
 
         JMenuItem openDataDirectoryButton = new JMenuItem("Open data directory");
-        openDataDirectoryButton.addActionListener(_ -> {
+        openDataDirectoryButton.addActionListener(_ -> mainWindow.publishEvent(new OpenDataDirectoryEvent()));
+
+        mainWindow.onEvent(OpenDataDirectoryEvent.class, _ -> {
             Optional<Path> optionalDataDirectoryPath = mainWindow.getDataDirectoryPath();
             if (optionalDataDirectoryPath.isEmpty()) {
-                mainWindow.showDialog("Failed to open data directory", "Data directory path was not specified or failed to be acquired!", MainWindow.DialogType.ERROR);
+                mainWindow.showDialog("Failed to open data directory", "Data directory path was not specified or failed to be acquired!", DialogType.ERROR);
                 return;
             }
             Path dataDirectory = optionalDataDirectoryPath.get();
             if (!Files.exists(dataDirectory) || !Files.isDirectory(dataDirectory)) {
-                mainWindow.showDialog("Failed to open data directory", "Directory does not exist: " + dataDirectory, MainWindow.DialogType.ERROR);
+                mainWindow.showDialog("Failed to open data directory", "Directory does not exist: " + dataDirectory, DialogType.ERROR);
                 return;
             }
             if (!Desktop.isDesktopSupported()) {
-                mainWindow.showDialog("Failed to open data directory", "Desktop API not supported!", MainWindow.DialogType.ERROR);
+                mainWindow.showDialog("Failed to open data directory", "Desktop API not supported!", DialogType.ERROR);
                 return;
             }
             Desktop desktop = Desktop.getDesktop();
             try {
                 desktop.open(dataDirectory.toFile());
             } catch (IOException e) {
-                mainWindow.showDialog("Failed to open data directory", e.getMessage(), MainWindow.DialogType.ERROR);
+                mainWindow.showDialog("Failed to open data directory", e.getMessage(), DialogType.ERROR);
             }
         });
 
@@ -61,18 +62,8 @@ public class SettingsMenu extends MenuBarMenu implements SettingsManager {
         this.getJMenu().addSeparator();
         this.getJMenu().add(openDataDirectoryButton);
 
-        JFrame settingsWindow = new SettingsWindow(mainWindow, appFrame);
-
         JMenuItem openSettingsButton = new JMenuItem("Settings...");
-        openSettingsButton.addActionListener(_ -> {
-            Image appFrameIconImage = appFrame.getIconImage();
-            if (appFrameIconImage != null) {
-                settingsWindow.setIconImage(appFrameIconImage);
-            }
-            settingsWindow.pack();
-            settingsWindow.setLocationRelativeTo(appFrame);
-            settingsWindow.setVisible(true);
-        });
+        openSettingsButton.addActionListener(_ -> mainWindow.publishEvent(new OpenSettingsWindowEvent()));
 
         this.getJMenu().add(openSettingsButton);
     }

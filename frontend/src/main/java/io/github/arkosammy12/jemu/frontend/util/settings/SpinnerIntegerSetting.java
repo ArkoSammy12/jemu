@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.util.settings;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,8 +17,8 @@ public abstract class SpinnerIntegerSetting<E extends Event & Supplier<Integer>>
 
     private final ChangeListener changeListener;
 
-    public SpinnerIntegerSetting(MainWindow mainWindow, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, minimumValue, maximumValue, eventClass, eventPredicate, eventSupplier);
+    public SpinnerIntegerSetting(EventPublisher eventPublisher, @NotNull String name, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, minimumValue, maximumValue, eventClass, eventPredicate, eventSupplier);
         SpinnerNumberModel spinnerNumberModel = new SpinnerNumberModel();
         if (this.minimumValue != null) {
             spinnerNumberModel.setMinimum(this.minimumValue);
@@ -32,7 +32,7 @@ public abstract class SpinnerIntegerSetting<E extends Event & Supplier<Integer>>
 
         this.changeListener = _ -> {
             if (jSpinner.getValue() instanceof Integer value) {
-                this.mainWindow.publishEvent(eventSupplier.apply(value));
+                this.eventPublisher.publishEvent(eventSupplier.apply(value));
             }
         };
 

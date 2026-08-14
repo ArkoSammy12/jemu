@@ -4,6 +4,7 @@ import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.managers.HelpManager;
+import io.github.arkosammy12.jemu.frontend.util.DialogType;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.CC;
 import net.miginfocom.swing.MigLayout;
@@ -15,7 +16,6 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.net.URI;
 import java.util.function.Function;
-import java.util.function.Supplier;
 
 public class HelpMenu extends MenuBarMenu implements HelpManager {
 
@@ -71,7 +71,7 @@ public class HelpMenu extends MenuBarMenu implements HelpManager {
             try {
                 Desktop.getDesktop().browse(new URI(this.projectSourceLink));
             } catch (Exception ex) {
-                mainWindow.showDialog("Unable to open source link", ex.getMessage(), MainWindow.DialogType.ERROR);
+                mainWindow.showDialog("Unable to open source link", ex.getMessage(), DialogType.ERROR);
             }
         });
 
@@ -81,7 +81,7 @@ public class HelpMenu extends MenuBarMenu implements HelpManager {
             try {
                 Desktop.getDesktop().browse(new URI(this.projectBugReportLink));
             } catch (Exception ex) {
-                mainWindow.showDialog("Unable to open bug report link", ex.getMessage(), MainWindow.DialogType.ERROR);
+                mainWindow.showDialog("Unable to open bug report link", ex.getMessage(), DialogType.ERROR);
             }
         });
 

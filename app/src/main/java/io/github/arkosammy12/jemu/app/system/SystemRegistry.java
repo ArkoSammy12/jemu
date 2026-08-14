@@ -16,7 +16,7 @@ import io.github.arkosammy12.jemu.app.system.nes.NESManager;
 import io.github.arkosammy12.jemu.app.system.rcastudioii.RCAStudioIIManager;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemCatalog;
 import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
@@ -104,8 +104,8 @@ public final class SystemRegistry implements SystemCatalog {
         return this.emulationSettings;
     }
 
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
-        this.getSystemDescriptors().forEach(systemManager -> systemManager.onCoreSettingChangedEvent(coreSettingChangeEvent));
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {
+        this.getSystemDescriptors().forEach(systemManager -> systemManager.onCoreSettingChangedEvent(coreSettingChangedEvent));
     }
 
     @Override

@@ -5,8 +5,8 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -90,7 +90,7 @@ public class Atari2600Manager extends SystemManager {
     }
 
     @Override
-    public Optional<? extends Function<? super MainWindow, ? extends JMenu>> getSettingsMenuBarContents() {
+    public Optional<? extends Function<? super EventPublisher, ? extends JMenu>> getSettingsMenuBarContents() {
         return Optional.of(mainWindow -> {
             Atari2600MenuBarSettings atari2600MenuBarSettings = new Atari2600MenuBarSettings(this, mainWindow);
             this.atari2600MenuBarSettings = atari2600MenuBarSettings;
@@ -99,7 +99,7 @@ public class Atari2600Manager extends SystemManager {
     }
 
     @Override
-    public Optional<? extends Function<? super MainWindow, ? extends JPanel>> getSettingsWindowContents() {
+    public Optional<? extends Function<? super EventPublisher, ? extends JPanel>> getSettingsWindowContents() {
         return Optional.of(mainWindow -> {
             Atari2600PanelSettings atari2600PanelSettings = new Atari2600PanelSettings(this, mainWindow);
             this.atari2600PanelSettings = atari2600PanelSettings;
@@ -108,11 +108,11 @@ public class Atari2600Manager extends SystemManager {
     }
 
     @Override
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
-        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        this.getMenuBarSettings().ifPresent(atari2600MenuBarSettings -> atari2600MenuBarSettings.onEvent(coreSettingChangeEvent));
-        this.getPanelSettings().ifPresent(atari2600PanelSettings -> atari2600PanelSettings.onEvent(coreSettingChangeEvent));
-        switch (coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {
+        super.onCoreSettingChangedEvent(coreSettingChangedEvent);
+        this.getMenuBarSettings().ifPresent(atari2600MenuBarSettings -> atari2600MenuBarSettings.onEvent(coreSettingChangedEvent));
+        this.getPanelSettings().ifPresent(atari2600PanelSettings -> atari2600PanelSettings.onEvent(coreSettingChangedEvent));
+        switch (coreSettingChangedEvent) {
             case TVTypeSettingChangedEvent(Atari2600Settings.TVType tvType) -> this.getEmulationSettings().setTVType(tvType);
             case LeftPlayerDifficultyChangedEvent(Atari2600Settings.PlayerDifficulty playerDifficulty) -> this.getEmulationSettings().setLeftDifficulty(playerDifficulty);
             case RightPlayerDifficultyChangedEvent(Atari2600Settings.PlayerDifficulty playerDifficulty) -> this.getEmulationSettings().setRightDifficulty(playerDifficulty);
@@ -122,7 +122,7 @@ public class Atari2600Manager extends SystemManager {
         }
     }
 
-    record TVTypeSettingChangedEvent(Atari2600Settings.TVType tvType) implements CoreSettingChangeEvent, Supplier<Atari2600Settings.TVType> {
+    record TVTypeSettingChangedEvent(Atari2600Settings.TVType tvType) implements CoreSettingChangedEvent, Supplier<Atari2600Settings.TVType> {
 
         @Override
         public Atari2600Settings.TVType get() {
@@ -131,7 +131,7 @@ public class Atari2600Manager extends SystemManager {
 
     }
 
-    record LeftPlayerDifficultyChangedEvent(Atari2600Settings.PlayerDifficulty playerDifficulty) implements CoreSettingChangeEvent, Supplier<Atari2600Settings.PlayerDifficulty> {
+    record LeftPlayerDifficultyChangedEvent(Atari2600Settings.PlayerDifficulty playerDifficulty) implements CoreSettingChangedEvent, Supplier<Atari2600Settings.PlayerDifficulty> {
 
         @Override
         public Atari2600Settings.PlayerDifficulty get() {
@@ -140,7 +140,7 @@ public class Atari2600Manager extends SystemManager {
 
     }
 
-    record RightPlayerDifficultyChangedEvent(Atari2600Settings.PlayerDifficulty playerDifficulty) implements CoreSettingChangeEvent, Supplier<Atari2600Settings.PlayerDifficulty> {
+    record RightPlayerDifficultyChangedEvent(Atari2600Settings.PlayerDifficulty playerDifficulty) implements CoreSettingChangedEvent, Supplier<Atari2600Settings.PlayerDifficulty> {
 
         @Override
         public Atari2600Settings.PlayerDifficulty get() {
@@ -149,7 +149,7 @@ public class Atari2600Manager extends SystemManager {
 
     }
 
-    record TVFormatOverrideSettingChangedEvent(Atari2600Settings.TVFormatOverride tvFormatOverride) implements CoreSettingChangeEvent, Supplier<Atari2600Settings.TVFormatOverride> {
+    record TVFormatOverrideSettingChangedEvent(Atari2600Settings.TVFormatOverride tvFormatOverride) implements CoreSettingChangedEvent, Supplier<Atari2600Settings.TVFormatOverride> {
 
         @Override
         public Atari2600Settings.TVFormatOverride get() {
@@ -158,7 +158,7 @@ public class Atari2600Manager extends SystemManager {
 
     }
 
-    record CartridgeTypeOverrideSettingChangedEvent(Atari2600Settings.CartridgeTypeOverride cartridgeTypeOverride) implements CoreSettingChangeEvent, Supplier<Atari2600Settings.CartridgeTypeOverride> {
+    record CartridgeTypeOverrideSettingChangedEvent(Atari2600Settings.CartridgeTypeOverride cartridgeTypeOverride) implements CoreSettingChangedEvent, Supplier<Atari2600Settings.CartridgeTypeOverride> {
 
         @Override
         public Atari2600Settings.CartridgeTypeOverride get() {

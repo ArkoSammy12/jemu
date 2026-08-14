@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.panel;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.SpinnerIntegerSetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -18,8 +18,8 @@ public class IntegerPanelSpinnerSetting<E extends Event & Supplier<Integer>> ext
     @Nullable
     private final JLabel secondaryJLabel;
 
-    public IntegerPanelSpinnerSetting(MainWindow mainWindow, @NotNull String name, @Nullable String secondaryLabel, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, minimumValue, maximumValue, eventClass, eventPredicate, eventSupplier);
+    public IntegerPanelSpinnerSetting(EventPublisher eventPublisher, @NotNull String name, @Nullable String secondaryLabel, @NotNull Integer startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, minimumValue, maximumValue, eventClass, eventPredicate, eventSupplier);
         this.primaryJLabel = new JLabel(name);
         this.secondaryJLabel = secondaryLabel == null ? null : new JLabel(secondaryLabel);
     }
@@ -32,4 +32,5 @@ public class IntegerPanelSpinnerSetting<E extends Event & Supplier<Integer>> ext
             jPanel.add(this.secondaryJLabel, constraints.length >= 3 ? constraints[2] : null);
         }
     }
+
 }

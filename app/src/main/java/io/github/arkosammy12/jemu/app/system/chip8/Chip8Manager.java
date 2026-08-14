@@ -5,9 +5,9 @@ import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -75,7 +75,7 @@ public class Chip8Manager extends SystemManager {
     }
 
     @Override
-    public Optional<? extends Function<? super MainWindow, ? extends JMenu>> getSettingsMenuBarContents() {
+    public Optional<? extends Function<? super EventPublisher, ? extends JMenu>> getSettingsMenuBarContents() {
         if (this.variant == Chip8Variant.CHIP_8) {
             return Optional.of(mainWindow -> {
                 Chip8MenuBarSettings chip8MenuBarSettings = new Chip8MenuBarSettings(this, mainWindow);
@@ -88,7 +88,7 @@ public class Chip8Manager extends SystemManager {
     }
 
     @Override
-    public Optional<? extends Function<? super MainWindow, ? extends JPanel>> getSettingsWindowContents() {
+    public Optional<? extends Function<? super EventPublisher, ? extends JPanel>> getSettingsWindowContents() {
         if (this.variant == Chip8Variant.CHIP_8) {
             return Optional.of(mainWindow -> {
                 Chip8PanelSettings chip8PanelSettings = new Chip8PanelSettings(this, mainWindow);
@@ -101,11 +101,11 @@ public class Chip8Manager extends SystemManager {
     }
 
     @Override
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
-        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        this.getMenuBarSettings().ifPresent(chip8MenuBarSettings -> chip8MenuBarSettings.onEvent(coreSettingChangeEvent));
-        this.getPanelSettings().ifPresent(chip8PanelSettings -> chip8PanelSettings.onEvent(coreSettingChangeEvent));
-        switch (coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {
+        super.onCoreSettingChangedEvent(coreSettingChangedEvent);
+        this.getMenuBarSettings().ifPresent(chip8MenuBarSettings -> chip8MenuBarSettings.onEvent(coreSettingChangedEvent));
+        this.getPanelSettings().ifPresent(chip8PanelSettings -> chip8PanelSettings.onEvent(coreSettingChangedEvent));
+        switch (coreSettingChangedEvent) {
             case ShowUsedVariantSettingChangedEvent(boolean value) -> this.getEmulationSettings().setShowUsedVariant(value);
             case ShowIpfMetricsSettingChangedEvent(boolean value) -> this.getEmulationSettings().setShowIpfMetrics(value);
             case SettingSourcePreferenceSettingsChangedEvent(Chip8Settings.SettingSourcePreference settingSourcePreference) -> this.getEmulationSettings().setSettingSourcePreference(settingSourcePreference);
@@ -130,7 +130,7 @@ public class Chip8Manager extends SystemManager {
 
     interface TriggerIpfUpdate extends Event {}
 
-    record ShowUsedVariantSettingChangedEvent(boolean value) implements CoreSettingChangeEvent, Supplier<Boolean> {
+    record ShowUsedVariantSettingChangedEvent(boolean value) implements CoreSettingChangedEvent, Supplier<Boolean> {
 
         @Override
         public Boolean get() {
@@ -139,7 +139,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record ShowIpfMetricsSettingChangedEvent(boolean value) implements CoreSettingChangeEvent, Supplier<Boolean> {
+    record ShowIpfMetricsSettingChangedEvent(boolean value) implements CoreSettingChangedEvent, Supplier<Boolean> {
 
         @Override
         public Boolean get() {
@@ -148,7 +148,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record SettingSourcePreferenceSettingsChangedEvent(Chip8Settings.SettingSourcePreference settingSourcePreference) implements CoreSettingChangeEvent, TriggerIpfUpdate, FrameRequesterVideoEvent, Supplier<Chip8Settings.SettingSourcePreference> {
+    record SettingSourcePreferenceSettingsChangedEvent(Chip8Settings.SettingSourcePreference settingSourcePreference) implements CoreSettingChangedEvent, TriggerIpfUpdate, FrameRequesterVideoEvent, Supplier<Chip8Settings.SettingSourcePreference> {
 
         @Override
         public Chip8Settings.SettingSourcePreference get() {
@@ -157,7 +157,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record VariantSourceSettingChangedEvent(Chip8Settings.VariantSource variantSource) implements CoreSettingChangeEvent, Supplier<Chip8Settings.VariantSource> {
+    record VariantSourceSettingChangedEvent(Chip8Settings.VariantSource variantSource) implements CoreSettingChangedEvent, Supplier<Chip8Settings.VariantSource> {
 
         @Override
         public Chip8Settings.VariantSource get() {
@@ -166,7 +166,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record ColorPaletteSettingChangedEVent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) implements CoreSettingChangeEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.ColorPaletteSetting> {
+    record ColorPaletteSettingChangedEVent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.ColorPaletteSetting> {
 
 
         @Override
@@ -176,7 +176,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record DisplayOrientationSettingChangedEVent(Chip8Settings.DisplayOrientationSetting displayOrientationSetting) implements CoreSettingChangeEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.DisplayOrientationSetting> {
+    record DisplayOrientationSettingChangedEVent(Chip8Settings.DisplayOrientationSetting displayOrientationSetting) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.DisplayOrientationSetting> {
 
         @Override
         public Chip8Settings.DisplayOrientationSetting get() {
@@ -185,7 +185,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record OverrideIpfSettingChangedEvent(boolean value) implements CoreSettingChangeEvent, TriggerIpfUpdate, Supplier<Boolean> {
+    record OverrideIpfSettingChangedEvent(boolean value) implements CoreSettingChangedEvent, TriggerIpfUpdate, Supplier<Boolean> {
 
         @Override
         public Boolean get() {
@@ -194,7 +194,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record IpfSettingChangedEvent(int value) implements CoreSettingChangeEvent, TriggerIpfUpdate, Supplier<Integer> {
+    record IpfSettingChangedEvent(int value) implements CoreSettingChangedEvent, TriggerIpfUpdate, Supplier<Integer> {
 
         @Override
         public Integer get() {
@@ -203,16 +203,21 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record BooleanQuirkSettingChangedEvent(Chip8Settings.BooleanQuirks booleanQuirk, Chip8Settings.BooleanQuirkSetting booleanQuirkSetting) implements CoreSettingChangeEvent, Supplier<Chip8Settings.BooleanQuirkSetting> {
+    record BooleanQuirkSettingChangedEvent(Chip8Settings.BooleanQuirks booleanQuirk, Chip8Settings.BooleanQuirkSetting booleanQuirkSetting) implements CoreSettingChangedEvent, Supplier<Chip8Settings.BooleanQuirkSetting> {
 
         @Override
         public Chip8Settings.BooleanQuirkSetting get() {
             return this.booleanQuirkSetting();
         }
 
+        @Override
+        public boolean isOf(Event other) {
+            return other instanceof BooleanQuirkSettingChangedEvent booleanQuirkSettingChangedEvent && this.booleanQuirk() == booleanQuirkSettingChangedEvent.booleanQuirk();
+        }
+
     }
 
-    record MemoryIncrementQuirkSettingChangedEvent(Chip8Settings.MemoryIncrementQuirkSetting memoryIncrementQuirkSetting) implements CoreSettingChangeEvent, Supplier<Chip8Settings.MemoryIncrementQuirkSetting> {
+    record MemoryIncrementQuirkSettingChangedEvent(Chip8Settings.MemoryIncrementQuirkSetting memoryIncrementQuirkSetting) implements CoreSettingChangedEvent, Supplier<Chip8Settings.MemoryIncrementQuirkSetting> {
 
         @Override
         public Chip8Settings.MemoryIncrementQuirkSetting get() {

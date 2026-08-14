@@ -10,6 +10,7 @@ import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCall
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.managers.EmulatorManager;
+import io.github.arkosammy12.jemu.frontend.util.DialogType;
 import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
@@ -203,7 +204,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         if (systemDescriptor.isPresent()) {
             this.mainWindow.submitEmulatorCommand(new PowerCycleCommand(systemDescriptor.get(), systemDescriptorResult.descriptorFromAutomaticDetection(), this.pauseButton.isSelected()));
         } else {
-            this.mainWindow.showDialog("Error attempting to power cycle", systemDescriptorResult.errorMessage(), MainWindow.DialogType.ERROR);
+            this.mainWindow.showDialog("Error attempting to power cycle", systemDescriptorResult.errorMessage(), DialogType.ERROR);
         }
     }
 

@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.app.util;
 
-import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
 
 public interface FrameRequesterVideoEvent extends VideoSettingChangedEvent {
 

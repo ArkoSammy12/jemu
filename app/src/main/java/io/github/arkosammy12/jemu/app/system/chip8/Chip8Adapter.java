@@ -9,7 +9,7 @@ import io.github.arkosammy12.jemu.core.chip8.*;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.commands.StopEmulatorCommand;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -126,9 +126,9 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     }
 
     @Override
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
-        super.onCoreSettingChangedEvent(coreSettingChangeEvent);
-        switch (coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
+        super.onCoreSettingChangedEvent(coreSettingChangedEvent);
+        switch (coreSettingChangedEvent) {
             case Chip8Manager.ShowUsedVariantSettingChangedEvent _ -> this.updateTitle();
             case Chip8Manager.ShowIpfMetricsSettingChangedEvent _ -> {
                 this.framesUntilTitleUpdate = 0;

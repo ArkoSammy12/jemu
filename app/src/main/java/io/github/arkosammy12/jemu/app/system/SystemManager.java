@@ -1,8 +1,7 @@
 package io.github.arkosammy12.jemu.app.system;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import org.jetbrains.annotations.Nullable;
 
@@ -28,7 +27,7 @@ public abstract class SystemManager implements SystemDescriptor {
 
     public abstract boolean manages(SystemAdapter systemAdapter);
 
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {
 
     }
 

@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.menubar;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.BooleanUISetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,11 +15,11 @@ public class BooleanMenuItemSetting<E extends Event & Supplier<Boolean>> extends
 
     private final JRadioButtonMenuItem jRadioButtonMenuItem;
 
-    public BooleanMenuItemSetting(MainWindow mainWindow, @NotNull String name, @NotNull Boolean startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Boolean, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+    public BooleanMenuItemSetting(EventPublisher eventPublisher, @NotNull String name, @NotNull Boolean startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Boolean, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, eventClass, eventPredicate, eventSupplier);
         this.jRadioButtonMenuItem = new JRadioButtonMenuItem(name);
         this.jRadioButtonMenuItem.setSelected(startingValue);
-        this.jRadioButtonMenuItem.addActionListener(_ ->  this.mainWindow.publishEvent(eventSupplier.apply(this.jRadioButtonMenuItem.isSelected())));
+        this.jRadioButtonMenuItem.addActionListener(_ ->  this.eventPublisher.publishEvent(eventSupplier.apply(this.jRadioButtonMenuItem.isSelected())));
     }
 
     @Override

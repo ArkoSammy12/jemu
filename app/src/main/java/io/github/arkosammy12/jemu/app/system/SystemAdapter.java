@@ -12,9 +12,9 @@ import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangeEvent;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.core.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -100,8 +100,8 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         }
     }
 
-    public void onCoreSettingChangedEvent(CoreSettingChangeEvent coreSettingChangeEvent) throws LineUnavailableException {
-        switch (coreSettingChangeEvent) {
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
+        switch (coreSettingChangedEvent) {
             case SpeedModeSettingChangedEvent speedModeSettingChangedEvent -> {
                 this.getAudioDriver().ifPresent(DefaultAudioRendererDriver::clearAudioBuffer);
                 Emulator emulator = this.emulator;

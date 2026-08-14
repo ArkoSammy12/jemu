@@ -21,12 +21,12 @@ import java.util.function.Supplier;
 
 public class PanelSettingsMenu extends JPanel {
 
-    private final MainWindow mainWindow;
+    private final EventPublisher eventPublisher;
     protected final Collection<UISetting<?, ?>> settings = new ArrayList<>();
     protected final JPanel innerPanel = new JPanel();
 
-    public PanelSettingsMenu(MainWindow mainWindow) {
-        this.mainWindow = mainWindow;
+    public PanelSettingsMenu(EventPublisher eventPublisher) {
+        this.eventPublisher = eventPublisher;
         this.setLayout(new MigLayout());
 
         JScrollPane scrollPane = new JScrollPane(this.innerPanel);
@@ -47,14 +47,14 @@ public class PanelSettingsMenu extends JPanel {
     }
 
     public <E extends Event & Supplier<Boolean>> BooleanPanelSetting<E> addBooleanSetting(String name, boolean startingValue, @Nullable Class<E> classEvent, @Nullable Predicate<E> eventPredicate, Function<? super Boolean, ? extends Event> eventSupplier) {
-        BooleanPanelSetting<E> booleanPanelSetting = new BooleanPanelSetting<>(this.mainWindow, name, startingValue, classEvent, eventPredicate, eventSupplier);
+        BooleanPanelSetting<E> booleanPanelSetting = new BooleanPanelSetting<>(this.eventPublisher, name, startingValue, classEvent, eventPredicate, eventSupplier);
         booleanPanelSetting.addToJPanel(this.innerPanel, "wrap");
         this.settings.add(booleanPanelSetting);
         return booleanPanelSetting;
     }
 
     public <E extends Event & Supplier<Integer>> IntegerPanelSpinnerSetting<E> addIntegerSetting(String name, @Nullable String secondaryLabel, int startingValue, @Nullable Integer minimumValue, @Nullable Integer maximumValue, @Nullable Class<E> classEvent, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super Integer, ? extends Event> eventSupplier) {
-        IntegerPanelSpinnerSetting<E> spinnerIntegerSetting = new IntegerPanelSpinnerSetting<>(this.mainWindow, name, secondaryLabel, startingValue, minimumValue, maximumValue, classEvent, eventPredicate, eventSupplier);
+        IntegerPanelSpinnerSetting<E> spinnerIntegerSetting = new IntegerPanelSpinnerSetting<>(this.eventPublisher, name, secondaryLabel, startingValue, minimumValue, maximumValue, classEvent, eventPredicate, eventSupplier);
         this.addIntegerSetting(spinnerIntegerSetting);
         return spinnerIntegerSetting;
     }
@@ -65,14 +65,14 @@ public class PanelSettingsMenu extends JPanel {
     }
 
     public <V extends Enum<V> & DisplayNamerProvider, E extends Event & Supplier<V>> EnumPanelSetting<V, E> addEnumSetting(String name, @NotNull V startingValue, @Nullable Class<E> classEvent, @Nullable Predicate<E> eventPredicate, Function<? super V, ? extends Event> eventSupplier) {
-        EnumPanelSetting<V, E> enumPanelSetting = new EnumPanelSetting<>(this.mainWindow, name, startingValue, classEvent, eventPredicate, eventSupplier);
+        EnumPanelSetting<V, E> enumPanelSetting = new EnumPanelSetting<>(this.eventPublisher, name, startingValue, classEvent, eventPredicate, eventSupplier);
         enumPanelSetting.addToJPanel(this.innerPanel, null, "growx, wrap");
         this.settings.add(enumPanelSetting);
         return enumPanelSetting;
     }
 
     public <E extends Event & Supplier<Path>> PathUISetting<E> addPathSetting(PathUISetting.PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
-        PathUISetting<E> pathUISetting = new PathUISetting<>(this.mainWindow, pathSelectionMode, name, startingValue, eventClass, eventPredicate, eventSupplier);
+        PathUISetting<E> pathUISetting = new PathUISetting<>(this.eventPublisher, pathSelectionMode, name, startingValue, eventClass, eventPredicate, eventSupplier);
         pathUISetting.addToJPanel(this.innerPanel, null, "growx", "growx, wrap");
         this.settings.add(pathUISetting);
         return pathUISetting;

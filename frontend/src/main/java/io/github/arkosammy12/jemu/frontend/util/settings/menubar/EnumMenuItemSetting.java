@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.menubar;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.settings.EnumUISetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -20,8 +20,8 @@ public class EnumMenuItemSetting<V extends Enum<V> & DisplayNamerProvider, E ext
     private final JMenu jMenu;
     private final Map<V, JRadioButtonMenuItem> buttonMap = new HashMap<>();
 
-    public EnumMenuItemSetting(MainWindow mainWindow, @NotNull String name, @NotNull V startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super V, ? extends Event> eventSupplier) {
-        super(mainWindow, name, startingValue, eventClass, eventPredicate, eventSupplier);
+    public EnumMenuItemSetting(EventPublisher eventPublisher, @NotNull String name, @NotNull V startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super V, ? extends Event> eventSupplier) {
+        super(eventPublisher, name, startingValue, eventClass, eventPredicate, eventSupplier);
         this.jMenu = new JMenu(name);
         for (V enumVariant : startingValue.getDeclaringClass().getEnumConstants()) {
             JRadioButtonMenuItem enumSettingButton = new JRadioButtonMenuItem(enumVariant.getDisplayName());
@@ -29,7 +29,7 @@ public class EnumMenuItemSetting<V extends Enum<V> & DisplayNamerProvider, E ext
             this.buttonMap.put(enumVariant, enumSettingButton);
 
             enumSettingButton.setSelected(startingValue == enumVariant);
-            enumSettingButton.addActionListener(_ -> this.mainWindow.publishEvent(eventSupplier.apply(enumVariant)));
+            enumSettingButton.addActionListener(_ -> this.eventPublisher.publishEvent(eventSupplier.apply(enumVariant)));
             this.jMenu.add(enumSettingButton);
         }
     }

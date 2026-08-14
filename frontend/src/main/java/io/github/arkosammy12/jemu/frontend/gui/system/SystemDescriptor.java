@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.gui.system;
 
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 
 import javax.swing.*;
 import java.util.Collection;
@@ -19,11 +19,11 @@ public interface SystemDescriptor {
         return Optional.empty();
     }
 
-    default Optional<? extends Function<? super MainWindow, ? extends JMenu>> getSettingsMenuBarContents() {
+    default Optional<? extends Function<? super EventPublisher, ? extends JMenu>> getSettingsMenuBarContents() {
         return Optional.empty();
     }
 
-    default Optional<? extends Function<? super MainWindow, ? extends JPanel>> getSettingsWindowContents() {
+    default Optional<? extends Function<? super EventPublisher, ? extends JPanel>> getSettingsWindowContents() {
         return Optional.empty();
     }
 
