@@ -21,11 +21,6 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
     // TODO: Eventually make this user configurable
     private static final double VRC6_WEIGHT = NES_PULSE_FULL_VOLUME / VRC6_PULSE_FULL_VOLUME;
 
-    private final byte[] programROM;
-    private final byte[] programRAM;
-    private final byte[] characterROM;
-    private final byte[] characterRAM;
-
     private final int a0Bit;
     private final int a1Bit;
 
@@ -56,45 +51,16 @@ public class VRC6Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     public VRC6Cartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
-
-        byte[] programRomData = iNESFile.getProgramRom();
-        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
-
-        int programRamSize = iNESFile.getProgramRamSize();
-        if (iNESFile instanceof NES20File nes20File) {
-            programRamSize += nes20File.getNonVolatileProgramRamSizeBytes();
-        }
-
-        this.programRAM = programRamSize > 0 ? new byte[programRamSize] : null;
-
-        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
-        if (characterRomOptional.isEmpty()) {
-            this.characterROM = null;
-            int characterRamSize = iNESFile.getCharacterRamSize();
-            if (iNESFile instanceof NES20File nes20File) {
-                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
-            }
-            this.characterRAM = new byte[characterRamSize];
-        } else {
-            byte[] characterRomData = characterRomOptional.get();
-            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRAM = null;
-        }
-
         this.a0Bit = switch (iNESFile.getMapperNumber()) {
             case 24 -> 0;
             case 26 -> 1;
             default -> throw new ROMInitializationException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
         };
-
         this.a1Bit = switch (iNESFile.getMapperNumber()) {
             case 24 -> 1;
             case 26 -> 0;
             default -> throw new ROMInitializationException("Invalid mapper number %d for VRC6!".formatted(this.iNESFile.getMapperNumber()));
         };
-
-        this.restoreSaveData(this.programRAM, this.characterRAM);
-
     }
 
    @Override

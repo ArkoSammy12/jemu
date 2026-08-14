@@ -17,11 +17,6 @@ import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
 
 public class VRC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
-    private final byte[] programROM;
-    protected final byte[] programRAM;
-    private final byte[] characterROM;
-    private final byte[] characterRAM;
-
     private final int a0Bit;
     private final int a1Bit;
 
@@ -44,39 +39,10 @@ public class VRC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     public VRC2Cartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
-
-        byte[] programRomData = iNESFile.getProgramRom();
-        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
-
-        int programRamSize = iNESFile.getProgramRamSize();
-        if (iNESFile instanceof NES20File nes20File) {
-            programRamSize += nes20File.getNonVolatileProgramRamSizeBytes();
-        }
-
-        this.programRAM = programRamSize > 0 ? new byte[programRamSize] : null;
-
-        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
-        if (characterRomOptional.isEmpty()) {
-            this.characterROM = null;
-            int characterRamSize = iNESFile.getCharacterRamSize();
-            if (iNESFile instanceof NES20File nes20File) {
-                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
-            }
-            this.characterRAM = new byte[characterRamSize];
-        } else {
-            byte[] characterRomData = characterRomOptional.get();
-            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRAM = null;
-        }
-
         this.a0Bit = this.getA0Bit();
         this.a1Bit = this.getA1Bit();
-
         this.setChrSelectLowFunction = this.getSetChrSelectLowFunction();
         this.setChrSelectHighFunction = this.getSetChrSelectHighFunction();
-
-        this.restoreSaveData(this.programRAM, this.characterRAM);
-
     }
 
     protected int getA0Bit() {

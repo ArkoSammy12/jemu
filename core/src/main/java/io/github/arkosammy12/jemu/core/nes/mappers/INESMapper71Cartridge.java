@@ -4,10 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
-import io.github.arkosammy12.jemu.core.nes.ines.NES20File;
 
-import java.util.Arrays;
-import java.util.Optional;
 import java.util.function.Supplier;
 
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.CHR_END;
@@ -19,10 +16,6 @@ import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
 
 public class INESMapper71Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
-    private final byte[] programROM;
-    private final byte[] characterROM;
-    private final byte[] characterRAM;
-
     private final Supplier<NametableArrangement> nametableArrangementSupplier;
 
     private NametableArrangement nametableArrangement = NametableArrangement.SINGLE_SCREEN_LOWER_BANK;
@@ -30,32 +23,11 @@ public class INESMapper71Cartridge<E extends NESEmulator> extends NESCartridge<E
 
     public INESMapper71Cartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
-
-        byte[] programRomData = iNESFile.getProgramRom();
-        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
-
-        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
-        if (characterRomOptional.isEmpty()) {
-            this.characterROM = null;
-            int characterRamSize = iNESFile.getCharacterRamSize();
-            if (iNESFile instanceof NES20File nes20File) {
-                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
-            }
-            this.characterRAM = new byte[characterRamSize];
-        } else {
-            byte[] characterRomData = characterRomOptional.get();
-            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRAM = null;
-        }
-
         if (iNESFile.getSubmapperNumber() == 1) {
             this.nametableArrangementSupplier = () -> this.nametableArrangement;
         } else {
             this.nametableArrangementSupplier = () -> this.iNESFileNametableArrangement;
         }
-
-        this.restoreSaveData(null, this.characterRAM);
-
     }
 
     @Override

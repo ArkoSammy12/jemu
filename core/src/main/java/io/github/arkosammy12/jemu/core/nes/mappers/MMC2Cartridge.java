@@ -4,9 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
-import io.github.arkosammy12.jemu.core.nes.ines.NES20File;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.CHR_END;
@@ -15,14 +13,8 @@ import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_END;
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.CIRAM_START;
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_END;
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
-import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
 
 public class MMC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
-
-    private final byte[] programROM;
-    private final byte[] programRAM;
-    private final byte[] characterROM;
-    private final byte[] characterRAM;
 
     protected int prgRomBankSelect;
     protected int chrRomFDLowerBankSelect;
@@ -36,29 +28,6 @@ public class MMC2Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     public MMC2Cartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
-
-        int programRamSize = Math.clamp(iNESFile.getProgramRamSize(), 0, KB_8);
-        this.programRAM = programRamSize > 0 ? new byte[programRamSize] : null;
-
-        byte[] programRomData = iNESFile.getProgramRom();
-        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
-
-        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
-        if (characterRomOptional.isEmpty()) {
-            this.characterROM = null;
-            int characterRamSize = iNESFile.getCharacterRamSize();
-            if (iNESFile instanceof NES20File nes20File) {
-                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
-            }
-            this.characterRAM = new byte[characterRamSize];
-        } else {
-            byte[] characterRomData = characterRomOptional.get();
-            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRAM = null;
-        }
-
-        this.restoreSaveData(this.programRAM, this.characterRAM);
-
     }
 
     @Override

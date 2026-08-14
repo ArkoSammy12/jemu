@@ -4,9 +4,7 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
-import io.github.arkosammy12.jemu.core.nes.ines.NES20File;
 
-import java.util.Arrays;
 import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.nes.RP2C02.CHR_END;
@@ -18,41 +16,16 @@ import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
 
 public class UxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
 
-    private final byte[] programROM;
-    private final byte[] characterROM;
-    private final byte[] characterRAM;
-
     private int bankSelect;
 
     private final boolean hasBusConflicts;
 
     public UxROMCartridge(E emulator, INESFile iNESFile) {
         super(emulator, iNESFile);
-
-        byte[] programRomData = iNESFile.getProgramRom();
-        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
-
-        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
-        if (characterRomOptional.isEmpty()) {
-            this.characterROM = null;
-            int characterRamSize = iNESFile.getCharacterRamSize();
-            if (iNESFile instanceof NES20File nes20File) {
-                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
-            }
-            this.characterRAM = new byte[characterRamSize];
-        } else {
-            byte[] characterRomData = characterRomOptional.get();
-            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRAM = null;
-        }
-
         this.hasBusConflicts = switch (iNESFile.getSubmapperNumber()) {
             case 0, 2 -> true;
             default -> false;
         };
-
-        this.restoreSaveData(null, this.characterRAM);
-
     }
 
     @Override

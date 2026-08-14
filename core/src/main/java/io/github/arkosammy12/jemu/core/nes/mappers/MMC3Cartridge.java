@@ -4,10 +4,8 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.nes.NESCartridge;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.ines.INESFile;
-import io.github.arkosammy12.jemu.core.nes.ines.NES20File;
 import io.github.arkosammy12.jemu.core.util.ActionSignal;
 
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.function.Supplier;
 
@@ -19,11 +17,6 @@ import static io.github.arkosammy12.jemu.core.nes.RP2C02.PALETTE_RAM_START;
 public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
 
     protected static final int A12 = 1 << 12;
-
-    private final byte[] programROM;
-    protected final byte[] programRAM;
-    private final byte[] characterROM;
-    private final byte[] characterRAM;
 
     private final Supplier<NametableArrangement> nametableArrangementSupplier;
 
@@ -58,43 +51,13 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
     protected final ActionSignal setIRQSignal;
 
     public MMC3Cartridge(E emulator, INESFile iNESFile) {
-        // TODO: Use submapper for IRQ behavior and MMC6
         super(emulator, iNESFile);
-
-        byte[] programRomData = iNESFile.getProgramRom();
-        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
-
-        int programRamSize = iNESFile.getProgramRamSize();
-        if (iNESFile instanceof NES20File nes20File) {
-            programRamSize += nes20File.getNonVolatileProgramRamSizeBytes();
-        }
-
-        this.programRAM = programRamSize > 0 ? new byte[programRamSize] : null;
-
-        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
-        if (characterRomOptional.isEmpty()) {
-            this.characterROM = null;
-            int characterRamSize = iNESFile.getCharacterRamSize();
-            if (iNESFile instanceof NES20File nes20File) {
-                characterRamSize += nes20File.getNonVolatileCharacterRamSizeBytes();
-            }
-            this.characterRAM = new byte[characterRamSize];
-        } else {
-            byte[] characterRomData = characterRomOptional.get();
-            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
-            this.characterRAM = null;
-        }
-
         if (iNESFile.hasAlternativeNametableLayout()) {
             this.nametableArrangementSupplier = () -> NametableArrangement.FOUR_SCREEN;
         } else {
             this.nametableArrangementSupplier = () -> this.nametableArrangement;
         }
-
         this.setIRQSignal = new ActionSignal(4, _ -> this.irqSignal = true);
-
-        this.restoreSaveData(this.programRAM, this.characterRAM);
-
     }
 
     @Override

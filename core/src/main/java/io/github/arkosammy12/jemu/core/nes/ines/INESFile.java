@@ -160,6 +160,14 @@ public class INESFile {
         return this.nonVolatileCharacterRamSizeBytes;
     }
 
+    public int getTotalProgramRamSize() {
+        return this.getProgramRamSize() + this.getNonVolatileProgramRamSizeBytes();
+    }
+
+    public int getTotalCharacterRamSize() {
+        return this.getCharacterRamSize() + this.getNonVolatileCharacterRamSizeBytes();
+    }
+
     public boolean getNametableArrangement() {
         return this.nametableArrangement;
     }

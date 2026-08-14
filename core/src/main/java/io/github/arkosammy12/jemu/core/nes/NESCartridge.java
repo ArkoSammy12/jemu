@@ -22,13 +22,39 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
     protected final INESFile iNESFile;
     protected final NametableArrangement iNESFileNametableArrangement;
 
-    private final byte[] vram;
+    protected final byte[] programROM;
+    protected final byte[] programRAM;
+    protected final byte[] characterROM;
+    protected final byte[] characterRAM;
+
+    private final byte[] vRAM;
 
     public NESCartridge(E emulator, INESFile iNESFile) {
         this.emulator = emulator;
         this.iNESFile = iNESFile;
         this.iNESFileNametableArrangement = this.iNESFile.getNametableArrangement() ? NESCartridge.NametableArrangement.HORIZONTAL : NESCartridge.NametableArrangement.VERTICAL;
-        this.vram = new byte[switch (this.getVRAMSize()) {
+
+        byte[] programRomData = iNESFile.getProgramRom();
+        this.programROM = Arrays.copyOf(programRomData, programRomData.length);
+
+        int programRamSize = iNESFile.getTotalProgramRamSize();
+        this.programRAM = programRamSize > 0 ? new byte[programRamSize] : null;
+
+        Optional<byte[]> characterRomOptional = iNESFile.getCharacterRom();
+        if (characterRomOptional.isEmpty()) {
+            this.characterROM = null;
+            int characterRamSize = iNESFile.getTotalCharacterRamSize();
+            if (characterRamSize <= 0) {
+                throw new ROMInitializationException("Combined CHR-RAM size cannot be 0!");
+            }
+            this.characterRAM = new byte[characterRamSize];
+        } else {
+            byte[] characterRomData = characterRomOptional.get();
+            this.characterROM = Arrays.copyOf(characterRomData, characterRomData.length);
+            this.characterRAM = null;
+        }
+
+        this.vRAM = new byte[switch (this.getVRAMSize()) {
             case KB_2 -> 0x800;
             case KB_4 -> 0x1000;
         }];
@@ -37,6 +63,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
                 this.writeByte(0x7000, value);
             }
         });
+        this.restoreSaveData(this.programRAM, this.characterRAM);
     }
 
     public static <E extends NESEmulator> NESCartridge<E> getCartridge(E emulator, INESFile iNESFile) {
@@ -106,11 +133,11 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
     }
 
     protected int readByteVRAM(int address) {
-        return (int) this.vram[address] & 0xFF;
+        return (int) this.vRAM[address] & 0xFF;
     }
 
     protected void writeByteVRAM(int address, int value) {
-        this.vram[address] = (byte) value;
+        this.vRAM[address] = (byte) value;
     }
 
     protected int mapNametableAddress(int address) {
