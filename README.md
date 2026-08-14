@@ -33,7 +33,7 @@ Multi-system emulator written in Java.
 | Nintendo Entertainment System       | `nes`              | ✅ Supported |
 | Atari 2600                          | `atari-2600`       | ✅ Supported |
 | Apple II                            | —                  | 🗓 Planned   |
-| Commodore 64                        | —                  | 🗓 Planned   |
+| Commodore 64                        | `c64`              | 🚧 WIP       |
 | Space Invaders arcade cabinet       | —                  | 🗓 Planned   |
 | Sega Master System                  | —                  | 🗓 Planned   |
 | ZX Spectrum                         | —                  | 🗓 Planned   |

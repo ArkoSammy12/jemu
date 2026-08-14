@@ -100,8 +100,8 @@ public class GameBoyManager extends SystemManager {
     @Override
     public Optional<? extends Function<? super EventPublisher, ? extends JPanel>> getSettingsWindowContents() {
         if (this.gameboyModel == GameBoyHost.Model.DMG) {
-            return Optional.of(mainWindow -> {
-                GameBoyPanelSettings gameBoyPanelSettings = new GameBoyPanelSettings(this, mainWindow);
+            return Optional.of(eventPublisher -> {
+                GameBoyPanelSettings gameBoyPanelSettings = new GameBoyPanelSettings(this, eventPublisher);
                 this.gameBoyPanelSettings = gameBoyPanelSettings;
                 return gameBoyPanelSettings;
             });
