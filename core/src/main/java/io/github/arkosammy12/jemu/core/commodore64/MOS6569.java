@@ -269,8 +269,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case 27 -> this.setValueForSprites(value, Sprite::setDataPriority);
             case 28 -> this.setValueForSprites(value, Sprite::setMulticolor);
             case 29 -> this.setValueForSprites(value, Sprite::setXExpansion);
-            case 30 -> this.setValueForSprites(0x00, Sprite::setSpriteCollision);
-            case 31 -> this.setValueForSprites(0x00, Sprite::setBackgroundCollision);
+            case 30 -> {} // Sprite-sprite collision. Nothing on writes
+            case 31 -> {} // Sprite-data collision. Nothing on writes
             case 32 -> this.borderColor = value & 0xF;
             case 33 -> this.backgroundColor0 = value & 0xF;
             case 34 -> this.backgroundColor1 = value & 0xF;

@@ -1,13 +1,13 @@
 package io.github.arkosammy12.jemu.core.util;
 
-public final class StaticIOPort8Bit {
+public final class MOSIOPort {
 
     private final IOBitSource ioBitSource;
 
     private int dataDirectionRegister;
     private int outputLatch;
 
-    public StaticIOPort8Bit(IOBitSource ioBitSource) {
+    public MOSIOPort(IOBitSource ioBitSource) {
         this.ioBitSource = ioBitSource;
     }
 

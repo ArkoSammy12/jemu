@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.core.commodore64;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6510;
-import io.github.arkosammy12.jemu.core.util.StaticIOPort8Bit;
+import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
 public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
@@ -22,9 +22,9 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final MOS6526 cia2;
     private final Commodore64Controller systemController;
 
-    private final StaticIOPort8Bit cpuIOPort;
-    private final StaticIOPort8Bit cia1IOPort;
-    private final StaticIOPort8Bit cia2IOPort;
+    private final MOSIOPort cpuIOPort;
+    private final MOSIOPort cia1IOPort;
+    private final MOSIOPort cia2IOPort;
 
     private final int phiInFrequencyHz;
     private final int framerate;
@@ -37,13 +37,13 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.framerate = PAL_FRAMERATE;
         this.iterationsPerFrame = this.phiInFrequencyHz / CPU_CLOCK_DIVISOR;
 
-        this.cpuIOPort = new StaticIOPort8Bit(index -> switch (index & 0b111) {
+        this.cpuIOPort = new MOSIOPort(index -> switch (index & 0b111) {
             case 0, 1, 2 -> true;
             default -> false;
         });
 
-        this.cia1IOPort = new StaticIOPort8Bit(_ -> false);
-        this.cia2IOPort = new StaticIOPort8Bit(_ -> false);
+        this.cia1IOPort = new MOSIOPort(_ -> false);
+        this.cia2IOPort = new MOSIOPort(_ -> false);
 
         this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
@@ -87,15 +87,15 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         return this.cia2;
     }
 
-    public StaticIOPort8Bit getCPUIOPort() {
+    public MOSIOPort getCPUIOPort() {
         return this.cpuIOPort;
     }
 
-    public StaticIOPort8Bit getCIA1IOPort() {
+    public MOSIOPort getCIA1IOPort() {
         return this.cia1IOPort;
     }
 
-    public StaticIOPort8Bit getCIA2IOPort() {
+    public MOSIOPort getCIA2IOPort() {
         return this.cia2IOPort;
     }
 
@@ -149,7 +149,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public StaticIOPort8Bit getIOPort() {
+    public MOSIOPort getIOPort() {
         return this.cpuIOPort;
     }
 

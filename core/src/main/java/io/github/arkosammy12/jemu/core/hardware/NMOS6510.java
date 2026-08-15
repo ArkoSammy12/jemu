@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.hardware;
 
-import io.github.arkosammy12.jemu.core.util.StaticIOPort8Bit;
+import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
 public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
 
@@ -47,7 +47,7 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
 
         boolean getAEC();
 
-        StaticIOPort8Bit getIOPort();
+        MOSIOPort getIOPort();
 
     }
 
