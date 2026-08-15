@@ -1,5 +1,7 @@
 package io.github.arkosammy12.jemu.core.hardware;
 
+import io.github.arkosammy12.jemu.core.util.StaticIOPort8Bit;
+
 public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
 
     private int dataDirectionRegister;
@@ -7,6 +9,10 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
 
     public NMOS6510(S systemBus) {
         super(systemBus);
+
+        // Values on power-on
+        this.dataDirectionRegister = 0x2F;
+        this.outputLatch = 0x37;
     }
 
     @Override
@@ -17,8 +23,8 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
             return 0x00; // some undefined value :v. The CPU will repeat its read cycle after it comes out of RDY anyways
         } else {
             return switch (address) {
-                case 0x0000 -> this.dataDirectionRegister;
-                case 0x0001 -> ((this.outputLatch & this.dataDirectionRegister) | (this.systemBus.readIO(this.dataDirectionRegister) & ~this.dataDirectionRegister)) & 0xFF;
+                case 0x0000 -> systemBus.getIOPort().getDataDirectionRegister();
+                case 0x0001 -> systemBus.getIOPort().read();
                 default -> systemBus.getBus().readByte(address);
             };
         }
@@ -30,11 +36,8 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
         this.lastAddress = address;
         if (!systemBus.getAEC()) {
             switch (address) {
-                case 0x0000 -> this.dataDirectionRegister = value & 0xFF;
-                case 0x0001 -> {
-                    this.outputLatch = value & 0xFF;
-                    systemBus.writeIO(this.outputLatch & this.dataDirectionRegister, this.dataDirectionRegister);
-                }
+                case 0x0000 -> systemBus.getIOPort().writeDataDirectionRegister(value);
+                case 0x0001 -> systemBus.getIOPort().writeOutputLatch(value);
                 default -> systemBus.getBus().writeByte(address, value);
             }
         }
@@ -44,9 +47,7 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
 
         boolean getAEC();
 
-        int readIO(int ddr);
-
-        void writeIO(int value, int ddr);
+        StaticIOPort8Bit getIOPort();
 
     }
 

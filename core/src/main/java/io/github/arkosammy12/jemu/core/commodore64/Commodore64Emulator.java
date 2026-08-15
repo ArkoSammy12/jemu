@@ -1,7 +1,9 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
 import io.github.arkosammy12.jemu.core.common.*;
+import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6510;
+import io.github.arkosammy12.jemu.core.util.StaticIOPort8Bit;
 
 public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
@@ -13,10 +15,16 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final Commodore64Host systemHost;
 
     private final NMOS6510<?> cpu;
-    private final MOS6569 vic2;
+    private final Commodore64Bus<?> bus;
+    private final MOS6569<?> vic2;
     private final MOS6581 sid;
     private final MOS6526 cia1;
     private final MOS6526 cia2;
+    private final Commodore64Controller systemController;
+
+    private final StaticIOPort8Bit cpuIOPort;
+    private final StaticIOPort8Bit cia1IOPort;
+    private final StaticIOPort8Bit cia2IOPort;
 
     private final int phiInFrequencyHz;
     private final int framerate;
@@ -29,11 +37,21 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.framerate = PAL_FRAMERATE;
         this.iterationsPerFrame = this.phiInFrequencyHz / CPU_CLOCK_DIVISOR;
 
+        this.cpuIOPort = new StaticIOPort8Bit(index -> switch (index & 0b111) {
+            case 0, 1, 2 -> true;
+            default -> false;
+        });
+
+        this.cia1IOPort = new StaticIOPort8Bit(_ -> false);
+        this.cia2IOPort = new StaticIOPort8Bit(_ -> false);
+
+        this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
-        this.vic2 = new MOS6569();
+        this.vic2 = new MOS6569<>(this);
         this.sid = new MOS6581();
         this.cia1 = new MOS6526();
         this.cia2 = new MOS6526();
+        this.systemController = new Commodore64Controller();
     }
 
     @Override
@@ -42,23 +60,23 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public Bus getBus() {
-        return null;
+    public Commodore64Bus<?> getBus() {
+        return this.bus;
     }
 
     @Override
-    public VideoGenerator getVideoGenerator() {
+    public MOS6569<?> getVideoGenerator() {
         return this.vic2;
     }
 
     @Override
-    public AudioGenerator getAudioGenerator() {
+    public MOS6581 getAudioGenerator() {
         return this.sid;
     }
 
     @Override
     public SystemController getSystemController() {
-        return null;
+        return this.systemController;
     }
 
     public MOS6526 getCIA1() {
@@ -67,6 +85,18 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     public MOS6526 getCIA2() {
         return this.cia2;
+    }
+
+    public StaticIOPort8Bit getCPUIOPort() {
+        return this.cpuIOPort;
+    }
+
+    public StaticIOPort8Bit getCIA1IOPort() {
+        return this.cia1IOPort;
+    }
+
+    public StaticIOPort8Bit getCIA2IOPort() {
+        return this.cia2IOPort;
     }
 
     @Override
@@ -85,11 +115,12 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         switch (this.cpu.getHalfCyclePhase()) {
             case PHI_1 -> {
                 this.cpu.cycle();
-                this.vic2.clockBusAccess();
+                this.vic2.clockBusAccess(NMOS6502.Phase.PHI_1);
             }
             case PHI_2 -> {
                 this.cpu.cycle();
 
+                this.vic2.clockBusAccess(NMOS6502.Phase.PHI_2);
                 this.vic2.clockPixel();
                 this.vic2.clockPixel();
                 this.vic2.clockPixel();
@@ -98,6 +129,11 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
                 this.vic2.clockPixel();
                 this.vic2.clockPixel();
                 this.vic2.clockPixel();
+
+                this.cia1.cycle();
+                this.cia2.cycle();
+
+                this.sid.cycle();
             }
         }
     }
@@ -113,13 +149,8 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public int readIO(int ddr) {
-        return 0;
-    }
-
-    @Override
-    public void writeIO(int value, int ddr) {
-
+    public StaticIOPort8Bit getIOPort() {
+        return this.cpuIOPort;
     }
 
     @Override
@@ -129,6 +160,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getNMI() {
+        // TODO: Wired to RESTORE key and CIA2
         return false;
     }
 
