@@ -10,6 +10,54 @@ import java.util.function.Function;
 
 public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, Bus {
 
+    private static final int SPRITE_0_X = 0x00;
+    private static final int SPRITE_0_Y = 0x01;
+    private static final int SPRITE_1_X = 0x02;
+    private static final int SPRITE_1_Y = 0x03;
+    private static final int SPRITE_2_X = 0x04;
+    private static final int SPRITE_2_Y = 0x05;
+    private static final int SPRITE_3_X = 0x06;
+    private static final int SPRITE_3_Y = 0x07;
+    private static final int SPRITE_4_X = 0x08;
+    private static final int SPRITE_4_Y = 0x09;
+    private static final int SPRITE_5_X = 0x0A;
+    private static final int SPRITE_5_Y = 0x0B;
+    private static final int SPRITE_6_X = 0x0C;
+    private static final int SPRITE_6_Y = 0x0D;
+    private static final int SPRITE_7_X = 0x0E;
+    private static final int SPRITE_7_Y = 0x0F;
+    private static final int SPRITE_X_MSB = 0x10;
+    private static final int CONTROL_1 = 0x11;
+    private static final int RASTER = 0x12;
+    private static final int LPX = 0x13;
+    private static final int LPY = 0x14;
+    private static final int SPRITE_ENABLE = 0x15;
+    private static final int CONTROL_2 = 0x16;
+    private static final int SPRITE_Y_EXPANSION = 0x17;
+    private static final int MEMORY_CONTROL = 0x18;
+    private static final int INTERRUPT_REQUEST = 0x19;
+    private static final int INTERRUPT_MASK = 0x1A;
+    private static final int SPRITE_DATA_PRIORITY = 0x1B;
+    private static final int SPRITE_MULTICOLOR = 0x1C;
+    private static final int SPRITE_X_EXPANSION = 0x1D;
+    private static final int SPRITE_SPRITE_COLLISION = 0x1E;
+    private static final int SPRITE_DATA_COLLISION = 0x1F;
+    private static final int BORDER_COLOR = 0x20;
+    private static final int BACKGROUND_COLOR_0 = 0x21;
+    private static final int BACKGROUND_COLOR_1 = 0x22;
+    private static final int BACKGROUND_COLOR_2 = 0x23;
+    private static final int BACKGROUND_COLOR_3 = 0x24;
+    private static final int SPRITE_MULTICOLOR_0 = 0x25;
+    private static final int SPRITE_MULTICOLOR_1 = 0x26;
+    private static final int SPRITE_0_COLOR = 0x27;
+    private static final int SPRITE_1_COLOR = 0x28;
+    private static final int SPRITE_2_COLOR = 0x29;
+    private static final int SPRITE_3_COLOR = 0x2A;
+    private static final int SPRITE_4_COLOR = 0x2B;
+    private static final int SPRITE_5_COLOR = 0x2C;
+    private static final int SPRITE_6_COLOR = 0x2D;
+    private static final int SPRITE_7_COLOR = 0x2E;
+
     // https://www.godot64.de/german/hpalet.htm
     private static final int[] GODOTS_PALETTE = {
             0x000000, 0xFFFFFF, 0x880000, 0xAAFFEE,
@@ -111,24 +159,24 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     public int readByte(int address) {
         address &= 0x3F;
         return switch (address) {
-            case 0 -> this.sprites[0].getX();
-            case 1 -> this.sprites[0].getY();
-            case 2 -> this.sprites[1].getX();
-            case 3 -> this.sprites[1].getY();
-            case 4 -> this.sprites[2].getX();
-            case 5 -> this.sprites[2].getY();
-            case 6 -> this.sprites[3].getX();
-            case 7 -> this.sprites[3].getY();
-            case 8 -> this.sprites[4].getX();
-            case 9 -> this.sprites[4].getY();
-            case 10 -> this.sprites[5].getX();
-            case 11 -> this.sprites[5].getY();
-            case 12 -> this.sprites[6].getX();
-            case 13 -> this.sprites[6].getY();
-            case 14 -> this.sprites[7].getX();
-            case 15 -> this.sprites[7].getY();
-            case 16 -> this.getValueForSprites(Sprite::getXMSB);
-            case 17 -> {
+            case SPRITE_0_X -> this.sprites[0].getX();
+            case SPRITE_0_Y -> this.sprites[0].getY();
+            case SPRITE_1_X -> this.sprites[1].getX();
+            case SPRITE_1_Y -> this.sprites[1].getY();
+            case SPRITE_2_X -> this.sprites[2].getX();
+            case SPRITE_2_Y -> this.sprites[2].getY();
+            case SPRITE_3_X -> this.sprites[3].getX();
+            case SPRITE_3_Y -> this.sprites[3].getY();
+            case SPRITE_4_X -> this.sprites[4].getX();
+            case SPRITE_4_Y -> this.sprites[4].getY();
+            case SPRITE_5_X -> this.sprites[5].getX();
+            case SPRITE_5_Y -> this.sprites[5].getY();
+            case SPRITE_6_X -> this.sprites[6].getX();
+            case SPRITE_6_Y -> this.sprites[6].getY();
+            case SPRITE_7_X -> this.sprites[7].getX();
+            case SPRITE_7_Y -> this.sprites[7].getY();
+            case SPRITE_X_MSB -> this.getValueForSprites(Sprite::getXMSB);
+            case CONTROL_1 -> {
                 int ret = ((this.raster & (1 << 8)) >>> 1) | this.yScroll;
                 ret |= this.extendedColorMode ? 1 << 6 : 0;
                 ret |= this.bitmapMode ? 1 << 5 : 0;
@@ -136,19 +184,19 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 ret |= this.rowsSelect ? 1 << 3 : 0;
                 yield ret;
             }
-            case 18 -> this.raster & 0xFF;
-            case 19 -> 0x00; // Lightpen X coordinate
-            case 20 -> 0x00; // Lightpen Y coordinate
-            case 21 -> this.getValueForSprites(Sprite::isEnabled);
-            case 22 -> {
+            case RASTER -> this.raster & 0xFF;
+            case LPX -> 0x00; // Lightpen X coordinate
+            case LPY -> 0x00; // Lightpen Y coordinate
+            case SPRITE_ENABLE -> this.getValueForSprites(Sprite::isEnabled);
+            case CONTROL_2 -> {
                 int ret = 0b11000000 | this.xScroll;
                 ret |= this.multicolorMode ? 1 << 4 : 0;
                 ret |= this.columnsSelect ? 1 << 3 : 0;
                 yield ret;
             }
-            case 23 -> this.getValueForSprites(Sprite::getYExpansion);
-            case 24 -> 1 | (this.characterBaseAddrss << 1) | (this.videoMemoryBase << 4);
-            case 25 -> {
+            case SPRITE_Y_EXPANSION -> this.getValueForSprites(Sprite::getYExpansion);
+            case MEMORY_CONTROL -> 1 | (this.characterBaseAddrss << 1) | (this.videoMemoryBase << 4);
+            case INTERRUPT_REQUEST -> {
                 int ret = 0b01110000;
                 ret |= this.irqVic ? 1 << 7 : 0;
                 ret |= this.irqLightpen ? 1 << 3 : 0;
@@ -157,7 +205,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 ret |= this.irqGridBeam ? 1 : 0;
                 yield ret;
             }
-            case 26 -> {
+            case INTERRUPT_MASK -> {
                 int ret = 0b11110000;
                 ret |= this.irqLightpenEnable ? 1 << 3 : 0;
                 ret |= this.irqSpriteSpriteEnable ? 1 << 2 : 0;
@@ -165,34 +213,34 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 ret |= this.irqGridBeamEnable ? 1 : 0;
                 yield ret;
             }
-            case 27 -> this.getValueForSprites(Sprite::getDataPriority);
-            case 28 -> this.getValueForSprites(Sprite::isMulticolor);
-            case 29 -> this.getValueForSprites(Sprite::getXExpansion);
-            case 30 -> {
+            case SPRITE_DATA_PRIORITY -> this.getValueForSprites(Sprite::getDataPriority);
+            case SPRITE_MULTICOLOR -> this.getValueForSprites(Sprite::isMulticolor);
+            case SPRITE_X_EXPANSION -> this.getValueForSprites(Sprite::getXExpansion);
+            case SPRITE_SPRITE_COLLISION -> {
                 int ret = this.getValueForSprites(Sprite::getSpriteCollision);
                 this.setValueForSprites(0x00, Sprite::setSpriteCollision);
                 yield ret;
             }
-            case 31 -> {
+            case SPRITE_DATA_COLLISION -> {
                 int ret = this.getValueForSprites(Sprite::getBackgroundCollision);
                 this.setValueForSprites(0x00, Sprite::setBackgroundCollision);
                 yield ret;
             }
-            case 32 -> 0xF0 | this.borderColor;
-            case 33 -> 0xF0 | this.backgroundColor0;
-            case 34 -> 0xF0 | this.backgroundColor1;
-            case 35 -> 0xF0 | this.backgroundColor2;
-            case 36 -> 0xF0 | this.backgroundColor3;
-            case 37 -> 0xF0 | this.spriteMulticolor0;
-            case 38 -> 0xF0 | this.spriteMulticolor1;
-            case 39 -> 0xF0 | this.sprites[0].getColor();
-            case 40 -> 0xF0 | this.sprites[1].getColor();
-            case 41 -> 0xF0 | this.sprites[2].getColor();
-            case 42 -> 0xF0 | this.sprites[3].getColor();
-            case 43 -> 0xF0 | this.sprites[4].getColor();
-            case 44 -> 0xF0 | this.sprites[5].getColor();
-            case 45 -> 0xF0 | this.sprites[6].getColor();
-            case 46 -> 0xF0 | this.sprites[7].getColor();
+            case BORDER_COLOR -> 0xF0 | this.borderColor;
+            case BACKGROUND_COLOR_0 -> 0xF0 | this.backgroundColor0;
+            case BACKGROUND_COLOR_1 -> 0xF0 | this.backgroundColor1;
+            case BACKGROUND_COLOR_2 -> 0xF0 | this.backgroundColor2;
+            case BACKGROUND_COLOR_3 -> 0xF0 | this.backgroundColor3;
+            case SPRITE_MULTICOLOR_0 -> 0xF0 | this.spriteMulticolor0;
+            case SPRITE_MULTICOLOR_1 -> 0xF0 | this.spriteMulticolor1;
+            case SPRITE_0_COLOR -> 0xF0 | this.sprites[0].getColor();
+            case SPRITE_1_COLOR -> 0xF0 | this.sprites[1].getColor();
+            case SPRITE_2_COLOR -> 0xF0 | this.sprites[2].getColor();
+            case SPRITE_3_COLOR -> 0xF0 | this.sprites[3].getColor();
+            case SPRITE_4_COLOR -> 0xF0 | this.sprites[4].getColor();
+            case SPRITE_5_COLOR -> 0xF0 | this.sprites[5].getColor();
+            case SPRITE_6_COLOR -> 0xF0 | this.sprites[6].getColor();
+            case SPRITE_7_COLOR -> 0xF0 | this.sprites[7].getColor();
             default -> 0xFF;
         };
     }
@@ -201,24 +249,24 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     public void writeByte(int address, int value) {
         address &= 0x3F;
         switch (address) {
-            case 0 -> this.sprites[0].setX(value);
-            case 1 -> this.sprites[0].setY(value);
-            case 2 -> this.sprites[1].setX(value);
-            case 3 -> this.sprites[1].setY(value);
-            case 4 -> this.sprites[2].setX(value);
-            case 5 -> this.sprites[2].setY(value);
-            case 6 -> this.sprites[3].setX(value);
-            case 7 -> this.sprites[3].setY(value);
-            case 8 -> this.sprites[4].setX(value);
-            case 9 -> this.sprites[4].setY(value);
-            case 10 -> this.sprites[5].setX(value);
-            case 11 -> this.sprites[5].setY(value);
-            case 12 -> this.sprites[6].setX(value);
-            case 13 -> this.sprites[6].setY(value);
-            case 14 -> this.sprites[7].setX(value);
-            case 15 -> this.sprites[7].setY(value);
-            case 16 -> this.setValueForSprites(value, Sprite::setXMSB);
-            case 17 -> {
+            case SPRITE_0_X -> this.sprites[0].setX(value);
+            case SPRITE_0_Y -> this.sprites[0].setY(value);
+            case SPRITE_1_X -> this.sprites[1].setX(value);
+            case SPRITE_1_Y -> this.sprites[1].setY(value);
+            case SPRITE_2_X -> this.sprites[2].setX(value);
+            case SPRITE_2_Y -> this.sprites[2].setY(value);
+            case SPRITE_3_X -> this.sprites[3].setX(value);
+            case SPRITE_3_Y -> this.sprites[3].setY(value);
+            case SPRITE_4_X -> this.sprites[4].setX(value);
+            case SPRITE_4_Y -> this.sprites[4].setY(value);
+            case SPRITE_5_X -> this.sprites[5].setX(value);
+            case SPRITE_5_Y -> this.sprites[5].setY(value);
+            case SPRITE_6_X -> this.sprites[6].setX(value);
+            case SPRITE_6_Y -> this.sprites[6].setY(value);
+            case SPRITE_7_X -> this.sprites[7].setX(value);
+            case SPRITE_7_Y -> this.sprites[7].setY(value);
+            case SPRITE_X_MSB -> this.setValueForSprites(value, Sprite::setXMSB);
+            case CONTROL_1 -> {
                 this.rasterIrq = (this.rasterIrq & 0xFF) | ((value & (1 << 7)) << 1);
                 this.extendedColorMode = (value & (1 << 6)) != 0;
                 this.bitmapMode = (value & (1 << 5)) != 0;
@@ -226,21 +274,21 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.rowsSelect = (value & (1 << 3)) != 0;
                 this.yScroll = value & 0b111;
             }
-            case 18 -> this.rasterIrq = (this.rasterIrq & (1 << 8)) | (value & 0xFF);
-            case 19 -> {} // Lightpen X coordinate
-            case 20 -> {} // Lightpen Y coordinate
-            case 21 -> this.setValueForSprites(value, Sprite::setEnabled);
-            case 22 -> {
+            case RASTER -> this.rasterIrq = (this.rasterIrq & (1 << 8)) | (value & 0xFF);
+            case LPX -> {} // Lightpen X coordinate
+            case LPY -> {} // Lightpen Y coordinate
+            case SPRITE_ENABLE -> this.setValueForSprites(value, Sprite::setEnabled);
+            case CONTROL_2 -> {
                 this.multicolorMode = (value & (1 << 4)) != 0;
                 this.columnsSelect = (value & (1 << 3)) != 0;
                 this.xScroll = value & 0b111;
             }
-            case 23 -> this.setValueForSprites(value, Sprite::setYExpansion);
-            case 24 -> {
+            case SPRITE_Y_EXPANSION -> this.setValueForSprites(value, Sprite::setYExpansion);
+            case MEMORY_CONTROL -> {
                 this.characterBaseAddrss = (value >>> 1) & 0b111;
                 this.videoMemoryBase = (value >>> 4) & 0b1111;
             }
-            case 25 -> {
+            case INTERRUPT_REQUEST -> {
                 if ((value & (1 << 7)) != 0) {
                     this.irqVic = false;
                 }
@@ -257,7 +305,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     this.irqGridBeam = false;
                 }
             }
-            case 26 -> {
+            case INTERRUPT_MASK -> {
                 this.irqLightpenEnable = (value & (1 << 3)) != 0;
                 this.irqSpriteSpriteEnable = (value & (1 << 2)) != 0;
                 this.irqSpriteBackgroundEnable = (value & (1 << 1)) != 0;
@@ -266,26 +314,26 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     this.irqVic = true;
                 }
             }
-            case 27 -> this.setValueForSprites(value, Sprite::setDataPriority);
-            case 28 -> this.setValueForSprites(value, Sprite::setMulticolor);
-            case 29 -> this.setValueForSprites(value, Sprite::setXExpansion);
-            case 30 -> {} // Sprite-sprite collision. Nothing on writes
-            case 31 -> {} // Sprite-data collision. Nothing on writes
-            case 32 -> this.borderColor = value & 0xF;
-            case 33 -> this.backgroundColor0 = value & 0xF;
-            case 34 -> this.backgroundColor1 = value & 0xF;
-            case 35 -> this.backgroundColor2 = value & 0xF;
-            case 36 -> this.backgroundColor3 = value & 0xF;
-            case 37 -> this.spriteMulticolor0 = value & 0xF;
-            case 38 -> this.spriteMulticolor1 = value & 0xF;
-            case 39 -> this.sprites[0].setColor(value);
-            case 40 -> this.sprites[1].setColor(value);
-            case 41 -> this.sprites[2].setColor(value);
-            case 42 -> this.sprites[3].setColor(value);
-            case 43 -> this.sprites[4].setColor(value);
-            case 44 -> this.sprites[5].setColor(value);
-            case 45 -> this.sprites[6].setColor(value);
-            case 46 -> this.sprites[7].setColor(value);
+            case SPRITE_DATA_PRIORITY -> this.setValueForSprites(value, Sprite::setDataPriority);
+            case SPRITE_MULTICOLOR -> this.setValueForSprites(value, Sprite::setMulticolor);
+            case SPRITE_X_EXPANSION -> this.setValueForSprites(value, Sprite::setXExpansion);
+            case SPRITE_SPRITE_COLLISION -> {} // Sprite-sprite collision. Nothing on writes
+            case SPRITE_DATA_COLLISION -> {} // Sprite-data collision. Nothing on writes
+            case BORDER_COLOR -> this.borderColor = value & 0xF;
+            case BACKGROUND_COLOR_0 -> this.backgroundColor0 = value & 0xF;
+            case BACKGROUND_COLOR_1 -> this.backgroundColor1 = value & 0xF;
+            case BACKGROUND_COLOR_2 -> this.backgroundColor2 = value & 0xF;
+            case BACKGROUND_COLOR_3 -> this.backgroundColor3 = value & 0xF;
+            case SPRITE_MULTICOLOR_0 -> this.spriteMulticolor0 = value & 0xF;
+            case SPRITE_MULTICOLOR_1 -> this.spriteMulticolor1 = value & 0xF;
+            case SPRITE_0_COLOR -> this.sprites[0].setColor(value);
+            case SPRITE_1_COLOR -> this.sprites[1].setColor(value);
+            case SPRITE_2_COLOR -> this.sprites[2].setColor(value);
+            case SPRITE_3_COLOR -> this.sprites[3].setColor(value);
+            case SPRITE_4_COLOR -> this.sprites[4].setColor(value);
+            case SPRITE_5_COLOR -> this.sprites[5].setColor(value);
+            case SPRITE_6_COLOR -> this.sprites[6].setColor(value);
+            case SPRITE_7_COLOR -> this.sprites[7].setColor(value);
         }
     }
 

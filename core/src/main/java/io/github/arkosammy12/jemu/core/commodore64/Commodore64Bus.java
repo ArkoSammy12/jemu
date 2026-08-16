@@ -121,7 +121,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
     }
 
     public int readVIC2(int address) {
-        address = address | ((~this.emulator.getCIA2IOPort().read() & 0b11) << 14);
+        address = address | ((~this.emulator.getCIA2IOPortA().read() & 0b11) << 14);
         int ret;
         if ((address >= 0x1000 && address <= 0x1FFF) || (address >= 0x9000 && address <= 0x9FFF)) {
             ret = (int) this.characterROM[address & 0xFFF] & 0xFF;

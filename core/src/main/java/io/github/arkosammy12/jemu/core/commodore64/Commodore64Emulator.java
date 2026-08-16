@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.core.commodore64;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6510;
+import io.github.arkosammy12.jemu.core.util.BidirectionalPin;
 import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
 public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
@@ -23,8 +24,15 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final Commodore64Controller systemController;
 
     private final MOSIOPort cpuIOPort;
-    private final MOSIOPort cia1IOPort;
-    private final MOSIOPort cia2IOPort;
+    private final MOSIOPort cia1IOPortA;
+    private final MOSIOPort cia1IOPortB;
+    private final MOSIOPort cia2IOPortA;
+    private final MOSIOPort cia2IOPortB;
+
+    private final BidirectionalPin cia1SP;
+    private final BidirectionalPin cia1CNT;
+    private final BidirectionalPin cia2SP;
+    private final BidirectionalPin cia2CNT;
 
     private final int phiInFrequencyHz;
     private final int framerate;
@@ -37,21 +45,105 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.framerate = PAL_FRAMERATE;
         this.iterationsPerFrame = this.phiInFrequencyHz / CPU_CLOCK_DIVISOR;
 
-        this.cpuIOPort = new MOSIOPort(index -> switch (index & 0b111) {
-            case 0, 1, 2 -> true;
-            default -> false;
+        this.cia1SP = new BidirectionalPin(() -> false);
+        this.cia1CNT = new BidirectionalPin(new BidirectionalPin.SystemBus() {
+
+            @Override
+            public boolean getBit() {
+                return false;
+            }
+
+            @Override
+            public void clockInput() {
+                cia1.clockCNT();
+            }
+
         });
 
-        this.cia1IOPort = new MOSIOPort(_ -> false);
-        this.cia2IOPort = new MOSIOPort(_ -> false);
+        this.cia2SP = new BidirectionalPin(() -> false);
+        this.cia2CNT = new BidirectionalPin(new BidirectionalPin.SystemBus() {
+
+            @Override
+            public boolean getBit() {
+                return false;
+            }
+
+            @Override
+            public void clockInput() {
+                cia2.clockCNT();
+            }
+
+        });
 
         this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
         this.vic2 = new MOS6569<>(this);
         this.sid = new MOS6581();
-        this.cia1 = new MOS6526();
-        this.cia2 = new MOS6526();
+        this.cia1 = new MOS6526(new MOS6526.SystemBus() {
+
+            @Override
+            public MOSIOPort getIOPortA() {
+                return cia1IOPortA;
+            }
+
+            @Override
+            public MOSIOPort getIOPortB() {
+                return cia1IOPortB;
+            }
+
+            @Override
+            public boolean getFLAG() {
+                return false;
+            }
+
+            @Override
+            public BidirectionalPin getSP() {
+                return cia2SP;
+            }
+
+            @Override
+            public BidirectionalPin getCNT() {
+                return cia1CNT;
+            }
+
+        });
+        this.cia2 = new MOS6526(new MOS6526.SystemBus() {
+
+            @Override
+            public MOSIOPort getIOPortA() {
+                return cia2IOPortA;
+            }
+
+            @Override
+            public MOSIOPort getIOPortB() {
+                return cia2IOPortB;
+            }
+
+            @Override
+            public boolean getFLAG() {
+                return false;
+            }
+
+            @Override
+            public BidirectionalPin getSP() {
+                return cia2SP;
+            }
+
+            @Override
+            public BidirectionalPin getCNT() {
+                return cia2CNT;
+            }
+
+
+        });
         this.systemController = new Commodore64Controller();
+
+        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b111);
+
+        this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), () -> 0xFF);
+        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> 0xFF);
+        this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
+        this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
     }
 
     @Override
@@ -92,11 +184,11 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     public MOSIOPort getCIA1IOPort() {
-        return this.cia1IOPort;
+        return this.cia1IOPortA;
     }
 
-    public MOSIOPort getCIA2IOPort() {
-        return this.cia2IOPort;
+    public MOSIOPort getCIA2IOPortA() {
+        return this.cia2IOPortA;
     }
 
     @Override
@@ -155,13 +247,13 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getIRQ() {
-        return this.vic2.getIRQ();
+        return this.vic2.getIRQ() || this.cia1.getIRQ();
     }
 
     @Override
     public boolean getNMI() {
-        // TODO: Wired to RESTORE key and CIA2
-        return false;
+        // TODO: Wired to RESTORE key
+        return this.cia2.getIRQ();
     }
 
     @Override

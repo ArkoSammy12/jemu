@@ -2,48 +2,55 @@ package io.github.arkosammy12.jemu.core.util;
 
 public final class MOSIOPort {
 
-    private final IOBitSource ioBitSource;
+    private final PortOwner portOwner;
+    private final InputSource inputSource;
 
-    private int dataDirectionRegister;
-    private int outputLatch;
-
-    public MOSIOPort(IOBitSource ioBitSource) {
-        this.ioBitSource = ioBitSource;
+    public MOSIOPort(PortOwner portOwner, InputSource inputSource) {
+        this.portOwner = portOwner;
+        this.inputSource = inputSource;
     }
 
     public int read() {
-        int ret = this.readBit(7) ? 1 << 7 : 0;
-        ret |= this.readBit(6) ? 1 << 6 : 0;
-        ret |= this.readBit(5) ? 1 << 5 : 0;
-        ret |= this.readBit(4) ? 1 << 4 : 0;
-        ret |= this.readBit(3) ? 1 << 3 : 0;
-        ret |= this.readBit(2) ? 1 << 2 : 0;
-        ret |= this.readBit(1) ? 1 << 1 : 0;
-        ret |= this.readBit(0) ? 1 : 0;
-        return ret;
+        int ddr = this.portOwner.getDataDirectionRegister();
+        return (this.portOwner.getOutputLatch() & ddr) | (this.inputSource.getInputBits() & ~ddr);
     }
 
-    public int getDataDirectionRegister() {
-        return this.dataDirectionRegister;
+    public interface PortOwner {
+
+        int getDataDirectionRegister();
+
+        int getOutputLatch();
+
     }
 
-    public boolean readBit(int index) {
-        index &= 0b111;
-        int mask = 1 << index;
-        return (this.dataDirectionRegister & mask) != 0 ? (this.outputLatch & mask) != 0 : this.ioBitSource.getBit(index);
+    public interface InputSource {
+
+        int getInputBits();
+
     }
 
-    public void writeDataDirectionRegister(int value) {
-        this.dataDirectionRegister = value & 0xFF;
-    }
+    public static class DefaultPortOwner implements PortOwner {
 
-    public void writeOutputLatch(int value) {
-        this.outputLatch = value & 0xFF;
-    }
+        protected int dataDirectionRegister;
+        protected int outputLatch;
 
-    public interface IOBitSource {
+        @Override
+        public int getDataDirectionRegister() {
+            return this.dataDirectionRegister;
+        }
 
-        boolean getBit(int index);
+        public void setDataDirectionRegister(int value) {
+            this.dataDirectionRegister = value & 0xFF;
+        }
+
+        @Override
+        public int getOutputLatch() {
+            return this.outputLatch;
+        }
+
+        public void setOutputLatch(int value) {
+            this.outputLatch = value & 0xFF;
+        }
 
     }
 

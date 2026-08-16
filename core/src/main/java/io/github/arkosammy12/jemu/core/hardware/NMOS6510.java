@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.hardware;
 
 import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
-public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
+public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implements MOSIOPort.PortOwner {
 
     private int dataDirectionRegister;
     private int outputLatch;
@@ -16,6 +16,16 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
     }
 
     @Override
+    public int getDataDirectionRegister() {
+        return this.dataDirectionRegister;
+    }
+
+    @Override
+    public int getOutputLatch() {
+        return this.outputLatch;
+    }
+
+    @Override
     protected int readByte(int address) {
         this.readWriteCycle = ReadWriteCycle.READ;
         this.lastAddress = address;
@@ -23,7 +33,7 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
             return 0x00; // some undefined value :v. The CPU will repeat its read cycle after it comes out of RDY anyways
         } else {
             return switch (address) {
-                case 0x0000 -> systemBus.getIOPort().getDataDirectionRegister();
+                case 0x0000 -> this.outputLatch;
                 case 0x0001 -> systemBus.getIOPort().read();
                 default -> systemBus.getBus().readByte(address);
             };
@@ -36,8 +46,8 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> {
         this.lastAddress = address;
         if (!systemBus.getAEC()) {
             switch (address) {
-                case 0x0000 -> systemBus.getIOPort().writeDataDirectionRegister(value);
-                case 0x0001 -> systemBus.getIOPort().writeOutputLatch(value);
+                case 0x0000 -> this.dataDirectionRegister = value & 0xFF;
+                case 0x0001 -> this.outputLatch = value & 0xFF;
                 default -> systemBus.getBus().writeByte(address, value);
             }
         }
