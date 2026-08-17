@@ -17,9 +17,11 @@ import java.util.Optional;
 public class Commodore64Adapter extends SystemAdapter implements Commodore64Host {
 
     private String romTitle;
+    private final Commodore64Manager commodore64Manager;
 
-    public Commodore64Adapter(Jemu jemu, SystemManager systemManager) throws LineUnavailableException {
+    public Commodore64Adapter(Jemu jemu, Commodore64Manager systemManager) throws LineUnavailableException {
         super(jemu, systemManager);
+        this.commodore64Manager = systemManager;
     }
 
     @Override
@@ -39,17 +41,17 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
 
     @Override
     public Optional<Path> getKernalROMPath() {
-        return Optional.empty();
+        return commodore64Manager.getEmulationSettings().getKernalRomPath();
     }
 
     @Override
     public Optional<Path> getBASICRomPath() {
-        return Optional.empty();
+        return commodore64Manager.getEmulationSettings().getBasicRomPath();
     }
 
     @Override
     public Optional<Path> getCharacterROMPath() {
-        return Optional.empty();
+        return commodore64Manager.getEmulationSettings().getCharacterRomPath();
     }
 
     @Override

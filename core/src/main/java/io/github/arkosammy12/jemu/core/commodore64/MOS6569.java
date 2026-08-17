@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.core.commodore64;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
+import io.github.arkosammy12.jemu.core.util.ShiftRegister;
 
 import java.util.Arrays;
 import java.util.function.BiConsumer;
@@ -81,36 +82,46 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             0x6C6C6C, 0x9AD284, 0x6C5EB5, 0x959595
     };
 
+    private static final int SCANLINES_PER_FRAME = 312;
+    private static final int VISIBLE_SCANLINES = 284;
+    private static final int FIRST_VBLANK_SCANLINE = 300;
+    private static final int LAST_VBLANK_SCANLINE = 15;
+    private static final int FIRST_VISIBLE_SCANLINE = LAST_VBLANK_SCANLINE + 1;
+
+    private static final int CYCLES_PER_SCANLINE = 63;
+    private static final int PIXELS_PER_SCANLINE = CYCLES_PER_SCANLINE * 8;
+    private static final int VISIBLE_PIXELS_PER_SCANLINE = 403;
+    private static final int FIRST_VISIBLE_DOT_NUMBER = 76;
+    private static final int LAST_VISIBLE_DOT_NUMBER = FIRST_VISIBLE_DOT_NUMBER + VISIBLE_PIXELS_PER_SCANLINE - 1;
+
     private final E emulator;
 
+    private final int[] video;
     private final Sprite[] sprites = new Sprite[8];
+    private final int[] videoMatrixBuffer = new int[40]; // 12 bit elements
+    private final int[] spriteDataBuffer = new int[8]; // 24 bit elements
 
-    private int rasterIrq;
-    private boolean extendedColorMode;
-    private boolean bitmapMode;
+    private int rasterCompare;
+    private GraphicsMode graphicsMode = GraphicsMode.TEXT_STANDARD;
     private boolean displayEnable;
-    private boolean rowsSelect;
+    private RowSelect rowSelect = RowSelect.NORMAL;
     private int yScroll;
 
-    private boolean multicolorMode;
-    private boolean columnsSelect;
+    private ColumnSelect columnSelect = ColumnSelect.NORMAL;
     private int xScroll;
 
     private int videoMemoryBase;
-    private int characterBaseAddrss;
+    private int characterBaseAddress;
 
-    private int raster;
-
-    private boolean irqVic;
-    private boolean irqLightpen;
+    private boolean irqLightPen;
     private boolean irqSpriteSprite;
     private boolean irqSpriteBackground;
-    private boolean irqGridBeam;
+    private boolean irqRaster;
 
-    private boolean irqLightpenEnable;
+    private boolean irqLightPenEnable;
     private boolean irqSpriteSpriteEnable;
     private boolean irqSpriteBackgroundEnable;
-    private boolean irqGridBeamEnable;
+    private boolean irqRasterEnable;
 
     private int borderColor;
     private int backgroundColor0;
@@ -120,39 +131,55 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int spriteMulticolor0;
     private int spriteMulticolor1;
 
+    private int dotNumber;
+    private int cycleNumber = 1; // in the range [1, 63]
+    private int scanlineNumber;
+    private int raster = SCANLINES_PER_FRAME - 1;
+    private boolean displayEnabledInLine30;
+    private boolean badLineCondition;
+
+    private int videoCounter; // VC, 10 bits
+    private int videoCounterBase; // VCBASE, 10 data register
+    private int rowCounter; // RC, 3 bits
+    private int videoMatrixLine; // VMLI, 6 bits
+    private int mobDataCounter;
+
+    private boolean mainBorderFlipFlop;
+    private boolean verticalBorderFlipFlop;
+
+    private TextBitmapLogicMode textBitmapLogicMode = TextBitmapLogicMode.IDLE;
+
+    private boolean baOutput;
+    private boolean cAccessing;
+    private int cAccessingCountdown;
+
+    private int cDataPendingLatch;
+    private int gDataPendingLatch;
+
+    private int cDataCurrentLatch;
+    private final ShiftRegister graphicsDataSequencer = new ShiftRegister(8, 2);
+
+    private int dRAMRefreshCounter = 0xFF;
+
     public MOS6569(E emulator) {
         this.emulator = emulator;
         Arrays.fill(this.sprites, new Sprite());
+        this.video = new int[this.getImageWidth() * this.getImageHeight()];
     }
 
     @Override
     public int getImageWidth() {
-        return 0;
+        return VISIBLE_PIXELS_PER_SCANLINE;
     }
 
     @Override
     public int getImageHeight() {
-        return 0;
+        return VISIBLE_SCANLINES;
     }
 
     @Override
     public int mapToRGB8(int frameBufferValue) {
         return GULRAK_PALETTE[frameBufferValue];
-    }
-
-    public boolean getIRQ() {
-        return (this.irqLightpenEnable && this.irqLightpen)
-                || (this.irqSpriteSpriteEnable && this.irqSpriteSprite)
-                || (this.irqSpriteBackgroundEnable && this.irqSpriteBackground)
-                || (this.irqGridBeamEnable && this.irqGridBeam);
-    }
-
-    public boolean getBA() {
-        return false;
-    }
-
-    public boolean getAEC() {
-        return false;
     }
 
     @Override
@@ -178,10 +205,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case SPRITE_X_MSB -> this.getValueForSprites(Sprite::getXMSB);
             case CONTROL_1 -> {
                 int ret = ((this.raster & (1 << 8)) >>> 1) | this.yScroll;
-                ret |= this.extendedColorMode ? 1 << 6 : 0;
-                ret |= this.bitmapMode ? 1 << 5 : 0;
+                ret |= this.graphicsMode.getECM() ? 1 << 6 : 0;
+                ret |= this.graphicsMode.getBMM() ? 1 << 5 : 0;
                 ret |= this.displayEnable ? 1 << 4 : 0;
-                ret |= this.rowsSelect ? 1 << 3 : 0;
+                ret |= this.rowSelect == RowSelect.REDUCED_BORDER ? 1 << 3 : 0;
                 yield ret;
             }
             case RASTER -> this.raster & 0xFF;
@@ -190,27 +217,27 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case SPRITE_ENABLE -> this.getValueForSprites(Sprite::isEnabled);
             case CONTROL_2 -> {
                 int ret = 0b11000000 | this.xScroll;
-                ret |= this.multicolorMode ? 1 << 4 : 0;
-                ret |= this.columnsSelect ? 1 << 3 : 0;
+                ret |= this.graphicsMode.getMCM() ? 1 << 4 : 0;
+                ret |= this.columnSelect == ColumnSelect.REDUCED_BORDER ? 1 << 3 : 0;
                 yield ret;
             }
             case SPRITE_Y_EXPANSION -> this.getValueForSprites(Sprite::getYExpansion);
-            case MEMORY_CONTROL -> 1 | (this.characterBaseAddrss << 1) | (this.videoMemoryBase << 4);
+            case MEMORY_CONTROL -> 1 | (this.characterBaseAddress << 1) | (this.videoMemoryBase << 4);
             case INTERRUPT_REQUEST -> {
                 int ret = 0b01110000;
-                ret |= this.irqVic ? 1 << 7 : 0;
-                ret |= this.irqLightpen ? 1 << 3 : 0;
+                ret |= this.getIRQ() ? 1 << 7 : 0;
+                ret |= this.irqLightPen ? 1 << 3 : 0;
                 ret |= this.irqSpriteSprite ? 1 << 2 : 0;
                 ret |= this.irqSpriteBackground ? 1 << 1 : 0;
-                ret |= this.irqGridBeam ? 1 : 0;
+                ret |= this.irqRaster ? 1 : 0;
                 yield ret;
             }
             case INTERRUPT_MASK -> {
                 int ret = 0b11110000;
-                ret |= this.irqLightpenEnable ? 1 << 3 : 0;
+                ret |= this.irqLightPenEnable ? 1 << 3 : 0;
                 ret |= this.irqSpriteSpriteEnable ? 1 << 2 : 0;
                 ret |= this.irqSpriteBackgroundEnable ? 1 << 1 : 0;
-                ret |= this.irqGridBeamEnable ? 1 : 0;
+                ret |= this.irqRasterEnable ? 1 : 0;
                 yield ret;
             }
             case SPRITE_DATA_PRIORITY -> this.getValueForSprites(Sprite::getDataPriority);
@@ -267,33 +294,29 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case SPRITE_7_Y -> this.sprites[7].setY(value);
             case SPRITE_X_MSB -> this.setValueForSprites(value, Sprite::setXMSB);
             case CONTROL_1 -> {
-                this.rasterIrq = (this.rasterIrq & 0xFF) | ((value & (1 << 7)) << 1);
-                this.extendedColorMode = (value & (1 << 6)) != 0;
-                this.bitmapMode = (value & (1 << 5)) != 0;
+                this.rasterCompare = (this.rasterCompare & 0xFF) | ((value & (1 << 7)) << 1);
+                this.graphicsMode = this.graphicsMode.fromUpperBits((value >>> 5) & 0b11);
                 this.displayEnable = (value & (1 << 4)) != 0;
-                this.rowsSelect = (value & (1 << 3)) != 0;
+                this.rowSelect = (value & (1 << 3)) != 0 ? RowSelect.REDUCED_BORDER : RowSelect.NORMAL;
                 this.yScroll = value & 0b111;
             }
-            case RASTER -> this.rasterIrq = (this.rasterIrq & (1 << 8)) | (value & 0xFF);
+            case RASTER -> this.rasterCompare = (this.rasterCompare & (1 << 8)) | (value & 0xFF);
             case LPX -> {} // Lightpen X coordinate
             case LPY -> {} // Lightpen Y coordinate
             case SPRITE_ENABLE -> this.setValueForSprites(value, Sprite::setEnabled);
             case CONTROL_2 -> {
-                this.multicolorMode = (value & (1 << 4)) != 0;
-                this.columnsSelect = (value & (1 << 3)) != 0;
+                this.graphicsMode = this.graphicsMode.fromMulticolorBit((value & (1 << 4)) != 0);
+                this.columnSelect = (value & (1 << 3)) != 0 ? ColumnSelect.REDUCED_BORDER : ColumnSelect.NORMAL;
                 this.xScroll = value & 0b111;
             }
             case SPRITE_Y_EXPANSION -> this.setValueForSprites(value, Sprite::setYExpansion);
             case MEMORY_CONTROL -> {
-                this.characterBaseAddrss = (value >>> 1) & 0b111;
+                this.characterBaseAddress = (value >>> 1) & 0b111;
                 this.videoMemoryBase = (value >>> 4) & 0b1111;
             }
             case INTERRUPT_REQUEST -> {
-                if ((value & (1 << 7)) != 0) {
-                    this.irqVic = false;
-                }
                 if ((value & (1 << 3)) != 0) {
-                    this.irqLightpen = false;
+                    this.irqLightPen = false;
                 }
                 if ((value & (1 << 2)) != 0) {
                     this.irqSpriteSprite = false;
@@ -302,17 +325,14 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     this.irqSpriteBackground = false;
                 }
                 if ((value & 1) != 0) {
-                    this.irqGridBeam = false;
+                    this.irqRaster = false;
                 }
             }
             case INTERRUPT_MASK -> {
-                this.irqLightpenEnable = (value & (1 << 3)) != 0;
+                this.irqLightPenEnable = (value & (1 << 3)) != 0;
                 this.irqSpriteSpriteEnable = (value & (1 << 2)) != 0;
                 this.irqSpriteBackgroundEnable = (value & (1 << 1)) != 0;
-                this.irqGridBeamEnable = (value & 1) != 0;
-                if (this.getIRQ()) {
-                    this.irqVic = true;
-                }
+                this.irqRasterEnable = (value & 1) != 0;
             }
             case SPRITE_DATA_PRIORITY -> this.setValueForSprites(value, Sprite::setDataPriority);
             case SPRITE_MULTICOLOR -> this.setValueForSprites(value, Sprite::setMulticolor);
@@ -351,11 +371,426 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         return ret;
     }
 
-    public void clockBusAccess(NMOS6502.Phase cpuPhase) {
+    public boolean getIRQ() {
+        return (this.irqLightPenEnable && this.irqLightPen)
+                || (this.irqSpriteSpriteEnable && this.irqSpriteSprite)
+                || (this.irqSpriteBackgroundEnable && this.irqSpriteBackground)
+                || (this.irqRasterEnable && this.irqRaster);
+    }
+
+    public boolean getBA() {
+        return this.baOutput;
+    }
+
+    public boolean getAEC() {
+        return this.cAccessing;
+    }
+
+    private boolean isVBlank() {
+        return (this.scanlineNumber >= FIRST_VBLANK_SCANLINE) || (this.scanlineNumber <= LAST_VBLANK_SCANLINE);
+    }
+
+    private int getXCoordinate() {
+        return (this.dotNumber + 404) % PIXELS_PER_SCANLINE;
+    }
+
+    public void cycleHalf(NMOS6502.Phase cpuPhase) {
+        switch (cpuPhase) {
+            case PHI_1 -> {
+
+                this.clockPixel();
+                this.clockPixel();
+                this.clockPixel();
+                this.clockPixel();
+
+                if (this.cAccessingCountdown > 0) {
+                    this.cAccessingCountdown--;
+                    if (this.cAccessingCountdown <= 0) {
+                        this.cAccessing = true;
+                    }
+                }
+
+                if (this.raster == 0x30 && this.displayEnable) {
+                    this.displayEnabledInLine30 = true;
+                }
+                this.badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
+
+                if (this.badLineCondition) {
+                    this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
+                }
+
+                if (this.cycleNumber == 2) {
+                    if (this.scanlineNumber == 0) {
+                        this.incrementRaster();
+                    }
+                } else if (this.cycleNumber >= 11 && this.cycleNumber <= 55) {
+                    if (this.cycleNumber <= 15) {
+                        this.performRefreshAccess();
+                        if (this.cycleNumber == 14) {
+                            this.videoCounter = this.videoCounterBase;
+                            this.videoMatrixLine = 0;
+                            if (this.badLineCondition) {
+                                this.rowCounter = 0;
+                            }
+                        }
+                    }
+                    if (this.cycleNumber >= 12) {
+                        if (this.cycleNumber <= 54) {
+                            if (this.badLineCondition) {
+                                if (!this.baOutput) {
+                                    this.cAccessingCountdown = 3;
+                                }
+                                this.baOutput = true;
+                            }
+                        } else if (cycleNumber == 55) {
+                            this.cAccessingCountdown = 0;
+                            this.cAccessing = false;
+                            this.baOutput = false;
+                        }
+                        if (this.cycleNumber >= 16) {
+                            this.performGAccess();
+                        }
+                    }
+                } else if (this.cycleNumber == 58) {
+                    if (this.rowCounter == 7) {
+                        this.videoCounterBase = this.videoCounter;
+                        this.textBitmapLogicMode = TextBitmapLogicMode.IDLE;
+                    }
+                    if (this.textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
+                        this.rowCounter = (this.rowCounter + 1) & 0b111;
+                    }
+                } else if (this.cycleNumber == 63) {
+                    if (this.raster == this.rowSelect.getBottonComparison()) {
+                        this.verticalBorderFlipFlop = true;
+                    } else if (this.raster == this.rowSelect.getTopComparison() && this.displayEnable) {
+                        this.verticalBorderFlipFlop = false;
+                    }
+                }
+
+            }
+            case PHI_2 -> {
+
+                this.clockPixel();
+                this.clockPixel();
+                this.clockPixel();
+                this.clockPixel();
+
+                if (this.cycleNumber >= 15 && this.cycleNumber <= 54) {
+                    if (this.cAccessing) {
+                        this.performCAccess();
+                    }
+                }
+
+                this.cycleNumber++;
+                if (this.cycleNumber >= CYCLES_PER_SCANLINE + 1) {
+                    this.cycleNumber = 1;
+                }
+
+            }
+        }
 
     }
 
-    public void clockPixel() {
+    private void clockPixel() {
+
+        int xCoordinate = this.getXCoordinate();
+        if (xCoordinate == this.columnSelect.getRightComparison()) {
+            this.mainBorderFlipFlop = true;
+        } else if (xCoordinate == this.columnSelect.getLeftComparison()) {
+            if (this.raster == this.rowSelect.getBottonComparison()) {
+                this.verticalBorderFlipFlop = true;
+            } else if (this.raster == this.rowSelect.getTopComparison() && this.displayEnable) {
+                this.verticalBorderFlipFlop = false;
+            }
+            if (!this.verticalBorderFlipFlop) {
+                this.mainBorderFlipFlop = false;
+            }
+        }
+
+        int cyclePixelPhase = (this.dotNumber + 4) & 0b111;
+        if (cyclePixelPhase == this.xScroll) {
+            this.cDataCurrentLatch = this.cDataPendingLatch;
+            switch (this.textBitmapLogicMode) {
+                case DISPLAY -> {
+                    switch (this.graphicsMode) {
+                        case TEXT_STANDARD, BITMAP_STANDARD, EXTENDED_COLOR, BITMAP_INVALID_1 -> this.reloadGraphicsSequencerAsNormal();
+                        case TEXT_MULTICOLOR, TEXT_INVALID -> {
+                            if ((this.cDataCurrentLatch & (1 << 11)) != 0) {
+                                this.reloadGraphicsSequencerAsMulticolor();
+                            } else {
+                                this.reloadGraphicsSequencerAsNormal();
+                            }
+                        }
+                        case BITMAP_MULTICOLOR, BITMAP_INVALID_2 -> this.reloadGraphicsSequencerAsMulticolor();
+                    }
+                }
+                case IDLE -> {
+                    switch (this.graphicsMode) {
+                        case TEXT_STANDARD, TEXT_MULTICOLOR, EXTENDED_COLOR, BITMAP_STANDARD, TEXT_INVALID, BITMAP_INVALID_1 -> this.reloadGraphicsSequencerAsNormal();
+                        case BITMAP_MULTICOLOR, BITMAP_INVALID_2 -> this.reloadGraphicsSequencerAsMulticolor();
+                    }
+                }
+            }
+        }
+
+        int shiftedOutData = this.graphicsDataSequencer.shiftHead(0b00);
+        int bitmapPaletteIndex = switch (this.graphicsMode) {
+            case TEXT_STANDARD -> (shiftedOutData & 1) != 0 ? (this.cDataCurrentLatch >>> 8) & 0b1111 : this.backgroundColor0;
+            case TEXT_MULTICOLOR -> {
+                if ((this.cDataCurrentLatch & (1 << 11)) != 0) {
+                    yield switch (shiftedOutData & 0b11) {
+                        case 0b00 -> this.backgroundColor0;
+                        case 0b01 -> this.backgroundColor1;
+                        case 0b10 -> this.backgroundColor2;
+                        default -> (this.cDataCurrentLatch >>> 8) & 0b111;
+                    };
+                } else {
+                    yield (shiftedOutData & 1) != 0 ? (this.cDataCurrentLatch >>> 8) & 0b111 : this.backgroundColor0;
+                }
+            }
+            case BITMAP_STANDARD -> (shiftedOutData & 1) != 0 ? (this.cDataCurrentLatch >>> 4) & 0b1111 : this.cDataCurrentLatch & 0b1111;
+            case BITMAP_MULTICOLOR -> switch (shiftedOutData & 0b11) {
+                case 0b00 -> this.backgroundColor0;
+                case 0b01 -> (this.cDataCurrentLatch >>> 4) & 0b1111;
+                case 0b10 -> this.cDataCurrentLatch & 0b1111;
+                default -> (this.cDataCurrentLatch >>> 8) & 0b1111;
+            };
+            case EXTENDED_COLOR -> {
+                if ((shiftedOutData & 1) != 0) {
+                    yield (this.cDataCurrentLatch >>> 8) & 0b1111;
+                } else {
+                    yield switch ((this.cDataCurrentLatch >>> 6) & 0b11) {
+                        case 0b00 -> this.backgroundColor0;
+                        case 0b01 -> this.backgroundColor1;
+                        case 0b10 -> this.backgroundColor2;
+                        default -> this.backgroundColor3;
+                    };
+                }
+            }
+            case TEXT_INVALID, BITMAP_INVALID_1, BITMAP_INVALID_2 -> 0b0000;
+        };
+
+        if (this.mainBorderFlipFlop) {
+            bitmapPaletteIndex = this.borderColor;
+        }
+
+        if (this.dotNumber >= FIRST_VISIBLE_DOT_NUMBER && this.dotNumber <= LAST_VISIBLE_DOT_NUMBER && !this.isVBlank()) {
+            this.video[((this.scanlineNumber - FIRST_VISIBLE_SCANLINE) * VISIBLE_PIXELS_PER_SCANLINE) + (this.dotNumber - FIRST_VISIBLE_DOT_NUMBER)] = bitmapPaletteIndex;
+        }
+
+        this.dotNumber++;
+        if (this.dotNumber >= PIXELS_PER_SCANLINE) {
+            this.dotNumber = 0;
+            this.scanlineNumber++;
+
+            if (this.scanlineNumber >= SCANLINES_PER_FRAME) {
+                this.scanlineNumber = 0;
+                this.emulator.getCIA1().clockTOD();
+                this.emulator.getCIA2().clockTOD();
+                this.emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
+            } else {
+                this.incrementRaster();
+            }
+        }
+    }
+
+    private void incrementRaster() {
+        this.raster = (this.raster + 1) % SCANLINES_PER_FRAME;
+        if (this.raster == this.rasterCompare) {
+            this.irqRaster = true;
+        }
+        switch (this.raster) {
+            case 0 -> {
+                this.videoCounterBase = 0;
+                this.dRAMRefreshCounter = 0xFF;
+            }
+            case 0x30 -> this.displayEnabledInLine30 = false;
+        }
+    }
+
+    private void performRefreshAccess() {
+        this.emulator.getBus().readVIC2(0x3F00 | this.dRAMRefreshCounter);
+    }
+
+    private void performGAccess() {
+        int address = switch (this.textBitmapLogicMode) {
+            case IDLE -> 0x3FFF;
+            case DISPLAY -> {
+                if (this.graphicsMode.getBMM()) {
+                    yield ((this.characterBaseAddress & 1) << 13) | (this.videoCounter << 3) | this.rowCounter;
+                } else {
+                    yield (this.characterBaseAddress << 11) | ((this.videoMatrixBuffer[this.videoMatrixLine] & 0xFF) << 3) | this.rowCounter;
+                }
+            }
+        };
+
+        if (this.graphicsMode.getECM()) {
+            address &= ~(0b11 << 9);
+        }
+
+        this.gDataPendingLatch = this.emulator.getBus().readVIC2(address);
+        this.cDataPendingLatch = this.videoMatrixBuffer[this.videoMatrixLine];
+
+        if (textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
+            this.videoCounter = (this.videoCounter + 1) & 0b1111111111;
+            this.videoMatrixLine = (this.videoMatrixLine + 1) & 0b111111;
+        }
+    }
+
+    private void performCAccess() {
+        this.videoMatrixBuffer[this.videoMatrixLine] = switch (this.textBitmapLogicMode) {
+            case IDLE -> 0;
+            case DISPLAY -> this.emulator.getBus().readVIC2((this.videoMemoryBase << 10) | this.videoCounter);
+        };
+    }
+
+    private void performPAccess() {
+
+    }
+
+    private void performSAccess() {
+
+    }
+
+    private void reloadGraphicsSequencerAsNormal() {
+        for (int i = 7; i >= 0; i--) {
+            this.graphicsDataSequencer.set(7 - i, (this.gDataPendingLatch >> i) & 1);
+        }
+        this.graphicsDataSequencer.setFull();
+    }
+
+    private void reloadGraphicsSequencerAsMulticolor() {
+        for (int i = 3; i >= 0; i--) {
+            int bottomIndex = i * 2;
+            int topIndex = bottomIndex + 1;
+
+            int data = ((this.gDataPendingLatch >>> (topIndex - 1)) & 0b10) | ((this.gDataPendingLatch >>> bottomIndex) & 1);
+
+            this.graphicsDataSequencer.set(7 - topIndex, data);
+            this.graphicsDataSequencer.set(7 - bottomIndex, data);
+        }
+        this.graphicsDataSequencer.setFull();
+    }
+
+    private enum RowSelect {
+        NORMAL(55, 247),
+        REDUCED_BORDER(51, 251);
+
+        private final int firstLine;
+        private final int lastLine;
+
+        RowSelect(int firstLine, int lastLine) {
+            this.firstLine = firstLine;
+            this.lastLine = lastLine;
+        }
+
+        private int getTopComparison() {
+            return this.firstLine;
+        }
+
+        private int getBottonComparison() {
+            return this.lastLine;
+        }
+
+    }
+
+    private enum ColumnSelect {
+        NORMAL(31, 335),
+        REDUCED_BORDER(24, 344);
+
+        private final int xCoordinateLeftComparison;
+        private final int xCoordinateRightComparison;
+
+        ColumnSelect(int xCoordinateLeftComparison, int xCoordinateRightComparisonValue) {
+            this.xCoordinateLeftComparison = xCoordinateLeftComparison;
+            this.xCoordinateRightComparison = xCoordinateRightComparisonValue;
+        }
+
+        private int getLeftComparison() {
+            return this.xCoordinateLeftComparison;
+        }
+
+        private int getRightComparison() {
+            return this.xCoordinateRightComparison;
+        }
+
+    }
+
+    private enum TextBitmapLogicMode {
+        DISPLAY,
+        IDLE
+    }
+
+    private enum GraphicsMode {
+        TEXT_STANDARD(false, false, false), // 000
+        TEXT_MULTICOLOR(false, false, true), // 001
+        BITMAP_STANDARD(false, true, false), // 010
+        BITMAP_MULTICOLOR(false, true, true), // 011
+        EXTENDED_COLOR(true, false, false), // 100
+        TEXT_INVALID(true, false, true), // 101
+        BITMAP_INVALID_1(true, true, false), // 110
+        BITMAP_INVALID_2(true, true, true); // 111
+
+        private final boolean ecm;
+        private final boolean bmm;
+        private final boolean mcm;
+
+        GraphicsMode(boolean ecm, boolean bmm, boolean mcm) {
+            this.ecm = ecm;
+            this.bmm = bmm;
+            this.mcm = mcm;
+        }
+
+        private boolean getECM() {
+            return this.ecm;
+        }
+
+        private boolean getBMM() {
+            return this.bmm;
+        }
+
+        private boolean getMCM() {
+            return this.mcm;
+        }
+
+        private GraphicsMode fromMulticolorBit(boolean mcm) {
+            if (mcm) {
+                return switch (this) {
+                    case TEXT_STANDARD -> TEXT_MULTICOLOR;
+                    case BITMAP_STANDARD -> BITMAP_MULTICOLOR;
+                    case EXTENDED_COLOR -> TEXT_INVALID;
+                    case BITMAP_INVALID_1 -> BITMAP_INVALID_2;
+                    default -> this;
+                };
+            } else {
+                return switch (this) {
+                    case TEXT_MULTICOLOR -> TEXT_STANDARD;
+                    case BITMAP_MULTICOLOR -> BITMAP_STANDARD;
+                    case TEXT_INVALID -> EXTENDED_COLOR;
+                    case BITMAP_INVALID_2 -> BITMAP_INVALID_1;
+                    default -> this;
+                };
+            }
+        }
+
+        private GraphicsMode fromUpperBits(int upperBits) {
+            upperBits &= 0b11;
+            if (this.mcm) {
+                return switch (upperBits) {
+                    case 0b00 -> TEXT_MULTICOLOR;
+                    case 0b01 -> BITMAP_MULTICOLOR;
+                    case 0b10 -> TEXT_INVALID;
+                    default -> BITMAP_INVALID_2;
+                };
+            } else {
+                return switch (upperBits) {
+                    case 0b00 -> TEXT_STANDARD;
+                    case 0b01 -> BITMAP_STANDARD;
+                    case 0b10 -> EXTENDED_COLOR;
+                    default -> BITMAP_INVALID_1;
+                };
+            }
+        }
 
     }
 

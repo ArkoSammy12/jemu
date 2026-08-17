@@ -50,7 +50,9 @@ public class MOS6581 implements AudioGenerator, Bus {
 
     @Override
     public Optional<? extends SampleFrame> getSampleFrame() {
-        return Optional.empty();
+        return Optional.of(new SampleFrame() {
+
+        });
     }
 
     @Override

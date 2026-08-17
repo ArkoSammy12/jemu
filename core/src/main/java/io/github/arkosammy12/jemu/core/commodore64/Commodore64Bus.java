@@ -72,8 +72,10 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
                     } else if (address <= 0xDDFF) {
                         yield this.emulator.getCIA2().readByte(address);
                     } else if (address <= 0xDEFF) {
+                        // IO 1
                         yield this.combineWithDataBus(0, 0x00);
                     } else {
+                        // IO 2
                         yield this.combineWithDataBus(0, 0x00);
                     }
                 }
@@ -109,9 +111,9 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
                     } else if (address <= 0xDDFF) {
                         this.emulator.getCIA2().writeByte(address, value);
                     } else if (address <= 0xDEFF) {
-
+                        // IO 1
                     } else {
-
+                        // IO 2
                     }
                 }
             }
@@ -121,14 +123,16 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
     }
 
     public int readVIC2(int address) {
-        address = address | ((~this.emulator.getCIA2IOPortA().read() & 0b11) << 14);
+        address = (address & 0x3FFF) | ((~this.emulator.getCIA2IOPortA().read() & 0b11) << 14);
         int ret;
         if ((address >= 0x1000 && address <= 0x1FFF) || (address >= 0x9000 && address <= 0x9FFF)) {
             ret = (int) this.characterROM[address & 0xFFF] & 0xFF;
         } else {
             ret = (int) this.ram[address] & 0xFF;
         }
-        return ret | (((int) this.colorRAM[address & 0x3FF] & 0xF) << 8);
+        ret |= (((int) this.colorRAM[address & 0x3FF] & 0xF) << 8);
+        this.dataBus = ret;
+        return ret;
     }
 
     public int combineWithDataBus(int value, int validBitsMask) {

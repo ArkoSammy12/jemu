@@ -34,16 +34,14 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final BidirectionalPin cia2SP;
     private final BidirectionalPin cia2CNT;
 
-    private final int phiInFrequencyHz;
     private final int framerate;
     private final int iterationsPerFrame;
 
     public Commodore64Emulator(Commodore64Host systemHost) {
         this.systemHost = systemHost;
 
-        this.phiInFrequencyHz = PAL_PHI_IN_HZ;
         this.framerate = PAL_FRAMERATE;
-        this.iterationsPerFrame = this.phiInFrequencyHz / CPU_CLOCK_DIVISOR;
+        this.iterationsPerFrame = PAL_PHI_IN_HZ / CPU_CLOCK_DIVISOR / this.framerate;
 
         this.cia1SP = new BidirectionalPin(() -> false);
         this.cia1CNT = new BidirectionalPin(new BidirectionalPin.SystemBus() {
@@ -204,30 +202,15 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     private void runCycle() {
-        switch (this.cpu.getHalfCyclePhase()) {
-            case PHI_1 -> {
-                this.cpu.cycle();
-                this.vic2.clockBusAccess(NMOS6502.Phase.PHI_1);
-            }
-            case PHI_2 -> {
-                this.cpu.cycle();
+        this.cpu.cycle();
+        this.vic2.cycleHalf(NMOS6502.Phase.PHI_1);
 
-                this.vic2.clockBusAccess(NMOS6502.Phase.PHI_2);
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
-                this.vic2.clockPixel();
+        this.cpu.cycle();
+        this.vic2.cycleHalf(NMOS6502.Phase.PHI_2);
 
-                this.cia1.cycle();
-                this.cia2.cycle();
-
-                this.sid.cycle();
-            }
-        }
+        this.cia1.cycle();
+        this.cia2.cycle();
+        this.sid.cycle();
     }
 
     @Override

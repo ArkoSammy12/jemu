@@ -258,7 +258,6 @@ public class MOS6526 implements Bus {
         this.timerB.onCycle();
     }
 
-    // TODO: Clock on VIC-II VBLANK
     public void clockTOD() {
         this.todDivisorCounter++;
         if (this.todDivisorCounter >= this.timeOfDayInput.todClockDivisor) {
