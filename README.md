@@ -32,8 +32,8 @@ Multi-system emulator written in Java.
 | Game Boy Color (CGB)                | `gameboy-color`    | ✅ Supported |
 | Nintendo Entertainment System       | `nes`              | ✅ Supported |
 | Atari 2600                          | `atari-2600`       | ✅ Supported |
-| Apple II                            | —                  | 🗓 Planned   |
 | Commodore 64                        | `c64`              | 🚧 WIP       |
+| Apple II                            | —                  | 🗓 Planned   |
 | Space Invaders arcade cabinet       | —                  | 🗓 Planned   |
 | Sega Master System                  | —                  | 🗓 Planned   |
 | ZX Spectrum                         | —                  | 🗓 Planned   |
