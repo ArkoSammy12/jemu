@@ -122,8 +122,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
     protected abstract Emulator createEmulator();
 
-    @Nullable
-    protected abstract SystemController.Action getActionForKeyCode(int keyCode);
+    protected abstract SystemController.Action getActionForKeyCode(int keyCode, int keyLocation);
 
     protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         Optional<byte[]> rawRomOptional = initializer.getRomImage();
@@ -163,7 +162,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             @Override
             public void keyPressed(KeyEvent e) {
                 int keyCode = e.getKeyCode();
-                SystemController.Action action = getActionForKeyCode(keyCode);
+                SystemController.Action action = getActionForKeyCode(keyCode, e.getKeyLocation());
                 if (action != null) {
                     getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> systemController.onActionPressed(action));
                 }
@@ -172,7 +171,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             @Override
             public void keyReleased(KeyEvent e) {
                 int keyCode = e.getKeyCode();
-                SystemController.Action action = getActionForKeyCode(keyCode);
+                SystemController.Action action = getActionForKeyCode(keyCode, e.getKeyLocation());
                 if (action != null) {
                     getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> systemController.onActionReleased(action));
                 }

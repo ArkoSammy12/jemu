@@ -146,7 +146,7 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
     }
 
     @Override
-    protected @Nullable SystemController.Action getActionForKeyCode(int keyCode) {
+    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
         return switch (keyCode) {
             case KeyEvent.VK_X -> Chip8Keypad.Actions.KEY_0;
             case KeyEvent.VK_1 -> Chip8Keypad.Actions.KEY_1;

@@ -3,13 +3,13 @@ package io.github.arkosammy12.jemu.app.system.gameboy;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.common.Emulator;
+import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
 import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -111,8 +111,7 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     }
 
     @Override
-    @Nullable
-    protected GameBoyJoypad.Actions getActionForKeyCode(int keyCode) {
+    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
         return switch (keyCode) {
             case KeyEvent.VK_W -> GameBoyJoypad.Actions.UP;
             case KeyEvent.VK_S -> GameBoyJoypad.Actions.DOWN;

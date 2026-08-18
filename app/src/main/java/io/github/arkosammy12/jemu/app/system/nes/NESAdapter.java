@@ -4,11 +4,11 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.common.Emulator;
+import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.nes.NESController;
 import io.github.arkosammy12.jemu.core.nes.NESEmulator;
 import io.github.arkosammy12.jemu.core.nes.NESHost;
 import io.github.arkosammy12.jemu.core.nes.ines.CartridgeInfo;
-import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
@@ -46,8 +46,7 @@ public class NESAdapter extends SystemAdapter implements NESHost {
     }
 
     @Override
-    @Nullable
-    protected NESController.Actions getActionForKeyCode(int keyCode) {
+    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
         return switch (keyCode) {
             case KeyEvent.VK_W -> NESController.Actions.JOY1_UP;
             case KeyEvent.VK_S -> NESController.Actions.JOY1_DOWN;

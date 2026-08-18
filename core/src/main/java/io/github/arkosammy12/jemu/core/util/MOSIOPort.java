@@ -15,6 +15,14 @@ public final class MOSIOPort {
         return (this.portOwner.getOutputLatch() & ddr) | (this.inputSource.getInputBits() & ~ddr);
     }
 
+    public int getOutputLatch() {
+        return this.portOwner.getOutputLatch();
+    }
+
+    public int getDataDirectionRegister() {
+        return this.portOwner.getDataDirectionRegister();
+    }
+
     public interface PortOwner {
 
         int getDataDirectionRegister();

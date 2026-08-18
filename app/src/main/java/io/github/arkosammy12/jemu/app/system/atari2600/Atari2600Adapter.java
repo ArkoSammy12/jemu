@@ -9,7 +9,6 @@ import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600SystemHost;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
-import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
@@ -76,8 +75,7 @@ public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHo
     }
 
     @Override
-    @Nullable
-    protected SystemController.Action getActionForKeyCode(int keyCode) {
+    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
         return switch (keyCode) {
             case KeyEvent.VK_E -> Atari2600Controller.Actions.GAME_SELECT;
             case KeyEvent.VK_R -> Atari2600Controller.Actions.GAME_RESET;

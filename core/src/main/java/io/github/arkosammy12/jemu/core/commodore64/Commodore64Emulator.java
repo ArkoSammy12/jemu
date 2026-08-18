@@ -138,8 +138,8 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b111);
 
-        this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), () -> 0xFF);
-        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> 0xFF);
+        this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), () -> ~this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch())));
+        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> ~this.systemController.getRowBits((this.getCIA1IOPortA().getDataDirectionRegister() & ~this.getCIA1IOPortA().getOutputLatch())));
         this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
         this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
     }
@@ -181,12 +181,20 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         return this.cpuIOPort;
     }
 
-    public MOSIOPort getCIA1IOPort() {
+    public MOSIOPort getCIA1IOPortA() {
         return this.cia1IOPortA;
+    }
+
+    public MOSIOPort getCIA1IOPortB() {
+        return this.cia1IOPortB;
     }
 
     public MOSIOPort getCIA2IOPortA() {
         return this.cia2IOPortA;
+    }
+
+    public MOSIOPort getCia2IOPortB() {
+        return this.cia2IOPortB;
     }
 
     @Override
@@ -235,8 +243,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getNMI() {
-        // TODO: Wired to RESTORE key
-        return this.cia2.getIRQ();
+        return this.cia2.getIRQ() || this.systemController.getRestoreKey();
     }
 
     @Override

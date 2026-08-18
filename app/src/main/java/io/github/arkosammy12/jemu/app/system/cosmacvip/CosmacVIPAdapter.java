@@ -5,10 +5,10 @@ import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.common.Emulator;
+import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPEmulator;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
-import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
@@ -40,8 +40,7 @@ public class CosmacVIPAdapter extends SystemAdapter implements CosmacVIPHost {
     }
 
     @Override
-    @Nullable
-    protected CosmacVIPKeypad.Actions getActionForKeyCode(int keyCode) {
+    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
         return switch (keyCode) {
             case KeyEvent.VK_X -> CosmacVIPKeypad.Actions.KEY_0;
             case KeyEvent.VK_1 -> CosmacVIPKeypad.Actions.KEY_1;

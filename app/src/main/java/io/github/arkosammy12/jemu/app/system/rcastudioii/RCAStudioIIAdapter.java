@@ -5,9 +5,9 @@ import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.common.Emulator;
+import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.studioii.RCAStudioIIEmulator;
 import io.github.arkosammy12.jemu.core.studioii.RCAStudioIIKeypad;
-import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
@@ -32,7 +32,7 @@ public class RCAStudioIIAdapter extends SystemAdapter {
     }
 
     @Override
-    protected @Nullable RCAStudioIIKeypad.Action getActionForKeyCode(int keyCode) {
+    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
         return switch (keyCode) {
             case KeyEvent.VK_1 -> RCAStudioIIKeypad.Actions.KEYPADA_1;
             case KeyEvent.VK_2 -> RCAStudioIIKeypad.Actions.KEYPADA_2;
