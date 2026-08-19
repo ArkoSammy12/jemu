@@ -5,8 +5,8 @@ import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.util.ShiftRegister;
 
-import java.util.Arrays;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, Bus {
@@ -97,9 +97,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private final E emulator;
 
     private final int[] video;
-    private final Sprite[] sprites = new Sprite[8];
+    private final Sprite[] sprites = new MOS6569.Sprite[8];
     private final int[] videoMatrixBuffer = new int[40]; // 12 bit elements
-    private final int[] spriteDataBuffer = new int[8]; // 24 bit elements
 
     private int rasterCompare;
     private GraphicsMode graphicsMode = GraphicsMode.TEXT_STANDARD;
@@ -142,16 +141,25 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int videoCounterBase; // VCBASE, 10 data register
     private int rowCounter; // RC, 3 bits
     private int videoMatrixLine; // VMLI, 6 bits
-    private int mobDataCounter;
 
     private boolean mainBorderFlipFlop;
     private boolean verticalBorderFlipFlop;
 
     private TextBitmapLogicMode textBitmapLogicMode = TextBitmapLogicMode.IDLE;
 
-    private boolean baOutput;
+    private boolean graphicsBAOutput;
     private boolean cAccessing;
     private int cAccessingCountdown;
+
+    private Sprite0BAOutputFlag sprite0BAOutputFlag = Sprite0BAOutputFlag.NONE;
+    private boolean sprite1BAOutputFlag = false;
+    private boolean sprite2BAOutputFlag = false;
+    private boolean sprite3BAOutputFlag = false;
+    private boolean sprite4BAOutputFlag = false;
+    private boolean sprite5BAOutputFlag = false;
+    private boolean sprite6BAOutputFlag = false;
+    private boolean sprite7BAOutputFlag = false;
+    private boolean spriteAECOutput;
 
     private int cDataPendingLatch;
     private int gDataPendingLatch;
@@ -163,7 +171,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     public MOS6569(E emulator) {
         this.emulator = emulator;
-        Arrays.fill(this.sprites, new Sprite());
+        for (int i = 0; i < 8; i++) {
+            this.sprites[i] = new Sprite(i);
+        }
         this.video = new int[this.getImageWidth() * this.getImageHeight()];
     }
 
@@ -250,7 +260,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             }
             case SPRITE_DATA_COLLISION -> {
                 int ret = this.getValueForSprites(Sprite::getBackgroundCollision);
-                this.setValueForSprites(0x00, Sprite::setBackgroundCollision);
+                this.setValueForSprites(0x00, Sprite::setGraphicsDataCollision);
                 yield ret;
             }
             case BORDER_COLOR -> 0xF0 | this.borderColor;
@@ -379,11 +389,19 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     }
 
     public boolean getBA() {
-        return this.baOutput;
+        return this.graphicsBAOutput
+                || this.sprite0BAOutputFlag != Sprite0BAOutputFlag.NONE
+                || this.sprite1BAOutputFlag
+                || this.sprite2BAOutputFlag
+                || this.sprite3BAOutputFlag
+                || this.sprite4BAOutputFlag
+                || this.sprite5BAOutputFlag
+                || this.sprite6BAOutputFlag
+                || this.sprite7BAOutputFlag;
     }
 
     public boolean getAEC() {
-        return this.cAccessing;
+        return this.cAccessing || this.spriteAECOutput;
     }
 
     private boolean isVBlank() {
@@ -397,7 +415,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     public void cycleHalf(NMOS6502.Phase cpuPhase) {
         switch (cpuPhase) {
             case PHI_1 -> {
-
                 this.clockPixel();
                 this.clockPixel();
                 this.clockPixel();
@@ -419,65 +436,202 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
                 }
 
-                if (this.cycleNumber == 2) {
-                    if (this.scanlineNumber == 0) {
-                        this.incrementRaster();
+                switch (this.cycleNumber) {
+                    case 1 -> {
+                        this.sprites[3].performPAccess();
+                        this.sprite2BAOutputFlag = false;
+                        this.spriteAECOutput = this.sprite3BAOutputFlag;
                     }
-                } else if (this.cycleNumber >= 11 && this.cycleNumber <= 55) {
-                    if (this.cycleNumber <= 15) {
-                        this.performRefreshAccess();
-                        if (this.cycleNumber == 14) {
-                            this.videoCounter = this.videoCounterBase;
-                            this.videoMatrixLine = 0;
-                            if (this.badLineCondition) {
-                                this.rowCounter = 0;
-                            }
+                    case 2 -> {
+                        if (this.scanlineNumber == 0) {
+                            this.incrementRaster();
+                        }
+                        this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                        if (this.sprites[5].isDMAOn()) {
+                            this.sprite5BAOutputFlag = true;
                         }
                     }
-                    if (this.cycleNumber >= 12) {
-                        if (this.cycleNumber <= 54) {
-                            if (this.badLineCondition) {
-                                if (!this.baOutput) {
-                                    this.cAccessingCountdown = 3;
+                    case 3 -> {
+                        this.sprites[4].performPAccess();
+                        this.sprite3BAOutputFlag = false;
+                        this.spriteAECOutput = this.sprite4BAOutputFlag;
+                    }
+                    case 4 -> {
+                        this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                        if (this.sprites[6].isDMAOn()) {
+                            this.sprite5BAOutputFlag = true;
+                        }
+                    }
+                    case 5 -> {
+                        this.sprites[5].performPAccess();
+                        this.sprite4BAOutputFlag = false;
+                        this.spriteAECOutput = this.sprite5BAOutputFlag;
+                    }
+                    case 6 -> {
+                        this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                        if (this.sprites[7].isDMAOn()) {
+                            this.sprite7BAOutputFlag = true;
+                        }
+                    }
+                    case 7 -> {
+                        this.sprites[6].performPAccess();
+                        this.sprite5BAOutputFlag = false;
+                        this.spriteAECOutput = this.sprite6BAOutputFlag;
+                    }
+                    case 8 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                    case 9 -> {
+                        this.sprites[7].performPAccess();
+                        this.sprite6BAOutputFlag = false;
+                        this.spriteAECOutput = this.sprite7BAOutputFlag;
+                    }
+                    case 10 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                    case 56 -> {
+                        this.performIdleAccess();
+                        this.runForSprites(Sprite::checkStartDMA);
+                        if (this.sprite0BAOutputFlag == Sprite0BAOutputFlag.NONE && this.sprites[0].isDMAOn()) {
+                            this.sprite0BAOutputFlag = Sprite0BAOutputFlag.LATE;
+                        }
+                    }
+                    case 57 -> {
+                        this.performIdleAccess();
+                        if (this.sprites[1].isDMAOn()) {
+                            this.sprite1BAOutputFlag = true;
+                        }
+                    }
+                    case 58 -> {
+                        if (this.rowCounter == 7) {
+                            this.videoCounterBase = this.videoCounter;
+                            this.textBitmapLogicMode = TextBitmapLogicMode.IDLE;
+                        }
+                        if (this.textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
+                            this.rowCounter = (this.rowCounter + 1) & 0b111;
+                        }
+                        this.runForSprites(Sprite::loadDataCounter);
+                        this.sprites[0].performPAccess();
+
+                        if (this.sprite0BAOutputFlag == Sprite0BAOutputFlag.NORMAL) {
+                            this.spriteAECOutput = true;
+                        }
+                    }
+                    case 59 -> {
+                        this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                        if (this.sprite0BAOutputFlag == Sprite0BAOutputFlag.LATE) {
+                            this.spriteAECOutput = true;
+                        }
+                        if (this.sprites[2].isDMAOn()) {
+                            this.sprite2BAOutputFlag = true;
+                        }
+                    }
+                    case 60 -> {
+                        this.sprites[1].performPAccess();
+
+                        this.sprite0BAOutputFlag = Sprite0BAOutputFlag.NONE;
+                        this.spriteAECOutput = this.sprite1BAOutputFlag;
+                    }
+                    case 61 -> {
+                        this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                        if (this.sprites[3].isDMAOn()) {
+                            this.sprite3BAOutputFlag = true;
+                        }
+                    }
+                    case 62 -> {
+                        this.sprites[2].performPAccess();
+                        this.sprite1BAOutputFlag = false;
+                        this.spriteAECOutput = this.sprite2BAOutputFlag;
+                    }
+                    case 63 -> {
+                        if (this.raster == this.rowSelect.getBottonComparison()) {
+                            this.verticalBorderFlipFlop = true;
+                        } else if (this.raster == this.rowSelect.getTopComparison() && this.displayEnable) {
+                            this.verticalBorderFlipFlop = false;
+                        }
+                        this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.SECOND);
+                        if (this.sprites[4].isDMAOn()) {
+                            this.sprite4BAOutputFlag = true;
+                        }
+                    }
+                    default -> {
+                        if (this.cycleNumber >= 11 && this.cycleNumber <= 55) {
+                            if (this.cycleNumber == 11) {
+                                this.sprite0BAOutputFlag = Sprite0BAOutputFlag.NONE;
+                                this.sprite1BAOutputFlag = false;
+                                this.sprite2BAOutputFlag = false;
+                                this.sprite3BAOutputFlag = false;
+                                this.sprite4BAOutputFlag = false;
+                                this.sprite5BAOutputFlag = false;
+                                this.sprite6BAOutputFlag = false;
+                                this.sprite7BAOutputFlag = false;
+                                this.spriteAECOutput = false;
+                            }
+
+                            if (this.cycleNumber <= 15) {
+                                this.performRefreshAccess();
+                                if (this.cycleNumber == 14) {
+                                    this.videoCounter = this.videoCounterBase;
+                                    this.videoMatrixLine = 0;
+                                    if (this.badLineCondition) {
+                                        this.rowCounter = 0;
+                                    }
                                 }
-                                this.baOutput = true;
                             }
-                        } else if (cycleNumber == 55) {
-                            this.cAccessingCountdown = 0;
-                            this.cAccessing = false;
-                            this.baOutput = false;
+                            if (this.cycleNumber >= 12) {
+                                if (this.cycleNumber <= 54) {
+                                    if (this.badLineCondition) {
+                                        if (!this.graphicsBAOutput) {
+                                            this.cAccessingCountdown = 3;
+                                        }
+                                        this.graphicsBAOutput = true;
+                                    }
+                                } else if (this.cycleNumber == 55) {
+                                    this.cAccessingCountdown = 0;
+                                    this.cAccessing = false;
+                                    this.graphicsBAOutput = false;
+                                    this.runForSprites(Sprite::checkStartDMA);
+                                    if (this.sprites[0].isDMAOn()) {
+                                        this.sprite0BAOutputFlag = Sprite0BAOutputFlag.NORMAL;
+                                    }
+                                }
+                                if (this.cycleNumber >= 16) {
+                                    if (this.cycleNumber == 16) {
+                                        this.runForSprites(Sprite::checkAdvanceLineSet);
+                                    }
+                                    this.performGAccess();
+                                }
+                            }
                         }
-                        if (this.cycleNumber >= 16) {
-                            this.performGAccess();
-                        }
-                    }
-                } else if (this.cycleNumber == 58) {
-                    if (this.rowCounter == 7) {
-                        this.videoCounterBase = this.videoCounter;
-                        this.textBitmapLogicMode = TextBitmapLogicMode.IDLE;
-                    }
-                    if (this.textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
-                        this.rowCounter = (this.rowCounter + 1) & 0b111;
-                    }
-                } else if (this.cycleNumber == 63) {
-                    if (this.raster == this.rowSelect.getBottonComparison()) {
-                        this.verticalBorderFlipFlop = true;
-                    } else if (this.raster == this.rowSelect.getTopComparison() && this.displayEnable) {
-                        this.verticalBorderFlipFlop = false;
                     }
                 }
-
             }
             case PHI_2 -> {
-
                 this.clockPixel();
                 this.clockPixel();
                 this.clockPixel();
                 this.clockPixel();
 
-                if (this.cycleNumber >= 15 && this.cycleNumber <= 54) {
-                    if (this.cAccessing) {
-                        this.performCAccess();
+                switch (this.cycleNumber) {
+                   case 1 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 2 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 3 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 4 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 5 -> this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 6 -> this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 7 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 8 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 9 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 10 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 56 -> this.runForSprites(Sprite::checkToggleAdvanceLine);
+                   case 58 -> this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 59 -> this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 60 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 61 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 62 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                   case 63 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    default -> {
+                        if (this.cycleNumber >= 15 && this.cycleNumber <= 54) {
+                            if (this.cAccessing) {
+                                this.performCAccess();
+                            }
+                        }
                     }
                 }
 
@@ -485,14 +639,13 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 if (this.cycleNumber >= CYCLES_PER_SCANLINE + 1) {
                     this.cycleNumber = 1;
                 }
-
             }
         }
 
     }
 
-    private void clockPixel() {
 
+    private void clockPixel() {
         int xCoordinate = this.getXCoordinate();
         if (xCoordinate == this.columnSelect.getRightComparison()) {
             this.mainBorderFlipFlop = true;
@@ -533,49 +686,101 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             }
         }
 
-        int shiftedOutData = this.graphicsDataSequencer.shiftHead(0b00);
-        int bitmapPaletteIndex = switch (this.graphicsMode) {
-            case TEXT_STANDARD -> (shiftedOutData & 1) != 0 ? (this.cDataCurrentLatch >>> 8) & 0b1111 : this.backgroundColor0;
-            case TEXT_MULTICOLOR -> {
-                if ((this.cDataCurrentLatch & (1 << 11)) != 0) {
-                    yield switch (shiftedOutData & 0b11) {
-                        case 0b00 -> this.backgroundColor0;
-                        case 0b01 -> this.backgroundColor1;
-                        case 0b10 -> this.backgroundColor2;
-                        default -> (this.cDataCurrentLatch >>> 8) & 0b111;
-                    };
-                } else {
-                    yield (shiftedOutData & 1) != 0 ? (this.cDataCurrentLatch >>> 8) & 0b111 : this.backgroundColor0;
+        int graphicsData = this.graphicsDataSequencer.shiftHead(0b00);
+        int paletteIndex;
+        if (this.verticalBorderFlipFlop) {
+            paletteIndex = 0b00;
+        } else {
+            paletteIndex = switch (this.graphicsMode) {
+                case TEXT_STANDARD -> (graphicsData & 1) != 0 ? (this.cDataCurrentLatch >>> 8) & 0b1111 : this.backgroundColor0;
+                case TEXT_MULTICOLOR -> {
+                    if ((this.cDataCurrentLatch & (1 << 11)) != 0) {
+                        yield switch (graphicsData & 0b11) {
+                            case 0b00 -> this.backgroundColor0;
+                            case 0b01 -> this.backgroundColor1;
+                            case 0b10 -> this.backgroundColor2;
+                            default -> (this.cDataCurrentLatch >>> 8) & 0b111;
+                        };
+                    } else {
+                        yield (graphicsData & 1) != 0 ? (this.cDataCurrentLatch >>> 8) & 0b111 : this.backgroundColor0;
+                    }
                 }
-            }
-            case BITMAP_STANDARD -> (shiftedOutData & 1) != 0 ? (this.cDataCurrentLatch >>> 4) & 0b1111 : this.cDataCurrentLatch & 0b1111;
-            case BITMAP_MULTICOLOR -> switch (shiftedOutData & 0b11) {
-                case 0b00 -> this.backgroundColor0;
-                case 0b01 -> (this.cDataCurrentLatch >>> 4) & 0b1111;
-                case 0b10 -> this.cDataCurrentLatch & 0b1111;
-                default -> (this.cDataCurrentLatch >>> 8) & 0b1111;
+                case BITMAP_STANDARD -> (graphicsData & 1) != 0 ? (this.cDataCurrentLatch >>> 4) & 0b1111 : this.cDataCurrentLatch & 0b1111;
+                case BITMAP_MULTICOLOR -> switch (graphicsData & 0b11) {
+                    case 0b00 -> this.backgroundColor0;
+                    case 0b01 -> (this.cDataCurrentLatch >>> 4) & 0b1111;
+                    case 0b10 -> this.cDataCurrentLatch & 0b1111;
+                    default -> (this.cDataCurrentLatch >>> 8) & 0b1111;
+                };
+                case EXTENDED_COLOR -> {
+                    if ((graphicsData & 1) != 0) {
+                        yield (this.cDataCurrentLatch >>> 8) & 0b1111;
+                    } else {
+                        yield switch ((this.cDataCurrentLatch >>> 6) & 0b11) {
+                            case 0b00 -> this.backgroundColor0;
+                            case 0b01 -> this.backgroundColor1;
+                            case 0b10 -> this.backgroundColor2;
+                            default -> this.backgroundColor3;
+                        };
+                    }
+                }
+                case TEXT_INVALID, BITMAP_INVALID_1, BITMAP_INVALID_2 -> 0b0000;
             };
-            case EXTENDED_COLOR -> {
-                if ((shiftedOutData & 1) != 0) {
-                    yield (this.cDataCurrentLatch >>> 8) & 0b1111;
-                } else {
-                    yield switch ((this.cDataCurrentLatch >>> 6) & 0b11) {
-                        case 0b00 -> this.backgroundColor0;
-                        case 0b01 -> this.backgroundColor1;
-                        case 0b10 -> this.backgroundColor2;
-                        default -> this.backgroundColor3;
-                    };
+        }
+
+        boolean isForegroundBitmapPixel;
+        if (this.graphicsMode.getMCM()) {
+            isForegroundBitmapPixel = switch (graphicsData & 0b11) {
+                case 0b10, 0b11 -> true;
+                default -> false;
+            };
+        } else {
+            isForegroundBitmapPixel = (graphicsData & 1) != 0;
+        }
+
+
+        int highestPrioritySpriteNumber = 7;
+        int firstOpaqueSpriteNumber = -1;
+        boolean opaqueSpritePixelFound = false;
+        boolean spriteCollision = false;
+        for (int i = 7; i >= 0; i--) {
+            Sprite sprite = this.sprites[i];
+            sprite.shiftSequencer();
+            if (sprite.isOpaque()) {
+                if (opaqueSpritePixelFound) {
+                    sprite.setSpriteCollision(true);
+                    spriteCollision = true;
                 }
+                if (isForegroundBitmapPixel) {
+                    sprite.setGraphicsDataCollision(true);
+                }
+                if (firstOpaqueSpriteNumber < 0) {
+                    firstOpaqueSpriteNumber = i;
+                }
+                highestPrioritySpriteNumber = i;
+                opaqueSpritePixelFound = true;
             }
-            case TEXT_INVALID, BITMAP_INVALID_1, BITMAP_INVALID_2 -> 0b0000;
-        };
+        }
+
+        if (opaqueSpritePixelFound) {
+            if (spriteCollision) {
+                this.sprites[firstOpaqueSpriteNumber].setSpriteCollision(true);
+            }
+            if (this.sprites[highestPrioritySpriteNumber].getDataPriority()) {
+                if (isForegroundBitmapPixel) {
+                    paletteIndex = this.sprites[highestPrioritySpriteNumber].getPaletteIndex();
+                }
+            } else {
+                paletteIndex = this.sprites[highestPrioritySpriteNumber].getPaletteIndex();
+            }
+        }
 
         if (this.mainBorderFlipFlop) {
-            bitmapPaletteIndex = this.borderColor;
+            paletteIndex = this.borderColor;
         }
 
         if (this.dotNumber >= FIRST_VISIBLE_DOT_NUMBER && this.dotNumber <= LAST_VISIBLE_DOT_NUMBER && !this.isVBlank()) {
-            this.video[((this.scanlineNumber - FIRST_VISIBLE_SCANLINE) * VISIBLE_PIXELS_PER_SCANLINE) + (this.dotNumber - FIRST_VISIBLE_DOT_NUMBER)] = bitmapPaletteIndex;
+            this.video[((this.scanlineNumber - FIRST_VISIBLE_SCANLINE) * VISIBLE_PIXELS_PER_SCANLINE) + (this.dotNumber - FIRST_VISIBLE_DOT_NUMBER)] = paletteIndex;
         }
 
         this.dotNumber++;
@@ -594,6 +799,12 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
     }
 
+    private void runForSprites(Consumer<Sprite> consumer) {
+        for (Sprite sprite : this.sprites) {
+            consumer.accept(sprite);
+        }
+    }
+
     private void incrementRaster() {
         this.raster = (this.raster + 1) % SCANLINES_PER_FRAME;
         if (this.raster == this.rasterCompare) {
@@ -606,6 +817,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             }
             case 0x30 -> this.displayEnabledInLine30 = false;
         }
+    }
+
+    private void performIdleAccess() {
+
     }
 
     private void performRefreshAccess() {
@@ -642,14 +857,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case IDLE -> 0;
             case DISPLAY -> this.emulator.getBus().readVIC2((this.videoMemoryBase << 10) | this.videoCounter);
         };
-    }
-
-    private void performPAccess() {
-
-    }
-
-    private void performSAccess() {
-
     }
 
     private void reloadGraphicsSequencerAsNormal() {
@@ -794,7 +1001,15 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     }
 
-    private static class Sprite {
+    private enum Sprite0BAOutputFlag {
+        NONE,
+        NORMAL,
+        LATE
+    }
+
+    private class Sprite {
+
+        private final int spriteNumber;
 
         private int x;
         private int y;
@@ -811,6 +1026,25 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         private boolean backgroundCollision;
 
         private int color;
+
+        private int dataCounter; // MOB, 6 bit
+        private int dataCounterBase; // MCBASE, 6 bit
+        private boolean enableDisplay;
+
+        private boolean advanceLine;
+        private boolean dma;
+        private boolean corruptDataCounterBaseFlag;
+
+        private final ShiftRegister sequencer = new ShiftRegister(24, 2);
+        private int pDataLatch;
+
+        private int shiftedOutDataLatch;
+        private boolean shiftOutData;
+        private boolean shiftFlipFlop = true;
+
+        private Sprite(int spriteNumber) {
+            this.spriteNumber = spriteNumber;
+        }
 
         private int getX() {
             return this.x;
@@ -845,7 +1079,15 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
 
         private void setYExpansion(boolean value) {
+            boolean originalYExpansion = this.yExpansion;
+            boolean originalAdvanceLine = this.advanceLine;
             this.yExpansion = value;
+            if (!this.yExpansion) {
+                this.advanceLine = true;
+                if (cycleNumber == 15 && originalYExpansion && !originalAdvanceLine) {
+                    this.corruptDataCounterBaseFlag = true;
+                }
+            }
         }
 
         private boolean getYExpansion() {
@@ -870,6 +1112,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         private void setXExpansion(boolean value) {
             this.xExpansion = value;
+            if (!this.xExpansion) {
+                this.shiftFlipFlop = true;
+            }
         }
 
         private boolean getXExpansion() {
@@ -884,7 +1129,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             return this.spriteCollision;
         }
 
-        private void setBackgroundCollision(boolean value) {
+        private void setGraphicsDataCollision(boolean value) {
             this.backgroundCollision = value;
         }
 
@@ -898,6 +1143,141 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         private int getColor() {
             return this.color;
+        }
+
+        private boolean isDMAOn() {
+            return this.dma;
+        }
+
+        private void performPAccess() {
+            this.pDataLatch = emulator.getBus().readVIC2(0b00001111111000 | (videoMemoryBase << 10) | this.spriteNumber);
+        }
+
+        private void tryPerformSAccess(SAccessStep sAccessStep) {
+            if (!this.dma) {
+                if (sAccessStep == SAccessStep.SECOND) {
+                    performIdleAccess();
+                }
+                return;
+            }
+            int spriteData = emulator.getBus().readVIC2((this.pDataLatch << 6) | this.dataCounter);
+            int loadOffset = sAccessStep.getLoadOffset();
+            if (this.multicolor) {
+                for (int i = 3; i >= 0; i--) {
+                    int bottomIndex = i * 2;
+                    int topIndex = bottomIndex + 1;
+                    int data = ((spriteData >>> (topIndex - 1)) & 0b10) | ((spriteData >>> bottomIndex) & 1);
+                    this.sequencer.set((7 - topIndex) + loadOffset, data);
+                    this.sequencer.set((7 - bottomIndex) + loadOffset, data);
+                }
+            } else {
+                for (int i = 7; i >= 0; i--) {
+                    this.sequencer.set((7 - i) + loadOffset, (spriteData >> i) & 1);
+                }
+            }
+            this.dataCounter = (this.dataCounter + 1) & 0b111111;
+        }
+
+        private void checkStartDMA() {
+            if (!this.dma && this.enabled && this.y == (raster & 0xFF)) {
+                this.dma = true;
+                this.dataCounterBase = 0;
+                this.advanceLine = true;
+            }
+        }
+
+        private void checkToggleAdvanceLine() {
+            if (this.yExpansion && this.dma) {
+                this.advanceLine = !this.advanceLine;
+            }
+        }
+
+        private void loadDataCounter() {
+            this.shiftFlipFlop = true;
+            this.shiftOutData = false;
+            this.shiftedOutDataLatch = 0b00;
+            this.dataCounter = this.dataCounterBase;
+            if (this.dma) {
+                if (this.y == (raster & 0xFF)) {
+                    this.enableDisplay = true;
+                }
+            } else {
+                this.enableDisplay = false;
+            }
+        }
+
+        private void checkAdvanceLineSet() {
+            if (this.advanceLine) {
+                if (this.corruptDataCounterBaseFlag) {
+                    this.corruptDataCounterBaseFlag = false;
+                    this.dataCounterBase = ((0b101010 & (this.dataCounterBase & this.dataCounter)) | (0b010101 & (this.dataCounterBase | this.dataCounter)));
+                } else {
+                    this.dataCounterBase = this.dataCounter;
+                }
+                if (this.dataCounterBase >= 63) {
+                    this.dma = false;
+                }
+            }
+        }
+
+        private void shiftSequencer() {
+            if (this.enableDisplay) {
+                if (this.shiftOutData || this.x == getXCoordinate()) {
+                    this.shiftOutData = true;
+                    if (this.shiftFlipFlop) {
+                        this.shiftedOutDataLatch = this.sequencer.shiftHead(0b00);
+                    }
+                    if (this.xExpansion) {
+                        this.shiftFlipFlop = !this.shiftFlipFlop;
+                    }
+                }
+            }
+        }
+
+        private int getPaletteIndex() {
+            if (this.multicolor) {
+                return switch (this.shiftedOutDataLatch & 0b11) {
+                    case 0b00 -> 0b0000; // transparent
+                    case 0b01 -> spriteMulticolor0;
+                    case 0b10 -> this.color;
+                    default -> spriteMulticolor1;
+                };
+            } else {
+                return (this.shiftedOutDataLatch & 1) != 0 ? this.color : 0b0000;
+            }
+        }
+
+        private boolean isTransparent() {
+            if (this.multicolor) {
+                return (this.shiftedOutDataLatch & 0b11) == 0b00;
+            } else {
+                return (this.shiftedOutDataLatch & 1) == 0;
+            }
+        }
+
+        private boolean isOpaque() {
+            if (this.multicolor) {
+                return (this.shiftedOutDataLatch & 0b11) != 0b00;
+            } else {
+                return (this.shiftedOutDataLatch & 1) != 0;
+            }
+        }
+
+        private enum SAccessStep {
+            FIRST(0),
+            SECOND(8),
+            THIRD(16);
+
+            private final int loadOffset;
+
+            SAccessStep(int loadOffset) {
+                this.loadOffset = loadOffset;
+            }
+
+            private int getLoadOffset() {
+                return this.loadOffset;
+            }
+
         }
 
     }

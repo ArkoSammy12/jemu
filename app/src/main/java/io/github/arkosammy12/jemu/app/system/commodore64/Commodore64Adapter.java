@@ -71,7 +71,7 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
             case KeyEvent.VK_9 -> Commodore64Controller.KeyboardMatrix.KEY_NINE_OPEN_PARENTHESIS;
 
             case KeyEvent.VK_MINUS -> Commodore64Controller.KeyboardMatrix.KEY_MINUS;
-            case KeyEvent.VK_PLUS -> Commodore64Controller.KeyboardMatrix.KEY_PLUS;
+            case KeyEvent.VK_CLOSE_BRACKET -> Commodore64Controller.KeyboardMatrix.KEY_PLUS;
             case KeyEvent.VK_EQUALS -> Commodore64Controller.KeyboardMatrix.KEY_EQUALS;
             case KeyEvent.VK_SEMICOLON -> Commodore64Controller.KeyboardMatrix.KEY_COLON_OPENING_BRACKET;
             case KeyEvent.VK_QUOTE -> Commodore64Controller.KeyboardMatrix.KEY_SEMICOLON_CLOSING_BRACKET;
@@ -90,9 +90,9 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
             case KeyEvent.VK_BACK_SLASH -> Commodore64Controller.KeyboardSpecialKey.RESTORE;
 
             case KeyEvent.VK_OPEN_BRACKET -> Commodore64Controller.KeyboardMatrix.KEY_AT;
-            case KeyEvent.VK_CLOSE_BRACKET -> Commodore64Controller.KeyboardMatrix.KEY_ASTERISK;
+            //case KeyEvent.VK_CLOSE_BRACKET -> Commodore64Controller.KeyboardMatrix.KEY_ASTERISK;
 
-            // TODO: Map remaining keys: Pound, CLR/HOME, Fx buttons, CRSR buttons, Commodore key, Run/Stop, Up arrow
+            // TODO: Map remaining keys: Pound, CLR/HOME, Fx buttons, CRSR buttons, Commodore key, Run/Stop, Up arrow, asterisk
 
             default -> null;
         };
