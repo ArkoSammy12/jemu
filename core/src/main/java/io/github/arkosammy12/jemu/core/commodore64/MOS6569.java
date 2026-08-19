@@ -1247,14 +1247,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             }
         }
 
-        private boolean isTransparent() {
-            if (this.multicolor) {
-                return (this.shiftedOutDataLatch & 0b11) == 0b00;
-            } else {
-                return (this.shiftedOutDataLatch & 1) == 0;
-            }
-        }
-
         private boolean isOpaque() {
             if (this.multicolor) {
                 return (this.shiftedOutDataLatch & 0b11) != 0b00;
