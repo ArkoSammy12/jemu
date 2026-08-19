@@ -37,7 +37,7 @@ public class Commodore64Manager extends SystemManager {
 
     @Override
     public Collection<String> getFileExtensions() {
-        return List.of();
+        return List.of("prg");
     }
 
     @Override

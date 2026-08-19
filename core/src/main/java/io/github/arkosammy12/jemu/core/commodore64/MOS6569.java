@@ -790,8 +790,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
             if (this.scanlineNumber >= SCANLINES_PER_FRAME) {
                 this.scanlineNumber = 0;
-                this.emulator.getCIA1().clockTOD();
-                this.emulator.getCIA2().clockTOD();
+                this.emulator.onVBlank();
                 this.emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
             } else {
                 this.incrementRaster();

@@ -3,16 +3,22 @@ package io.github.arkosammy12.jemu.core.commodore64;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
+import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.util.ByteSizes.*;
 
 public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
 
     private final E emulator;
+
+    private final byte @Nullable [] prgFile;
 
     private final byte[] kernalROM = new byte[KB_8];
     private final byte[] basicROM = new byte[KB_8];
@@ -28,6 +34,21 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         this.tryLoadROM(emulator.getHost().getKernalROMPath().orElse(null), this.kernalROM, "Kernal");
         this.tryLoadROM(emulator.getHost().getBASICRomPath().orElse(null), this.basicROM, "BASIC");
         this.tryLoadROM(emulator.getHost().getCharacterROMPath().orElse(null), this.characterROM, "Character");
+
+        Optional<byte[]> optionalROM = emulator.getHost().getRom();
+        Optional<Path> optionalROMPath = emulator.getHost().getRomPath();
+        if (optionalROM.isPresent() && optionalROMPath.isPresent()) {
+            Path path = optionalROMPath.get();
+            String extension = FilenameUtils.getExtension(path.toString());
+            if (!Objects.equals(extension, "prg")) {
+                throw new ROMInitializationException("Non .prg files are not supported for HLE!");
+            }
+            byte[] bytes = optionalROM.get();
+            this.prgFile = Arrays.copyOf(bytes, bytes.length);
+
+        } else {
+            this.prgFile = null;
+        }
     }
 
     private void tryLoadROM(@Nullable Path sourcePath, byte[] destination, String romName) {
@@ -46,6 +67,48 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             throw new ROMInitializationException("Expected Commodore 64 %s ROM image to be %d bytes long, but was %d bytes instead!".formatted(romName, destination.length, bytes.length));
         }
         System.arraycopy(bytes, 0, destination, 0, destination.length);
+    }
+
+    public void patchPrgFile() {
+        if (this.prgFile == null) {
+            return;
+        }
+
+        int start = (this.prgFile[0] & 0xFF) | ((this.prgFile[1] & 0xFF) << 8);
+        int end = (start + this.prgFile.length - 2) & 0xFFFF;
+
+        System.arraycopy(this.prgFile, 2, this.ram, start, Math.min(this.prgFile.length - 2, 0xFFFF + 1 - start));
+        this.ram[0x2B] = (byte) (start & 0xFF);
+        this.ram[0xAC] = (byte) (start & 0xFF);
+        this.ram[0x2C] = (byte) ((start >>> 8) & 0xFF);
+        this.ram[0xAD] = (byte) ((start >>> 8) & 0xFF);
+        this.ram[0x2D] = (byte) (end & 0xFF);
+        this.ram[0x2F] = (byte) (end & 0xFF);
+        this.ram[0x31] = (byte) (end & 0xFF);
+        this.ram[0xAE] = (byte) (end & 0xFF);
+        this.ram[0x2E] = (byte) ((end >>> 8) & 0xFF);
+        this.ram[0x30] = (byte) ((end >>> 8) & 0xFF);
+        this.ram[0x32] = (byte) ((end >>> 8) & 0xFF);
+        this.ram[0xAF] = (byte) ((end >>> 8) & 0xFF);
+
+        if (((int)this.ram[0x00C6] & 0xFF) == 0) {
+            if (start == 0x0801) {
+                this.ram[0x0277] = (byte) 'R';
+                this.ram[0x0278] = (byte) 'U';
+                this.ram[0x0279] = (byte) 'N';
+                this.ram[0x027a] = (byte) 0x0d;  // Return
+
+                // Publish the characters last, so the KERNAL cannot see a partial command.
+                this.ram[0x00c6] = 4;
+            } else {
+                String text = "SYS %s\r".formatted(Integer.toString(start));
+                for (int i = 0; i < text.length(); i++) {
+                    this.ram[0x0277 + i] = (byte) text.charAt(i);
+                }
+                this.ram[0x00C6] = (byte) text.length();
+            }
+        }
+
     }
 
     @Override

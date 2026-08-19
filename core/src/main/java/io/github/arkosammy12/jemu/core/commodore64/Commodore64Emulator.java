@@ -8,6 +8,8 @@ import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
 public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
+    private static final int FRAMES_UNTIL_READY_PROMPT = 111;
+
     private static final int CPU_CLOCK_DIVISOR = 8;
 
     private static final int PAL_PHI_IN_HZ = 7_881_990;
@@ -36,6 +38,9 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     private final int framerate;
     private final int iterationsPerFrame;
+
+    private boolean prgFilePatchAttempted;
+    private int frames;
 
     public Commodore64Emulator(Commodore64Host systemHost) {
         this.systemHost = systemHost;
@@ -219,6 +224,19 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.cia1.cycle();
         this.cia2.cycle();
         this.sid.cycle();
+    }
+
+    public void onVBlank() {
+        this.cia1.clockTOD();
+        this.cia2.clockTOD();
+
+        if (!this.prgFilePatchAttempted) {
+            this.frames++;
+            if (this.frames >= FRAMES_UNTIL_READY_PROMPT) {
+                this.bus.patchPrgFile();
+                this.prgFilePatchAttempted = true;
+            }
+        }
     }
 
     @Override
