@@ -9,10 +9,6 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
 
     public NMOS6510(S systemBus) {
         super(systemBus);
-
-        // Values on power-on
-        this.dataDirectionRegister = 0x2F;
-        this.outputLatch = 0x37;
     }
 
     @Override
