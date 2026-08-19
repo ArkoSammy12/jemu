@@ -1154,7 +1154,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
 
         private void tryPerformSAccess(SAccessStep sAccessStep) {
-            if (!this.dma) {
+            if (!this.dma || !spriteAECOutput) {
                 if (sAccessStep == SAccessStep.SECOND) {
                     performIdleAccess();
                 }
