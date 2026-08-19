@@ -215,11 +215,11 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     private void runCycle() {
-        this.cpu.cycle();
-        this.vic2.cycleHalf(NMOS6502.Phase.PHI_1);
-
-        this.cpu.cycle();
         this.vic2.cycleHalf(NMOS6502.Phase.PHI_2);
+        this.cpu.cycle();
+
+        this.vic2.cycleHalf(NMOS6502.Phase.PHI_1);
+        this.cpu.cycle();
 
         this.cia1.cycle();
         this.cia2.cycle();

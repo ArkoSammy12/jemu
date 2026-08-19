@@ -819,11 +819,12 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     }
 
     private void performIdleAccess() {
-
+        this.emulator.getBus().readVIC2(0x3FFF);
     }
 
     private void performRefreshAccess() {
         this.emulator.getBus().readVIC2(0x3F00 | this.dRAMRefreshCounter);
+        this.dRAMRefreshCounter = (this.dRAMRefreshCounter - 1) & 0xFF;
     }
 
     private void performGAccess() {
