@@ -56,6 +56,11 @@ final class HeadlessGameBoyHost implements GameBoyHost {
     }
 
     @Override
+    public int getRGB8ForDMGPaletteIndex(int paletteIndex) {
+        return 0;
+    }
+
+    @Override
     public Optional<Path> getBootROMPath() {
         return Optional.empty();
     }
