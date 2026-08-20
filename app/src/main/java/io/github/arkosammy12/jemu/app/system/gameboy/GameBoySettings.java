@@ -70,21 +70,39 @@ public class GameBoySettings {
 
     public enum DMGPalette implements DisplayNamerProvider {
         @SerializedName("gameboy_green")
-        DMG_GREEN("Game Boy Green", DMGPPU.Palette.DMG_GREEN),
+        DMG_GREEN("Game Boy Green", new int[] {
+                0x9BBC0F,
+                0x8BAC0F,
+                0x306230,
+                0x0F380F,
+                0x9BBC0F // LCD off color
+        }),
 
         @SerializedName("greyscale")
-        GREYSCALE("Greyscale", DMGPPU.Palette.GREYSCALE),
+        GREYSCALE("Greyscale", new int[] {
+                0xFFFFFF,
+                0xC0C0C0,
+                0x404040,
+                0x000000,
+                0xFFFFFF // LCD off color
+        }),
 
         @SerializedName("sameboy")
-        SAMEBOY("SameBoy", DMGPPU.Palette.SAMEBOY)
+        SAMEBOY("SameBoy", new int[] {
+                0xC6DE8C,
+                0x84A563,
+                0x396139,
+                0x081810,
+                0xD2E6A6 // LCD off color
+        })
         ;
 
         private final String displayName;
-        private final DMGPPU.Palette dmgPalette;
+        private final int[] rgb;
 
-        DMGPalette(String displayName, DMGPPU.Palette dmgPalette) {
+        DMGPalette(String displayName, int[] rgb8) {
             this.displayName = displayName;
-            this.dmgPalette = dmgPalette;
+            this.rgb = rgb8;
         }
 
         @Override
@@ -92,8 +110,8 @@ public class GameBoySettings {
             return this.displayName;
         }
 
-        public DMGPPU.Palette mapToHost() {
-            return this.dmgPalette;
+        public int getRGB8ForDMGPaletteIndex(int paletteIndex) {
+            return this.rgb[paletteIndex];
         }
 
     }

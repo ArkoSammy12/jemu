@@ -44,6 +44,11 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     }
 
     @Override
+    public int getRGB8ForDMGPaletteIndex(int paletteIndex) {
+        return this.gameBoyManager.getEmulationSettings().getDMGPalette().getRGB8ForDMGPaletteIndex(paletteIndex);
+    }
+
+    @Override
     public Optional<Path> getBootROMPath() {
         return switch (this.model) {
             case DMG -> this.gameBoyManager.getEmulationSettings().getGameBoyBootROMPath();
@@ -91,23 +96,15 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
             this.romTitle = title;
         }
 
-        GameBoyEmulator emulator = switch (this.model) {
+        return switch (this.model) {
             case CGB -> new GameBoyColorEmulator(this);
             case DMG -> new GameBoyEmulator(this);
         };
-        emulator.setDMGPalette(this.gameBoyManager.getEmulationSettings().getDMGPalette().mapToHost());
-
-        return emulator;
     }
 
     @Override
     public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
         super.onCoreSettingChangedEvent(coreSettingChangedEvent);
-        if (coreSettingChangedEvent instanceof GameBoyManager.DMGPaletteSettingChangedEvent(GameBoySettings.DMGPalette dmgPalette)) {
-            if (this.emulator instanceof GameBoyEmulator gameBoyEmulator) {
-                gameBoyEmulator.setDMGPalette(dmgPalette.mapToHost());
-            }
-        }
     }
 
     @Override

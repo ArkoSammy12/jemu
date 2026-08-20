@@ -66,7 +66,6 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
     // TODO: Implement the PPU behavior when the CPU is in STOP mode for the DMG and CGB
     protected final int[] lcd;
-    private Palette palette = Palette.DMG_GREEN;
 
     protected Mode currentMode = Mode.HBLANK_0;
     private int dotNumber;
@@ -134,11 +133,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
     @Override
     public int mapToRGB8(int frameBufferValue) {
-        return this.palette.rgb[frameBufferValue];
-    }
-
-    public void setDMGPalette(@NotNull Palette palette) {
-        this.palette = palette;
+        return this.emulator.getHost().getRGB8ForDMGPaletteIndex(frameBufferValue);
     }
 
     protected int getLCDOffValue() {
@@ -1064,37 +1059,6 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
         public boolean matchesValue(int value) {
             return value == this.value;
-        }
-
-    }
-
-    public enum Palette {
-        DMG_GREEN(new int[] {
-                0x9BBC0F,
-                0x8BAC0F,
-                0x306230,
-                0x0F380F,
-                0x9BBC0F // LCD off color
-        }),
-        GREYSCALE(new int[] {
-                0xFFFFFF,
-                0xC0C0C0,
-                0x404040,
-                0x000000,
-                0xFFFFFF // LCD off color
-        }),
-        SAMEBOY(new int[] {
-                0xC6DE8C,
-                0x84A563,
-                0x396139,
-                0x081810,
-                0xD2E6A6 // LCD off color
-        });
-
-        private final int[] rgb;
-
-        Palette(int[] rgb) {
-            this.rgb = rgb;
         }
 
     }
