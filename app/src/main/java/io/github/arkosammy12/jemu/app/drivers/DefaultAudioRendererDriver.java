@@ -11,6 +11,7 @@ import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEv
 
 import javax.sound.sampled.LineUnavailableException;
 import java.io.Closeable;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -19,6 +20,7 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
     protected final Jemu jemu;
     protected final AudioGenerator audioGenerator;
 
+    private final AudioGenerator.SampleFrame emptySampleFrame = new AudioGenerator.SampleFrame() {};
     private final BlockingQueue<AudioGenerator.SampleFrame> sampleFrameBuffer = new ArrayBlockingQueue<>(2);
     private volatile boolean syncToAudio = true;
 
@@ -58,12 +60,10 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
 
     public void onFrame() {
         if (this.syncToAudio) {
-            this.audioGenerator.getSampleFrame().ifPresent(sampleFrame -> {
-                try {
-                    this.sampleFrameBuffer.put(sampleFrame);
-                } catch (InterruptedException _) {
-                }
-            });
+            try {
+                Optional<? extends AudioGenerator.SampleFrame> sampleFrame = this.audioGenerator.getSampleFrame();
+                this.sampleFrameBuffer.put(sampleFrame.isPresent() ? sampleFrame.get() : this.emptySampleFrame);
+            } catch (InterruptedException _) {}
         }
     }
 
