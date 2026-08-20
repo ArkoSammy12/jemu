@@ -82,6 +82,13 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             0x6C6C6C, 0x9AD284, 0x6C5EB5, 0x959595
     };
 
+    private static final int[] PC64_PALETTE = {
+            0x202020, 0xFFFFFF, 0xB62020, 0x71FFFF,
+            0xB620B6, 0x20B620, 0x2020B6, 0xFFFF20,
+            0xB67120, 0x914420, 0xFF7171, 0x717171,
+            0x919191, 0x71FF71, 0x7171FF, 0xB6B6B6
+    };
+
     private static final int SCANLINES_PER_FRAME = 312;
     private static final int VISIBLE_SCANLINES = 284;
     private static final int FIRST_VBLANK_SCANLINE = 300;
@@ -189,7 +196,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     @Override
     public int mapToRGB8(int frameBufferValue) {
-        return GULRAK_PALETTE[frameBufferValue];
+        return PC64_PALETTE[frameBufferValue];
     }
 
     @Override
