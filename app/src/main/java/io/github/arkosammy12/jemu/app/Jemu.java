@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 
 public final class Jemu {
 
@@ -114,6 +115,20 @@ public final class Jemu {
         return Optional.ofNullable(this.appDataDirectory).map(path -> path.resolve("saves"));
     }
 
+    private void runForCurrentSystem(Consumer<SystemAdapter> function) {
+        SystemAdapter systemAdapter = this.currentSystem;
+        if (systemAdapter != null) {
+            function.accept(systemAdapter);
+        }
+    }
+
+    private void runForCurrentSystemThrowing(ThrowableConsumer<SystemAdapter> function) throws Exception {
+        SystemAdapter systemAdapter = this.currentSystem;
+        if (systemAdapter != null) {
+            function.acceptThrowing(systemAdapter);
+        }
+    }
+
     public void start() {
         this.running = true;
         if (this.uiEventListenerThread != null) {
@@ -133,19 +148,13 @@ public final class Jemu {
                 }
                 if (event instanceof CoreSettingChangedEvent coreSettingChangedEvent) {
                     this.systemRegistry.onCoreSettingChangedEvent(coreSettingChangedEvent);
-                    SystemAdapter currentSystem = this.currentSystem;
-                    if (currentSystem != null) {
-                        currentSystem.onCoreSettingChangedEvent(coreSettingChangedEvent);
-                    }
+                    this.runForCurrentSystemThrowing(system -> system.onCoreSettingChangedEvent(coreSettingChangedEvent));
                 }
                 if (event instanceof AudioSettingChangedEvent audioSettingChangedEvent) {
                     this.audioEngine.onAudioSettingChanged(audioSettingChangedEvent);
                 }
                 if (event instanceof VideoSettingChangedEvent videoSettingChangedEvent) {
-                    SystemAdapter currentSystem = this.currentSystem;
-                    if (currentSystem != null) {
-                        currentSystem.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent));
-                    }
+                    this.runForCurrentSystem(system -> system.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent)));
                 }
             } catch (InterruptedException _) {
 
@@ -317,7 +326,7 @@ public final class Jemu {
         while (true) {
             attempts++;
             try {
-                initializer.accept(target);
+                initializer.acceptThrowing(target);
                 break;
             } catch (SystemRedirectException systemRedirectException) {
                 if (attempts >= maxAttempts) {

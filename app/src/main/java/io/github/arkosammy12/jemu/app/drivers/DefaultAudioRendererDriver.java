@@ -5,6 +5,9 @@ import io.github.arkosammy12.jemu.core.common.AudioGenerator;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.frontend.audio.AudioChannels;
+import io.github.arkosammy12.jemu.frontend.config.settings.SpeedMode;
+import io.github.arkosammy12.jemu.frontend.events.AudioSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.io.Closeable;
@@ -17,6 +20,7 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
     protected final AudioGenerator audioGenerator;
 
     private final BlockingQueue<AudioGenerator.SampleFrame> sampleFrameBuffer = new ArrayBlockingQueue<>(2);
+    private volatile boolean syncToAudio = true;
 
     public DefaultAudioRendererDriver(Jemu jemu, Emulator emulator) throws LineUnavailableException {
         this.jemu = jemu;
@@ -28,8 +32,13 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
             }
             return this.audioGenerator.getSampleFrameResampler().resample(this.getSampleRate(), this.getSamplesPerFrame(), sampleFrame).map(this::ensureBitDepth).orElse(null);
         });
-        this.jemu.getAudioEngine().setFramerate(jemu.getMainWindow().getConfigurations().getSettings().getSpeedSettings().getSpeedMode().scaleFramerate(emulator.getFramerate()));
+
+        SpeedMode speedMode = jemu.getMainWindow().getConfigurations().getSettings().getSpeedSettings().getSpeedMode();
+        this.jemu.getAudioEngine().setFramerate(speedMode.scaleFramerate(emulator.getFramerate()));
         this.jemu.getAudioEngine().setAudioChannels(this.audioGenerator.isStereo() ? AudioChannels.STEREO : AudioChannels.MONO);
+        if (speedMode == SpeedMode.UNLIMITED) {
+            this.syncToAudio = false;
+        }
     }
 
     @Override
@@ -42,17 +51,25 @@ public abstract class DefaultAudioRendererDriver implements AudioDriver, Closeab
         return this.jemu.getAudioEngine().getSamplesPerFrame();
     }
 
+    public void onSpeedModeSettingChanged(SpeedMode speedMode) {
+        this.syncToAudio = speedMode != SpeedMode.UNLIMITED;
+        this.clearAudioBuffer();
+    }
+
     public void onFrame() {
-        this.audioGenerator.getSampleFrame().ifPresent(sampleFrame -> {
-            try {
-                this.sampleFrameBuffer.put(sampleFrame);
-            } catch (InterruptedException _) {}
-        });
+        if (this.syncToAudio) {
+            this.audioGenerator.getSampleFrame().ifPresent(sampleFrame -> {
+                try {
+                    this.sampleFrameBuffer.put(sampleFrame);
+                } catch (InterruptedException _) {
+                }
+            });
+        }
     }
 
     protected abstract byte[] ensureBitDepth(byte[] buf);
 
-    public void clearAudioBuffer() {
+    private void clearAudioBuffer() {
         this.sampleFrameBuffer.clear();
     }
 

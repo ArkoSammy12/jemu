@@ -93,7 +93,6 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         if (videoDriver != null) {
             videoDriver.requestFrame();
         }
-
         DefaultAudioRendererDriver audioDriver = this.audioDriver;
         if (audioDriver != null) {
             audioDriver.onFrame();
@@ -103,7 +102,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
         switch (coreSettingChangedEvent) {
             case SpeedModeSettingChangedEvent speedModeSettingChangedEvent -> {
-                this.getAudioDriver().ifPresent(DefaultAudioRendererDriver::clearAudioBuffer);
+                this.getAudioDriver().ifPresent(audioDriver -> audioDriver.onSpeedModeSettingChanged(speedModeSettingChangedEvent.getSpeedMode()));
                 Emulator emulator = this.emulator;
                 if (emulator != null) {
                     this.jemu.getAudioEngine().setFramerate(speedModeSettingChangedEvent.getSpeedMode().scaleFramerate(emulator.getFramerate()));
