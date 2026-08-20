@@ -196,7 +196,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     @Override
     public int mapToRGB8(int frameBufferValue) {
-        return PC64_PALETTE[frameBufferValue];
+        return this.emulator.getHost().getRB8ForPaletteIndex(frameBufferValue);
     }
 
     @Override

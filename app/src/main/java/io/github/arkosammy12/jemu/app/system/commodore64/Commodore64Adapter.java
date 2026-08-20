@@ -119,6 +119,11 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
     }
 
     @Override
+    public int getRB8ForPaletteIndex(int paletteIndex) {
+        return this.commodore64Manager.getEmulationSettings().getVICIIPalette().getRGB8ForPaletteIndex(paletteIndex);
+    }
+
+    @Override
     protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         this.romTitle = initializer.getRomPath().map(path -> path.getFileName().toString()).orElse(null);
         super.initialize(initializer, tryReset);

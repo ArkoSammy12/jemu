@@ -6,6 +6,7 @@ import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
@@ -17,6 +18,9 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class Commodore64Manager extends SystemManager {
+
+    @Nullable
+    private volatile Commodore64MenuBarSettings commodore64MenuBarSettings;
 
     @Nullable
     private volatile Commodore64PanelSettings commodore64PanelSettings;
@@ -54,8 +58,21 @@ public class Commodore64Manager extends SystemManager {
         return this.systemRegistry.getEmulationSettings().getCommodore64Settings();
     }
 
+    private Optional<Commodore64MenuBarSettings> getMenuBarSettings() {
+        return Optional.ofNullable(this.commodore64MenuBarSettings);
+    }
+
     private Optional<Commodore64PanelSettings> getPanelSettings() {
         return Optional.ofNullable(this.commodore64PanelSettings);
+    }
+
+    @Override
+    public Optional<? extends Function<? super EventPublisher, ? extends JMenu>> getSettingsMenuBarContents() {
+        return Optional.of(eventPublisher -> {
+            Commodore64MenuBarSettings commodore64MenuBarSettings = new Commodore64MenuBarSettings(this, eventPublisher);
+            this.commodore64MenuBarSettings = commodore64MenuBarSettings;
+            return commodore64MenuBarSettings;
+        });
     }
 
     @Override
@@ -75,6 +92,7 @@ public class Commodore64Manager extends SystemManager {
             case KernalRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setKernalRomPath(path);
             case BasicRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setBasicRomPath(path);
             case CharacterRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setCharacterRomPath(path);
+            case VICIIPaletteSettingChangedEvent(Commodore64Settings.VICIIPalette viciiPalette) -> this.getEmulationSettings().setVICIIPalette(viciiPalette);
             default -> {}
         }
     }
@@ -105,6 +123,15 @@ public class Commodore64Manager extends SystemManager {
         @Nullable
         public Path get() {
             return this.path();
+        }
+
+    }
+
+    record VICIIPaletteSettingChangedEvent(@NotNull Commodore64Settings.VICIIPalette viciiPalette) implements CoreSettingChangedEvent, Supplier<Commodore64Settings.VICIIPalette> {
+
+        @Override
+        public Commodore64Settings.VICIIPalette get() {
+            return this.viciiPalette;
         }
 
     }

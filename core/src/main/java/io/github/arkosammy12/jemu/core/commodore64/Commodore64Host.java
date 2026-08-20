@@ -13,4 +13,6 @@ public interface Commodore64Host extends SystemHost {
 
     Optional<Path> getCharacterROMPath();
 
+    int getRB8ForPaletteIndex(int paletteIndex);
+
 }
