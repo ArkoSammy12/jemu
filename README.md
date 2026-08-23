@@ -102,7 +102,6 @@ Multi-system emulator written in Java.
 
 The Commodore 64 core uses symbolic keybindings for the built-in keyboard.
 
-
 | Action                       | Key               |
 |------------------------------|-------------------|
 | A-Z                          | `A-Z`             |
