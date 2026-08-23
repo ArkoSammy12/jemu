@@ -11,7 +11,7 @@ public class Commodore64Controller implements SystemController {
     private ShiftLockGate shiftLockGate = ShiftLockGate.OPEN;
 
     @Override
-    public void onActionPressed(Action action) {
+    public void pressAction(Action action) {
         if (!(action instanceof Actions commodore64Action)) {
             return;
         }
@@ -31,7 +31,7 @@ public class Commodore64Controller implements SystemController {
     }
 
     @Override
-    public void onActionReleased(Action action) {
+    public void releaseAction(Action action) {
         if (!(action instanceof Actions commodore64Action)) {
             return;
         }
@@ -88,8 +88,8 @@ public class Commodore64Controller implements SystemController {
         KEY_INST_DEL(0, 0, "Key INST | DEL"),
         KEY_THREE_NUMERAL(0, 1, "Key 3 | #"),
         KEY_FIVE_PERCENT_SIGN(0, 2, "Key 5 | %"),
-        KEY_SEVEN_TILE(0, 3, "Key 7 | `"),
-        KEY_NINE_OPEN_PARENTHESIS(0, 4, "Key 9 | )"),
+        KEY_SEVEN_TILDE(0, 3, "Key 7 | `"),
+        KEY_NINE_CLOSE_PARENTHESIS(0, 4, "Key 9 | )"),
         KEY_PLUS(0, 5, "Key +"),
         KEY_POUND(0, 6, "Key £"),
         KEY_ONE_EXCLAMATION_POINT(0, 7, "Key 1 | !"),

@@ -7,7 +7,6 @@ import io.github.arkosammy12.jemu.app.system.chip8.database.Chip8Database;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.chip8.*;
 import io.github.arkosammy12.jemu.core.common.Emulator;
-import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.gui.commands.StopEmulatorCommand;
@@ -15,7 +14,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
-import java.awt.event.KeyEvent;
 import java.text.NumberFormat;
 import java.util.Optional;
 
@@ -143,29 +141,6 @@ public class Chip8Adapter extends SystemAdapter implements Chip8Host {
             }
             default -> {}
         }
-    }
-
-    @Override
-    protected SystemController.Action getActionForKeyCode(int keyCode, int keyLocation) {
-        return switch (keyCode) {
-            case KeyEvent.VK_X -> Chip8Keypad.Actions.KEY_0;
-            case KeyEvent.VK_1 -> Chip8Keypad.Actions.KEY_1;
-            case KeyEvent.VK_2 -> Chip8Keypad.Actions.KEY_2;
-            case KeyEvent.VK_3 -> Chip8Keypad.Actions.KEY_3;
-            case KeyEvent.VK_Q -> Chip8Keypad.Actions.KEY_4;
-            case KeyEvent.VK_W -> Chip8Keypad.Actions.KEY_5;
-            case KeyEvent.VK_E -> Chip8Keypad.Actions.KEY_6;
-            case KeyEvent.VK_A -> Chip8Keypad.Actions.KEY_7;
-            case KeyEvent.VK_S -> Chip8Keypad.Actions.KEY_8;
-            case KeyEvent.VK_D -> Chip8Keypad.Actions.KEY_9;
-            case KeyEvent.VK_Z -> Chip8Keypad.Actions.KEY_A;
-            case KeyEvent.VK_C -> Chip8Keypad.Actions.KEY_B;
-            case KeyEvent.VK_4 -> Chip8Keypad.Actions.KEY_C;
-            case KeyEvent.VK_R -> Chip8Keypad.Actions.KEY_D;
-            case KeyEvent.VK_F -> Chip8Keypad.Actions.KEY_E;
-            case KeyEvent.VK_V -> Chip8Keypad.Actions.KEY_F;
-            default -> null;
-        };
     }
 
     @Override

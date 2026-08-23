@@ -9,7 +9,7 @@ public class RCAStudioIIKeypad implements SystemController {
     private int latchedKey;
 
     @Override
-    public void onActionPressed(Action action) {
+    public void pressAction(Action action) {
         if (!(action instanceof Actions studioIIAction)) {
             return;
         }
@@ -20,7 +20,7 @@ public class RCAStudioIIKeypad implements SystemController {
     }
 
     @Override
-    public void onActionReleased(Action action) {
+    public void releaseAction(Action action) {
         if (!(action instanceof Actions studioIIAction)) {
             return;
         }

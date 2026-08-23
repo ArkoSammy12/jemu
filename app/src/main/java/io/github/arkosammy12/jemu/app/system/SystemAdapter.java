@@ -9,18 +9,17 @@ import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
-import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.frontend.util.KeyActionListener;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.io.Closeable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,7 +120,21 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
     protected abstract Emulator createEmulator();
 
-    protected abstract SystemController.Action getActionForKeyCode(int keyCode, int keyLocation);
+    protected KeyActionListener createKeyActionListener() {
+        return new KeyActionListener() {
+
+            @Override
+            public void onKeyActionPressed(KeyAction keyAction) {
+                systemManager.getActionsForKey(keyAction).ifPresent(actions -> getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> actions.forEach(systemController::pressAction)));
+            }
+
+            @Override
+            public void onKeyActionReleased(KeyAction keyAction) {
+                systemManager.getActionsForKey(keyAction).ifPresent(actions -> getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> actions.forEach(systemController::releaseAction)));
+            }
+
+        };
+    }
 
     protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         Optional<byte[]> rawRomOptional = initializer.getRomImage();
@@ -156,27 +169,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             return Optional.ofNullable(this.videoDriver);
         });
 
-        this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(new KeyAdapter() {
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                int keyCode = e.getKeyCode();
-                SystemController.Action action = getActionForKeyCode(keyCode, e.getKeyLocation());
-                if (action != null) {
-                    getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> systemController.onActionPressed(action));
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                int keyCode = e.getKeyCode();
-                SystemController.Action action = getActionForKeyCode(keyCode, e.getKeyLocation());
-                if (action != null) {
-                    getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> systemController.onActionReleased(action));
-                }
-            }
-
-        });
+        this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(this.createKeyActionListener());
     }
 
     @Override
