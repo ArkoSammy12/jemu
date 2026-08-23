@@ -141,13 +141,17 @@ public class MOS6526 implements Bus {
             case TB_LO -> this.timerB.writeTimerLatchLow(value);
             case TB_HI -> this.timerB.writeTimerLatchHigh(value);
             case TOD_10THS -> {
-                this.todClockRunning = true;
+                if (this.alarmMode == AlarmMode.SET_TOD_CLOCK) {
+                    this.todClockRunning = true;
+                }
                 this.tenthsCounter.write(value);
             }
             case TOD_SEC -> this.secondsCounter.write(value);
             case TOD_MIN -> this.minutesCounter.write(value);
             case TOD_HR -> {
-                this.todClockRunning = false;
+                if (this.alarmMode == AlarmMode.SET_TOD_CLOCK) {
+                    this.todClockRunning = false;
+                }
                 this.hoursCounter.write(value);
                 AmPmFlag amPmFlag = (value & (1 << 7)) != 0 ? AmPmFlag.PM : AmPmFlag.AM;
                 switch (this.alarmMode) {
