@@ -47,7 +47,7 @@ public class MOS6526 implements Bus {
     private boolean irqAlarmEnable;
 
     private int todDivisorCounter;
-    private boolean todClockRunning = true;
+    private boolean todClockRunning = false;
     private final AbstractTODCounter tenthsCounter = new TODCounter(0x09, 0b1111);
     private final AbstractTODCounter secondsCounter = new TODCounter(0x59, 0b1111111);
     private final AbstractTODCounter minutesCounter = new TODCounter(0x59, 0b1111111);
