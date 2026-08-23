@@ -520,8 +520,10 @@ public class MOS6526 implements Bus {
         }
 
         private void start() {
+            if (!this.running) {
+                this.toggleOutput = true;
+            }
             this.running = true;
-            this.toggleOutput = true;
         }
 
         private void stop() {
