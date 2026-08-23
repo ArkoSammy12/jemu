@@ -436,7 +436,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     case 4 -> {
                         this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.SECOND);
                         if (this.sprites[6].isDMAOn()) {
-                            this.sprite5BAOutputFlag = true;
+                            this.sprite6BAOutputFlag = true;
                         }
                     }
                     case 5 -> {
@@ -501,7 +501,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     }
                     case 60 -> {
                         this.sprites[1].performPAccess();
-
                         this.sprite0BAOutputFlag = Sprite0BAOutputFlag.NONE;
                         this.spriteAECOutput = this.sprite1BAOutputFlag;
                     }
