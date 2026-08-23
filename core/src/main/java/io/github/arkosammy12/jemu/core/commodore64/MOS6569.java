@@ -808,7 +808,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case IDLE -> 0x3FFF;
             case DISPLAY -> {
                 if (this.graphicsMode.getBMM()) {
-                    yield ((this.characterBaseAddress & 1) << 13) | (this.videoCounter << 3) | this.rowCounter;
+                    yield ((this.characterBaseAddress & 0b100) << 11) | (this.videoCounter << 3) | this.rowCounter;
                 } else {
                     yield (this.characterBaseAddress << 11) | ((this.videoMatrixBuffer[this.videoMatrixLine] & 0xFF) << 3) | this.rowCounter;
                 }
