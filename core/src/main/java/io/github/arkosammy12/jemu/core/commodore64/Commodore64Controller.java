@@ -148,7 +148,7 @@ public class Commodore64Controller implements SystemController {
         KEY_UP_ARROW(6, 6, "Key Up Arrow"),
         KEY_Q(6, 7, "Key Q"),
 
-        KEY_CSR_UP_DOWN(7, 0, "Key CRSR Up Down"),
+        KEY_CRSR_UP_DOWN(7, 0, "Key CRSR Up Down"),
         KEY_LEFT_SHIFT(7, 1, "Key Left Shift"),
         KEY_X(7, 2, "Key X"),
         KEY_V(7, 3, "Key V"),

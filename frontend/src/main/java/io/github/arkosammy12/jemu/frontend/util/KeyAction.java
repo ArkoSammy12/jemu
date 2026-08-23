@@ -43,6 +43,7 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
     public static final KeyAction NUM_0 = KeyAction.fromKeyCode(KeyEvent.VK_0);
 
     public static final KeyAction BACK_QUOTE = KeyAction.fromKeyCode(KeyEvent.VK_BACK_QUOTE);
+    public static final KeyAction DEAD_GRAVE = KeyAction.fromKeyCode(KeyEvent.VK_DEAD_GRAVE);
     public static final KeyAction MINUS = KeyAction.fromKeyCode(KeyEvent.VK_MINUS);
     public static final KeyAction EQUALS = KeyAction.fromKeyCode(KeyEvent.VK_EQUALS);
     public static final KeyAction BACK_SPACE = KeyAction.fromKeyCode(KeyEvent.VK_BACK_SPACE);
@@ -50,6 +51,7 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
     public static final KeyAction OPEN_BRACKET = KeyAction.fromKeyCode(KeyEvent.VK_OPEN_BRACKET);
     public static final KeyAction CLOSE_BRACKET = KeyAction.fromKeyCode(KeyEvent.VK_CLOSE_BRACKET);
     public static final KeyAction BACK_SLASH = KeyAction.fromKeyCode(KeyEvent.VK_BACK_SLASH);
+    public static final KeyAction PIPE = BACK_SLASH.withShiftKey(ModifierKey.PRESSED);
     public static final KeyAction CAPS_LOCK = KeyAction.fromKeyCode(KeyEvent.VK_CAPS_LOCK);
     public static final KeyAction SEMICOLON = KeyAction.fromKeyCode(KeyEvent.VK_SEMICOLON);
     public static final KeyAction QUOTE = KeyAction.fromKeyCode(KeyEvent.VK_QUOTE);
@@ -96,6 +98,22 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
     public static final KeyAction NUMPAD_8 = NUM_8.withKeyLocation(KeyLocation.NUMPAD);
     public static final KeyAction NUMPAD_9 = NUM_9.withKeyLocation(KeyLocation.NUMPAD);
     public static final KeyAction NUMPAD_0 = NUM_0.withKeyLocation(KeyLocation.NUMPAD);
+
+    public static final KeyAction ESCAPE = KeyAction.fromKeyCode(KeyEvent.VK_ESCAPE);
+    public static final KeyAction F1 = KeyAction.fromKeyCode(KeyEvent.VK_F1);
+    public static final KeyAction F2 = KeyAction.fromKeyCode(KeyEvent.VK_F2);
+    public static final KeyAction F3 = KeyAction.fromKeyCode(KeyEvent.VK_F3);
+    public static final KeyAction F4 = KeyAction.fromKeyCode(KeyEvent.VK_F4);
+    public static final KeyAction F5 = KeyAction.fromKeyCode(KeyEvent.VK_F5);
+    public static final KeyAction F6 = KeyAction.fromKeyCode(KeyEvent.VK_F6);
+    public static final KeyAction F7 = KeyAction.fromKeyCode(KeyEvent.VK_F7);
+    public static final KeyAction F8 = KeyAction.fromKeyCode(KeyEvent.VK_F8);
+    public static final KeyAction F12 = KeyAction.fromKeyCode(KeyEvent.VK_F12);
+
+    public static final KeyAction UP_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_UP);
+    public static final KeyAction DOWN_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_DOWN);
+    public static final KeyAction LEFT_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_LEFT);
+    public static final KeyAction RIGHT_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_RIGHT);
 
     public KeyAction {
         if (this.keyCode() < 0) {

@@ -55,7 +55,10 @@ public class Commodore64Manager extends SystemManager {
         this.keyActionMap.put(KeyAction.Y, Commodore64Controller.KeyboardMatrix.KEY_Y);
         this.keyActionMap.put(KeyAction.Z, Commodore64Controller.KeyboardMatrix.KEY_Z);
 
-        this.keyActionMap.put(KeyAction.BACK_QUOTE, Commodore64Controller.KeyboardMatrix.KEY_LEFT_ARROW);
+        this.keyActionMap.put(KeyAction.BACK_QUOTE.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_LEFT_ARROW);
+        this.keyActionMap.put(KeyAction.DEAD_GRAVE.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_LEFT_ARROW);
+        this.keyActionMap.put(KeyAction.BACK_QUOTE.withShiftKey(KeyAction.ModifierKey.PRESSED), Commodore64Controller.KeyboardMatrix.KEY_POUND);
+        this.keyActionMap.put(KeyAction.DEAD_GRAVE.withShiftKey(KeyAction.ModifierKey.PRESSED), Commodore64Controller.KeyboardMatrix.KEY_POUND);
         this.keyActionMap.put(KeyAction.NUM_1.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_ONE_EXCLAMATION_POINT);
         this.keyActionMap.put(KeyAction.NUM_2.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_TWO_QUOTES);
         this.keyActionMap.put(KeyAction.NUM_3.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_THREE_NUMERAL);
@@ -78,12 +81,13 @@ public class Commodore64Manager extends SystemManager {
         this.keyActionMap.put(KeyAction.OPEN_PARENTHESIS, Commodore64Controller.KeyboardMatrix.KEY_EIGHT_OPEN_PARENTHESIS, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
         this.keyActionMap.put(KeyAction.CLOSE_PARENTHESIS, Commodore64Controller.KeyboardMatrix.KEY_NINE_CLOSE_PARENTHESIS, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
 
-        this.keyActionMap.put(KeyAction.MINUS, Commodore64Controller.KeyboardMatrix.KEY_MINUS);
+        this.keyActionMap.put(KeyAction.MINUS.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_MINUS);
         this.keyActionMap.put(KeyAction.EQUALS.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_EQUALS);
         this.keyActionMap.put(KeyAction.PLUS, Commodore64Controller.KeyboardMatrix.KEY_PLUS);
         this.keyActionMap.put(KeyAction.BACK_SPACE, Commodore64Controller.KeyboardMatrix.KEY_INST_DEL);
-        this.keyActionMap.put(KeyAction.CONTROL, Commodore64Controller.KeyboardMatrix.KEY_CTRL);
-        this.keyActionMap.put(KeyAction.BACK_SLASH.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardSpecialKey.RESTORE);
+        this.keyActionMap.put(KeyAction.TAB, Commodore64Controller.KeyboardMatrix.KEY_COMMODORE);
+        this.keyActionMap.put(KeyAction.BACK_SLASH, Commodore64Controller.KeyboardMatrix.KEY_CLR_HOME);
+        this.keyActionMap.put(KeyAction.PIPE, Commodore64Controller.KeyboardSpecialKey.RESTORE);
         this.keyActionMap.put(KeyAction.CAPS_LOCK, Commodore64Controller.KeyboardSpecialKey.SHIFT_LOCK);
         this.keyActionMap.put(KeyAction.COLON, Commodore64Controller.KeyboardMatrix.KEY_COLON_OPENING_BRACKET);
         this.keyActionMap.put(KeyAction.OPEN_BRACKET.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_COLON_OPENING_BRACKET, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
@@ -104,9 +108,27 @@ public class Commodore64Manager extends SystemManager {
         this.keyActionMap.put(KeyAction.SLASH.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SLASH_QUESTION_MARK);
         this.keyActionMap.put(KeyAction.QUESTION_MARK, Commodore64Controller.KeyboardMatrix.KEY_SLASH_QUESTION_MARK, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
 
+        this.keyActionMap.put(KeyAction.CONTROL, Commodore64Controller.KeyboardMatrix.KEY_CTRL);
+
+        this.keyActionMap.put(KeyAction.F1.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F1_F2);
+        this.keyActionMap.put(KeyAction.F2.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F1_F2, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.F3.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F3_F4);
+        this.keyActionMap.put(KeyAction.F4.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F3_F4, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.F5.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F5_F6);
+        this.keyActionMap.put(KeyAction.F6.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F5_F6, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.F7.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F7_F8);
+        this.keyActionMap.put(KeyAction.F8.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_F7_F8, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+
+        this.keyActionMap.put(KeyAction.ESCAPE, Commodore64Controller.KeyboardMatrix.KEY_RUN_STOP);
+        this.keyActionMap.put(KeyAction.F12, Commodore64Controller.KeyboardSpecialKey.RESTORE);
+
+        this.keyActionMap.put(KeyAction.UP_ARROW, Commodore64Controller.KeyboardMatrix.KEY_CRSR_UP_DOWN, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.DOWN_ARROW, Commodore64Controller.KeyboardMatrix.KEY_CRSR_UP_DOWN);
+        this.keyActionMap.put(KeyAction.LEFT_ARROW, Commodore64Controller.KeyboardMatrix.KEY_CRSR_LEFT_RIGHT, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.RIGHT_ARROW, Commodore64Controller.KeyboardMatrix.KEY_CRSR_LEFT_RIGHT);
+
         this.keyActionMap.put(KeyAction.SPACE, Commodore64Controller.KeyboardMatrix.KEY_SPACE);
 
-        // TODO: Map remaining keys: Pound, CLR/HOME, Fx buttons, CRSR buttons, Commodore key, Run/Stop, Up arrow, asterisk
     }
 
     @Override

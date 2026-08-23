@@ -10,8 +10,11 @@ public class KeyActionMap<V extends SystemController.Action> {
     private final Map<Integer, List<Map.Entry<KeyAction, List<V>>>> map = new HashMap<>();
 
     @SafeVarargs
-    public final void put(KeyAction action, V... value) {
-        this.map.computeIfAbsent(action.keyCode(), _ -> new ArrayList<>()).add(Map.entry(action, List.of(value)));
+    public final void put(KeyAction action, V value, V... extraValues) {
+        List<V> values = new ArrayList<>();
+        values.add(value);
+        values.addAll(List.of(extraValues));
+        this.map.computeIfAbsent(action.keyCode(), _ -> new ArrayList<>()).add(Map.entry(action, List.copyOf(values)));
     }
 
     public Optional<List<V>> get(KeyAction input) {
