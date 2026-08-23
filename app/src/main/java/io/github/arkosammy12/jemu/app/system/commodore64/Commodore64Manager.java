@@ -128,6 +128,11 @@ public class Commodore64Manager extends SystemManager {
 
         this.keyActionMap.put(KeyAction.SPACE, Commodore64Controller.KeyboardMatrix.KEY_SPACE);
 
+        this.keyActionMap.put(KeyAction.NUMPAD_8, Commodore64Controller.Peripheral.JOYSTICK1_UP);
+        this.keyActionMap.put(KeyAction.NUMPAD_5, Commodore64Controller.Peripheral.JOYSTICK1_DOWN);
+        this.keyActionMap.put(KeyAction.NUMPAD_4, Commodore64Controller.Peripheral.JOYSTICK1_LEFT);
+        this.keyActionMap.put(KeyAction.NUMPAD_6, Commodore64Controller.Peripheral.JOYSTICK1_RIGHT);
+        this.keyActionMap.put(KeyAction.NUMPAD_0, Commodore64Controller.Peripheral.JOYSTICK1_FIRE);
     }
 
     @Override

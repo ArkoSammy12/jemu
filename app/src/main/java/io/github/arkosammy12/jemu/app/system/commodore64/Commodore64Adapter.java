@@ -71,6 +71,9 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
                 for (Commodore64Controller.KeyboardSpecialKey specialKeyAction : Commodore64Controller.KeyboardSpecialKey.values()) {
                     pressedActions.put(specialKeyAction, 0);
                 }
+                for (Commodore64Controller.Peripheral peripheralAction : Commodore64Controller.Peripheral.values()) {
+                    pressedActions.put(peripheralAction, 0);
+                }
             }
 
             @Override

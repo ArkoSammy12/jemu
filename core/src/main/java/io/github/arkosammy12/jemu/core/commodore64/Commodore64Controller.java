@@ -10,6 +10,18 @@ public class Commodore64Controller implements SystemController {
     private boolean restoreKey;
     private ShiftLockGate shiftLockGate = ShiftLockGate.OPEN;
 
+    private boolean physicalJoystick1Up;
+    private boolean physicalJoystick1Down;
+    private boolean physicalJoystick1Left;
+    private boolean physicalJoystick1Right;
+
+    private boolean currentJoystick1Up;
+    private boolean currentJoystick1Down;
+    private boolean currentJoystick1Left;
+    private boolean currentJoystick1Right;
+
+    private boolean joystick1FireButton;
+
     @Override
     public void pressAction(Action action) {
         if (!(action instanceof Actions commodore64Action)) {
@@ -26,7 +38,35 @@ public class Commodore64Controller implements SystemController {
                     this.restoreKey = true;
                 }
             }
-
+            case Peripheral peripheral -> {
+                switch (peripheral) {
+                    case JOYSTICK1_UP -> {
+                        this.physicalJoystick1Up = true;
+                        if (!this.physicalJoystick1Down) {
+                            this.currentJoystick1Up = true;
+                        }
+                    }
+                    case JOYSTICK1_DOWN -> {
+                        this.physicalJoystick1Down = true;
+                        if (!this.physicalJoystick1Up) {
+                            this.currentJoystick1Down = true;
+                        }
+                    }
+                    case JOYSTICK1_LEFT -> {
+                        this.physicalJoystick1Left = true;
+                        if (!this.physicalJoystick1Right) {
+                            this.currentJoystick1Left = true;
+                        }
+                    }
+                    case JOYSTICK1_RIGHT -> {
+                        this.physicalJoystick1Right = true;
+                        if (!this.physicalJoystick1Left) {
+                            this.currentJoystick1Right = true;
+                        }
+                    }
+                    case JOYSTICK1_FIRE -> this.joystick1FireButton = true;
+                }
+            }
         }
     }
 
@@ -47,7 +87,39 @@ public class Commodore64Controller implements SystemController {
                     case SHIFT_LOCK -> this.shiftLockGate = this.shiftLockGate.getOpposite();
                 }
             }
-
+            case Peripheral peripheral -> {
+                switch (peripheral) {
+                    case JOYSTICK1_UP -> {
+                        this.physicalJoystick1Up = false;
+                        this.currentJoystick1Up = false;
+                        if (this.physicalJoystick1Down) {
+                            this.currentJoystick1Down = true;
+                        }
+                    }
+                    case JOYSTICK1_DOWN -> {
+                        this.physicalJoystick1Down = false;
+                        this.currentJoystick1Down = false;
+                        if (this.physicalJoystick1Up) {
+                            this.currentJoystick1Up = true;
+                        }
+                    }
+                    case JOYSTICK1_LEFT -> {
+                        this.physicalJoystick1Left = false;
+                        this.currentJoystick1Left = false;
+                        if (this.physicalJoystick1Right) {
+                            this.currentJoystick1Right = true;
+                        }
+                    }
+                    case JOYSTICK1_RIGHT -> {
+                        this.physicalJoystick1Right = false;
+                        this.currentJoystick1Right = false;
+                        if (this.physicalJoystick1Left) {
+                            this.currentJoystick1Left = true;
+                        }
+                    }
+                    case JOYSTICK1_FIRE -> this.joystick1FireButton = false;
+                }
+            }
         }
 
     }
@@ -78,11 +150,20 @@ public class Commodore64Controller implements SystemController {
         return ret;
     }
 
+    public int getJoystick1Bits() {
+        int ret = this.currentJoystick1Up ? 1 : 0;
+        ret |= this.currentJoystick1Down ? 1 << 1 : 0;
+        ret |= this.currentJoystick1Left ? 1 << 2 : 0;
+        ret |= this.currentJoystick1Right ? 1 << 3 : 0;
+        ret |= this.joystick1FireButton ? 1 << 4 : 0;
+        return ret;
+    }
+
     public boolean getRestoreKey() {
         return this.restoreKey;
     }
 
-    public sealed interface Actions extends SystemController.Action permits KeyboardMatrix, KeyboardSpecialKey {}
+    public sealed interface Actions extends SystemController.Action permits KeyboardMatrix, KeyboardSpecialKey, Peripheral {}
 
     public enum KeyboardMatrix implements Actions {
         KEY_INST_DEL(0, 0, "Key INST | DEL"),
@@ -198,6 +279,26 @@ public class Commodore64Controller implements SystemController {
             return this.label;
         }
 
+    }
+
+    public enum Peripheral implements Actions {
+        JOYSTICK1_UP("Joystick 1 Up"),
+        JOYSTICK1_DOWN("Joystick 1 Down"),
+        JOYSTICK1_LEFT("Joystick 1 Left"),
+        JOYSTICK1_RIGHT("Joystick 1 Right"),
+        JOYSTICK1_FIRE("Joystick 1 Fire")
+        ;
+
+        private final String label;
+
+        Peripheral(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String getLabel() {
+            return this.label;
+        }
     }
 
     private enum ShiftLockGate {

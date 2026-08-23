@@ -42,6 +42,17 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
     public static final KeyAction NUM_9 = KeyAction.fromKeyCode(KeyEvent.VK_9);
     public static final KeyAction NUM_0 = KeyAction.fromKeyCode(KeyEvent.VK_0);
 
+    public static final KeyAction NUMPAD_1 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD1);
+    public static final KeyAction NUMPAD_2 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD2);
+    public static final KeyAction NUMPAD_3 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD3);
+    public static final KeyAction NUMPAD_4 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD4);
+    public static final KeyAction NUMPAD_5 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD5);
+    public static final KeyAction NUMPAD_6 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD6);
+    public static final KeyAction NUMPAD_7 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD7);
+    public static final KeyAction NUMPAD_8 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD8);
+    public static final KeyAction NUMPAD_9 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD9);
+    public static final KeyAction NUMPAD_0 = KeyAction.fromKeyCode(KeyEvent.VK_NUMPAD0);
+
     public static final KeyAction BACK_QUOTE = KeyAction.fromKeyCode(KeyEvent.VK_BACK_QUOTE);
     public static final KeyAction DEAD_GRAVE = KeyAction.fromKeyCode(KeyEvent.VK_DEAD_GRAVE);
     public static final KeyAction MINUS = KeyAction.fromKeyCode(KeyEvent.VK_MINUS);
@@ -87,17 +98,6 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
     public static final KeyAction QUESTION_MARK = SLASH.withShiftKey(ModifierKey.PRESSED);
 
     public static final KeyAction SPACE = KeyAction.fromKeyCode(KeyEvent.VK_SPACE);
-
-    public static final KeyAction NUMPAD_1 = NUM_1.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_2 = NUM_2.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_3 = NUM_3.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_4 = NUM_4.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_5 = NUM_5.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_6 = NUM_6.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_7 = NUM_7.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_8 = NUM_8.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_9 = NUM_9.withKeyLocation(KeyLocation.NUMPAD);
-    public static final KeyAction NUMPAD_0 = NUM_0.withKeyLocation(KeyLocation.NUMPAD);
 
     public static final KeyAction ESCAPE = KeyAction.fromKeyCode(KeyEvent.VK_ESCAPE);
     public static final KeyAction F1 = KeyAction.fromKeyCode(KeyEvent.VK_F1);

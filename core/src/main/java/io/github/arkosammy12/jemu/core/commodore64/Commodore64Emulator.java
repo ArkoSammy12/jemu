@@ -144,7 +144,11 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b111);
 
         this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), () -> ~this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch())));
-        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> ~this.systemController.getRowBits((this.getCIA1IOPortA().getDataDirectionRegister() & ~this.getCIA1IOPortA().getOutputLatch())));
+        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> {
+            int rowBits = this.systemController.getRowBits((this.getCIA1IOPortA().getDataDirectionRegister() & ~this.getCIA1IOPortA().getOutputLatch()));
+            int joystick1Bits = this.systemController.getJoystick1Bits();
+            return ~(rowBits | joystick1Bits);
+        });
         this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
         this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
     }
