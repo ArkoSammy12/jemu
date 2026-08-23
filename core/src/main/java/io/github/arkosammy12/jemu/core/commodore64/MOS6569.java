@@ -59,36 +59,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private static final int SPRITE_6_COLOR = 0x2D;
     private static final int SPRITE_7_COLOR = 0x2E;
 
-    // https://www.godot64.de/german/hpalet.htm
-    private static final int[] GODOTS_PALETTE = {
-            0x000000, 0xFFFFFF, 0x880000, 0xAAFFEE,
-            0xCCFFCC, 0x00CC55, 0x0000AA, 0xEEEE77,
-            0xDD8855, 0x664400, 0xFF7777, 0x333333,
-            0x777777, 0xAAFF66, 0x0088FF, 0xBBBBBB
-    };
-
-    private static final int[] GULRAK_PALETTE = {
-            0x000000, 0xFFFFFF, 0x753B2F, 0x73AEBE,
-            0x784193, 0x619A47, 0x392C85, 0xC2D073,
-            0x7B5629, 0x4D4000, 0xA76B5D, 0x4A4A4A,
-            0x707070, 0xA1D988, 0x7062C0, 0x989898
-    };
-
-    // http://www.pepto.de/projects/colorvic/
-    private static final int[] COLORDORE_PALETTE = {
-            0x000000, 0xFFFFFF, 0x68372B, 0x70A4B2,
-            0x6F3D86, 0x588D43, 0x352879, 0xB8C76F,
-            0x6F4F25, 0x433900, 0x9A6759, 0x444444,
-            0x6C6C6C, 0x9AD284, 0x6C5EB5, 0x959595
-    };
-
-    private static final int[] PC64_PALETTE = {
-            0x202020, 0xFFFFFF, 0xB62020, 0x71FFFF,
-            0xB620B6, 0x20B620, 0x2020B6, 0xFFFF20,
-            0xB67120, 0x914420, 0xFF7171, 0x717171,
-            0x919191, 0x71FF71, 0x7171FF, 0xB6B6B6
-    };
-
     private static final int SCANLINES_PER_FRAME = 312;
     private static final int VISIBLE_SCANLINES = 284;
     private static final int FIRST_VBLANK_SCANLINE = 300;
