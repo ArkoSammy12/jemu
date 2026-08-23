@@ -729,6 +729,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 }
                 if (isForegroundBitmapPixel) {
                     sprite.setGraphicsDataCollision(true);
+                    this.irqSpriteBackground = true;
                 }
                 if (firstOpaqueSpriteNumber < 0) {
                     firstOpaqueSpriteNumber = i;
@@ -741,6 +742,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         if (opaqueSpritePixelFound) {
             if (spriteCollision) {
                 this.sprites[firstOpaqueSpriteNumber].setSpriteCollision(true);
+                this.irqSpriteSprite = true;
             }
             if (this.sprites[highestPrioritySpriteNumber].getDataPriority()) {
                 if (isForegroundBitmapPixel) {
