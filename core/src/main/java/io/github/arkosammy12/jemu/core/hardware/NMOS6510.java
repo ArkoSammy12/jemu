@@ -21,6 +21,8 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
         return this.outputLatch;
     }
 
+    // TODO: Different XAA magic (0xEF). CPU IO port decays. For RDY dependent unstable instructions (SHA and friends), highbyte + 1 masking only happens in the last dummy read
+
     @Override
     protected int readByte(int address) {
         this.readWriteCycle = ReadWriteCycle.READ;
