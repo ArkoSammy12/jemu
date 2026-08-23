@@ -100,7 +100,7 @@ Multi-system emulator written in Java.
 
 # Commodore 64
 
-The Commodore 64 core uses semantic keybindings for the built-in keyboard.
+The Commodore 64 core uses symbolic keybindings for the built-in keyboard.
 
 
 | Action                | Key               |
