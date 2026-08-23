@@ -112,7 +112,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int scanlineNumber;
     private int raster = SCANLINES_PER_FRAME - 1;
     private boolean displayEnabledInLine30;
-    private boolean badLineCondition;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -407,9 +406,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 if (this.raster == 0x30 && this.displayEnable) {
                     this.displayEnabledInLine30 = true;
                 }
-                this.badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
+                boolean badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
 
-                if (this.badLineCondition) {
+                if (badLineCondition) {
                     this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
                 }
 
@@ -545,14 +544,14 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                                 if (this.cycleNumber == 14) {
                                     this.videoCounter = this.videoCounterBase;
                                     this.videoMatrixLine = 0;
-                                    if (this.badLineCondition) {
+                                    if (badLineCondition) {
                                         this.rowCounter = 0;
                                     }
                                 }
                             }
                             if (this.cycleNumber >= 12) {
                                 if (this.cycleNumber <= 54) {
-                                    if (this.badLineCondition) {
+                                    if (badLineCondition) {
                                         if (!this.graphicsBAOutput) {
                                             this.cAccessingCountdown = 3;
                                         }
@@ -713,7 +712,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         } else {
             isForegroundBitmapPixel = (graphicsData & 1) != 0;
         }
-
 
         int highestPrioritySpriteNumber = 7;
         int firstOpaqueSpriteNumber = -1;
