@@ -65,7 +65,7 @@ public class Commodore64Manager extends SystemManager {
         this.keyActionMap.put(KeyAction.NUM_4.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_FOUR_DOLLAR_SIGN);
         this.keyActionMap.put(KeyAction.NUM_5.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_FIVE_PERCENT_SIGN);
         this.keyActionMap.put(KeyAction.NUM_6.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SIX_AMPERSAND);
-        this.keyActionMap.put(KeyAction.NUM_7.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEVEN_TILDE);
+        this.keyActionMap.put(KeyAction.NUM_7.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEVEN_BACK_QUOTE);
         this.keyActionMap.put(KeyAction.NUM_8.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_EIGHT_OPEN_PARENTHESIS);
         this.keyActionMap.put(KeyAction.NUM_9.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_NINE_CLOSE_PARENTHESIS);
         this.keyActionMap.put(KeyAction.NUM_0.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_ZERO);
@@ -87,16 +87,15 @@ public class Commodore64Manager extends SystemManager {
         this.keyActionMap.put(KeyAction.BACK_SPACE, Commodore64Controller.KeyboardMatrix.KEY_INST_DEL);
         this.keyActionMap.put(KeyAction.TAB, Commodore64Controller.KeyboardMatrix.KEY_COMMODORE);
         this.keyActionMap.put(KeyAction.BACK_SLASH, Commodore64Controller.KeyboardMatrix.KEY_CLR_HOME);
-        this.keyActionMap.put(KeyAction.PIPE, Commodore64Controller.KeyboardSpecialKey.RESTORE);
         this.keyActionMap.put(KeyAction.CAPS_LOCK, Commodore64Controller.KeyboardSpecialKey.SHIFT_LOCK);
         this.keyActionMap.put(KeyAction.COLON, Commodore64Controller.KeyboardMatrix.KEY_COLON_OPENING_BRACKET);
         this.keyActionMap.put(KeyAction.OPEN_BRACKET.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_COLON_OPENING_BRACKET, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
         this.keyActionMap.put(KeyAction.SEMICOLON.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEMICOLON_CLOSING_BRACKET);
         this.keyActionMap.put(KeyAction.CLOSE_BRACKET.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEMICOLON_CLOSING_BRACKET, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
         this.keyActionMap.put(KeyAction.ENTER, Commodore64Controller.KeyboardMatrix.KEY_RETURN);
-        this.keyActionMap.put(KeyAction.QUOTE.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEVEN_TILDE, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.QUOTE.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEVEN_BACK_QUOTE, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
         this.keyActionMap.put(KeyAction.DOUBLE_QUOTES, Commodore64Controller.KeyboardMatrix.KEY_TWO_QUOTES, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
-        this.keyActionMap.put(KeyAction.DEAD_ACUTE.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEVEN_TILDE, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
+        this.keyActionMap.put(KeyAction.DEAD_ACUTE.withShiftKey(KeyAction.ModifierKey.UNPRESSED), Commodore64Controller.KeyboardMatrix.KEY_SEVEN_BACK_QUOTE, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
         this.keyActionMap.put(KeyAction.DEAD_ACUTE.withShiftKey(KeyAction.ModifierKey.PRESSED), Commodore64Controller.KeyboardMatrix.KEY_TWO_QUOTES, Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);
 
         this.keyActionMap.put(KeyAction.SHIFT.withKeyLocation(KeyAction.KeyLocation.LEFT), Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT);

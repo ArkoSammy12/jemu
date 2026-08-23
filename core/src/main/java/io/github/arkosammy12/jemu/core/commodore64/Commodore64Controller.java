@@ -88,7 +88,7 @@ public class Commodore64Controller implements SystemController {
         KEY_INST_DEL(0, 0, "Key INST | DEL"),
         KEY_THREE_NUMERAL(0, 1, "Key 3 | #"),
         KEY_FIVE_PERCENT_SIGN(0, 2, "Key 5 | %"),
-        KEY_SEVEN_TILDE(0, 3, "Key 7 | `"),
+        KEY_SEVEN_BACK_QUOTE(0, 3, "Key 7 | `"),
         KEY_NINE_CLOSE_PARENTHESIS(0, 4, "Key 9 | )"),
         KEY_PLUS(0, 5, "Key +"),
         KEY_POUND(0, 6, "Key £"),
