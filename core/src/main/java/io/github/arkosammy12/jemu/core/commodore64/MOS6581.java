@@ -288,7 +288,7 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
                 output &= this.getPulseOutput();
             }
             if (this.selectNoise) {
-                output &=  this.getNoiseOutput();
+                output &= this.getNoiseOutput();
             }
             return output;
         }
