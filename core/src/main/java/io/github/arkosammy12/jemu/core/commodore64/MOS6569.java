@@ -110,8 +110,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int dotNumber;
     private int cycleNumber = 1; // in the range [1, 63]
     private int scanlineNumber;
-    private int raster = SCANLINES_PER_FRAME - 1;
+    private int raster = 0;
     private boolean displayEnabledInLine30;
+    private boolean incrementRasterFlag;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -414,13 +415,18 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 switch (this.cycleNumber) {
                     case 1 -> {
+                        if (this.scanlineNumber > 0 && this.incrementRasterFlag) {
+                            this.incrementRaster();
+                            this.incrementRasterFlag = false;
+                        }
                         this.sprites[3].performPAccess();
                         this.sprite2BAOutputFlag = false;
                         this.spriteAECOutput = this.sprite3BAOutputFlag;
                     }
                     case 2 -> {
-                        if (this.scanlineNumber == 0) {
+                        if (this.incrementRasterFlag && this.scanlineNumber == 0) {
                             this.incrementRaster();
+                            this.incrementRasterFlag = false;
                         }
                         this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.SECOND);
                         if (this.sprites[5].isDMAOn()) {
@@ -600,7 +606,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                    case 60 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.FIRST);
                    case 61 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.THIRD);
                    case 62 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 63 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                   case 63 -> {
+                       this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                       this.incrementRasterFlag = true;
+                   }
                     default -> {
                         if (this.cycleNumber >= 15 && this.cycleNumber <= 54) {
                             if (this.cAccessing) {
@@ -763,13 +772,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         if (this.dotNumber >= PIXELS_PER_SCANLINE) {
             this.dotNumber = 0;
             this.scanlineNumber++;
-
             if (this.scanlineNumber >= SCANLINES_PER_FRAME) {
                 this.scanlineNumber = 0;
                 this.emulator.onVBlank();
                 this.emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
-            } else {
-                this.incrementRaster();
             }
         }
     }
