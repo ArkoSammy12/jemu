@@ -20,7 +20,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final NMOS6510<?> cpu;
     private final Commodore64Bus<?> bus;
     private final MOS6569<?> vic2;
-    private final MOS6581 sid;
+    private final MOS6581<?> sid;
     private final MOS6526 cia1;
     private final MOS6526 cia2;
     private final Commodore64Controller systemController;
@@ -81,7 +81,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
         this.vic2 = new MOS6569<>(this);
-        this.sid = new MOS6581();
+        this.sid = new MOS6581<>(this);
         this.cia1 = new MOS6526(new MOS6526.SystemBus() {
 
             @Override
@@ -169,7 +169,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public MOS6581 getAudioGenerator() {
+    public MOS6581<?> getAudioGenerator() {
         return this.sid;
     }
 
