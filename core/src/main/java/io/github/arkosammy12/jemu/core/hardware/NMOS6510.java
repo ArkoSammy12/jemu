@@ -31,7 +31,7 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
             return 0x00; // some undefined value :v. The CPU will repeat its read cycle after it comes out of RDY anyways
         } else {
             return switch (address) {
-                case 0x0000 -> this.outputLatch;
+                case 0x0000 -> this.dataDirectionRegister;
                 case 0x0001 -> systemBus.getIOPort().read();
                 default -> systemBus.getBus().readByte(address);
             };
