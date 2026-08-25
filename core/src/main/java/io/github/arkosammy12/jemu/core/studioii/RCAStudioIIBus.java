@@ -195,8 +195,7 @@ public class RCAStudioIIBus implements Bus {
         if (file == null) {
             return;
         }
-
-        if (romPath != null && FilenameUtils.getExtension(romPath.toString()).equals("st2")) {
+        if (romPath != null && "st2".equalsIgnoreCase(FilenameUtils.getExtension(romPath.toString()))) {
             if (file.length < 0x200) {
                 throw new EmulatorException("Invalid .st2 ROM file (Must be at least 512 bytes)!");
             }
