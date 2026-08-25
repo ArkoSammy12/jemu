@@ -40,7 +40,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         if (optionalROM.isPresent() && optionalROMPath.isPresent()) {
             Path path = optionalROMPath.get();
             String extension = FilenameUtils.getExtension(path.toString());
-            if (!Objects.equals(extension, "prg")) {
+            if (!"prg".equalsIgnoreCase(extension)) {
                 throw new ROMInitializationException("Non .prg files are not supported for HLE!");
             }
             byte[] bytes = optionalROM.get();
@@ -108,7 +108,6 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
                 this.ram[0x00C6] = (byte) text.length();
             }
         }
-
     }
 
     @Override
