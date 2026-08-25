@@ -141,6 +141,8 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
             }
 
         };
+        this.updateW0();
+        this.updateQ();
     }
 
     @Override
