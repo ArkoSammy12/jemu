@@ -151,7 +151,8 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
     }
 
     @Override
-    public @NotNull SampleSize getBytesPerSample() {
+    @NotNull
+    public SampleSize getBytesPerSample() {
         return SampleSize.BYTES_2;
     }
 
