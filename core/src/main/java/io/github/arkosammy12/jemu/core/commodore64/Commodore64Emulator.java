@@ -81,7 +81,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
         this.vic2 = new MOS6569<>(this);
-        this.sid = new MOS6581<>(this);
+        this.sid = new MOS6581<>(this, this.iterationsPerFrame);
         this.cia1 = new MOS6526(new MOS6526.SystemBus() {
 
             @Override
