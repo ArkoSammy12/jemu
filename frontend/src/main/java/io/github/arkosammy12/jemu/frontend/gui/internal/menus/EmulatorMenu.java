@@ -240,7 +240,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         }
         outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemCatalog().getSystemDescriptors()) {
             for (String extension : descriptor.getFileExtensions()) {
-                if (fileExtension.equals(extension)) {
+                if (fileExtension.equalsIgnoreCase(extension)) {
                     systemDescriptor = descriptor;
                     break outer;
                 }
