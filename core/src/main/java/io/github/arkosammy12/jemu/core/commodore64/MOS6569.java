@@ -74,7 +74,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private final E emulator;
 
     private final int[] video;
-    private final Sprite[] sprites = new MOS6569.Sprite[8];
+    private final Sprite[] sprites;
     private final int[] videoMatrixBuffer = new int[40]; // 12 bit elements
 
     private int rasterCompare;
@@ -112,7 +112,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int scanlineNumber;
     private int raster = 0;
     private boolean displayEnabledInLine30;
-    private boolean incrementRasterFlag;
+    private boolean overflowRasterFlag;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -146,8 +146,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     private int dRAMRefreshCounter = 0xFF;
 
+    @SuppressWarnings("unchecked")
     public MOS6569(E emulator) {
         this.emulator = emulator;
+        this.sprites = new MOS6569.Sprite[8];
         for (int i = 0; i < 8; i++) {
             this.sprites[i] = new Sprite(i);
         }
@@ -286,8 +288,12 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.displayEnable = (value & (1 << 4)) != 0;
                 this.rowSelect = (value & (1 << 3)) != 0 ? RowSelect.REDUCED_BORDER : RowSelect.NORMAL;
                 this.yScroll = value & 0b111;
+                this.checkRasterIRQ();
             }
-            case RASTER -> this.rasterCompare = (this.rasterCompare & (1 << 8)) | (value & 0xFF);
+            case RASTER -> {
+                this.rasterCompare = (this.rasterCompare & (1 << 8)) | (value & 0xFF);
+                this.checkRasterIRQ();
+            }
             case LPX -> {} // Lightpen X coordinate
             case LPY -> {} // Lightpen Y coordinate
             case SPRITE_ENABLE -> this.setValueForSprites(value, Sprite::setEnabled);
@@ -415,18 +421,17 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 switch (this.cycleNumber) {
                     case 1 -> {
-                        if (this.scanlineNumber > 0 && this.incrementRasterFlag) {
-                            this.incrementRaster();
-                            this.incrementRasterFlag = false;
+                        if (!this.overflowRasterFlag) {
+                            this.checkRasterIRQ();
                         }
                         this.sprites[3].performPAccess();
                         this.sprite2BAOutputFlag = false;
                         this.spriteAECOutput = this.sprite3BAOutputFlag;
                     }
                     case 2 -> {
-                        if (this.incrementRasterFlag && this.scanlineNumber == 0) {
-                            this.incrementRaster();
-                            this.incrementRasterFlag = false;
+                        if (this.overflowRasterFlag) {
+                            this.overflowRasterFlag = false;
+                            this.checkRasterIRQ();
                         }
                         this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.SECOND);
                         if (this.sprites[5].isDMAOn()) {
@@ -590,26 +595,28 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.clockPixel();
 
                 switch (this.cycleNumber) {
-                   case 1 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 2 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 3 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 4 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 5 -> this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 6 -> this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 7 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 8 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 9 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 10 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 56 -> this.runForSprites(Sprite::checkToggleAdvanceLine);
-                   case 58 -> this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 59 -> this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 60 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 61 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                   case 62 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                   case 63 -> {
-                       this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.THIRD);
-                       this.incrementRasterFlag = true;
-                   }
+                    case 1 -> {
+                        this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                        if (this.overflowRasterFlag) {
+                            this.incrementRaster();
+                        }
+                    }
+                    case 2 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 3 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 4 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 5 -> this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 6 -> this.sprites[5].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 7 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 8 -> this.sprites[6].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 9 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 10 -> this.sprites[7].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 56 -> this.runForSprites(Sprite::checkToggleAdvanceLine);
+                    case 58 -> this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 59 -> this.sprites[0].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 60 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 61 -> this.sprites[1].tryPerformSAccess(Sprite.SAccessStep.THIRD);
+                    case 62 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.FIRST);
+                    case 63 -> this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.THIRD);
                     default -> {
                         if (this.cycleNumber >= 15 && this.cycleNumber <= 54) {
                             if (this.cAccessing) {
@@ -773,9 +780,12 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             this.dotNumber = 0;
             this.scanlineNumber++;
             if (this.scanlineNumber >= SCANLINES_PER_FRAME) {
+                this.overflowRasterFlag = true;
                 this.scanlineNumber = 0;
                 this.emulator.onVBlank();
                 this.emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
+            } else {
+                this.incrementRaster();
             }
         }
     }
@@ -788,15 +798,18 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     private void incrementRaster() {
         this.raster = (this.raster + 1) % SCANLINES_PER_FRAME;
-        if (this.raster == this.rasterCompare) {
-            this.irqRaster = true;
-        }
         switch (this.raster) {
             case 0 -> {
                 this.videoCounterBase = 0;
                 this.dRAMRefreshCounter = 0xFF;
             }
             case 0x30 -> this.displayEnabledInLine30 = false;
+        }
+    }
+
+    private void checkRasterIRQ() {
+        if (this.raster == this.rasterCompare) {
+            this.irqRaster = true;
         }
     }
 
