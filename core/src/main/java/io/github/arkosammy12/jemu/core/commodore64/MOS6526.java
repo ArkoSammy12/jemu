@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.util.ActionSignalDispatcher;
 import io.github.arkosammy12.jemu.core.util.BidirectionalPin;
 import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
@@ -25,13 +26,15 @@ public class MOS6526 implements Bus {
 
     private final SystemBus systemBus;
 
+    private final ActionSignalDispatcher actionSignalDispatcher = new ActionSignalDispatcher();
+
+    private final TimerA timerA = new TimerA();
+    private final TimerB timerB = new TimerB();
+
     private boolean pcOutput;
     private boolean pcSetThisCycle;
 
     private boolean previousFLAG;
-
-    private final TimerA timerA = new TimerA();
-    private final TimerB timerB = new TimerB();
 
     private SerialPortMode serialPortMode = SerialPortMode.INPUT;
     private TimeOfDayInput timeOfDayInput = TimeOfDayInput.HZ_60;
@@ -194,35 +197,14 @@ public class MOS6526 implements Bus {
                 }
             }
             case CRA -> {
-                this.writeTimer(this.timerA, value);
-                this.timerA.setInMode((value & (1 << 5)) != 0 ? TimerA.InMode.CNT_RISING_EDGES : TimerA.InMode.PHI2_PULSES);
+                this.timerA.writeControl(value);
                 this.serialPortMode = (value & (1 << 6)) != 0 ? SerialPortMode.OUTPUT : SerialPortMode.INPUT;
                 this.timeOfDayInput = (value & (1 << 7)) != 0 ? TimeOfDayInput.HZ_50 : TimeOfDayInput.HZ_60;
             }
             case CRB -> {
-                this.writeTimer(this.timerB, value);
-                this.timerB.setInMode(switch ((value >>> 5) & 0b11) {
-                    case 0b00 -> TimerB.InMode.PHI2_PULSES;
-                    case 0b01 -> TimerB.InMode.CNT_RISING_EDGES;
-                    case 0b10 -> TimerB.InMode.TIMER_A_UNDERFLOWS;
-                    default -> TimerB.InMode.TIMER_A_UNDERFLOWS_CNT_HIGH;
-                });
+                this.timerB.writeControl(value);
                 this.alarmMode = (value & (1 << 7)) != 0 ? AlarmMode.SET_ALARM : AlarmMode.SET_TOD_CLOCK;
             }
-        }
-    }
-
-    private void writeTimer(Timer timer, int value) {
-        if ((value & 1) != 0) {
-            timer.start();
-        } else {
-            timer.stop();
-        }
-        timer.setPortBEnabled((value & (1 << 1)) != 0);
-        timer.setOutMode((value & (1 << 2)) != 0 ? Timer.OutMode.TOGGLE : Timer.OutMode.PULSE);
-        timer.setRunMode((value & (1 << 3)) != 0 ? Timer.RunMode.ONE_SHOT : Timer.RunMode.CONTINUOUS);
-        if ((value & (1 << 4)) != 0) {
-            timer.forceLoad();
         }
     }
 
@@ -243,6 +225,8 @@ public class MOS6526 implements Bus {
     }
 
     public void cycle() {
+        this.actionSignalDispatcher.tick();
+
         if (this.pcSetThisCycle) {
             this.pcSetThisCycle = false;
         } else if (this.pcOutput) {
@@ -487,6 +471,10 @@ public class MOS6526 implements Bus {
 
     private abstract class Timer {
 
+        private final int startSignal;
+        private final int stopSignal;
+        private final int forceLoadSignal;
+
         private boolean running;
         private boolean outputOnPortB;
         private OutMode outMode = OutMode.PULSE;
@@ -503,6 +491,12 @@ public class MOS6526 implements Bus {
         private boolean toggleOutput; // TODO: Set low by !RES input
         private boolean pulseOutput;
         private boolean pulseOutputSetOnThisCycle;
+
+        protected Timer() {
+            this.startSignal = actionSignalDispatcher.addSignal(4, _ -> this.running = true);
+            this.stopSignal = actionSignalDispatcher.addSignal(4, _ -> this.running = false);
+            this.forceLoadSignal = actionSignalDispatcher.addSignal(4, _ -> this.timerCounter = this.timerLatch);
+        }
 
         protected void writeTimerLatchLow(int value) {
             this.timerLatch = (this.timerLatch & 0xFF00) | (value & 0x00FF);
@@ -523,15 +517,32 @@ public class MOS6526 implements Bus {
             return (this.timerCounter >>> 8) & 0xFF;
         }
 
-        private void start() {
+        protected void writeControl(int value) {
+            boolean forceLoad = (value & (1 << 4)) != 0;
+            boolean start = (value & 1) != 0;
+            if (forceLoad) {
+                this.forceLoad();
+            }
+            if (start) {
+                this.start(forceLoad);
+            } else {
+                this.stop(forceLoad);
+            }
+            this.setPortBEnabled((value & (1 << 1)) != 0);
+            this.setOutMode((value & (1 << 2)) != 0 ? Timer.OutMode.TOGGLE : Timer.OutMode.PULSE);
+            this.setRunMode((value & (1 << 3)) != 0 ? Timer.RunMode.ONE_SHOT : Timer.RunMode.CONTINUOUS);
+        }
+
+        private void start(boolean forceLoading) {
             if (!this.running) {
                 this.toggleOutput = true;
             }
-            this.running = true;
+            actionSignalDispatcher.trigger(this.startSignal, 0x00, forceLoading ? 4 : 3);
         }
 
-        private void stop() {
-            this.running = false;
+        private void stop(boolean forceLoading) {
+            actionSignalDispatcher.cancel(this.startSignal);
+            actionSignalDispatcher.trigger(this.stopSignal, 0x00, forceLoading ? 1 : 3);
         }
 
         private void setPortBEnabled(boolean value) {
@@ -558,7 +569,7 @@ public class MOS6526 implements Bus {
         }
 
         private void forceLoad() {
-            this.timerCounter = this.timerLatch;
+            actionSignalDispatcher.trigger(this.forceLoadSignal, 0x00, 3);
         }
 
         protected boolean getInterruptFlag() {
@@ -638,6 +649,12 @@ public class MOS6526 implements Bus {
 
         private InMode inMode = InMode.PHI2_PULSES;
 
+        @Override
+        protected void writeControl(int value) {
+            super.writeControl(value);
+            this.setInMode((value & (1 << 5)) != 0 ? TimerA.InMode.CNT_RISING_EDGES : TimerA.InMode.PHI2_PULSES);
+        }
+
         private void setInMode(InMode inMode) {
             this.inMode = inMode;
         }
@@ -684,6 +701,17 @@ public class MOS6526 implements Bus {
     private class TimerB extends Timer {
 
         private InMode inMode = InMode.PHI2_PULSES;
+
+        @Override
+        protected void writeControl(int value) {
+            super.writeControl(value);
+            this.setInMode(switch ((value >>> 5) & 0b11) {
+                case 0b00 -> TimerB.InMode.PHI2_PULSES;
+                case 0b01 -> TimerB.InMode.CNT_RISING_EDGES;
+                case 0b10 -> TimerB.InMode.TIMER_A_UNDERFLOWS;
+                default -> TimerB.InMode.TIMER_A_UNDERFLOWS_CNT_HIGH;
+            });
+        }
 
         private void setInMode(InMode inMode) {
             this.inMode = inMode;
