@@ -134,6 +134,7 @@ public class SystemViewport {
                         SwingUtilities.invokeLater(component::requestFocusInWindow);
                     }
                 });
+                component.setFocusTraversalKeysEnabled(false);
                 this.viewportPanel.remove(this.idleViewport.getJPanel());
                 this.viewportPanel.add(component, "grow, push");
                 SwingUtilities.invokeLater(() -> {
