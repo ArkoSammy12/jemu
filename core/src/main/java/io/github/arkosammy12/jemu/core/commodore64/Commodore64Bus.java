@@ -113,42 +113,72 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
     @Override
     public int readByte(int address) {
         int ret;
-        if (address >= 0xA000 && address <= 0xBFFF) {
-            ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
-                case 3, 7 -> (int) this.basicROM[address & 0x1FFF] & 0xFF;
-                default -> (int) this.ram[address] & 0xFF;
-            };
+        if (address >= 0x8000 && address <= 0x9FFF) {
+            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+            if (expansionPortDevice.getGAME() || expansionPortDevice.getEXROM()) {
+                ret = expansionPortDevice.read(address, AddressRegion.ROML);
+            } else {
+                ret = (int) this.ram[address] & 0xFF;
+                expansionPortDevice.read(address, AddressRegion.DEFAULT);
+            }
+        } else if (address >= 0xA000 && address <= 0xBFFF) {
+            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+            if (expansionPortDevice.getGAME() && expansionPortDevice.getEXROM()) {
+                ret = expansionPortDevice.read(address, AddressRegion.ROMH);
+            } else {
+                ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
+                    case 3, 7 -> (int) this.basicROM[address & 0x1FFF] & 0xFF;
+                    default -> (int) this.ram[address] & 0xFF;
+                };
+                expansionPortDevice.read(address, AddressRegion.DEFAULT);
+            }
         } else if (address >= 0xD000 && address <= 0xDFFF) {
             ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
-                case 0, 4 -> (int) this.ram[address] & 0xFF;
-                case 1, 2, 3 -> (int) this.characterROM[address & 0xFFF] & 0xFF;
+                case 0, 4 -> {
+                    this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
+                    yield (int) this.ram[address] & 0xFF;
+                }
+                case 1, 2, 3 -> {
+                    this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
+                    yield (int) this.characterROM[address & 0xFFF] & 0xFF;
+                }
                 default -> {
                     if (address <= 0xD3FF) {
+                        this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
                         yield this.emulator.getVideoGenerator().readByte(address);
                     } else if (address <= 0xD7FF) {
+                        this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
                         yield this.emulator.getAudioGenerator().readByte(address);
                     } else if (address <= 0xDBFF) {
+                        this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
                         yield this.combineWithDataBus((int) this.colorRAM[address & 0x3FF] & 0xFF, 0x0F);
                     } else if (address <= 0xDCFF) {
+                        this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
                         yield this.emulator.getCIA1().readByte(address);
                     } else if (address <= 0xDDFF) {
+                        this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
                         yield this.emulator.getCIA2().readByte(address);
                     } else if (address <= 0xDEFF) {
-                        // IO 1
-                        yield this.combineWithDataBus(0, 0x00);
+                        yield this.emulator.getExpansionPortDevice().read(address, AddressRegion.IO1);
                     } else {
-                        // IO 2
-                        yield this.combineWithDataBus(0, 0x00);
+                        yield this.emulator.getExpansionPortDevice().read(address, AddressRegion.IO2);
                     }
                 }
             };
         } else if (address >= 0xE000 && address <= 0xFFFF) {
-            ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
-                case 0, 1, 4, 5 -> (int) this.ram[address] & 0xFF;
-                default -> (int) this.kernalROM[address & 0x1FFF] & 0xFF;
-            };
+            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+            if (expansionPortDevice.getGAME() && !expansionPortDevice.getEXROM()) {
+                ret = expansionPortDevice.read(address, AddressRegion.ROMH);
+            } else {
+                ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
+                    case 0, 1, 4, 5 -> (int) this.ram[address] & 0xFF;
+                    default -> (int) this.kernalROM[address & 0x1FFF] & 0xFF;
+                };
+                expansionPortDevice.read(address, AddressRegion.DEFAULT);
+            }
         } else {
             ret = (int) this.ram[address] & 0xFF;
+            this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
         }
         this.dataBus = ret;
         return this.dataBus;
@@ -158,39 +188,75 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
     public void writeByte(int address, int value) {
         value &= 0xFF;
         this.dataBus = value;
-        if (address >= 0xD000 && address <= 0xDFFF) {
+        if (address >= 0x8000 && address <= 0x9FFF) {
+            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+            if (expansionPortDevice.getGAME() || expansionPortDevice.getEXROM()) {
+                expansionPortDevice.write(address, value, AddressRegion.ROML);
+            } else {
+                this.ram[address] = (byte) value;
+                expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
+            }
+        } else if (address >= 0xA000 && address <= 0xBFFF) {
+            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+            if (expansionPortDevice.getGAME() && expansionPortDevice.getEXROM()) {
+                expansionPortDevice.write(address, value, AddressRegion.ROMH);
+            } else {
+                this.ram[address] = (byte) value;
+                expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
+            }
+        } if (address >= 0xD000 && address <= 0xDFFF) {
             switch (this.emulator.getCPUIOPort().read() & 0b111) {
-                case 0, 1, 2, 3, 4 -> this.ram[address] = (byte) value;
+                case 0, 1, 2, 3, 4 -> {
+                    this.ram[address] = (byte) value;
+                    this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
+                }
                 default -> {
                     if (address <= 0xD3FF) {
                         this.emulator.getVideoGenerator().writeByte(address, value);
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
                     } else if (address <= 0xD7FF) {
                         if (this.emulator.getHost().isDebugCartEnabled() && address == 0xD7FF) {
                             this.emulator.getHost().onDebugCartWrite(value);
                         }
                         this.emulator.getAudioGenerator().writeByte(address, value);
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
                     } else if (address <= 0xDBFF) {
                         this.colorRAM[address & 0x3FF] = (byte) value;
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
                     } else if (address <= 0xDCFF) {
                         this.emulator.getCIA1().writeByte(address, value);
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
                     } else if (address <= 0xDDFF) {
                         this.emulator.getCIA2().writeByte(address, value);
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
                     } else if (address <= 0xDEFF) {
-                        // IO 1
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.IO1);
                     } else {
-                        // IO 2
+                        this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.IO2);
                     }
                 }
             }
+        } else if (address >= 0xE000 && address <= 0xFFFF) {
+            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+            if (expansionPortDevice.getGAME() && !expansionPortDevice.getEXROM()) {
+                expansionPortDevice.write(address, value, AddressRegion.ROMH);
+            } else {
+                this.ram[address] = (byte) value;
+                expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
+            }
         } else {
             this.ram[address] = (byte) value;
+            this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
         }
     }
 
     public int readVIC2(int address) {
         address = (address & 0x3FFF) | ((~this.emulator.getCIA2IOPortA().read() & 0b11) << 14);
+        ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
         int ret;
-        if ((address >= 0x1000 && address <= 0x1FFF) || (address >= 0x9000 && address <= 0x9FFF)) {
+        if (expansionPortDevice.getGAME() && !expansionPortDevice.getEXROM() && (address & 0x3000) != 0) {
+            ret = expansionPortDevice.readVIC2(address);
+        } else if ((address >= 0x1000 && address <= 0x1FFF) || (address >= 0x9000 && address <= 0x9FFF)) {
             ret = (int) this.characterROM[address & 0xFFF] & 0xFF;
         } else {
             ret = (int) this.ram[address] & 0xFF;
@@ -202,6 +268,14 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
 
     public int combineWithDataBus(int value, int validBitsMask) {
         return (value & validBitsMask & 0xFF) | (this.dataBus & ~validBitsMask);
+    }
+
+    public enum AddressRegion {
+        DEFAULT,
+        ROML,
+        ROMH,
+        IO1,
+        IO2,
     }
 
 }

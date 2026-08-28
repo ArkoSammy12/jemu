@@ -24,6 +24,14 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final MOS6526 cia1;
     private final MOS6526 cia2;
     private final Commodore64Controller systemController;
+    private final ExpansionPortDevice expansionPortDevice = new ExpansionPortDevice() {
+
+        @Override
+        public int read(int address, Commodore64Bus.AddressRegion addressRegion) {
+            return bus.combineWithDataBus(0x00, 0x00);
+        }
+
+    };
 
     private final MOSIOPort cpuIOPort;
     private final MOSIOPort cia1IOPortA;
@@ -206,6 +214,10 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         return this.cia2IOPortB;
     }
 
+    public ExpansionPortDevice getExpansionPortDevice() {
+        return this.expansionPortDevice;
+    }
+
     @Override
     public void executeFrame() {
         for (int i = 0; i < this.iterationsPerFrame; i++) {
@@ -228,6 +240,16 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.cia1.cycle();
         this.cia2.cycle();
         this.sid.cycle();
+
+        this.expansionPortDevice.cyclePHI2();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
+        this.expansionPortDevice.cycleDot();
     }
 
     public void onVBlank() {
@@ -251,7 +273,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getAEC() {
-        return this.vic2.getAEC();
+        return this.vic2.getAEC() || this.expansionPortDevice.getDMA();
     }
 
     @Override
@@ -261,22 +283,22 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getIRQ() {
-        return this.vic2.getIRQ() || this.cia1.getIRQ();
+        return this.vic2.getIRQ() || this.cia1.getIRQ() || this.expansionPortDevice.getIRQ();
     }
 
     @Override
     public boolean getNMI() {
-        return this.cia2.getIRQ() || this.systemController.getRestoreKey();
+        return this.cia2.getIRQ() || this.systemController.getRestoreKey() || this.expansionPortDevice.getNMI();
     }
 
     @Override
     public boolean getRES() {
-        return false;
+    return this.expansionPortDevice.getRESET();
     }
 
     @Override
     public boolean getRDY() {
-        return this.vic2.getBA();
+        return this.vic2.getBA() || this.expansionPortDevice.getDMA();
     }
 
     @Override
