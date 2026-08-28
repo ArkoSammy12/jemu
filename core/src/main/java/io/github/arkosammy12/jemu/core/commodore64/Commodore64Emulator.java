@@ -12,7 +12,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     private static final int CPU_CLOCK_DIVISOR = 8;
 
-    private static final int PAL_PHI_IN_HZ = 7_881_990;
+    private static final int PAL_PHI_IN_HZ = 7_862_400;
     private static final int PAL_FRAMERATE = 50;
 
     private final Commodore64Host systemHost;
