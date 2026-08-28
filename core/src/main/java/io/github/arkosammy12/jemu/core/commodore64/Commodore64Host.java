@@ -13,6 +13,18 @@ public interface Commodore64Host extends SystemHost {
 
     Optional<Path> getCharacterROMPath();
 
-    int getRB8ForPaletteIndex(int paletteIndex);
+    int getRGB8ForPaletteIndex(int paletteIndex);
+
+    default void onPrgFilePatched() {
+
+    }
+
+    default boolean isDebugCartEnabled() {
+        return false;
+    }
+
+    default void onDebugCartWrite(int value) {
+
+    }
 
 }

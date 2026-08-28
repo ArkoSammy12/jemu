@@ -238,6 +238,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
             this.frames++;
             if (this.frames >= FRAMES_UNTIL_READY_PROMPT) {
                 this.bus.patchPrgFile();
+                this.systemHost.onPrgFilePatched();
                 this.prgFilePatchAttempted = true;
             }
         }

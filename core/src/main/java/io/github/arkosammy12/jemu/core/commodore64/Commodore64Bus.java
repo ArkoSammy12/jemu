@@ -165,6 +165,9 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
                     if (address <= 0xD3FF) {
                         this.emulator.getVideoGenerator().writeByte(address, value);
                     } else if (address <= 0xD7FF) {
+                        if (this.emulator.getHost().isDebugCartEnabled() && address == 0xD7FF) {
+                            this.emulator.getHost().onDebugCartWrite(value);
+                        }
                         this.emulator.getAudioGenerator().writeByte(address, value);
                     } else if (address <= 0xDBFF) {
                         this.colorRAM[address & 0x3FF] = (byte) value;

@@ -52,7 +52,7 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
     }
 
     @Override
-    public int getRB8ForPaletteIndex(int paletteIndex) {
+    public int getRGB8ForPaletteIndex(int paletteIndex) {
         return this.commodore64Manager.getEmulationSettings().getVICIIPalette().getRGB8ForPaletteIndex(paletteIndex);
     }
 
