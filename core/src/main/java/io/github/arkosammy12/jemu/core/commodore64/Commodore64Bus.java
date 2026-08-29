@@ -18,7 +18,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
 
     private final E emulator;
 
-    private final byte @Nullable [] prgFile;
+    private byte @Nullable [] prgFile;
 
     private final byte[] kernalROM = new byte[KB_8];
     private final byte[] basicROM = new byte[KB_8];
@@ -34,21 +34,6 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         this.tryLoadROM(emulator.getHost().getKernalROMPath().orElse(null), this.kernalROM, "Kernal");
         this.tryLoadROM(emulator.getHost().getBASICRomPath().orElse(null), this.basicROM, "BASIC");
         this.tryLoadROM(emulator.getHost().getCharacterROMPath().orElse(null), this.characterROM, "Character");
-
-        Optional<byte[]> optionalROM = emulator.getHost().getRom();
-        Optional<Path> optionalROMPath = emulator.getHost().getRomPath();
-        if (optionalROM.isPresent() && optionalROMPath.isPresent()) {
-            Path path = optionalROMPath.get();
-            String extension = FilenameUtils.getExtension(path.toString());
-            if (!"prg".equalsIgnoreCase(extension)) {
-                throw new ROMInitializationException("Non .prg files are not supported for HLE!");
-            }
-            byte[] bytes = optionalROM.get();
-            this.prgFile = Arrays.copyOf(bytes, bytes.length);
-
-        } else {
-            this.prgFile = null;
-        }
     }
 
     private void tryLoadROM(@Nullable Path sourcePath, byte[] destination, String romName) {
@@ -67,6 +52,10 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             throw new ROMInitializationException("Expected Commodore 64 %s ROM image to be %d bytes long, but was %d bytes instead!".formatted(romName, destination.length, bytes.length));
         }
         System.arraycopy(bytes, 0, destination, 0, destination.length);
+    }
+
+    public void loadPrgFile(byte[] bytes) {
+        this.prgFile = Arrays.copyOf(bytes, bytes.length);
     }
 
     public void patchPrgFile() {
@@ -115,7 +104,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         int ret;
         if (address >= 0x8000 && address <= 0x9FFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getGAME() || expansionPortDevice.getEXROM()) {
+            if (expansionPortDevice.getEXROM() || expansionPortDevice.getGAME()) {
                 ret = expansionPortDevice.read(address, AddressRegion.ROML);
             } else {
                 ret = (int) this.ram[address] & 0xFF;
@@ -123,7 +112,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             }
         } else if (address >= 0xA000 && address <= 0xBFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getGAME() && expansionPortDevice.getEXROM()) {
+            if (expansionPortDevice.getEXROM() && expansionPortDevice.getGAME()) {
                 ret = expansionPortDevice.read(address, AddressRegion.ROMH);
             } else {
                 ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
@@ -167,7 +156,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             };
         } else if (address >= 0xE000 && address <= 0xFFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getGAME() && !expansionPortDevice.getEXROM()) {
+            if (!expansionPortDevice.getEXROM() && expansionPortDevice.getGAME()) {
                 ret = expansionPortDevice.read(address, AddressRegion.ROMH);
             } else {
                 ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
@@ -190,7 +179,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         this.dataBus = value;
         if (address >= 0x8000 && address <= 0x9FFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getGAME() || expansionPortDevice.getEXROM()) {
+            if (expansionPortDevice.getEXROM() || expansionPortDevice.getGAME()) {
                 expansionPortDevice.write(address, value, AddressRegion.ROML);
             } else {
                 this.ram[address] = (byte) value;
@@ -198,7 +187,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             }
         } else if (address >= 0xA000 && address <= 0xBFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getGAME() && expansionPortDevice.getEXROM()) {
+            if (expansionPortDevice.getEXROM() && expansionPortDevice.getGAME()) {
                 expansionPortDevice.write(address, value, AddressRegion.ROMH);
             } else {
                 this.ram[address] = (byte) value;
@@ -238,7 +227,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             }
         } else if (address >= 0xE000 && address <= 0xFFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getGAME() && !expansionPortDevice.getEXROM()) {
+            if (!expansionPortDevice.getEXROM() && expansionPortDevice.getGAME()) {
                 expansionPortDevice.write(address, value, AddressRegion.ROMH);
             } else {
                 this.ram[address] = (byte) value;

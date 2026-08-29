@@ -5,6 +5,7 @@ import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Controller;
+import io.github.arkosammy12.jemu.core.commodore64.Commodore64Emulator;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.KeyAction;
@@ -147,7 +148,7 @@ public class Commodore64Manager extends SystemManager {
 
     @Override
     public Collection<String> getFileExtensions() {
-        return List.of("prg");
+        return Commodore64Emulator.FileType.getFileExtensions();
     }
 
     @Override

@@ -1,10 +1,19 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
 import io.github.arkosammy12.jemu.core.common.*;
+import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6510;
 import io.github.arkosammy12.jemu.core.util.BidirectionalPin;
 import io.github.arkosammy12.jemu.core.util.MOSIOPort;
+import org.apache.commons.io.FilenameUtils;
+import org.jetbrains.annotations.Nullable;
+
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
@@ -52,6 +61,12 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     public Commodore64Emulator(Commodore64Host systemHost) {
         this.systemHost = systemHost;
+
+        Optional<Path> optionalROMPath = this.systemHost.getRomPath();
+        Optional<byte[]> bytes = this.systemHost.getRom();
+        if (bytes.isPresent() && optionalROMPath.isEmpty()) {
+            throw new ROMInitializationException("ROM path missing! Supported file types are :" + FileType.getFileExtensionsString());
+        }
 
         this.framerate = PAL_FRAMERATE;
         this.iterationsPerFrame = PAL_PHI_IN_HZ / CPU_CLOCK_DIVISOR / this.framerate;
@@ -159,6 +174,17 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         });
         this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
         this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
+
+        if (bytes.isPresent()) {
+            Path path = optionalROMPath.get();
+            String extension = FilenameUtils.getExtension(path.toString());
+            switch (FileType.getFileTypeForExtension(extension)) {
+                case PRG -> this.bus.loadPrgFile(bytes.get());
+                case CRT -> {}
+                case null -> throw new ROMInitializationException("The ROM file extension \"%s\" is not supported! Supported file types are: %s".formatted(extension, FileType.getFileExtensionsString()));
+            }
+        }
+
     }
 
     @Override
@@ -303,6 +329,40 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public void close() throws Exception {
+
+    }
+
+    public enum FileType {
+        PRG("prg"),
+        CRT("crt");
+
+        private final String fileExtension;
+
+        FileType(String fileExtension) {
+            this.fileExtension = fileExtension;
+        }
+
+        public String getFileExtension() {
+            return this.fileExtension;
+        }
+
+        public static List<String> getFileExtensions() {
+            return Arrays.stream(Commodore64Emulator.FileType.values()).map(Commodore64Emulator.FileType::getFileExtension).toList();
+        }
+
+        public static String getFileExtensionsString() {
+            return Arrays.stream(Commodore64Emulator.FileType.values()).map(Commodore64Emulator.FileType::getFileExtension).map(extension -> "." + extension).collect(Collectors.joining(", "));
+        }
+
+        @Nullable
+        public static FileType getFileTypeForExtension(String extension) {
+            for (FileType fileType : FileType.values()) {
+                if (fileType.getFileExtension().equalsIgnoreCase(extension)) {
+                    return fileType;
+                }
+            }
+            return null;
+        }
 
     }
 
