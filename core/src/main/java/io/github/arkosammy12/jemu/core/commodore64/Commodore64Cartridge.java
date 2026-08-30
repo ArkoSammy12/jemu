@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
 import io.github.arkosammy12.jemu.core.commodore64.cartridges.GenericCartridge;
+import io.github.arkosammy12.jemu.core.commodore64.cartridges.MagicDeskCartridge;
 import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
@@ -39,7 +40,9 @@ public abstract class Commodore64Cartridge<E extends Commodore64Emulator> implem
 
     }
 
-    protected abstract int readROMH(int address);
+    protected int readROMH(int address) {
+        return this.emulator.getBus().combineWithDataBus(0x00, 0x00);
+    }
 
     protected void writeROMH(int address, int value) {
 
@@ -65,6 +68,7 @@ public abstract class Commodore64Cartridge<E extends Commodore64Emulator> implem
         int cartridgeType = crtFile.getCartridgeHardwareType();
         return switch (cartridgeType) {
             case 0 -> new GenericCartridge<>(emulator, crtFile);
+            case 19 -> new MagicDeskCartridge<>(emulator, crtFile);
             default -> throw new ROMInitializationException("Unsupported .CRT cartridge hardware type %d!".formatted(cartridgeType));
         };
     }
