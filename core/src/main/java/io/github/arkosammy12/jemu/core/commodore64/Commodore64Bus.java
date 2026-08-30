@@ -246,9 +246,9 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         if (this.isULTIMAXExpansionDevice() && (address & 0x3000) == 0x3000) {
             ret = this.emulator.getExpansionPortDevice().readVIC2(address);
         } else if ((address >= 0x1000 && address <= 0x1FFF) || (address >= 0x9000 && address <= 0x9FFF)) {
-            ret = (int) this.characterROM[address & 0xFFF] & 0xFF;
+            ret = this.readCharacterROM(address);
         } else {
-            ret = (int) this.ram[address] & 0xFF;
+            ret = this.readInternalRAM(address);
         }
         ret |= (((int) this.colorRAM[address & 0x3FF] & 0xF) << 8);
         this.dataBus = ret;
