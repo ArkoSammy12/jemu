@@ -1,5 +1,6 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
+import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
@@ -33,14 +34,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final MOS6526 cia1;
     private final MOS6526 cia2;
     private final Commodore64Controller systemController;
-    private final ExpansionPortDevice expansionPortDevice = new ExpansionPortDevice() {
-
-        @Override
-        public int read(int address, Commodore64Bus.AddressRegion addressRegion) {
-            return bus.combineWithDataBus(0x00, 0x00);
-        }
-
-    };
+    private final ExpansionPortDevice expansionPortDevice;
 
     private final MOSIOPort cpuIOPort;
     private final MOSIOPort cia1IOPortA;
@@ -175,15 +169,19 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
         this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
 
+        ExpansionPortDevice expansionPortDevice = (_, _) -> bus.combineWithDataBus(0x00, 0x00);
+
         if (bytes.isPresent()) {
             Path path = optionalROMPath.get();
             String extension = FilenameUtils.getExtension(path.toString());
             switch (FileType.getFileTypeForExtension(extension)) {
                 case PRG -> this.bus.loadPrgFile(bytes.get());
-                case CRT -> {}
+                case CRT -> expansionPortDevice = Commodore64Cartridge.getCartridge(this, new CRTFile(bytes.get()));
                 case null -> throw new ROMInitializationException("The ROM file extension \"%s\" is not supported! Supported file types are: %s".formatted(extension, FileType.getFileExtensionsString()));
             }
         }
+
+        this.expansionPortDevice = expansionPortDevice;
 
     }
 
