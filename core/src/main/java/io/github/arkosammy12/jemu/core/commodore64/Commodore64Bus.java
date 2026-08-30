@@ -3,14 +3,11 @@ package io.github.arkosammy12.jemu.core.commodore64;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.exceptions.MissingROMException;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
-import org.apache.commons.io.FilenameUtils;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.util.ByteSizes.*;
 
@@ -104,20 +101,25 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         int ret;
         if (address >= 0x8000 && address <= 0x9FFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getEXROM() || expansionPortDevice.getGAME()) {
-                ret = expansionPortDevice.read(address, AddressRegion.ROML);
+            if (!this.emulator.getAEC()) {
+                if ((this.getLORAM() && this.getHIRAM() && (this.is8KExpansionDevice() || this.is16KExpansionDevice())) || this.isULTIMAXExpansionDevice()) {
+                    ret = expansionPortDevice.read(address, AddressRegion.ROML);
+                } else {
+                    ret = this.readInternalRAM(address);
+                    expansionPortDevice.read(address, AddressRegion.DEFAULT);
+                }
             } else {
-                ret = (int) this.ram[address] & 0xFF;
+                ret = this.readInternalRAM(address);
                 expansionPortDevice.read(address, AddressRegion.DEFAULT);
             }
         } else if (address >= 0xA000 && address <= 0xBFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getEXROM() && expansionPortDevice.getGAME()) {
+            if (this.getHIRAM() && !this.emulator.getAEC() && this.is16KExpansionDevice()) {
                 ret = expansionPortDevice.read(address, AddressRegion.ROMH);
             } else {
                 ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
                     case 3, 7 -> (int) this.basicROM[address & 0x1FFF] & 0xFF;
-                    default -> (int) this.ram[address] & 0xFF;
+                    default -> this.readInternalRAM(address);
                 };
                 expansionPortDevice.read(address, AddressRegion.DEFAULT);
             }
@@ -125,11 +127,15 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
                 case 0, 4 -> {
                     this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
-                    yield (int) this.ram[address] & 0xFF;
+                    yield this.readInternalRAM(address);
                 }
-                case 1, 2, 3 -> {
+                case 1 -> {
                     this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
-                    yield (int) this.characterROM[address & 0xFFF] & 0xFF;
+                    yield !this.emulator.getAEC() && (this.isNoneExpansionDevice() || this.is8KExpansionDevice()) ? this.readCharacterROM(address) : this.readInternalRAM(address);
+                }
+                case 2, 3 -> {
+                    this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
+                    yield this.readCharacterROM(address);
                 }
                 default -> {
                     if (address <= 0xD3FF) {
@@ -156,17 +162,17 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             };
         } else if (address >= 0xE000 && address <= 0xFFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (this.isULTIMAXExpansionDevice(expansionPortDevice.getEXROM(), expansionPortDevice.getGAME())) {
+            if (!this.emulator.getAEC() && this.isULTIMAXExpansionDevice()) {
                 ret = expansionPortDevice.read(address, AddressRegion.ROMH);
             } else {
                 ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
-                    case 0, 1, 4, 5 -> (int) this.ram[address] & 0xFF;
+                    case 0, 1, 4, 5 -> this.readInternalRAM(address);
                     default -> (int) this.kernalROM[address & 0x1FFF] & 0xFF;
                 };
                 expansionPortDevice.read(address, AddressRegion.DEFAULT);
             }
         } else {
-            ret = (int) this.ram[address] & 0xFF;
+            ret = this.readInternalRAM(address);
             this.emulator.getExpansionPortDevice().read(address, AddressRegion.DEFAULT);
         }
         this.dataBus = ret;
@@ -179,26 +185,19 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         this.dataBus = value;
         if (address >= 0x8000 && address <= 0x9FFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getEXROM() || expansionPortDevice.getGAME()) {
+            if (!this.emulator.getAEC() && this.isULTIMAXExpansionDevice()) {
                 expansionPortDevice.write(address, value, AddressRegion.ROML);
             } else {
+                this.writeInternalRAM(address, value);
                 expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
-            }
-            if (!this.isULTIMAXExpansionDevice(expansionPortDevice.getEXROM(), expansionPortDevice.getGAME())) {
-                this.ram[address] = (byte) value;
             }
         } else if (address >= 0xA000 && address <= 0xBFFF) {
-            ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (expansionPortDevice.getEXROM() && expansionPortDevice.getGAME()) {
-                expansionPortDevice.write(address, value, AddressRegion.ROMH);
-            } else {
-                expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
-            }
-            this.ram[address] = (byte) value;
+            this.writeInternalRAM(address, value);
+            this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
         } else if (address >= 0xD000 && address <= 0xDFFF) {
             switch (this.emulator.getCPUIOPort().read() & 0b111) {
                 case 0, 1, 2, 3, 4 -> {
-                    this.ram[address] = (byte) value;
+                    this.writeInternalRAM(address, value);
                     this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
                 }
                 default -> {
@@ -229,24 +228,23 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             }
         } else if (address >= 0xE000 && address <= 0xFFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (this.isULTIMAXExpansionDevice(expansionPortDevice.getEXROM(), expansionPortDevice.getGAME())) {
+            if (!this.emulator.getAEC() && this.isULTIMAXExpansionDevice()) {
                 expansionPortDevice.write(address, value, AddressRegion.ROMH);
             } else {
-                this.ram[address] = (byte) value;
+                this.writeInternalRAM(address, value);
                 expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
             }
         } else {
-            this.ram[address] = (byte) value;
+            this.writeInternalRAM(address, value);
             this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
         }
     }
 
     public int readVIC2(int address) {
         address = (address & 0x3FFF) | ((~this.emulator.getCIA2IOPortA().read() & 0b11) << 14);
-        ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
         int ret;
-        if (expansionPortDevice.getGAME() && !expansionPortDevice.getEXROM() && (address & 0x3000) != 0) {
-            ret = expansionPortDevice.readVIC2(address);
+        if (this.isULTIMAXExpansionDevice() && (address & 0x3000) == 0x3000) {
+            ret = this.emulator.getExpansionPortDevice().readVIC2(address);
         } else if ((address >= 0x1000 && address <= 0x1FFF) || (address >= 0x9000 && address <= 0x9FFF)) {
             ret = (int) this.characterROM[address & 0xFFF] & 0xFF;
         } else {
@@ -257,12 +255,48 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         return ret;
     }
 
+    private int readCharacterROM(int address) {
+        return (int) this.characterROM[address & 0xFFF] & 0xFF;
+    }
+
+    private int readInternalRAM(int address) {
+        return (int) this.ram[address] & 0xFF;
+    }
+
+    private void writeInternalRAM(int address, int value) {
+        this.ram[address] = (byte) value;
+    }
+
     public int combineWithDataBus(int value, int validBitsMask) {
         return (value & validBitsMask & 0xFF) | (this.dataBus & ~validBitsMask);
     }
 
-    private boolean isULTIMAXExpansionDevice(boolean exrom, boolean game) {
-        return !exrom && game;
+    private boolean getLORAM() {
+        return (this.emulator.getCPUIOPort().read() & 1) != 0;
+    }
+
+    private boolean getHIRAM() {
+        return (this.emulator.getCPUIOPort().read() & (1 << 1)) != 0;
+    }
+
+    private boolean isNoneExpansionDevice() {
+        ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+        return !expansionPortDevice.getEXROM() && !expansionPortDevice.getGAME();
+    }
+
+    private boolean is8KExpansionDevice() {
+        ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+        return expansionPortDevice.getEXROM() && !expansionPortDevice.getGAME();
+    }
+
+    private boolean is16KExpansionDevice() {
+        ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+        return expansionPortDevice.getEXROM() && expansionPortDevice.getGAME();
+    }
+
+    private boolean isULTIMAXExpansionDevice() {
+        ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
+        return !expansionPortDevice.getEXROM() && expansionPortDevice.getGAME();
     }
 
     public enum AddressRegion {
