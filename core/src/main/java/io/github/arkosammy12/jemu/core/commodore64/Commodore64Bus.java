@@ -145,7 +145,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             }
         } else if (address >= 0xE000 && address <= 0xFFFF) {
             ExpansionPortDevice expansionPortDevice = this.emulator.getExpansionPortDevice();
-            if (!this.emulator.getAEC() && this.isULTIMAXExpansionDevice()) {
+            if (this.isULTIMAXExpansionDevice() && !this.emulator.getAEC() && !this.emulator.getVideoGenerator().getBA()) {
                 ret = expansionPortDevice.read(address, AddressRegion.ROMH);
             } else {
                 ret = switch (this.emulator.getCPUIOPort().read() & 0b111) {
@@ -178,7 +178,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
             this.writeInternalRAM(address, value);
             this.emulator.getExpansionPortDevice().write(address, value, AddressRegion.DEFAULT);
         } else if (address >= 0xD000 && address <= 0xDFFF) {
-            if (!this.emulator.getAEC() && this.isULTIMAXExpansionDevice()) {
+            if (this.isULTIMAXExpansionDevice() && !this.emulator.getAEC()) {
                 this.writeIO(address, value);
             } else {
                 switch (this.emulator.getCPUIOPort().read() & 0b111) {
