@@ -19,11 +19,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * Runs each Mooneye acceptance test ROM as its own test on every emulated model it
- * targets, asserted against the known-failure list in
- * {@code mooneye-expected-failures.txt}.
- */
 public class MooneyeTest {
 
     private static final int TIMEOUT_FRAMES = 20 * 60;
@@ -40,14 +35,11 @@ public class MooneyeTest {
 
         List<Path> roms;
         try (Stream<Path> walk = Files.walk(acceptance)) {
-            roms = walk.filter(path -> path.toString().endsWith(".gb"))
-                    .sorted()
-                    .toList();
+            roms = walk.filter(path -> path.toString().endsWith(".gb")).sorted().toList();
         }
 
         return roms.stream().flatMap(rom -> modelsFor(rom).stream().map(model -> {
-            String name = "%s (%s)".formatted(
-                    acceptance.relativize(rom).toString().replace(File.separatorChar, '/'), model);
+            String name = "%s (%s)".formatted(acceptance.relativize(rom).toString().replace(File.separatorChar, '/'), model);
             return DynamicTest.dynamicTest(name, () -> {
                 GameBoyTestHarness.Result result;
                 try (GameBoyTestHarness harness = new GameBoyTestHarness(rom, model)) {
@@ -64,10 +56,8 @@ public class MooneyeTest {
         }));
     }
 
-    // Mooneye encodes target models as a filename suffix: uppercase lists like "-GS"
-    // and "-C" name model groups ('G' covers the DMG, 'C' the CGB), while lowercase
-    // suffixes name specific revisions ("dmg0" and friends need boot ROMs we don't
-    // provide). No suffix means all models.
+    // Mooneye test suffixes with "G" are for DMG, and those with "C" are for CGB.
+    // Tests with no suffix are for any model.
     private static Set<GameBoyHost.Model> modelsFor(Path rom) {
         String stem = rom.getFileName().toString();
         stem = stem.substring(0, stem.length() - ".gb".length());
