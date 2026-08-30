@@ -195,7 +195,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
                 expansionPortDevice.write(address, value, AddressRegion.DEFAULT);
             }
             this.ram[address] = (byte) value;
-        } if (address >= 0xD000 && address <= 0xDFFF) {
+        } else if (address >= 0xD000 && address <= 0xDFFF) {
             switch (this.emulator.getCPUIOPort().read() & 0b111) {
                 case 0, 1, 2, 3, 4 -> {
                     this.ram[address] = (byte) value;
