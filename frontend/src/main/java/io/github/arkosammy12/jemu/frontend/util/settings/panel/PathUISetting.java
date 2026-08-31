@@ -41,6 +41,9 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
             }
 
         });
+        this.jTextField.setColumns(40);
+        this.jTextField.setMinimumSize(this.jTextField.getPreferredSize());
+        this.jTextField.setMaximumSize(null);
         this.selectPathButton.addActionListener(_ -> {
             SystemFileChooser fileChooser = new SystemFileChooser();
             fileChooser.setFileSelectionMode(pathSelectionMode.getFileSelectionMode());
