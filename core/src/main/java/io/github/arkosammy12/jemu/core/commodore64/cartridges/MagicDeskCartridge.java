@@ -48,7 +48,7 @@ public class MagicDeskCartridge<E extends Commodore64Emulator> extends Commodore
 
     @Override
     protected int readROML(int address) {
-        return this.rom[((address & 0x1FFF) | this.bankBits) % this.rom.length];
+        return (int) this.rom[((address & 0x1FFF) | this.bankBits) % this.rom.length] & 0xFF;
     }
 
     @Override

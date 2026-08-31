@@ -13,8 +13,8 @@ import static io.github.arkosammy12.jemu.core.util.ByteSizes.KB_8;
 
 public class GenericCartridge<E extends Commodore64Emulator> extends Commodore64Cartridge<E> {
 
-    private byte @Nullable [] roml;
-    private byte @Nullable [] romh;
+    private byte @Nullable [] romL;
+    private byte @Nullable [] romH;
 
     private final boolean exromLine;
     private final boolean gameLine;
@@ -36,29 +36,29 @@ public class GenericCartridge<E extends Commodore64Emulator> extends Commodore64
         int offset = startingLoadAddress & 0x1FFF;
         byte[] data = chipPacket.romData();
         if (startingLoadAddress < 0xA000) {
-            if (this.roml == null) {
-                this.roml = new byte[KB_8];
-                Arrays.fill(this.roml, (byte) 0xFF);
+            if (this.romL == null) {
+                this.romL = new byte[KB_8];
+                Arrays.fill(this.romL, (byte) 0xFF);
             }
 
-            int copyLength = this.roml.length - offset;
-            System.arraycopy(data, 0, this.roml, offset, Math.clamp(copyLength, 0, data.length));
+            int copyLength = this.romL.length - offset;
+            System.arraycopy(data, 0, this.romL, offset, Math.clamp(copyLength, 0, data.length));
 
             if (data.length > copyLength) {
-                if (this.romh == null) {
-                    this.romh = new byte[KB_8];
-                    Arrays.fill(this.romh, (byte) 0xFF);
+                if (this.romH == null) {
+                    this.romH = new byte[KB_8];
+                    Arrays.fill(this.romH, (byte) 0xFF);
                 }
 
-                System.arraycopy(data, copyLength, this.romh, 0, Math.clamp(data.length - copyLength, 0, this.romh.length));
+                System.arraycopy(data, copyLength, this.romH, 0, Math.clamp(data.length - copyLength, 0, this.romH.length));
             }
 
         } else {
-            if (this.romh == null) {
-                this.romh = new byte[KB_8];
-                Arrays.fill(this.romh, (byte) 0xFF);
+            if (this.romH == null) {
+                this.romH = new byte[KB_8];
+                Arrays.fill(this.romH, (byte) 0xFF);
             }
-            System.arraycopy(data, 0, this.romh, offset, Math.clamp(this.romh.length - offset, 0, data.length));
+            System.arraycopy(data, 0, this.romH, offset, Math.clamp(this.romH.length - offset, 0, data.length));
         }
     }
 
@@ -74,19 +74,19 @@ public class GenericCartridge<E extends Commodore64Emulator> extends Commodore64
 
     @Override
     protected int readROML(int address) {
-        if (this.roml == null) {
+        if (this.romL == null) {
             return this.emulator.getBus().combineWithDataBus(0x00, 0x00);
         } else {
-            return (int) this.roml[address & 0x1FFF] & 0xFF;
+            return (int) this.romL[address & 0x1FFF] & 0xFF;
         }
     }
 
     @Override
     protected int readROMH(int address) {
-        if (this.romh == null) {
+        if (this.romH == null) {
             return this.emulator.getBus().combineWithDataBus(0x00, 0x00);
         } else {
-            return (int) this.romh[address & 0x1FFF] & 0xFF;
+            return (int) this.romH[address & 0x1FFF] & 0xFF;
         }
     }
 
