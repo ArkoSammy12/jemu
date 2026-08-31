@@ -110,9 +110,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int dotNumber;
     private int cycleNumber = 1; // in the range [1, 63]
     private int scanlineNumber;
-    private int raster = 0;
+    private int raster = SCANLINES_PER_FRAME - 1;
     private boolean displayEnabledInLine30;
-    private boolean overflowRasterFlag;
+    private IncrementRasterFlag incrementRasterFlag = IncrementRasterFlag.NONE;
+    //private boolean overflowRasterFlag;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -421,17 +422,17 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 switch (this.cycleNumber) {
                     case 1 -> {
-                        if (!this.overflowRasterFlag) {
-                            this.checkRasterIRQ();
+                        if (this.incrementRasterFlag == IncrementRasterFlag.NORMAL) {
+                            this.incrementRaster();
                         }
                         this.sprites[3].performPAccess();
                         this.sprite2BAOutputFlag = false;
                         this.spriteAECOutput = this.sprite3BAOutputFlag;
                     }
                     case 2 -> {
-                        if (this.overflowRasterFlag) {
-                            this.overflowRasterFlag = false;
-                            this.checkRasterIRQ();
+                        switch (this.incrementRasterFlag) {
+                            case NORMAL -> this.checkRasterIRQ();
+                            case OVERFLOW -> this.incrementRaster();
                         }
                         this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.SECOND);
                         if (this.sprites[5].isDMAOn()) {
@@ -439,6 +440,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                         }
                     }
                     case 3 -> {
+                        if (this.incrementRasterFlag == IncrementRasterFlag.OVERFLOW) {
+                            this.checkRasterIRQ();
+                        }
+                        this.incrementRasterFlag = IncrementRasterFlag.NONE;
                         this.sprites[4].performPAccess();
                         this.sprite3BAOutputFlag = false;
                         this.spriteAECOutput = this.sprite4BAOutputFlag;
@@ -595,12 +600,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.clockPixel();
 
                 switch (this.cycleNumber) {
-                    case 1 -> {
-                        this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.FIRST);
-                        if (this.overflowRasterFlag) {
-                            this.incrementRaster();
-                        }
-                    }
+                    case 1 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.FIRST);
                     case 2 -> this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.THIRD);
                     case 3 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.FIRST);
                     case 4 -> this.sprites[4].tryPerformSAccess(Sprite.SAccessStep.THIRD);
@@ -780,12 +780,12 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             this.dotNumber = 0;
             this.scanlineNumber++;
             if (this.scanlineNumber >= SCANLINES_PER_FRAME) {
-                this.overflowRasterFlag = true;
+                this.incrementRasterFlag = IncrementRasterFlag.OVERFLOW;
                 this.scanlineNumber = 0;
                 this.emulator.onVBlank();
                 this.emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
             } else {
-                this.incrementRaster();
+                this.incrementRasterFlag = IncrementRasterFlag.NORMAL;
             }
         }
     }
@@ -916,6 +916,12 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             return this.xCoordinateRightComparison;
         }
 
+    }
+
+    private enum IncrementRasterFlag {
+        NONE,
+        NORMAL,
+        OVERFLOW
     }
 
     private enum TextBitmapLogicMode {
