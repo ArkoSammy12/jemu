@@ -99,6 +99,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private boolean irqSpriteBackgroundEnable;
     private boolean irqRasterEnable;
 
+    private boolean rasterIrqTriggeredOnThisRasterLine;
+
     private int borderColor;
     private int backgroundColor0;
     private int backgroundColor1;
@@ -634,7 +636,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     }
 
-
     private void clockPixel() {
         int xCoordinate = this.getXCoordinate();
         if (xCoordinate == this.columnSelect.getRightComparison()) {
@@ -797,6 +798,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     private void incrementRaster() {
         this.raster = (this.raster + 1) % SCANLINES_PER_FRAME;
+        this.rasterIrqTriggeredOnThisRasterLine = false;
         switch (this.raster) {
             case 0 -> {
                 this.videoCounterBase = 0;
@@ -807,8 +809,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     }
 
     private void checkRasterIRQ() {
-        if (this.raster == this.rasterCompare) {
+        if (!this.rasterIrqTriggeredOnThisRasterLine && this.raster == this.rasterCompare) {
             this.irqRaster = true;
+            this.rasterIrqTriggeredOnThisRasterLine = true;
         }
     }
 
