@@ -143,6 +143,10 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         this.bus.cycleOAMDMA();
     }
 
+    int getMCycleDot() {
+        return this.mCycleDot;
+    }
+
     protected void syncPPUToDot(int targetDot) {
         while (this.mCycleDot < targetDot) {
             this.ppu.cycleDot(this.mCycleDot);
@@ -150,15 +154,15 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
         }
     }
 
-    // CPU reads latch at the end of the CPU M-cycle: run its dots first
+    // CPU reads only become available at the end of the cycle, so we progress the PPU by 4 dots first
+    // in case the CPU is about to read from the PPU
     void syncPPUForCPURead() {
         if (this.cpuOnBus) {
             this.syncPPUToDot(this.cpuMCycleDotBase + this.cpuMCycleDotSpan);
         }
     }
 
-    // CPU writes to PPU registers commit halfway into the CPU M-cycle, so the
-    // remaining dots see the new value
+    // CPU writes are done halfway through the M-cycle, so we progress the PPU by 2 dots
     void syncPPUForCPUPPURegisterWrite() {
         if (this.cpuOnBus) {
             this.syncPPUToDot(this.cpuMCycleDotBase + this.cpuMCycleDotSpan / 2);
