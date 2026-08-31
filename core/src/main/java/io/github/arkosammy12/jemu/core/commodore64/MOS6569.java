@@ -113,7 +113,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int raster = SCANLINES_PER_FRAME - 1;
     private boolean displayEnabledInLine30;
     private IncrementRasterFlag incrementRasterFlag = IncrementRasterFlag.NONE;
-    //private boolean overflowRasterFlag;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
