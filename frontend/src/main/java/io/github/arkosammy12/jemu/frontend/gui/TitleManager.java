@@ -2,8 +2,10 @@ package io.github.arkosammy12.jemu.frontend.gui;
 
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.PowerCycleCommandCallback;
 import io.github.arkosammy12.jemu.frontend.gui.internal.commands.StopCommandCallback;
+import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.util.Objects;
 
 public class TitleManager {
 
@@ -11,6 +13,8 @@ public class TitleManager {
     private final JFrame appFrame;
 
     private volatile String mainTitle = "unknown";
+
+    @Nullable
     private volatile String programTitleString = "No title";
     private volatile String fpsString = "0 FPS (0 ms)";
 
@@ -24,10 +28,10 @@ public class TitleManager {
         this.appFrame = appFrame;
 
         mainWindow.<StopCommandCallback>onEmulatorCommand(_ -> {
-            lastWindowTitleUpdate = 0;
-            lastFrameTime = System.nanoTime();
-            framesSinceLastUpdate = 0;
-            totalFrameTimeSinceLastUpdate = 0;
+            this.lastWindowTitleUpdate = 0;
+            this.lastFrameTime = System.nanoTime();
+            this.framesSinceLastUpdate = 0;
+            this.totalFrameTimeSinceLastUpdate = 0;
             SwingUtilities.invokeLater(() -> {
                 this.programTitleString = "";
                 this.fpsString = "";
@@ -42,14 +46,14 @@ public class TitleManager {
 
     }
 
-    public void update(String programTitle) {
-        boolean updateTitleNow = !programTitle.equals(this.programTitleString);
+    public void onFrame(@Nullable String programTitle) {
+        boolean updateTitleNow = !Objects.equals(programTitle, this.programTitleString);
 
         long now = System.nanoTime();
-        double lastFrameDuration = (double) (now - lastFrameTime);
-        lastFrameTime = now;
-        totalFrameTimeSinceLastUpdate += lastFrameDuration;
-        framesSinceLastUpdate++;
+        double lastFrameDuration = (double) (now - this.lastFrameTime);
+        this.lastFrameTime = now;
+        this.totalFrameTimeSinceLastUpdate += lastFrameDuration;
+        this.framesSinceLastUpdate++;
 
         boolean updateStatsNow = false;
         String newFpsString = null;
@@ -57,19 +61,24 @@ public class TitleManager {
         long deltaTime = now - lastWindowTitleUpdate;
         if (deltaTime >= 1_000_000_000L) {
             updateStatsNow = true;
-            double fps = (double) framesSinceLastUpdate / ((double) deltaTime / 1_000_000_000.0);
-            double avgMs = (totalFrameTimeSinceLastUpdate / (double) framesSinceLastUpdate) / 1_000_000.0;
+            double fps = (double) this.framesSinceLastUpdate / ((double) deltaTime / 1_000_000_000.0);
+            double avgMs = (this.totalFrameTimeSinceLastUpdate / (double) this.framesSinceLastUpdate) / 1_000_000.0;
             newFpsString = "%.2f FPS (%.2f ms)".formatted(fps, avgMs);
 
-            framesSinceLastUpdate = 0;
-            totalFrameTimeSinceLastUpdate = 0;
-            lastWindowTitleUpdate = now;
+            this.framesSinceLastUpdate = 0;
+            this.totalFrameTimeSinceLastUpdate = 0;
+            this.lastWindowTitleUpdate = now;
         }
 
         if (updateTitleNow || updateStatsNow) {
-            final String titleSnapshot = updateTitleNow ? programTitle : this.programTitleString;
-            final String fpsSnapshot = updateStatsNow ? newFpsString : this.fpsString;
-            final String fullTitle = this.mainTitle + " - " + titleSnapshot + " - " + fpsSnapshot;
+            String titleSnapshot = updateTitleNow ? programTitle : this.programTitleString;
+            String fpsSnapshot = updateStatsNow ? newFpsString : this.fpsString;
+            String fullTitle = this.mainTitle;
+            if (titleSnapshot != null) {
+                fullTitle += " - " + titleSnapshot;
+            }
+            fullTitle += " - " + fpsSnapshot;
+            final String fullTitleSnapshot = fullTitle;
 
             if (updateTitleNow) {
                 this.programTitleString = titleSnapshot;
@@ -78,7 +87,7 @@ public class TitleManager {
                 this.fpsString = fpsSnapshot;
             }
 
-            SwingUtilities.invokeLater(() -> this.appFrame.setTitle(fullTitle));
+            SwingUtilities.invokeLater(() -> this.appFrame.setTitle(fullTitleSnapshot));
         }
     }
 
