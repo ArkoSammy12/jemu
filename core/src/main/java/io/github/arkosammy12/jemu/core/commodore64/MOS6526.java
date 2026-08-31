@@ -185,13 +185,13 @@ public class MOS6526 implements Bus {
                 }
                 if ((value & (1 << 1)) != 0) {
                     this.timerB.setInterruptEnable(interruptEnable);
-                    if (this.timerB.getInterruptFlag()) {
+                    if (this.timerB.isInterruptEnabled() && this.timerB.getInterruptFlag()) {
                         this.interruptRequest = true;
                     }
                 }
                 if ((value & 1) != 0) {
                     this.timerA.setInterruptEnable(interruptEnable);
-                    if (this.timerA.getInterruptFlag()) {
+                    if (this.timerA.isInterruptEnabled() && this.timerA.getInterruptFlag()) {
                         this.interruptRequest = true;
                     }
                 }
@@ -578,6 +578,10 @@ public class MOS6526 implements Bus {
 
         protected void clearInterruptFlag() {
             this.interruptFlag = false;
+        }
+
+        protected boolean isInterruptEnabled() {
+            return this.interruptEnable;
         }
 
         protected void setInterruptEnable(boolean value) {
