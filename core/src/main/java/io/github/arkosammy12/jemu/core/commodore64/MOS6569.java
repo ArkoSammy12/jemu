@@ -494,7 +494,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     case 58 -> {
                         if (this.rowCounter == 7) {
                             this.videoCounterBase = this.videoCounter;
-                            this.textBitmapLogicMode = TextBitmapLogicMode.IDLE;
+                            if (!badLineCondition) {
+                                this.textBitmapLogicMode = TextBitmapLogicMode.IDLE;
+                            }
                         }
                         if (this.textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
                             this.rowCounter = (this.rowCounter + 1) & 0b111;
