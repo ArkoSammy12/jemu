@@ -761,7 +761,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.irqSpriteSprite = true;
             }
             if (this.sprites[highestPrioritySpriteNumber].getDataPriority()) {
-                if (isForegroundBitmapPixel) {
+                if (!isForegroundBitmapPixel) {
                     paletteIndex = this.sprites[highestPrioritySpriteNumber].getPaletteIndex();
                 }
             } else {
