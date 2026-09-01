@@ -209,7 +209,7 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Special thanks
 
-- [Steffen "gulrak" Schümann](https://github.com/gulrak): Significant help during my CHIP-8 emulation journey, serving as my primary guide and advisor. He has also generously lent me his STRICT-CHIP-8 implementation.
+- [Steffen "gulrak" Schümann](https://github.com/gulrak): Significant help during my CHIP-8 emulation journey, serving as my primary guide and advisor. He has also generously lent me his STRICT-CHIP-8 implementation. Also of great help during the development and debugging of my Commodore 64 core.
 - [Mathew "theklap" Sutton](https://github.com/theklap): Significant accuracy improvements to the NES core.
 - [dtabacaru](https://github.com/dtabacaru/): Providing audio filtering logic to system's audio processing units.
 - [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output, and the amazing [Ricoh 2A03 instruction reference](https://github.com/L-Spiro/BeesNES/tree/main/Research/Instructions).
