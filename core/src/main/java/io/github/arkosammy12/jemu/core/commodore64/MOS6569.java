@@ -3,6 +3,7 @@ package io.github.arkosammy12.jemu.core.commodore64;
 import io.github.arkosammy12.jemu.core.common.Bus;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
+import io.github.arkosammy12.jemu.core.util.ActionSignalDispatcher;
 import io.github.arkosammy12.jemu.core.util.ShiftRegister;
 
 import java.util.function.BiConsumer;
@@ -73,6 +74,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     private final E emulator;
 
+    private final ActionSignalDispatcher actionSignalDispatcher = new ActionSignalDispatcher();
+    private final int setRasterRegisterSignalId;
+    private final int triggerRasterIrqSignalId;
+
     private final int[] video;
     private final Sprite[] sprites;
     private final int[] videoMatrixBuffer = new int[40]; // 12 bit elements
@@ -114,7 +119,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int scanlineNumber;
     private int raster;
     private boolean displayEnabledInLine30;
-    private IncrementRasterFlag incrementRasterFlag = IncrementRasterFlag.NONE;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -157,6 +161,17 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             this.sprites[i] = new Sprite(i);
         }
         this.video = new int[this.getImageWidth() * this.getImageHeight()];
+        this.setRasterRegisterSignalId = actionSignalDispatcher.addSignal(1 + 2, value -> {
+            this.raster = value;
+            switch (this.raster) {
+                case 0 -> {
+                    this.videoCounterBase = 0;
+                    this.dRAMRefreshCounter = 0xFF;
+                }
+                case 0x30 -> this.displayEnabledInLine30 = false;
+            }
+        });
+        this.triggerRasterIrqSignalId = actionSignalDispatcher.addSignal(3 + 2, _ -> this.irqRaster = true);
     }
 
     @Override
@@ -399,6 +414,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     }
 
     public void cycleHalf(NMOS6502.Phase cpuPhase) {
+        this.actionSignalDispatcher.tick();
+
         switch (cpuPhase) {
             case PHI_1 -> {
                 this.clockPixel();
@@ -424,28 +441,17 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 switch (this.cycleNumber) {
                     case 1 -> {
-                        if (this.incrementRasterFlag == IncrementRasterFlag.NORMAL) {
-                            this.incrementRaster();
-                        }
                         this.sprites[3].performPAccess();
                         this.sprite2BAOutputFlag = false;
                         this.spriteAECOutput = this.sprite3BAOutputFlag;
                     }
                     case 2 -> {
-                        switch (this.incrementRasterFlag) {
-                            case NORMAL -> this.checkRasterIRQ();
-                            case OVERFLOW -> this.incrementRaster();
-                        }
                         this.sprites[3].tryPerformSAccess(Sprite.SAccessStep.SECOND);
                         if (this.sprites[5].isDMAOn()) {
                             this.sprite5BAOutputFlag = true;
                         }
                     }
                     case 3 -> {
-                        if (this.incrementRasterFlag == IncrementRasterFlag.OVERFLOW) {
-                            this.checkRasterIRQ();
-                        }
-                        this.incrementRasterFlag = IncrementRasterFlag.NONE;
                         this.sprites[4].performPAccess();
                         this.sprite3BAOutputFlag = false;
                         this.spriteAECOutput = this.sprite4BAOutputFlag;
@@ -543,6 +549,14 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                         this.sprites[2].tryPerformSAccess(Sprite.SAccessStep.SECOND);
                         if (this.sprites[4].isDMAOn()) {
                             this.sprite4BAOutputFlag = true;
+                        }
+
+                        int newRasterValue = (this.raster + 1) % SCANLINES_PER_FRAME;
+                        this.rasterIrqTriggeredOnThisRasterLine = false;
+                        this.actionSignalDispatcher.trigger(this.setRasterRegisterSignalId, newRasterValue, newRasterValue == 0 ? 1 + 2 : 1);
+                        if (newRasterValue == this.rasterCompare) {
+                            this.actionSignalDispatcher.trigger(this.triggerRasterIrqSignalId, 0, newRasterValue == 0 ? 3 + 2: 3);
+                            this.rasterIrqTriggeredOnThisRasterLine = true;
                         }
                     }
                     default -> {
@@ -644,9 +658,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         if (xCoordinate == this.columnSelect.getRightComparison()) {
             this.mainBorderFlipFlop = true;
         } else if (xCoordinate == this.columnSelect.getLeftComparison()) {
-            if (this.raster == this.rowSelect.getBottonComparison()) {
+            if (this.scanlineNumber == this.rowSelect.getBottonComparison()) {
                 this.verticalBorderFlipFlop = true;
-            } else if (this.raster == this.rowSelect.getTopComparison() && this.displayEnable) {
+            } else if (this.scanlineNumber == this.rowSelect.getTopComparison() && this.displayEnable) {
                 this.verticalBorderFlipFlop = false;
             }
             if (!this.verticalBorderFlipFlop) {
@@ -785,12 +799,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             this.dotNumber = 0;
             this.scanlineNumber++;
             if (this.scanlineNumber >= SCANLINES_PER_FRAME) {
-                this.incrementRasterFlag = IncrementRasterFlag.OVERFLOW;
                 this.scanlineNumber = 0;
                 this.emulator.onVBlank();
                 this.emulator.getHost().getVideoDriver().ifPresent(videoDriver -> videoDriver.outputFrame(this.video));
-            } else {
-                this.incrementRasterFlag = IncrementRasterFlag.NORMAL;
             }
         }
     }
@@ -798,18 +809,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private void runForSprites(Consumer<Sprite> consumer) {
         for (Sprite sprite : this.sprites) {
             consumer.accept(sprite);
-        }
-    }
-
-    private void incrementRaster() {
-        this.raster = (this.raster + 1) % SCANLINES_PER_FRAME;
-        this.rasterIrqTriggeredOnThisRasterLine = false;
-        switch (this.raster) {
-            case 0 -> {
-                this.videoCounterBase = 0;
-                this.dRAMRefreshCounter = 0xFF;
-            }
-            case 0x30 -> this.displayEnabledInLine30 = false;
         }
     }
 
