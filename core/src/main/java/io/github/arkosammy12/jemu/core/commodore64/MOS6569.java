@@ -684,6 +684,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         int graphicsData = this.graphicsDataSequencer.shiftHead(0b00);
         int paletteIndex;
         if (this.verticalBorderFlipFlop) {
+            graphicsData = 0b00;
             paletteIndex = 0b00;
         } else {
             paletteIndex = switch (this.graphicsMode) {
