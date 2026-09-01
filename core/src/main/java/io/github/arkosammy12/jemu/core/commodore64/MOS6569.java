@@ -845,7 +845,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
 
         this.gDataPendingLatch = this.emulator.getBus().readVIC2(address);
-        this.cDataPendingLatch = this.videoMatrixBuffer[this.videoMatrixLine];
+        this.cDataPendingLatch = switch (this.textBitmapLogicMode) {
+            case IDLE -> 0;
+            case DISPLAY -> this.videoMatrixBuffer[this.videoMatrixLine];
+        };
         this.reloadGraphicsSequencer = true;
 
         if (textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
