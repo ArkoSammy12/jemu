@@ -611,6 +611,8 @@ public class MOS6526 implements Bus {
                 this.timerCounter--;
                 if (this.timerCounter < 0) {
                     this.onTimerUnderflow();
+                } else if (this.timerCounter < 1) {
+                    this.interruptFlag = true;
                 }
             }
         }
@@ -620,10 +622,11 @@ public class MOS6526 implements Bus {
             this.toggleOutput = !this.toggleOutput;
             this.pulseOutput = true;
             this.pulseOutputSetOnThisCycle = true;
-            this.interruptFlag = true;
+
             if (this.interruptEnable) {
                 interruptRequest = true;
             }
+
             this.running = switch (this.runMode) {
                 case CONTINUOUS -> true;
                 case ONE_SHOT -> false;
