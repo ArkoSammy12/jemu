@@ -140,6 +140,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private boolean sprite7BAOutputFlag = false;
     private boolean spriteAECOutput;
 
+    private boolean reloadGraphicsSequencer;
     private int cDataPendingLatch;
     private int gDataPendingLatch;
 
@@ -654,7 +655,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
 
         int cyclePixelPhase = (this.dotNumber + 4) & 0b111;
-        if (cyclePixelPhase == this.xScroll) {
+        if (this.reloadGraphicsSequencer && cyclePixelPhase == this.xScroll) {
+            this.reloadGraphicsSequencer = false;
             this.cDataCurrentLatch = this.cDataPendingLatch;
             switch (this.textBitmapLogicMode) {
                 case DISPLAY -> {
@@ -844,6 +846,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         this.gDataPendingLatch = this.emulator.getBus().readVIC2(address);
         this.cDataPendingLatch = this.videoMatrixBuffer[this.videoMatrixLine];
+        this.reloadGraphicsSequencer = true;
 
         if (textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
             this.videoCounter = (this.videoCounter + 1) & 0b1111111111;
