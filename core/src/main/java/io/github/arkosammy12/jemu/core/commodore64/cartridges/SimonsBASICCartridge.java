@@ -70,6 +70,7 @@ public class SimonsBASICCartridge<E extends Commodore64Emulator> extends Commodo
         return this.emulator.getBus().combineWithDataBus(0, 0x00);
     }
 
+    @Override
     protected void writeIO1(int address, int value) {
         this.gameLine = true;
     }
