@@ -291,12 +291,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.rowSelect = (value & (1 << 3)) != 0 ? RowSelect.REDUCED_BORDER : RowSelect.NORMAL;
                 this.yScroll = value & 0b111;
                 this.checkRasterIRQ();
-                IO.println("Scanline: %d. Cycle: %d. Raster line: %d. Raster compare: %d".formatted(this.scanlineNumber, this.cycleNumber, this.raster, this.rasterCompare));
             }
             case RASTER -> {
                 this.rasterCompare = (this.rasterCompare & (1 << 8)) | (value & 0xFF);
                 this.checkRasterIRQ();
-                IO.println("Scanline: %d. Cycle: %d. Raster line: %d. Raster compare: %d".formatted(this.scanlineNumber, this.cycleNumber, this.raster, this.rasterCompare));
             }
             case LPX -> {} // Lightpen X coordinate
             case LPY -> {} // Lightpen Y coordinate
