@@ -928,12 +928,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     }
 
-    private enum IncrementRasterFlag {
-        NONE,
-        NORMAL,
-        OVERFLOW
-    }
-
     private enum TextBitmapLogicMode {
         DISPLAY,
         IDLE
