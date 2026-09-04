@@ -137,6 +137,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
 
             this.ricohCore.reset();
             this.ppu.reset();
+            this.cartridge.onReset();
             this.runCycleFunction.run();
             this.currentRunCycleFunction = this.runCycleFunction;
         };
