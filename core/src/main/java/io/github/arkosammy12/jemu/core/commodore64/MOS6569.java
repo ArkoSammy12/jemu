@@ -161,7 +161,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             this.sprites[i] = new Sprite(i);
         }
         this.video = new int[this.getImageWidth() * this.getImageHeight()];
-        this.setRasterRegisterSignalId = actionSignalDispatcher.addSignal(1 + 2, value -> {
+        this.setRasterRegisterSignalId = this.actionSignalDispatcher.addSignal(1 + 2, value -> {
             this.raster = value;
             switch (this.raster) {
                 case 0 -> {
@@ -171,7 +171,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 case 0x30 -> this.displayEnabledInLine30 = false;
             }
         });
-        this.triggerRasterIrqSignalId = actionSignalDispatcher.addSignal(3 + 2, _ -> this.irqRaster = true);
+        this.triggerRasterIrqSignalId = this.actionSignalDispatcher.addSignal(3 + 2, _ -> this.irqRaster = true);
     }
 
     @Override
@@ -555,7 +555,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                         this.rasterIrqTriggeredOnThisRasterLine = false;
                         this.actionSignalDispatcher.trigger(this.setRasterRegisterSignalId, newRasterValue, newRasterValue == 0 ? 1 + 2 : 1);
                         if (newRasterValue == this.rasterCompare) {
-                            this.actionSignalDispatcher.trigger(this.triggerRasterIrqSignalId, 0, newRasterValue == 0 ? 3 + 2: 3);
+                            this.actionSignalDispatcher.trigger(this.triggerRasterIrqSignalId, 0, newRasterValue == 0 ? 3 + 2 : 3);
                             this.rasterIrqTriggeredOnThisRasterLine = true;
                         }
                     }
