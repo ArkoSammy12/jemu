@@ -471,11 +471,20 @@ public class MOS6526 implements Bus {
 
     private abstract class Timer {
 
-        private final int startSignal;
-        private final int stopSignal;
-        private final int forceLoadSignal;
+        protected static final int COUNT_0 = 1;
+        protected static final int COUNT_1 = 1 << 1;
+        protected static final int COUNT_2 = 1 << 2;
+        protected static final int COUNT_3 = 1 << 3;
+        protected static final int LOAD_0 = 1 << 4;
+        protected static final int LOAD_1 = 1 << 5;
+        protected static final int PULSE_LOW_0 = 1 << 6;
+        protected static final int PULSE_LOW_1 = 1 << 7;
+        protected static final int INTERRUPT_0 = 1 << 8;
+        protected static final int INTERRUPT_1 = 1 << 9;
+        protected static final int ONE_SHOT_0 = 1 << 10;
+        protected static final int DELAY_MASK = ~((1 << 11) | COUNT_0 | LOAD_0 | PULSE_LOW_0 | INTERRUPT_0 | ONE_SHOT_0);
 
-        private boolean running;
+        protected boolean running;
         private boolean outputOnPortB;
         private OutMode outMode = OutMode.PULSE;
         private RunMode runMode = RunMode.CONTINUOUS;
@@ -490,12 +499,11 @@ public class MOS6526 implements Bus {
 
         private boolean toggleOutput; // TODO: Set low by !RES input
         private boolean pulseOutput;
-        private boolean pulseOutputSetOnThisCycle;
+
+        protected int delay;
+        private int feed;
 
         protected Timer() {
-            this.startSignal = actionSignalDispatcher.addSignal(4, _ -> this.running = true);
-            this.stopSignal = actionSignalDispatcher.addSignal(4, _ -> this.running = false);
-            this.forceLoadSignal = actionSignalDispatcher.addSignal(4, _ -> this.timerCounter = this.timerLatch);
         }
 
         protected void writeTimerLatchLow(int value) {
@@ -505,7 +513,7 @@ public class MOS6526 implements Bus {
         protected void writeTimerLatchHigh(int value) {
             this.timerLatch = ((value & 0xFF) << 8) | (this.timerLatch & 0x00FF);
             if (!this.running) {
-                this.timerCounter = this.timerLatch;
+                this.delay |= LOAD_0;
             }
         }
 
@@ -518,35 +526,35 @@ public class MOS6526 implements Bus {
         }
 
         protected void writeControl(int value) {
-            boolean forceLoad = (value & (1 << 4)) != 0;
             boolean start = (value & 1) != 0;
-            if (forceLoad) {
-                this.forceLoad();
-            }
-            if (start) {
-                this.start(forceLoad);
-            } else {
-                this.stop(forceLoad);
-            }
-            this.setPortBEnabled((value & (1 << 1)) != 0);
-            this.setOutMode((value & (1 << 2)) != 0 ? Timer.OutMode.TOGGLE : Timer.OutMode.PULSE);
-            this.setRunMode((value & (1 << 3)) != 0 ? Timer.RunMode.ONE_SHOT : Timer.RunMode.CONTINUOUS);
-        }
+            this.outputOnPortB = (value & (1 << 1)) != 0;
+            this.outMode = (value & (1 << 2)) != 0 ? Timer.OutMode.TOGGLE : Timer.OutMode.PULSE;
+            this.runMode = (value & (1 << 3)) != 0 ? Timer.RunMode.ONE_SHOT : Timer.RunMode.CONTINUOUS;
 
-        private void start(boolean forceLoading) {
-            if (!this.running) {
+            switch (this.runMode) {
+                case ONE_SHOT -> this.feed |= ONE_SHOT_0;
+                case CONTINUOUS -> this.feed &= ~ONE_SHOT_0;
+            }
+
+            if ((value & (1 << 4)) != 0) {
+                this.delay |= LOAD_0;
+            }
+
+            if (start && !this.running) {
                 this.toggleOutput = true;
             }
-            actionSignalDispatcher.trigger(this.startSignal, 0x00, forceLoading ? 4 : 3);
+
+            this.running = start;
         }
 
-        private void stop(boolean forceLoading) {
-            actionSignalDispatcher.cancel(this.startSignal);
-            actionSignalDispatcher.trigger(this.stopSignal, 0x00, forceLoading ? 1 : 3);
-        }
-
-        private void setPortBEnabled(boolean value) {
-            this.outputOnPortB = value;
+        protected void checkStartWithCountPhi2(boolean startAndCountPhi2) {
+            if (startAndCountPhi2) {
+                this.delay |= COUNT_1 | COUNT_0;
+                this.feed |= COUNT_0;
+            } else {
+                this.delay &= ~(COUNT_1 | COUNT_0);
+                this.feed &= ~COUNT_0;
+            }
         }
 
         protected boolean portBOutputEnabled() {
@@ -558,18 +566,6 @@ public class MOS6526 implements Bus {
                 case PULSE -> this.pulseOutput;
                 case TOGGLE -> this.toggleOutput;
             };
-        }
-
-        private void setOutMode(OutMode outMode) {
-            this.outMode = outMode;
-        }
-
-        private void setRunMode(RunMode runMode) {
-            this.runMode = runMode;
-        }
-
-        private void forceLoad() {
-            actionSignalDispatcher.trigger(this.forceLoadSignal, 0x00, 3);
         }
 
         protected boolean getInterruptFlag() {
@@ -596,41 +592,70 @@ public class MOS6526 implements Bus {
             return ret;
         }
 
+        protected abstract boolean isCountingCNTEdges();
+
+        protected void onCNTClock() {
+            if (this.isCountingCNTEdges()) {
+                this.delay |= COUNT_0;
+            }
+        }
+
         protected void onCycle() {
-            if (this.pulseOutputSetOnThisCycle) {
-                this.pulseOutputSetOnThisCycle = false;
-            } else if (this.pulseOutput) {
+            boolean cntRising = this.isCNTRisingEdge();
+            if (this.isCountingCNTEdges() && cntRising) {
+                this.delay |= COUNT_0;
+            }
+
+            if ((this.delay & COUNT_3) != 0) {
+                this.timerCounter = (this.timerCounter - 1) & 0xFFFF;
+            }
+
+            if (this.timerCounter <= 0 && (this.delay & COUNT_2) != 0) {
+                 this.onTimerUnderflow();
+            }
+
+            if ((this.delay & LOAD_1) != 0) {
+                this.timerCounter = this.timerLatch;
+                this.delay &= ~COUNT_2;
+            }
+
+            if ((this.delay & PULSE_LOW_1) != 0) {
                 this.pulseOutput = false;
             }
-        }
 
-        abstract protected void onCNTClock();
-
-        protected void clockTimer() {
-            if (this.running) {
-                this.timerCounter--;
-                if (this.timerCounter < 0) {
-                    this.onTimerUnderflow();
-                } else if (this.timerCounter < 1) {
-                    this.interruptFlag = true;
-                }
-            }
-        }
-
-        protected void onTimerUnderflow() {
-            this.timerCounter = this.timerLatch;
-            this.toggleOutput = !this.toggleOutput;
-            this.pulseOutput = true;
-            this.pulseOutputSetOnThisCycle = true;
-
-            if (this.interruptEnable) {
+            if ((this.delay & INTERRUPT_1) != 0) {
                 interruptRequest = true;
             }
 
-            this.running = switch (this.runMode) {
-                case CONTINUOUS -> true;
-                case ONE_SHOT -> false;
-            };
+            this.delay = (this.delay << 1) & DELAY_MASK | this.feed;
+        }
+
+        protected void onTimerUnderflow() {
+            this.interruptFlag = true;
+            if (this.interruptEnable) {
+                this.delay |= INTERRUPT_0;
+            }
+
+            this.toggleOutput = !this.toggleOutput;
+
+            if (this.outputOnPortB) {
+                switch (this.outMode) {
+                    case PULSE -> {
+                        this.pulseOutput = true;
+                        this.delay |= PULSE_LOW_0;
+                        this.delay &= ~(PULSE_LOW_1);
+                    }
+                    case TOGGLE -> this.pulseOutput = this.toggleOutput;
+                }
+            }
+
+            if (((this.delay | this.feed) & ONE_SHOT_0) != 0) {
+                this.running = false;
+                this.delay &= ~(COUNT_2 | COUNT_1 | COUNT_0);
+                this.feed &= ~COUNT_0;
+            }
+
+            this.delay |= LOAD_1;
         }
 
         protected boolean isCNTRisingEdge() {
@@ -659,11 +684,8 @@ public class MOS6526 implements Bus {
         @Override
         protected void writeControl(int value) {
             super.writeControl(value);
-            this.setInMode((value & (1 << 5)) != 0 ? TimerA.InMode.CNT_RISING_EDGES : TimerA.InMode.PHI2_PULSES);
-        }
-
-        private void setInMode(InMode inMode) {
-            this.inMode = inMode;
+            this.inMode = (value & (1 << 5)) != 0 ? TimerA.InMode.CNT_RISING_EDGES : TimerA.InMode.PHI2_PULSES;
+            this.checkStartWithCountPhi2(this.running && this.inMode == InMode.PHI2_PULSES);
         }
 
         @Override
@@ -672,30 +694,14 @@ public class MOS6526 implements Bus {
         }
 
         @Override
-        protected void onCycle() {
-            super.onCycle();
-            boolean isCNTRising = this.isCNTRisingEdge();
-            switch (this.inMode) {
-                case PHI2_PULSES -> this.clockTimer();
-                case CNT_RISING_EDGES -> {
-                    if (isCNTRising) {
-                        this.clockTimer();
-                    }
-                }
-            }
+        protected boolean isCountingCNTEdges() {
+            return this.inMode == InMode.CNT_RISING_EDGES;
         }
 
         @Override
         protected void onTimerUnderflow() {
             super.onTimerUnderflow();
             timerB.onTimerAUnderflow();
-        }
-
-        @Override
-        protected void onCNTClock() {
-            if (this.inMode == InMode.CNT_RISING_EDGES) {
-                this.clockTimer();
-            }
         }
 
         private enum InMode {
@@ -712,16 +718,13 @@ public class MOS6526 implements Bus {
         @Override
         protected void writeControl(int value) {
             super.writeControl(value);
-            this.setInMode(switch ((value >>> 5) & 0b11) {
+            this.inMode = switch ((value >>> 5) & 0b11) {
                 case 0b00 -> TimerB.InMode.PHI2_PULSES;
                 case 0b01 -> TimerB.InMode.CNT_RISING_EDGES;
                 case 0b10 -> TimerB.InMode.TIMER_A_UNDERFLOWS;
                 default -> TimerB.InMode.TIMER_A_UNDERFLOWS_CNT_HIGH;
-            });
-        }
-
-        private void setInMode(InMode inMode) {
-            this.inMode = inMode;
+            };
+            this.checkStartWithCountPhi2(this.running && this.inMode == InMode.PHI2_PULSES);
         }
 
         @Override
@@ -735,32 +738,16 @@ public class MOS6526 implements Bus {
         }
 
         @Override
-        protected void onCycle() {
-            super.onCycle();
-            boolean isCNTRising = this.isCNTRisingEdge();
-            switch (this.inMode) {
-                case PHI2_PULSES -> this.clockTimer();
-                case CNT_RISING_EDGES -> {
-                    if (isCNTRising) {
-                        this.clockTimer();
-                    }
-                }
-            }
-        }
-
-        @Override
-        protected void onCNTClock() {
-            if (this.inMode == InMode.CNT_RISING_EDGES) {
-                this.clockTimer();
-            }
+        protected boolean isCountingCNTEdges() {
+            return this.inMode == InMode.CNT_RISING_EDGES;
         }
 
         private void onTimerAUnderflow() {
             switch (this.inMode) {
-                case TIMER_A_UNDERFLOWS -> this.clockTimer();
+                case TIMER_A_UNDERFLOWS -> this.delay |= COUNT_1;
                 case TIMER_A_UNDERFLOWS_CNT_HIGH -> {
                     if (systemBus.getCNT().read()) {
-                        this.clockTimer();
+                        this.delay |= COUNT_1;
                     }
                 }
             }
