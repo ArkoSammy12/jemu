@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.hardware;
 
 import io.github.arkosammy12.jemu.core.common.Processor;
 
-public abstract class NMOS6502 implements Processor {
+public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
 
     private static final int RESET_VECTOR = 0xFFFC;
     private static final int NMI_VECTOR = 0xFFFA;
@@ -19,7 +19,7 @@ public abstract class NMOS6502 implements Processor {
 
     protected static final int TERMINATE_INSTRUCTION = -1;
 
-    protected final SystemBus systemBus;
+    protected final S systemBus;
 
     private int programCounter; // PC, 16 bits
     private int accumulator; // A, 8 bits
@@ -42,9 +42,9 @@ public abstract class NMOS6502 implements Processor {
     private boolean shxSkipHigh;
 
     private Phase phase = Phase.PHI_1;
-    private ReadWriteCycle readWriteCycle = ReadWriteCycle.READ;
+    protected ReadWriteCycle readWriteCycle = ReadWriteCycle.READ;
     protected boolean isHalted;
-    private int lastAddress;
+    protected int lastAddress;
     private boolean sync;
 
     private boolean oldNMI;
@@ -55,7 +55,7 @@ public abstract class NMOS6502 implements Processor {
     private boolean pushB;
     private boolean syncOnThisPHI1;
 
-    public NMOS6502(SystemBus systemBus) {
+    public NMOS6502(S systemBus) {
         this.systemBus = systemBus;
 
         // Trigger the initial resetting of the CPU

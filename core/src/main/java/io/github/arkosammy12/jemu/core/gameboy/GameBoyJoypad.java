@@ -44,7 +44,7 @@ public class GameBoyJoypad<E extends GameBoyEmulator> implements SystemControlle
     }
 
     @Override
-    public void onActionPressed(Action action) {
+    public void pressAction(Action action) {
         if (!(action instanceof Actions joypadAction)) {
             return;
         }
@@ -82,7 +82,7 @@ public class GameBoyJoypad<E extends GameBoyEmulator> implements SystemControlle
     }
 
     @Override
-    public void onActionReleased(Action action) {
+    public void releaseAction(Action action) {
         if (!(action instanceof Actions joypadAction)) {
             return;
         }

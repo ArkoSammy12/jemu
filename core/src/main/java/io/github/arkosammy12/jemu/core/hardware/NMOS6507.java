@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.core.hardware;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
 
-public class NMOS6507 extends NMOS6502 {
+public class NMOS6507 extends NMOS6502<NMOS6502.SystemBus> {
 
     public NMOS6507(SystemBus systemBus) {
         super(new SystemBus() {

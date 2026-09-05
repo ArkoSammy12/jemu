@@ -32,8 +32,8 @@ Multi-system emulator written in Java.
 | Game Boy Color (CGB)                | `gameboy-color`    | ✅ Supported |
 | Nintendo Entertainment System       | `nes`              | ✅ Supported |
 | Atari 2600                          | `atari-2600`       | ✅ Supported |
+| Commodore 64                        | `c64`              | 🚧 WIP       |
 | Apple II                            | —                  | 🗓 Planned   |
-| Commodore 64                        | —                  | 🗓 Planned   |
 | Space Invaders arcade cabinet       | —                  | 🗓 Planned   |
 | Sega Master System                  | —                  | 🗓 Planned   |
 | ZX Spectrum                         | —                  | 🗓 Planned   |
@@ -98,6 +98,64 @@ Multi-system emulator written in Java.
 | Right Joystick Right | `L` |
 | Right Joystick Fire  | `;` |
 
+# Commodore 64
+
+The Commodore 64 core uses symbolic keybindings for the built-in keyboard.
+
+| Action                       | Key               |
+|------------------------------|-------------------|
+| A-Z                          | `A-Z`             |
+| 0-9                          | `0-9`             |
+| Left Arrow                   | `` ` ``           |
+| £                            | ``~ (Shift+`)  `` |
+| !                            | `! (Shift+1)`     |
+| @                            | `@ (Shift+2)`     |
+| #                            | `# (Shift+3)`     |
+| $                            | `$ (Shift+4)`     |
+| %                            | `% (Shift+5)`     |
+| Up Arrow                     | `^ (Shift+6)`     |
+| &                            | `& (Shift+7)`     |
+| *                            | `* (Shift+8)`     |
+| (                            | `( (Shift+9)`     |
+| )                            | `) (Shift+0)`     |
+| -                            | `-`               |
+| =                            | `=`               |
+| +                            | `+ (Shift+=)`     |
+| Commodore                    | `TAB`             |
+| CLR/HOME                     | `\`               |
+| Shift Lock                   | `Caps Lock`       |
+| :                            | `: (Shift+;)`     |
+| [ (Shift+:)                  | `[`               |
+| ;                            | `;`               |
+| ] (Shift+;)                  | `]`               |
+| Return                       | `Enter`           |
+| \`                           | `'`               |
+| " (Shift+2)                  | `" (Shift+')`     |
+| Left Shift                   | `Left Shift`      |
+| Right Shift                  | `Right Shift`     |
+| ,                            | `,`               |
+| < (Shift+,)                  | `< (Shift+,)`     |
+| .                            | `.`               |
+| \> (Shift+.)                 | `> (Shift+.)`     |
+| /                            | `/`               |
+| ? (Shift+/)                  | `? (Shift+/)`     |
+| Ctrl                         | `Ctrl`            |
+| F1                           | `F1`              |
+| F2 (Shift+F1)                | `F2`              |
+| F3                           | `F3`              |
+| F4 (Shift+F3)                | `F4`              |
+| F5                           | `F5`              |
+| F6 (Shift+F5)                | `F6`              |
+| F7                           | `F7`              |
+| F8 (Shift+F7)                | `F8`              |
+| RUN/STOP                     | `ESC`             |
+| RESTORE                      | `F12`             |
+| Up (Shift+CRSR UP/DOWN)      | `Up`              |
+| Down (CRSR UP/DOWN)          | `Down`            |
+| Left (Shift+CRSR LEFT/RIGHT) | `Left`            |
+| Right (CRSR LEFT/RIGHT)      | `Right`           |
+| Space                        | `Space`           |
+
 ## Command-line usage
 
 If you launch **jemu** from the CLI, you can optionally pass arguments.
@@ -151,9 +209,10 @@ This project is licensed under the [MIT License](LICENSE).
 
 ## Special thanks
 
-- [Steffen "gulrak" Schümann](https://github.com/gulrak): Significant help during my CHIP-8 emulation journey, serving as my primary guide and advisor. He has also generously lent me his STRICT-CHIP-8 implementation.
+- [Steffen "gulrak" Schümann](https://github.com/gulrak): Significant help during my CHIP-8 emulation journey, serving as my primary guide and advisor. He has also generously lent me his STRICT-CHIP-8 implementation. Also of great help during the development and debugging of my Commodore 64 core.
 - [Mathew "theklap" Sutton](https://github.com/theklap): Significant accuracy improvements to the NES core.
 - [dtabacaru](https://github.com/dtabacaru/): Providing audio filtering logic to system's audio processing units.
 - [Shawn (L. Spiro) Wilcoxen](https://github.com/L-Spiro): Provide accurate audio filtering classes useful for quality NES APU output, and the amazing [Ricoh 2A03 instruction reference](https://github.com/L-Spiro/BeesNES/tree/main/Research/Instructions).
 - [Andrew "ajoneil" O'Neil](https://github.com/ajoneil): Significant accuracy improvements to the DMG/CGB cores.
 - [The Stella Team](https://stella-emu.github.io/theteam.html): Implementation of the Atari 2600's audio LFSR mechanism.
+- [sidera](https://docs.rs/crate/sidera/1.1.0/source/SID_ANALOG_SPEC.md): Aided in the implementation of the Commodore 64 SID.

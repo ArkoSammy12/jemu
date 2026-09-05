@@ -6,14 +6,11 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
-import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
 import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;
-import java.awt.event.KeyEvent;
 import java.nio.file.Path;
 import java.util.Optional;
 
@@ -105,22 +102,6 @@ public class GameBoyAdapter extends SystemAdapter implements GameBoyHost {
     @Override
     public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
         super.onCoreSettingChangedEvent(coreSettingChangedEvent);
-    }
-
-    @Override
-    @Nullable
-    protected GameBoyJoypad.Actions getActionForKeyCode(int keyCode) {
-        return switch (keyCode) {
-            case KeyEvent.VK_W -> GameBoyJoypad.Actions.UP;
-            case KeyEvent.VK_S -> GameBoyJoypad.Actions.DOWN;
-            case KeyEvent.VK_A -> GameBoyJoypad.Actions.LEFT;
-            case KeyEvent.VK_D -> GameBoyJoypad.Actions.RIGHT;
-            case KeyEvent.VK_ENTER -> GameBoyJoypad.Actions.START;
-            case KeyEvent.VK_BACK_SPACE -> GameBoyJoypad.Actions.SELECT;
-            case KeyEvent.VK_J -> GameBoyJoypad.Actions.A;
-            case KeyEvent.VK_K -> GameBoyJoypad.Actions.B;
-            default -> null;
-        };
     }
 
 }

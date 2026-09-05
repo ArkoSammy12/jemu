@@ -9,7 +9,6 @@ import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600SystemHost;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
-import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.awt.event.KeyEvent;
@@ -72,29 +71,6 @@ public class Atari2600Adapter extends SystemAdapter implements Atari2600SystemHo
         return switch (this.atari2600Manager.getEmulationSettings().getRightDifficulty()) {
             case ADVANCED -> true;
             case BEGINNER -> false;
-        };
-    }
-
-    @Override
-    @Nullable
-    protected SystemController.Action getActionForKeyCode(int keyCode) {
-        return switch (keyCode) {
-            case KeyEvent.VK_E -> Atari2600Controller.Actions.GAME_SELECT;
-            case KeyEvent.VK_R -> Atari2600Controller.Actions.GAME_RESET;
-
-            case KeyEvent.VK_W -> Atari2600Controller.Actions.JOYSTICK0_UP;
-            case KeyEvent.VK_S -> Atari2600Controller.Actions.JOYSTICK0_DOWN;
-            case KeyEvent.VK_A -> Atari2600Controller.Actions.JOYSTICK0_LEFT;
-            case KeyEvent.VK_D -> Atari2600Controller.Actions.JOYSTICK0_RIGHT;
-            case KeyEvent.VK_F -> Atari2600Controller.Actions.JOYSTICK0_FIRE;
-
-
-            case KeyEvent.VK_I -> Atari2600Controller.Actions.JOYSTICK1_UP;
-            case KeyEvent.VK_K -> Atari2600Controller.Actions.JOYSTICK1_DOWN;
-            case KeyEvent.VK_J -> Atari2600Controller.Actions.JOYSTICK1_LEFT;
-            case KeyEvent.VK_L -> Atari2600Controller.Actions.JOYSTICK1_RIGHT;
-            case KeyEvent.VK_SEMICOLON -> Atari2600Controller.Actions.JOYSTICK1_FIRE;
-            default -> null;
         };
     }
 

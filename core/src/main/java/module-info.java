@@ -22,5 +22,9 @@ module core {
     exports io.github.arkosammy12.jemu.core.chip8.bus;
     exports io.github.arkosammy12.jemu.core.chip8.display;
     exports io.github.arkosammy12.jemu.core.chip8.interpreters;
+    exports io.github.arkosammy12.jemu.core.commodore64;
+    exports io.github.arkosammy12.jemu.core.commodore64.crt;
+
+    exports io.github.arkosammy12.jemu.core.util;
 
 }
