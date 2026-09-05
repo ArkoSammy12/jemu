@@ -743,11 +743,13 @@ public class MOS6526 implements Bus {
         }
 
         private void onTimerAUnderflow() {
-            switch (this.inMode) {
-                case TIMER_A_UNDERFLOWS -> this.delay |= COUNT_1;
-                case TIMER_A_UNDERFLOWS_CNT_HIGH -> {
-                    if (systemBus.getCNT().read()) {
-                        this.delay |= COUNT_1;
+            if (this.running) {
+                switch (this.inMode) {
+                    case TIMER_A_UNDERFLOWS -> this.delay |= COUNT_1;
+                    case TIMER_A_UNDERFLOWS_CNT_HIGH -> {
+                        if (systemBus.getCNT().read()) {
+                            this.delay |= COUNT_1;
+                        }
                     }
                 }
             }
