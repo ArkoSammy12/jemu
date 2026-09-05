@@ -1038,7 +1038,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         private boolean advanceLine;
         private boolean dma;
-        private boolean corruptDataCounterBaseFlag;
+        private boolean corruptDataCounterBaseReload;
 
         private final ShiftRegister sequencer = new ShiftRegister(24, 2);
         private int pDataLatch;
@@ -1090,7 +1090,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             if (!this.yExpansion) {
                 this.advanceLine = true;
                 if (cycleNumber == 15 && originalYExpansion && !originalAdvanceLine) {
-                    this.corruptDataCounterBaseFlag = true;
+                    this.corruptDataCounterBaseReload = true;
                 }
             }
         }
@@ -1216,8 +1216,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         private void checkAdvanceLineSet() {
             if (this.advanceLine) {
-                if (this.corruptDataCounterBaseFlag) {
-                    this.corruptDataCounterBaseFlag = false;
+                if (this.corruptDataCounterBaseReload) {
+                    this.corruptDataCounterBaseReload = false;
                     this.dataCounterBase = ((0b101010 & (this.dataCounterBase & this.dataCounter)) | (0b010101 & (this.dataCounterBase | this.dataCounter)));
                 } else {
                     this.dataCounterBase = this.dataCounter;
@@ -1230,16 +1230,17 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         private void shiftSequencer() {
             if (this.enableDisplay) {
-                if (this.sequencer.isEmpty()) {
-                    this.shiftFlipFlop = true;
-                    this.shiftOutData = false;
-                    this.shiftedOutDataLatch = 0b00;
-                } else if (this.shiftOutData || this.x == getXCoordinate()) {
+                if (this.shiftOutData || this.x == getXCoordinate()) {
                     this.shiftOutData = true;
                     if (this.shiftFlipFlop) {
-                        this.shiftedOutDataLatch = this.sequencer.shiftHead(0b00);
+                        if (this.sequencer.isEmpty()) {
+                            this.shiftOutData = false;
+                            this.shiftedOutDataLatch = 0b00;
+                        } else {
+                            this.shiftedOutDataLatch = this.sequencer.shiftHead(0b00);
+                        }
                     }
-                    if (this.xExpansion) {
+                    if (this.xExpansion && this.shiftOutData) {
                         this.shiftFlipFlop = !this.shiftFlipFlop;
                     }
                 }
