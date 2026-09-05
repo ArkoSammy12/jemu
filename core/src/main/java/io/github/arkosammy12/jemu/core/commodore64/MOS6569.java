@@ -1180,6 +1180,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                     this.sequencer.set((7 - i) + loadOffset, (spriteData >> i) & 1);
                 }
             }
+            if (sAccessStep == SAccessStep.THIRD) {
+                this.sequencer.setFull();
+            }
             this.dataCounter = (this.dataCounter + 1) & 0b111111;
         }
 
@@ -1198,9 +1201,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
 
         private void loadDataCounter() {
-            this.shiftFlipFlop = true;
-            this.shiftOutData = false;
-            this.shiftedOutDataLatch = 0b00;
             this.dataCounter = this.dataCounterBase;
             if (this.dma) {
                 if (this.y == (raster & 0xFF)) {
@@ -1208,6 +1208,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 }
             } else {
                 this.enableDisplay = false;
+                this.shiftFlipFlop = true;
+                this.shiftOutData = false;
+                this.shiftedOutDataLatch = 0b00;
             }
         }
 
@@ -1227,7 +1230,11 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
         private void shiftSequencer() {
             if (this.enableDisplay) {
-                if (this.shiftOutData || this.x == getXCoordinate()) {
+                if (this.sequencer.isEmpty()) {
+                    this.shiftFlipFlop = true;
+                    this.shiftOutData = false;
+                    this.shiftedOutDataLatch = 0b00;
+                } else if (this.shiftOutData || this.x == getXCoordinate()) {
                     this.shiftOutData = true;
                     if (this.shiftFlipFlop) {
                         this.shiftedOutDataLatch = this.sequencer.shiftHead(0b00);
