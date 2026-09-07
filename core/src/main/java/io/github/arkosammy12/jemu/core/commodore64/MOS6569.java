@@ -424,17 +424,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.clockPixel();
                 this.clockPixel();
 
-                boolean badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
-
-                // A late bad-line handling
-                boolean enterDisplayAfterGraphics = badLineCondition
-                        && this.textBitmapLogicMode == TextBitmapLogicMode.IDLE
-                        && this.cycleNumber >= 16
-                        && this.cycleNumber <= 55;
-                if (badLineCondition && !enterDisplayAfterGraphics) {
-                    this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
-                }
-
                 if (this.cAccessingCountdown > 0) {
                     this.cAccessingCountdown--;
                     if (this.cAccessingCountdown <= 0) {
@@ -444,6 +433,16 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 if (this.raster == 0x30 && this.displayEnable) {
                     this.displayEnabledInLine30 = true;
+                }
+                boolean badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
+
+                // A late bad-line handling
+                boolean enterDisplayAfterGraphics = badLineCondition
+                        && this.textBitmapLogicMode == TextBitmapLogicMode.IDLE
+                        && this.cycleNumber >= 16
+                        && this.cycleNumber <= 55;
+                if (badLineCondition && !enterDisplayAfterGraphics) {
+                    this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
                 }
 
                 switch (this.cycleNumber) {
