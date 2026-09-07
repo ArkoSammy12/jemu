@@ -119,7 +119,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int scanlineNumber;
     private int raster;
     private boolean displayEnabledInLine30;
-    private boolean badLineCondition;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -425,7 +424,14 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.clockPixel();
                 this.clockPixel();
 
-                if (this.badLineCondition) {
+                boolean badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
+
+                // A late bad-line handling
+                boolean enterDisplayAfterGraphics = badLineCondition
+                        && this.textBitmapLogicMode == TextBitmapLogicMode.IDLE
+                        && this.cycleNumber >= 16
+                        && this.cycleNumber <= 55;
+                if (badLineCondition && !enterDisplayAfterGraphics) {
                     this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
                 }
 
@@ -606,13 +612,14 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                                         this.runForSprites(Sprite::checkAdvanceLineSet);
                                     }
                                     this.performGAccess();
+                                    if (enterDisplayAfterGraphics) {
+                                        this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-
-                this.badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
             }
             case PHI_2 -> {
                 this.clockPixel();
