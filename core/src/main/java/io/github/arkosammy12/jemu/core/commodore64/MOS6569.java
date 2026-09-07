@@ -119,6 +119,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private int scanlineNumber;
     private int raster;
     private boolean displayEnabledInLine30;
+    private boolean badLineCondition;
 
     private int videoCounter; // VC, 10 bits
     private int videoCounterBase; // VCBASE, 10 data register
@@ -147,6 +148,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private boolean reloadGraphicsSequencer;
     private int cDataPendingLatch;
     private int gDataPendingLatch;
+    private int xScrollPendingLatch;
 
     private int cDataCurrentLatch;
     private final ShiftRegister graphicsDataSequencer = new ShiftRegister(8, 2);
@@ -423,6 +425,10 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 this.clockPixel();
                 this.clockPixel();
 
+                if (this.badLineCondition) {
+                    this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
+                }
+
                 if (this.cAccessingCountdown > 0) {
                     this.cAccessingCountdown--;
                     if (this.cAccessingCountdown <= 0) {
@@ -432,11 +438,6 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 if (this.raster == 0x30 && this.displayEnable) {
                     this.displayEnabledInLine30 = true;
-                }
-                boolean badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
-
-                if (badLineCondition) {
-                    this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
                 }
 
                 switch (this.cycleNumber) {
@@ -610,6 +611,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                         }
                     }
                 }
+
+                this.badLineCondition = this.raster >= 0x30 && this.raster <= 0xF7 && (this.raster & 0b111) == this.yScroll && this.displayEnabledInLine30;
             }
             case PHI_2 -> {
                 this.clockPixel();
@@ -669,7 +672,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
         }
 
         int cyclePixelPhase = (this.dotNumber + 4) & 0b111;
-        if (this.reloadGraphicsSequencer && cyclePixelPhase == this.xScroll) {
+        if (this.reloadGraphicsSequencer && cyclePixelPhase == this.xScrollPendingLatch) {
             this.reloadGraphicsSequencer = false;
             this.cDataCurrentLatch = this.cDataPendingLatch;
             switch (this.textBitmapLogicMode) {
@@ -849,6 +852,7 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
             case IDLE -> 0;
             case DISPLAY -> this.videoMatrixBuffer[this.videoMatrixLine];
         };
+        this.xScrollPendingLatch = this.xScroll;
         this.reloadGraphicsSequencer = true;
 
         if (textBitmapLogicMode == TextBitmapLogicMode.DISPLAY) {
