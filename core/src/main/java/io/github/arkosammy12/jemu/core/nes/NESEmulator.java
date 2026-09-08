@@ -22,7 +22,6 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
     private static final int PAL_FRAMERATE = 50;
 
     private final NESHost systemHost;
-    private String loadedRomFileName = "";
 
     private final RP2A03<?> ricohCore;
     private final RP2C02<?> ppu;
@@ -58,9 +57,6 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
 
         byte[] rom = optionalROM.get();
         this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(this, rom));
-        systemHost.getRomPath().ifPresent(path -> {
-            this.loadedRomFileName = path.getFileName().toString();
-        });
 
         this.tvSystem = this.cartridge.getINESFile().getTVSystem();
         boolean deriveCyclesFromMasterClock;
@@ -122,18 +118,12 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
         }
 
         this.resetRunCycleFunction = () -> {
-
-            // Hotswap cartridge of ROM filename changed
-            systemHost.getRomPath().ifPresent(path -> systemHost.getRom().ifPresent(newRom -> {
-                String romPathFilename = path.getFileName().toString();
-                if (!this.loadedRomFileName.equals(romPathFilename)) {
-                    if (this.cartridge != null) {
-                        this.cartridge.save();
-                    }
-                    this.loadedRomFileName = romPathFilename;
-                    this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(this, newRom));
+            systemHost.getRom().ifPresent(newRom -> {
+                if (this.cartridge != null) {
+                    this.cartridge.save();
                 }
-            }));
+                this.cartridge = NESCartridge.getCartridge(this, INESFile.getINESFile(this, newRom));
+            });
 
             this.ricohCore.reset();
             this.ppu.reset();
