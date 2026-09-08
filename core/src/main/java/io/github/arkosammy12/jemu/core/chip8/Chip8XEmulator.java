@@ -66,7 +66,7 @@ public class Chip8XEmulator extends Chip8Emulator {
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return 61;
     }
 

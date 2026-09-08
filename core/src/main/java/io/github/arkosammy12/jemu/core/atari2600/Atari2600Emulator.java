@@ -125,7 +125,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return this.framerate;
     }
 

@@ -31,7 +31,7 @@ public class AudioEngine implements Closeable {
     private SampleRate sampleRate = SampleRate.HZ_44100;
     private volatile boolean muted;
     private volatile int volume;
-    private volatile int framerate;
+    private volatile double framerate;
     private volatile int latencyMs;
     private volatile boolean paused;
 
@@ -137,7 +137,7 @@ public class AudioEngine implements Closeable {
         }
     }
 
-    public void setFramerate(int framerate) throws LineUnavailableException {
+    public void setFramerate(double framerate) throws LineUnavailableException {
         if (framerate < 0) {
             return;
         }
@@ -198,7 +198,7 @@ public class AudioEngine implements Closeable {
                 }
             }
 
-            this.audioLine.open(this.bytesPerFrame + ((this.latencyMs * this.framerate * this.bytesPerFrame) / 1000));
+            this.audioLine.open(this.bytesPerFrame + (int) Math.round(((this.latencyMs * this.framerate * this.bytesPerFrame) / 1000)));
 
             this.setVolume(this.volume);
             this.setMuted(this.muted);
@@ -340,7 +340,7 @@ public class AudioEngine implements Closeable {
     }
 
     private void recalculateFrameMetrics() {
-        this.samplesPerFrame = this.getSampleRate() / this.framerate;
+        this.samplesPerFrame = (int) Math.round(this.getSampleRate() / this.framerate);
         this.bytesPerFrame = this.samplesPerFrame * this.getBytesPerSample();
         this.emptySamples = new byte[this.bytesPerFrame];
     }
