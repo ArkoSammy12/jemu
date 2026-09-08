@@ -291,7 +291,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return this.framerate;
     }
 
