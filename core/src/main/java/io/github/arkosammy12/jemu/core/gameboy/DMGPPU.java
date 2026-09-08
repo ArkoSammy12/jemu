@@ -32,7 +32,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
     protected final E emulator;
 
-    protected final byte[] vram = new byte[0x2000];
+    protected final byte[] videoRAM = new byte[0x2000];
     private final byte[] oam = new byte[0x00A0];
 
     private int lcdControl;
@@ -151,7 +151,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
         } else if (address >= VRAM_START && address <= VRAM_END) {
             if (!Mode.DRAWING_3.matchesValue(this.getVisiblePPUMode()) || !this.getLCDPPUEnable()) {
-                return (int) this.vram[address - VRAM_START] & 0xFF;
+                return (int) this.videoRAM[address - VRAM_START] & 0xFF;
             } else {
                 return 0xFF;
             }
@@ -182,7 +182,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
             }
         } else if (address >= VRAM_START && address <= VRAM_END) {
             if (!Mode.DRAWING_3.matchesValue(this.getVisiblePPUMode()) || !this.getLCDPPUEnable()) {
-                this.vram[address - VRAM_START] = (byte) value;
+                this.videoRAM[address - VRAM_START] = (byte) value;
             }
         } else {
             switch (address) {
@@ -959,7 +959,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
     protected int getVRAMByte(int address) {
         if (address >= VRAM_START && address <= VRAM_END) {
-            return (int) this.vram[address - VRAM_START] & 0xFF;
+            return (int) this.videoRAM[address - VRAM_START] & 0xFF;
         } else {
             throw new EmulatorException("Invalid GameBoy VRAM address \"%04X\"!".formatted(address));
         }

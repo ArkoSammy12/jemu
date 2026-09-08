@@ -55,7 +55,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         if (address >= VRAM_START && address <= VRAM_END) {
             if (!Mode.DRAWING_3.matchesValue(this.getVisiblePPUMode()) || !this.getLCDPPUEnable()) {
                 return switch (this.vramBank) {
-                    case BANK_0 -> (int) this.vram[address - VRAM_START] & 0xFF;
+                    case BANK_0 -> (int) this.videoRAM[address - VRAM_START] & 0xFF;
                     case BANK_1 -> (int) this.vramBank1[address - VRAM_START] & 0xFF;
                 };
             } else {
@@ -94,7 +94,7 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
         if (address >= VRAM_START && address <= VRAM_END) {
             if (!Mode.DRAWING_3.matchesValue(this.getVisiblePPUMode()) || !this.getLCDPPUEnable()) {
                 switch (this.vramBank) {
-                    case BANK_0 -> this.vram[address - VRAM_START] = (byte) value;
+                    case BANK_0 -> this.videoRAM[address - VRAM_START] = (byte) value;
                     case BANK_1 -> this.vramBank1[address - VRAM_START] = (byte) value;
                 }
             }
