@@ -201,7 +201,7 @@ public class NESEmulator implements Emulator, NMOS6502.SystemBus, Resetable {
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return this.framerate;
     }
 

@@ -31,14 +31,14 @@ public enum SpeedMode {
         return this.displayName;
     }
 
-    public int scaleFramerate(int framerate) {
+    public double scaleFramerate(double framerate) {
         return Math.clamp(switch (this) {
             case NORMAL -> framerate;
             case UNLIMITED -> -1;
             case TRIPLE -> framerate * 3L;
             case DOUBLE -> framerate * 2L;
-            case HALF -> Math.round(framerate * 0.50);
-            case QUARTER -> Math.round(framerate * 0.25);
+            case HALF -> framerate * 0.50;
+            case QUARTER -> framerate * 0.25;
         }, 1, 300);
     }
 

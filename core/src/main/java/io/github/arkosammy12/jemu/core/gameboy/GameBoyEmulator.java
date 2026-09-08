@@ -6,10 +6,10 @@ import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 
 public class GameBoyEmulator implements Emulator, SM83.SystemBus {
 
-    private static final int FRAMERATE = 60;
     public static final int CLOCK_FREQUENCY = 4194304;
     public static final int T_CYCLES_PER_FRAME = 70224;
     public static final int M_CYCLES_PER_FRAME = T_CYCLES_PER_FRAME / 4;
+    private static final double FRAMERATE = (double) CLOCK_FREQUENCY / T_CYCLES_PER_FRAME;
 
     private final GameBoyHost host;
 
@@ -170,7 +170,7 @@ public class GameBoyEmulator implements Emulator, SM83.SystemBus {
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return FRAMERATE;
     }
 

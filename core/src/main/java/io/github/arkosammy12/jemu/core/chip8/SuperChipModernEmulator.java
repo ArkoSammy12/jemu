@@ -55,7 +55,7 @@ public class SuperChipModernEmulator extends SuperChip11Emulator {
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return 60;
     }
 

@@ -21,7 +21,7 @@ public class Chip8Emulator implements Emulator {
     private final AbstractChip8AudioGenerator<?> audio;
     private final Chip8Keypad keypad;
 
-    private final long frameInterval = 1_000_000_000L / this.getFramerate();
+    private final long frameInterval = (long) (1_000_000_000L / this.getFramerate());
 
     private int targetInstructionsPerFrame = 1;
     private int currentInstructionsPerFrame = 1;
@@ -84,7 +84,7 @@ public class Chip8Emulator implements Emulator {
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return 60;
     }
 

@@ -119,7 +119,7 @@ public class RCAStudioIIEmulator implements CDP1802System, CDP1802.SystemBus, Re
     }
 
     @Override
-    public int getFramerate() {
+    public double getFramerate() {
         return 60;
     }
 
