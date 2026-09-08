@@ -6,6 +6,9 @@ public enum SpeedMode {
     @SerializedName("normal")
     NORMAL("Normal (100%)"),
 
+    @SerializedName("unlimited")
+    UNLIMITED("Unlimited"),
+
     @SerializedName("triple")
     TRIPLE("Triple (300%)"),
 
@@ -31,6 +34,7 @@ public enum SpeedMode {
     public int scaleFramerate(int framerate) {
         return Math.clamp(switch (this) {
             case NORMAL -> framerate;
+            case UNLIMITED -> -1;
             case TRIPLE -> framerate * 3L;
             case DOUBLE -> framerate * 2L;
             case HALF -> Math.round(framerate * 0.50);

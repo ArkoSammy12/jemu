@@ -9,6 +9,8 @@ public interface GameBoyHost extends SystemHost {
 
     boolean useBuiltInBootROM();
 
+    int getRGB8ForDMGPaletteIndex(int paletteIndex);
+
     Optional<Path> getBootROMPath();
 
     Optional<Path> getSaveDataDirectory();

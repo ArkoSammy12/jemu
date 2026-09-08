@@ -138,6 +138,9 @@ public class AudioEngine implements Closeable {
     }
 
     public void setFramerate(int framerate) throws LineUnavailableException {
+        if (framerate < 0) {
+            return;
+        }
         synchronized (this.audioLineLock) {
             boolean audioLineWasRunning = this.audioLineRunning;
             this.stop();

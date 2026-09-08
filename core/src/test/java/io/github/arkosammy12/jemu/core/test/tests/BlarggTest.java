@@ -21,11 +21,6 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
-/**
- * Runs each Blargg test ROM as its own test on every model its suite targets,
- * asserted against the known-failure list in {@code blargg-expected-failures.txt}.
- * Uses the single-ROM variants; excludes halt_bug.gb (reports only on screen).
- */
 public class BlarggTest {
 
     private static final int TIMEOUT_FRAMES = 60 * 60;
@@ -57,8 +52,7 @@ public class BlarggTest {
                 return Stream.empty();
             }
             return listRoms(directory).stream().flatMap(rom -> entry.getValue().stream().map(model -> {
-                String name = "%s (%s)".formatted(
-                        blargg.relativize(rom).toString().replace(File.separatorChar, '/'), model);
+                String name = "%s (%s)".formatted(blargg.relativize(rom).toString().replace(File.separatorChar, '/'), model);
                 return DynamicTest.dynamicTest(name, () -> {
                     GameBoyTestHarness.BlarggResult result;
                     try (GameBoyTestHarness harness = new GameBoyTestHarness(rom, model)) {

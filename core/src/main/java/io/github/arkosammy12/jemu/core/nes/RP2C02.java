@@ -478,7 +478,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
                     } else if (this.dotNumber == SPRITE_FETCH_END + 1) {
                         ret = this.oamDataReadBuffer;
                     } else if (this.dotNumber > SPRITE_FETCH_END + 1 && this.dotNumber < DOTS_PER_SCANLINE) {
-                        ret = this.maskOAMDataRead(this.secondaryOAM[0], 0, true);
+                        ret = this.maskOAMDataRead(this.secondaryOAM[this.secondaryOAMAddress], this.secondaryOAMAddress, true);
                     } else if (this.dotNumber >= SPRITE_FETCH_START && this.dotNumber <= SPRITE_FETCH_END) {
                         int addr = this.secondaryOAMAddress;
                         boolean copiedSpriteByte = addr < 8;

@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
-/** A {@link GameBoyHost} with no video, audio, or save data attached. */
 final class HeadlessGameBoyHost implements GameBoyHost {
 
     private final byte[] rom;
@@ -53,6 +52,11 @@ final class HeadlessGameBoyHost implements GameBoyHost {
     @Override
     public boolean useBuiltInBootROM() {
         return true;
+    }
+
+    @Override
+    public int getRGB8ForDMGPaletteIndex(int paletteIndex) {
+        return 0;
     }
 
     @Override

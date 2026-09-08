@@ -19,6 +19,8 @@ import java.util.Optional;
 public abstract class NESCartridge<E extends NESEmulator> {
 
     protected final E emulator;
+    private final Path romPath;
+
     protected final INESFile iNESFile;
     protected final NametableArrangement iNESFileNametableArrangement;
 
@@ -27,10 +29,12 @@ public abstract class NESCartridge<E extends NESEmulator> {
     protected final byte[] characterROM;
     protected final byte[] characterRAM;
 
-    private final byte[] vRAM;
+    private final byte[] videoRAM;
 
     public NESCartridge(E emulator, INESFile iNESFile) {
         this.emulator = emulator;
+        this.romPath = emulator.getHost().getRomPath().orElseThrow(() -> new ROMInitializationException("Missing ROM path for inserted .NES file!"));
+
         this.iNESFile = iNESFile;
         this.iNESFileNametableArrangement = this.iNESFile.getNametableArrangement() ? NESCartridge.NametableArrangement.HORIZONTAL : NESCartridge.NametableArrangement.VERTICAL;
 
@@ -54,7 +58,7 @@ public abstract class NESCartridge<E extends NESEmulator> {
             this.characterRAM = null;
         }
 
-        this.vRAM = new byte[switch (this.getVRAMSize()) {
+        this.videoRAM = new byte[switch (this.getVRAMSize()) {
             case KB_2 -> 0x800;
             case KB_4 -> 0x1000;
         }];
@@ -138,11 +142,11 @@ public abstract class NESCartridge<E extends NESEmulator> {
     abstract public void writeByte(int address, int value);
 
     protected int readByteVRAM(int address) {
-        return (int) this.vRAM[address] & 0xFF;
+        return (int) this.videoRAM[address] & 0xFF;
     }
 
     protected void writeByteVRAM(int address, int value) {
-        this.vRAM[address] = (byte) value;
+        this.videoRAM[address] = (byte) value;
     }
 
     protected int mapNametableAddress(int address) {
@@ -178,7 +182,7 @@ public abstract class NESCartridge<E extends NESEmulator> {
             return;
         }
         Path saveDataDirectory = optionalSaveDataDirectory.get();
-        String romName = FilenameUtils.getBaseName(this.emulator.getHost().getRomPath().toString());
+        String romName = FilenameUtils.getBaseName(this.romPath.toString());
         if (!Files.exists(saveDataDirectory)) {
             try {
                 Files.createDirectory(saveDataDirectory);
@@ -225,7 +229,7 @@ public abstract class NESCartridge<E extends NESEmulator> {
             return Optional.empty();
         }
         Path saveDataDirectory = optionalSaveDataDirectory.get();
-        String romName = FilenameUtils.getBaseName(this.emulator.getHost().getRomPath().toString());
+        String romName = FilenameUtils.getBaseName(this.romPath.toString());
 
         byte[] prgRam = null;
         byte[] chrRam = null;

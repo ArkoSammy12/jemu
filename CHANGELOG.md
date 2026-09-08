@@ -21,6 +21,7 @@
   - Added Game Boy palette settings when playing with the DMG.
   - Added Atari 2600 settings for controlling the console switches, and overriding the TV format and cartridge type.
 - When adjusting the window size based on the selected video size, take into account the system's pixel aspect ratio or the selected aspect ratio setting.
+- NES: Fix bug where resetting the core while a game with NV-RAM was running and hotswapping the cartridge with another game that also has NV-RAM, would make the previous game write its saved data to the save file of the new game, thereby destroying the new game's saved data.
 
 ## 1.0.0
 
