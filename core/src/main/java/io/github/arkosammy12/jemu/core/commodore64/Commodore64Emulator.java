@@ -33,7 +33,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final MOS6526 cia1;
     private final MOS6526 cia2;
     private final Commodore64Controller systemController;
-    private final ExpansionPortDevice expansionPortDevice;
+    private final ExpansionDevice expansionDevice;
 
     private final MOSIOPort cpuIOPort;
     private final MOSIOPort cia1IOPortA;
@@ -162,19 +162,19 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
         this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
 
-        ExpansionPortDevice expansionPortDevice = (_, _) -> bus.combineWithDataBus(0x00, 0x00);
+        ExpansionDevice expansionDevice = (_, _) -> bus.combineWithDataBus(0x00, 0x00);
 
         if (bytes.isPresent()) {
             Path path = optionalROMPath.get();
             String extension = FilenameUtils.getExtension(path.toString());
             switch (FileType.getFileTypeForExtension(extension)) {
                 case PRG -> this.bus.loadPrgFile(bytes.get());
-                case CRT -> expansionPortDevice = Commodore64Cartridge.getCartridge(this, new CRTFile(bytes.get()));
+                case CRT -> expansionDevice = Commodore64Cartridge.getCartridge(this, new CRTFile(bytes.get()));
                 case null -> throw new ROMInitializationException("The ROM file extension \"%s\" is not supported! Supported file types are: %s".formatted(extension, FileType.getFileExtensionsString()));
             }
         }
 
-        this.expansionPortDevice = expansionPortDevice;
+        this.expansionDevice = expansionDevice;
 
     }
 
@@ -231,8 +231,8 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         return this.cia2IOPortB;
     }
 
-    public ExpansionPortDevice getExpansionPortDevice() {
-        return this.expansionPortDevice;
+    public ExpansionDevice getExpansionPortDevice() {
+        return this.expansionDevice;
     }
 
     @Override
@@ -258,15 +258,15 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.cia2.cycle();
         this.sid.cycle();
 
-        this.expansionPortDevice.cyclePHI2();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
-        this.expansionPortDevice.cycleDot();
+        this.expansionDevice.cyclePHI2();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
+        this.expansionDevice.cycleDot();
     }
 
     public void onVBlank() {
@@ -290,7 +290,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getAEC() {
-        return this.vic2.getAEC() || this.expansionPortDevice.getDMA();
+        return this.vic2.getAEC() || this.expansionDevice.getDMA();
     }
 
     @Override
@@ -300,22 +300,22 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getIRQ() {
-        return this.vic2.getIRQ() || this.cia1.getIRQ() || this.expansionPortDevice.getIRQ();
+        return this.vic2.getIRQ() || this.cia1.getIRQ() || this.expansionDevice.getIRQ();
     }
 
     @Override
     public boolean getNMI() {
-        return this.cia2.getIRQ() || this.systemController.getRestoreKey() || this.expansionPortDevice.getNMI();
+        return this.cia2.getIRQ() || this.systemController.getRestoreKey() || this.expansionDevice.getNMI();
     }
 
     @Override
     public boolean getRES() {
-    return this.expansionPortDevice.getRESET();
+    return this.expansionDevice.getRESET();
     }
 
     @Override
     public boolean getRDY() {
-        return this.vic2.getBA() || this.expansionPortDevice.getDMA();
+        return this.vic2.getBA() || this.expansionDevice.getDMA();
     }
 
     @Override

@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
-public interface ExpansionPortDevice {
+public interface ExpansionDevice {
 
     default boolean getEXROM() {
         return false;

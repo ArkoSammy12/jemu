@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.core.commodore64.cartridges.SimonsBASICCartrid
 import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
-public abstract class Commodore64Cartridge<E extends Commodore64Emulator> implements ExpansionPortDevice {
+public abstract class Commodore64Cartridge<E extends Commodore64Emulator> implements ExpansionDevice {
 
     protected final E emulator;
 
