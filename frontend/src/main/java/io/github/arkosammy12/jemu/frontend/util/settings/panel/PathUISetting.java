@@ -22,6 +22,7 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
     private final JLabel jLabel;
     private final JTextField jTextField = new JTextField();
     private final JButton selectPathButton = new JButton("Select...");
+    private final JButton clearPathButton = new JButton("Clear");
     private final ActionListener jTextFieldActionListener;
 
     public PathUISetting(EventPublisher eventPublisher, PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
@@ -54,6 +55,10 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
                 this.setValue(selectedPath);
             }
         });
+        this.clearPathButton.addActionListener(_ -> {
+            this.setValue(null);
+            this.onPathChanged(null);
+        });
         this.setValue(startingValue);
     }
 
@@ -71,14 +76,15 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
         jPanel.add(this.jLabel, constraints.length >= 1 ? constraints[0] : null);
         jPanel.add(this.jTextField, constraints.length >= 2 ? constraints[1] : null);
         jPanel.add(this.selectPathButton, constraints.length >= 3 ? constraints[2] : null);
+        jPanel.add(this.clearPathButton, constraints.length >= 4 ? constraints[3] : null);
     }
 
-    public JTextField getJTextField() {
-        return this.jTextField;
-    }
-
-    public JButton getSelectPathButton() {
-        return this.selectPathButton;
+    public void setEnabled(boolean value) {
+        SwingUtilities.invokeLater(() -> {
+            this.jTextField.setEnabled(value);
+            this.selectPathButton.setEnabled(value);
+            this.clearPathButton.setEnabled(value);
+        });
     }
 
     private void onPathChanged(@Nullable Path path) {
