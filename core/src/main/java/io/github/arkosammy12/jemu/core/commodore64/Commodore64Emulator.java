@@ -20,10 +20,9 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     private static final int FRAMES_UNTIL_READY_PROMPT = 111;
 
-    private static final int CPU_CLOCK_DIVISOR = 8;
-
-    private static final int PAL_PHI_IN_HZ = 7_862_400;
-    private static final int PAL_FRAMERATE = 50;
+    private static final int PAL_CPU_FREQUENCY_HZ = 985248;
+    public static final int PAL_CPU_CYCLES_PER_FRAME = MOS6569.SCANLINES_PER_FRAME * MOS6569.CYCLES_PER_SCANLINE;
+    private static final double PAL_FRAMERATE = (double) PAL_CPU_FREQUENCY_HZ / PAL_CPU_CYCLES_PER_FRAME;
 
     private final Commodore64Host systemHost;
 
@@ -47,9 +46,6 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final BidirectionalPin cia2SP;
     private final BidirectionalPin cia2CNT;
 
-    private final int framerate;
-    private final int iterationsPerFrame;
-
     private boolean prgFilePatchAttempted;
     private int frames;
 
@@ -61,9 +57,6 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         if (bytes.isPresent() && optionalROMPath.isEmpty()) {
             throw new ROMInitializationException("ROM path missing! Supported file types are :" + FileType.getFileExtensionsString());
         }
-
-        this.framerate = PAL_FRAMERATE;
-        this.iterationsPerFrame = PAL_PHI_IN_HZ / CPU_CLOCK_DIVISOR / this.framerate;
 
         this.cia1SP = new BidirectionalPin(() -> false);
         this.cia1CNT = new BidirectionalPin(new BidirectionalPin.SystemBus() {
@@ -98,7 +91,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
         this.vic2 = new MOS6569<>(this);
-        this.sid = new MOS6581<>(this, this.iterationsPerFrame);
+        this.sid = new MOS6581<>(this);
         this.cia1 = new MOS6526(new MOS6526.SystemBus() {
 
             @Override
@@ -244,7 +237,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public void executeFrame() {
-        for (int i = 0; i < this.iterationsPerFrame; i++) {
+        for (int i = 0; i < PAL_CPU_CYCLES_PER_FRAME; i++) {
             this.runCycle();
         }
     }
@@ -292,7 +285,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public double getFramerate() {
-        return this.framerate;
+        return PAL_FRAMERATE;
     }
 
     @Override

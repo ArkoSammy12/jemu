@@ -60,13 +60,13 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
     private static final int SPRITE_6_COLOR = 0x2D;
     private static final int SPRITE_7_COLOR = 0x2E;
 
-    private static final int SCANLINES_PER_FRAME = 312;
+    public static final int SCANLINES_PER_FRAME = 312;
     private static final int VISIBLE_SCANLINES = 284;
     private static final int FIRST_VBLANK_SCANLINE = 300;
     private static final int LAST_VBLANK_SCANLINE = 15;
     private static final int FIRST_VISIBLE_SCANLINE = LAST_VBLANK_SCANLINE + 1;
 
-    private static final int CYCLES_PER_SCANLINE = 63;
+    public static final int CYCLES_PER_SCANLINE = 63;
     private static final int PIXELS_PER_SCANLINE = CYCLES_PER_SCANLINE * 8;
     private static final int VISIBLE_PIXELS_PER_SCANLINE = 403;
     private static final int FIRST_VISIBLE_DOT_NUMBER = 76;

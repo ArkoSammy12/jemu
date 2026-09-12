@@ -99,16 +99,16 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
     private int externalVhp;
     private long hpRemainder;
 
-    public MOS6581(E emulator, int samplesPerFrame) {
+    public MOS6581(E emulator) {
         this.emulator = emulator;
-        this.sampleBuffer = new short[samplesPerFrame];
+        this.sampleBuffer = new short[Commodore64Emulator.PAL_CPU_CYCLES_PER_FRAME];
         this.sampleFrameResampler = new SampleFrameResampler() {
 
             private final LowPassFilter lpf = new LowPassFilter();
             private final HighPassFilter hpf = new HighPassFilter();
 
             {
-                this.lpf.createLpf(16000.0, samplesPerFrame * emulator.getFramerate());
+                this.lpf.createLpf(16000.0, Commodore64Emulator.PAL_CPU_CYCLES_PER_FRAME * emulator.getFramerate());
             }
 
             @Override
