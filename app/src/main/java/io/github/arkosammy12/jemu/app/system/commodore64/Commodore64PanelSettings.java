@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.app.system.commodore64;
 
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathUISetting;
+import io.github.arkosammy12.jemu.frontend.util.settings.PathUISetting;
 
 public class Commodore64PanelSettings extends PanelSettingsMenu {
 
