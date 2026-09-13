@@ -1,10 +1,7 @@
 package io.github.arkosammy12.jemu.app.system;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
-import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
-import io.github.arkosammy12.jemu.app.drivers.MonoAudioRendererDriver;
-import io.github.arkosammy12.jemu.app.drivers.StereoAudioRendererDriver;
+import io.github.arkosammy12.jemu.app.drivers.*;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.common.Emulator;
@@ -43,7 +40,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     private volatile DefaultAudioRendererDriver audioDriver;
 
     @Nullable
-    private volatile DefaultSystemVideoDriver videoDriver;
+    protected volatile GlueVideoDriver videoDriver;
 
     public SystemAdapter(Jemu jemu, SystemManager systemManager) throws LineUnavailableException {
         this.jemu = jemu;
@@ -70,7 +67,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     @Override
-    public Optional<? extends DefaultSystemVideoDriver> getVideoDriver() {
+    public Optional<? extends GlueVideoDriver> getVideoDriver() {
         return Optional.ofNullable(this.videoDriver);
     }
 
@@ -88,7 +85,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     public void onFrame() {
-        DefaultSystemVideoDriver videoDriver = this.videoDriver;
+        GlueVideoDriver videoDriver = this.videoDriver;
         if (videoDriver != null) {
             videoDriver.requestFrame();
         }
@@ -109,7 +106,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
             }
             case VideoSettingChangedEvent videoSettingChangedEvent -> {
-                DefaultSystemVideoDriver videoDriver = this.videoDriver;
+                GlueVideoDriver videoDriver = this.videoDriver;
                 if (videoDriver != null) {
                     videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent);
                 }
@@ -119,6 +116,10 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     protected abstract Emulator createEmulator();
+
+    protected GlueVideoDriver createVideoDriver(Emulator emulator) {
+        return new DefaultSystemVideoDriver(this.jemu, emulator.getVideoGenerator());
+    }
 
     protected KeyActionListener createKeyActionListener() {
         return new KeyActionListener() {
@@ -159,12 +160,12 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         }
 
         this.jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
-            this.getVideoDriver().ifPresent(DefaultSystemVideoDriver::close);
+            this.getVideoDriver().ifPresent(GlueVideoDriver::close);
             this.videoDriver = null;
 
             Emulator emu = this.emulator;
             if (emu != null) {
-                this.videoDriver = new DefaultSystemVideoDriver(this.jemu, emu.getVideoGenerator());
+                this.videoDriver = this.createVideoDriver(emu);
             }
             return Optional.ofNullable(this.videoDriver);
         });
@@ -174,7 +175,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
     @Override
     public void close() {
-        DefaultSystemVideoDriver videoDriver = this.videoDriver;
+        GlueVideoDriver videoDriver = this.videoDriver;
         if (videoDriver != null) {
             videoDriver.close();
         }

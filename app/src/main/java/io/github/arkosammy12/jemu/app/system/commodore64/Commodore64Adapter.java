@@ -1,6 +1,8 @@
 package io.github.arkosammy12.jemu.app.system.commodore64;
 
 import io.github.arkosammy12.jemu.app.Jemu;
+import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
+import io.github.arkosammy12.jemu.app.drivers.GlueVideoDriver;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Controller;
@@ -60,6 +62,11 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
     @Override
     public int getRGB8ForPaletteIndex(int paletteIndex) {
         return this.commodore64Manager.getEmulationSettings().getVICIIPalette().getRGB8ForPaletteIndex(paletteIndex);
+    }
+
+    @Override
+    protected GlueVideoDriver createVideoDriver(Emulator emulator) {
+        return new Commodore64VideoDriver(this.jemu, emulator.getVideoGenerator());
     }
 
     @Override
@@ -154,6 +161,15 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
             }
 
         };
+    }
+
+    @Override
+    public void onFrame() {
+        super.onFrame();
+        if (this.emulator instanceof Commodore64Emulator commodore64Emulator && this.videoDriver instanceof Commodore64VideoDriver commodore64VideoDriver) {
+            commodore64VideoDriver.setTapeCounter(commodore64Emulator.getDatasette().getTapeCounter());
+            commodore64VideoDriver.setMotorActive(commodore64Emulator.getMOTOR());
+        }
     }
 
     @Override

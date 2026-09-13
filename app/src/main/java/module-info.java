@@ -14,6 +14,10 @@ module app {
     requires com.miglayout.core;
     requires jdk.jfr;
 
+    exports io.github.arkosammy12.jemu.app;
+    exports io.github.arkosammy12.jemu.app.io;
+    exports io.github.arkosammy12.jemu.app.util.exceptions;
+
     exports io.github.arkosammy12.jemu.app.util to info.picocli;
     exports io.github.arkosammy12.jemu.app.drivers to info.picocli;
     exports io.github.arkosammy12.jemu. app.system.atari2600 to info.picocli;
