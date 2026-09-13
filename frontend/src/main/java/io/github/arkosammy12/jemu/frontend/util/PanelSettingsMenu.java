@@ -1,12 +1,11 @@
 package io.github.arkosammy12.jemu.frontend.util;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.util.settings.UISetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.panel.BooleanPanelSetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.panel.EnumPanelSetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.panel.IntegerPanelSpinnerSetting;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathUISetting;
+import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathPanelSetting;
 import net.miginfocom.swing.MigLayout;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -71,11 +70,11 @@ public class PanelSettingsMenu extends JPanel {
         return enumPanelSetting;
     }
 
-    public <E extends Event & Supplier<Path>> PathUISetting<E> addPathSetting(PathUISetting.PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
-        PathUISetting<E> pathUISetting = new PathUISetting<>(this.eventPublisher, pathSelectionMode, name, startingValue, eventClass, eventPredicate, eventSupplier);
-        pathUISetting.addToJPanel(this.innerPanel, null, "growx", "growx", "growx, wrap");
-        this.settings.add(pathUISetting);
-        return pathUISetting;
+    public <E extends Event & Supplier<Path>> PathPanelSetting<E> addPathSetting(PathPanelSetting.PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
+        PathPanelSetting<E> pathPanelSetting = new PathPanelSetting<>(this.eventPublisher, pathSelectionMode, name, startingValue, eventClass, eventPredicate, eventSupplier);
+        pathPanelSetting.addToJPanel(this.innerPanel, null, "growx", "growx", "growx, wrap");
+        this.settings.add(pathPanelSetting);
+        return pathPanelSetting;
     }
 
     public void onEvent(Event event) {

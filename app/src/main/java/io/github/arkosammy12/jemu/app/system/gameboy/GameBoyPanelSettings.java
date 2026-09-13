@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.app.system.gameboy;
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
 import io.github.arkosammy12.jemu.frontend.util.settings.panel.BooleanPanelSetting;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathUISetting;
+import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathPanelSetting;
 
 import java.util.function.Consumer;
 
@@ -23,8 +23,8 @@ public class GameBoyPanelSettings extends PanelSettingsMenu {
         this.addHeader("Boot ROMs");
         boolean useBuiltInBootRomsStartingValue = gameBoyManager.getEmulationSettings().useBuiltInBootROM();
         BooleanPanelSetting<?> useBuiltInBootRomsSetting = this.addBooleanSetting("Use built-in boot ROMs", useBuiltInBootRomsStartingValue, GameBoyManager.UseBuiltInBootRomSettingChangedEvent.class, null, GameBoyManager.UseBuiltInBootRomSettingChangedEvent::new);
-        PathUISetting<?> gameBoyBootRomPathSetting = this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "GameBoy boot ROM: ", gameBoyManager.getEmulationSettings().getGameBoyBootROMPath().orElse(null), GameBoyManager.GameBoyBootRomPathChangedEvent.class, null, GameBoyManager.GameBoyBootRomPathChangedEvent::new);
-        PathUISetting<?> gameBoyColorBootRomPathSetting = this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "GameBoy Color boot ROM: ", gameBoyManager.getEmulationSettings().getGameBoyColorBootRomPath().orElse(null), GameBoyManager.GameBoyColorBootRomPathChangedEvent.class, null, GameBoyManager.GameBoyColorBootRomPathChangedEvent::new);
+        PathPanelSetting<?> gameBoyBootRomPathSetting = this.addPathSetting(PathPanelSetting.PathSelectionMode.FILES_ONLY, "GameBoy boot ROM: ", gameBoyManager.getEmulationSettings().getGameBoyBootROMPath().orElse(null), GameBoyManager.GameBoyBootRomPathChangedEvent.class, null, GameBoyManager.GameBoyBootRomPathChangedEvent::new);
+        PathPanelSetting<?> gameBoyColorBootRomPathSetting = this.addPathSetting(PathPanelSetting.PathSelectionMode.FILES_ONLY, "GameBoy Color boot ROM: ", gameBoyManager.getEmulationSettings().getGameBoyColorBootRomPath().orElse(null), GameBoyManager.GameBoyColorBootRomPathChangedEvent.class, null, GameBoyManager.GameBoyColorBootRomPathChangedEvent::new);
 
         gameBoyBootRomPathSetting.setEnabled(!useBuiltInBootRomsStartingValue);
         gameBoyColorBootRomPathSetting.setEnabled(!useBuiltInBootRomsStartingValue);
