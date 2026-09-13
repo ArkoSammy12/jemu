@@ -1,9 +1,8 @@
 package io.github.arkosammy12.jemu.frontend.util.settings.panel;
 
-import com.formdev.flatlaf.util.SystemFileChooser;
 import io.github.arkosammy12.jemu.frontend.events.Event;
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.settings.UISetting;
+import io.github.arkosammy12.jemu.frontend.util.settings.PathUISetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -17,7 +16,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
 
-public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends UISetting<@Nullable Path, E> implements PanelSetting {
+public class PathPanelSetting<E extends Event & Supplier<@Nullable Path>> extends PathUISetting<E> implements PanelSetting {
 
     private final JLabel jLabel;
     private final JTextField jTextField = new JTextField();
@@ -25,8 +24,8 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
     private final JButton clearPathButton = new JButton("Clear");
     private final ActionListener jTextFieldActionListener;
 
-    public PathUISetting(EventPublisher eventPublisher, PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
-        super(eventPublisher, name, eventClass, eventPredicate, eventSupplier);
+    public PathPanelSetting(EventPublisher eventPublisher, PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
+        super(eventPublisher, pathSelectionMode, name, eventClass, eventPredicate, eventSupplier);
         this.jLabel = new JLabel(name);
         Runnable textFieldCommitRunnable = () -> {
             String text = this.jTextField.getText().trim();
@@ -46,14 +45,9 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
         this.jTextField.setMinimumSize(this.jTextField.getPreferredSize());
         this.jTextField.setMaximumSize(null);
         this.selectPathButton.addActionListener(_ -> {
-            SystemFileChooser fileChooser = new SystemFileChooser();
-            fileChooser.setFileSelectionMode(pathSelectionMode.getFileSelectionMode());
-            fileChooser.setDialogTitle(pathSelectionMode.getDialogTitle());
-            if (fileChooser.showOpenDialog(SwingUtilities.getWindowAncestor(this.selectPathButton)) == JFileChooser.APPROVE_OPTION) {
-                Path selectedPath = fileChooser.getSelectedFile().toPath();
-                this.onPathChanged(selectedPath);
-                this.setValue(selectedPath);
-            }
+            Path path = this.showFileDialog(SwingUtilities.getWindowAncestor(this.selectPathButton));
+            this.setValue(path);
+            this.onPathChanged(path);
         });
         this.clearPathButton.addActionListener(_ -> {
             this.setValue(null);
@@ -89,30 +83,6 @@ public class PathUISetting<E extends Event & Supplier<@Nullable Path>> extends U
 
     private void onPathChanged(@Nullable Path path) {
         this.eventPublisher.publishEvent(this.eventSupplier.apply(path));
-    }
-
-    public enum PathSelectionMode {
-        FILES_ONLY(JFileChooser.FILES_ONLY, "Select a File"),
-        DIRECTORIES_ONLY(JFileChooser.DIRECTORIES_ONLY, "Select a Directory"),
-        FILES_AND_DIRECTORIES(JFileChooser.FILES_AND_DIRECTORIES, "Select a File or Directory")
-        ;
-
-        private final int fileSelectionMode;
-        private final String dialogTitle;
-
-        PathSelectionMode(int fileSelectionMode, String dialogTitle) {
-            this.fileSelectionMode = fileSelectionMode;
-            this.dialogTitle = dialogTitle;
-        }
-
-        private int getFileSelectionMode() {
-            return this.fileSelectionMode;
-        }
-
-        private String getDialogTitle() {
-            return this.dialogTitle;
-        }
-
     }
 
 }

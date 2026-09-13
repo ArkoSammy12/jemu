@@ -1,16 +1,18 @@
 package io.github.arkosammy12.jemu.frontend.util;
 
 import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.util.settings.SpinnerIntegerSetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.UISetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.menubar.BooleanMenuItemSetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.menubar.EnumMenuItemSetting;
 import io.github.arkosammy12.jemu.frontend.util.settings.menubar.IntegerItemSetting;
+import io.github.arkosammy12.jemu.frontend.util.settings.menubar.PathMenuItemSetting;
+import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathPanelSetting;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.Function;
@@ -58,6 +60,13 @@ public class MenuBarSettingsMenu extends JMenu {
         enumMenuItemSetting.addToJMenu(this);
         this.settings.add(enumMenuItemSetting);
         return enumMenuItemSetting;
+    }
+
+    public <E extends Event & Supplier<Path>> PathMenuItemSetting<E> addPathSetting(PathPanelSetting.PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
+        PathMenuItemSetting<E> pathMenuItemSetting = new PathMenuItemSetting<>(this.eventPublisher, pathSelectionMode, name, eventClass, eventPredicate, eventSupplier);
+        pathMenuItemSetting.addToJMenu(this);
+        this.settings.add(pathMenuItemSetting);
+        return pathMenuItemSetting;
     }
 
     public void onEvent(Event event) {
