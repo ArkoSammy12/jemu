@@ -16,7 +16,7 @@ public class MMC6Cartridge<E extends NESEmulator> extends MMC3Cartridge<E> {
     }
 
     @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         if (address >= 0x6000 && address <= 0x7FFF) {
             if (this.programRAM == null || address <= 0x6FFF || !this.isPrgRamEnabled()) {
                 return -1;
@@ -40,7 +40,7 @@ public class MMC6Cartridge<E extends NESEmulator> extends MMC3Cartridge<E> {
                 }
             }
         } else {
-            return super.readByte(address);
+            return super.readByte(address, dataBus);
         }
     }
 
