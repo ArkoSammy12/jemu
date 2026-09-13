@@ -104,6 +104,15 @@ public class Commodore64Settings {
                 0xB620B6, 0x20B620, 0x2020B6, 0xFFFF20,
                 0xB67120, 0x914420, 0xFF7171, 0x717171,
                 0x919191, 0x71FF71, 0x7171FF, 0xB6B6B6
+        }),
+
+
+        @SerializedName("pc64_true_black")
+        PC64_TRUE_BLACK("PC64 (True black)", new int[] {
+                0x000000, 0xFFFFFF, 0xB62020, 0x71FFFF,
+                0xB620B6, 0x20B620, 0x2020B6, 0xFFFF20,
+                0xB67120, 0x914420, 0xFF7171, 0x717171,
+                0x919191, 0x71FF71, 0x7171FF, 0xB6B6B6
         })
         ;
 
