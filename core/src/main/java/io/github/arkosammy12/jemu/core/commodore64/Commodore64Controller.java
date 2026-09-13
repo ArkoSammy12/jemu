@@ -2,7 +2,9 @@ package io.github.arkosammy12.jemu.core.commodore64;
 
 import io.github.arkosammy12.jemu.core.common.SystemController;
 
-public class Commodore64Controller implements SystemController {
+public class Commodore64Controller<E extends Commodore64Emulator> implements SystemController {
+
+    private final E emulator;
 
     private final int[] columnBits = new int[8];
     private final int[] rowBits = new int[8];
@@ -21,6 +23,10 @@ public class Commodore64Controller implements SystemController {
     private boolean currentJoystick1Right;
 
     private boolean joystick1FireButton;
+
+    public Commodore64Controller(E emulator) {
+        this.emulator = emulator;
+    }
 
     @Override
     public void pressAction(Action action) {
@@ -67,6 +73,7 @@ public class Commodore64Controller implements SystemController {
                     case JOYSTICK1_FIRE -> this.joystick1FireButton = true;
                 }
             }
+            case Datasette datasetteAction -> {}
         }
     }
 
@@ -120,8 +127,8 @@ public class Commodore64Controller implements SystemController {
                     case JOYSTICK1_FIRE -> this.joystick1FireButton = false;
                 }
             }
+            case Datasette datasetteAction -> this.emulator.getDatasette().pressButton(datasetteAction);
         }
-
     }
 
     public int getColumnBits(int selectMask) {
@@ -163,7 +170,7 @@ public class Commodore64Controller implements SystemController {
         return this.restoreKey;
     }
 
-    public sealed interface Actions extends SystemController.Action permits KeyboardMatrix, KeyboardSpecialKey, Peripheral {}
+    public sealed interface Actions extends SystemController.Action permits Datasette, KeyboardMatrix, KeyboardSpecialKey, Peripheral {}
 
     public enum KeyboardMatrix implements Actions {
         KEY_INST_DEL(0, 0, "Key INST | DEL"),
@@ -299,6 +306,25 @@ public class Commodore64Controller implements SystemController {
         public String getLabel() {
             return this.label;
         }
+
+    }
+
+    public enum Datasette implements Actions {
+        PLAY("Datasette Play"),
+        STOP("Datasette Stop")
+        ;
+
+        private final String label;
+
+        Datasette(String label) {
+            this.label = label;
+        }
+
+        @Override
+        public String getLabel() {
+            return this.label;
+        }
+
     }
 
     private enum ShiftLockGate {

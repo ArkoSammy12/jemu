@@ -134,6 +134,9 @@ public class Commodore64Manager extends SystemManager {
         this.keyActionMap.put(KeyAction.NUMPAD_4, Commodore64Controller.Peripheral.JOYSTICK1_LEFT);
         this.keyActionMap.put(KeyAction.NUMPAD_6, Commodore64Controller.Peripheral.JOYSTICK1_RIGHT);
         this.keyActionMap.put(KeyAction.NUMPAD_0, Commodore64Controller.Peripheral.JOYSTICK1_FIRE);
+
+        this.keyActionMap.put(KeyAction.HOME, Commodore64Controller.Datasette.PLAY);
+        this.keyActionMap.put(KeyAction.END, Commodore64Controller.Datasette.STOP);
     }
 
     @Override
@@ -197,10 +200,11 @@ public class Commodore64Manager extends SystemManager {
         this.getMenuBarSettings().ifPresent(commodore64MenuBarSettings -> commodore64MenuBarSettings.onEvent(coreSettingChangedEvent));
         this.getPanelSettings().ifPresent(commodore64PanelSettings -> commodore64PanelSettings.onEvent(coreSettingChangedEvent));
         switch (coreSettingChangedEvent) {
+            case VICIIPaletteSettingChangedEvent(Commodore64Settings.VICIIPalette viciiPalette) -> this.getEmulationSettings().setVICIIPalette(viciiPalette);
             case KernalRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setKernalRomPath(path);
             case BasicRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setBasicRomPath(path);
             case CharacterRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setCharacterRomPath(path);
-            case VICIIPaletteSettingChangedEvent(Commodore64Settings.VICIIPalette viciiPalette) -> this.getEmulationSettings().setVICIIPalette(viciiPalette);
+            case TapeImagePathChangedEvent(Path path) -> this.getEmulationSettings().setTapeImagePath(path);
             default -> {}
         }
     }
@@ -243,5 +247,17 @@ public class Commodore64Manager extends SystemManager {
         }
 
     }
+
+    record TapeImagePathChangedEvent(@Nullable Path path) implements CoreSettingChangedEvent, Supplier<@Nullable Path> {
+
+        @Override
+        @Nullable
+        public Path get() {
+            return this.path();
+        }
+
+    }
+
+    record DatasetteButtonPressedEvent(Commodore64Controller.Datasette datasetteButton) implements CoreSettingChangedEvent {}
 
 }

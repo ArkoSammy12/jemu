@@ -108,12 +108,17 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
     public static final KeyAction F6 = KeyAction.fromKeyCode(KeyEvent.VK_F6);
     public static final KeyAction F7 = KeyAction.fromKeyCode(KeyEvent.VK_F7);
     public static final KeyAction F8 = KeyAction.fromKeyCode(KeyEvent.VK_F8);
+    public static final KeyAction F9 = KeyAction.fromKeyCode(KeyEvent.VK_F9);
+    public static final KeyAction F10 = KeyAction.fromKeyCode(KeyEvent.VK_F10);
     public static final KeyAction F12 = KeyAction.fromKeyCode(KeyEvent.VK_F12);
 
     public static final KeyAction UP_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_UP);
     public static final KeyAction DOWN_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_DOWN);
     public static final KeyAction LEFT_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_LEFT);
     public static final KeyAction RIGHT_ARROW = KeyAction.fromKeyCode(KeyEvent.VK_RIGHT);
+
+    public static final KeyAction HOME = KeyAction.fromKeyCode(KeyEvent.VK_HOME);
+    public static final KeyAction END = KeyAction.fromKeyCode(KeyEvent.VK_END);
 
     public KeyAction {
         if (this.keyCode() < 0) {

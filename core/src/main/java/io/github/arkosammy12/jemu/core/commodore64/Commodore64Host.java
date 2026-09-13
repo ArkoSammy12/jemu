@@ -13,6 +13,8 @@ public interface Commodore64Host extends SystemHost {
 
     Optional<Path> getCharacterROMPath();
 
+    Optional<Path> getTapeImagePath();
+
     int getRGB8ForPaletteIndex(int paletteIndex);
 
     default void onPrgFilePatched() {

@@ -17,5 +17,9 @@ public class Commodore64PanelSettings extends PanelSettingsMenu {
         this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Kernal ROM (8 KB): ", commodore64Manager.getEmulationSettings().getKernalRomPath().orElse(null), Commodore64Manager.KernalRomPathSettingChangedEvent.class, null, Commodore64Manager.KernalRomPathSettingChangedEvent::new);
         this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "BASIC ROM (8 KB): ", commodore64Manager.getEmulationSettings().getBasicRomPath().orElse(null), Commodore64Manager.BasicRomPathSettingChangedEvent.class, null, Commodore64Manager.BasicRomPathSettingChangedEvent::new);
         this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Character ROM (4 KB): ", commodore64Manager.getEmulationSettings().getCharacterRomPath().orElse(null), Commodore64Manager.CharacterRomPathSettingChangedEvent.class, null, Commodore64Manager.CharacterRomPathSettingChangedEvent::new);
+
+        this.addHeader("Datasette");
+        this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Tape image (.tap or .t64): ", commodore64Manager.getEmulationSettings().getTapeImagePath().orElse(null), Commodore64Manager.TapeImagePathChangedEvent.class, null, Commodore64Manager.TapeImagePathChangedEvent::new);
     }
+
 }

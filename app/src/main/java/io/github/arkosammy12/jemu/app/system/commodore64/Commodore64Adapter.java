@@ -8,6 +8,7 @@ import io.github.arkosammy12.jemu.core.commodore64.Commodore64Emulator;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Host;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
+import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.util.KeyAction;
 import io.github.arkosammy12.jemu.frontend.util.KeyActionListener;
 
@@ -38,17 +39,22 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
 
     @Override
     public Optional<Path> getKernalROMPath() {
-        return commodore64Manager.getEmulationSettings().getKernalRomPath();
+        return this.commodore64Manager.getEmulationSettings().getKernalRomPath();
     }
 
     @Override
     public Optional<Path> getBASICRomPath() {
-        return commodore64Manager.getEmulationSettings().getBasicRomPath();
+        return this.commodore64Manager.getEmulationSettings().getBasicRomPath();
     }
 
     @Override
     public Optional<Path> getCharacterROMPath() {
-        return commodore64Manager.getEmulationSettings().getCharacterRomPath();
+        return this.commodore64Manager.getEmulationSettings().getCharacterRomPath();
+    }
+
+    @Override
+    public Optional<Path> getTapeImagePath() {
+        return this.commodore64Manager.getEmulationSettings().getTapeImagePath();
     }
 
     @Override
@@ -73,6 +79,9 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
                 }
                 for (Commodore64Controller.Peripheral peripheralAction : Commodore64Controller.Peripheral.values()) {
                     pressedActions.put(peripheralAction, 0);
+                }
+                for (Commodore64Controller.Datasette datasetteAction : Commodore64Controller.Datasette.values()) {
+                    pressedActions.put(datasetteAction, 0);
                 }
             }
 
@@ -145,6 +154,18 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
             }
 
         };
+    }
+
+    @Override
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
+        super.onCoreSettingChangedEvent(coreSettingChangedEvent);
+        if (this.emulator instanceof Commodore64Emulator commodore64Emulator) {
+            switch (coreSettingChangedEvent) {
+                case Commodore64Manager.TapeImagePathChangedEvent(Path path) -> commodore64Emulator.updateTapeImage(path);
+                case Commodore64Manager.DatasetteButtonPressedEvent(Commodore64Controller.Datasette datasetteButton) -> commodore64Emulator.getSystemController().releaseAction(datasetteButton);
+                default -> {}
+            }
+        }
     }
 
     @Override

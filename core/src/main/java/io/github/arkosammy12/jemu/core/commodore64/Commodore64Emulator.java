@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
 import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
+import io.github.arkosammy12.jemu.core.commodore64.tape.Commodore1531;
 import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6502;
@@ -32,8 +33,9 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     private final MOS6581<?> sid;
     private final MOS6526 cia1;
     private final MOS6526 cia2;
-    private final Commodore64Controller systemController;
+    private final Commodore64Controller<?> systemController;
     private final ExpansionDevice expansionDevice;
+    private final Commodore1531 commodore1531;
 
     private final MOSIOPort cpuIOPort;
     private final MOSIOPort cia1IOPortA;
@@ -51,6 +53,8 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     public Commodore64Emulator(Commodore64Host systemHost) {
         this.systemHost = systemHost;
+
+        this.commodore1531 = new Commodore1531(this);
 
         Optional<Path> optionalROMPath = this.systemHost.getRomPath();
         Optional<byte[]> bytes = this.systemHost.getRom();
@@ -106,7 +110,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
             @Override
             public boolean getFLAG() {
-                return false;
+                return commodore1531.getREAD();
             }
 
             @Override
@@ -149,9 +153,9 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
 
         });
-        this.systemController = new Commodore64Controller();
+        this.systemController = new Commodore64Controller<>(this);
 
-        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b10111);
+        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b100111 | (this.commodore1531.getSENSE() ? 0 : 1 << 4));
 
         this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), () -> ~this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch())));
         this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> {
@@ -176,6 +180,8 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         this.expansionDevice = expansionDevice;
 
+        this.systemHost.getTapeImagePath().ifPresent(this.commodore1531::updateTapeImage);
+
     }
 
     @Override
@@ -199,7 +205,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public SystemController getSystemController() {
+    public Commodore64Controller<?> getSystemController() {
         return this.systemController;
     }
 
@@ -235,6 +241,10 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         return this.expansionDevice;
     }
 
+    public Commodore1531 getDatasette() {
+        return this.commodore1531;
+    }
+
     @Override
     public void executeFrame() {
         for (int i = 0; i < PAL_CPU_CYCLES_PER_FRAME; i++) {
@@ -253,6 +263,8 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         this.cpu.cycle();
         this.vic2.cycleHalf(NMOS6502.Phase.PHI_2);
+
+        this.commodore1531.cycle();
 
         this.cia1.cycle();
         this.cia2.cycle();
@@ -281,6 +293,10 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
                 this.prgFilePatchAttempted = true;
             }
         }
+    }
+
+    public void updateTapeImage(@Nullable Path tapeImagePath) {
+        this.commodore1531.updateTapeImage(tapeImagePath);
     }
 
     @Override
@@ -316,6 +332,14 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     @Override
     public boolean getRDY() {
         return this.vic2.getBA() || this.expansionDevice.getDMA();
+    }
+
+    public boolean getWRITE() {
+        return (this.cpuIOPort.read() & (1 << 3)) != 0;
+    }
+
+    public boolean getMOTOR() {
+        return (this.cpuIOPort.read() & (1 << 5)) == 0;
     }
 
     @Override

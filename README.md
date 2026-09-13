@@ -156,6 +156,13 @@ The Commodore 64 core uses symbolic keybindings for the built-in keyboard.
 | Right (CRSR LEFT/RIGHT)      | `Right`           |
 | Space                        | `Space`           |
 
+Datasette:
+
+| Action | Key   |
+|--------|-------|
+| Play   | `Home`  |
+| Stop   | `End` |
+
 ## Command-line usage
 
 If you launch **jemu** from the CLI, you can optionally pass arguments.

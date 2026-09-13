@@ -11,6 +11,9 @@ import java.util.Optional;
 
 public class Commodore64Settings {
 
+    @SerializedName("vicii-palette")
+    private volatile VICIIPalette viciiPalette = VICIIPalette.PC64;
+
     @Nullable
     @SerializedName("kernal_rom_path")
     private volatile String kernalRomPath;
@@ -23,8 +26,17 @@ public class Commodore64Settings {
     @SerializedName("character_rom_path")
     private volatile String characterRomPath;
 
-    @SerializedName("vicii-palette")
-    private volatile VICIIPalette viciiPalette = VICIIPalette.PC64;
+    @Nullable
+    @SerializedName("tape_image_path")
+    private volatile String tapeImagePath;
+
+    void setVICIIPalette(@NotNull VICIIPalette viciiPalette) {
+        this.viciiPalette = viciiPalette;
+    }
+
+    public VICIIPalette getVICIIPalette() {
+        return this.viciiPalette;
+    }
 
     void setKernalRomPath(@Nullable Path path) {
         this.kernalRomPath = path == null ? null : path.toString();
@@ -50,12 +62,12 @@ public class Commodore64Settings {
         return Optional.ofNullable(this.characterRomPath).map(Paths::get);
     }
 
-    void setVICIIPalette(@NotNull VICIIPalette viciiPalette) {
-        this.viciiPalette = viciiPalette;
+    void setTapeImagePath(@Nullable Path path) {
+        this.tapeImagePath = path == null ? null : path.toString();
     }
 
-    public VICIIPalette getVICIIPalette() {
-        return this.viciiPalette;
+    public Optional<Path> getTapeImagePath() {
+        return Optional.ofNullable(this.tapeImagePath).map(Paths::get);
     }
 
     public enum VICIIPalette implements DisplayNamerProvider {
