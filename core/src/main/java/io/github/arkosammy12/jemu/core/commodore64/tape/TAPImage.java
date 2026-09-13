@@ -58,12 +58,10 @@ public class TAPImage implements TapeImage {
             }
         }
 
-
         this.pulseLengths = new int[pulseLengths.size()];
         for (int i = 0; i < pulseLengths.size(); i++) {
             this.pulseLengths[i] = pulseLengths.get(i);
         }
-
     }
 
     @Override
