@@ -158,16 +158,36 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b100111 | (this.commodore1531.getSENSE() ? 0 : 1 << 4));
 
-        this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), () -> {
+        MOSIOPort.InputSource cia1IOPortAInputSource = () -> {
             int columnBits = this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch()));
             //int joystick1Bits = this.systemController.getJoystick1Bits();
             return ~(columnBits /*| joystick1Bits*/);
-        });
-        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), () -> {
+        };
+        this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), cia1IOPortAInputSource) {
+
+            @Override
+            public int read() {
+                return super.read() & cia1IOPortAInputSource.getInputBits();
+            }
+
+        };
+
+
+        MOSIOPort.InputSource cia1IOPortBInputSource = () -> {
             int rowBits = this.systemController.getRowBits((this.getCIA1IOPortA().getDataDirectionRegister() & ~this.getCIA1IOPortA().getOutputLatch()));
             int joystick1Bits = this.systemController.getJoystick1Bits();
             return ~(rowBits | joystick1Bits);
-        });
+        };
+        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), cia1IOPortBInputSource) {
+
+            @Override
+            public int read() {
+                return super.read() & cia1IOPortBInputSource.getInputBits();
+            }
+
+        };
+
+
         this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
         this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
 

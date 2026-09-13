@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.core.util;
 
-public final class MOSIOPort {
+public class MOSIOPort {
 
     private final PortOwner portOwner;
     private final InputSource inputSource;
