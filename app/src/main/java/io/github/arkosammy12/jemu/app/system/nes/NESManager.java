@@ -4,7 +4,9 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
+import io.github.arkosammy12.jemu.core.nes.NESController;
 import io.github.arkosammy12.jemu.core.nes.ines.CartridgeInfo;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
 import org.tinylog.Logger;
 import tools.jackson.dataformat.xml.XmlMapper;
 
@@ -34,6 +36,15 @@ public class NESManager extends SystemManager {
             Logger.error(e, "Failed to load NES 2.0 database!");
         }
         this.databaseMap = Map.copyOf(map);
+
+        this.keyActionMap.put(KeyAction.W, NESController.Actions.JOY1_UP);
+        this.keyActionMap.put(KeyAction.S, NESController.Actions.JOY1_DOWN);
+        this.keyActionMap.put(KeyAction.A, NESController.Actions.JOY1_LEFT);
+        this.keyActionMap.put(KeyAction.D, NESController.Actions.JOY1_RIGHT);
+        this.keyActionMap.put(KeyAction.ENTER, NESController.Actions.JOY1_START);
+        this.keyActionMap.put(KeyAction.BACK_SPACE, NESController.Actions.JOY1_SELECT);
+        this.keyActionMap.put(KeyAction.J, NESController.Actions.JOY1_A);
+        this.keyActionMap.put(KeyAction.K, NESController.Actions.JOY1_B);
     }
 
     @Override

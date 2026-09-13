@@ -6,6 +6,8 @@ import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Manager;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
+import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Collection;
@@ -19,6 +21,23 @@ public class CosmacVIPManager extends SystemManager {
     public CosmacVIPManager(Jemu jemu, SystemRegistry systemRegistry, CosmacVIPHost.Chip8Interpreter chip8Interpreter) {
         super(jemu, systemRegistry);
         this.chip8Interpreter = chip8Interpreter;
+
+        this.keyActionMap.put(KeyAction.X, CosmacVIPKeypad.Actions.KEY_0);
+        this.keyActionMap.put(KeyAction.NUM_1, CosmacVIPKeypad.Actions.KEY_1);
+        this.keyActionMap.put(KeyAction.NUM_2, CosmacVIPKeypad.Actions.KEY_2);
+        this.keyActionMap.put(KeyAction.NUM_3, CosmacVIPKeypad.Actions.KEY_3);
+        this.keyActionMap.put(KeyAction.Q, CosmacVIPKeypad.Actions.KEY_4);
+        this.keyActionMap.put(KeyAction.W, CosmacVIPKeypad.Actions.KEY_5);
+        this.keyActionMap.put(KeyAction.E, CosmacVIPKeypad.Actions.KEY_6);
+        this.keyActionMap.put(KeyAction.A, CosmacVIPKeypad.Actions.KEY_7);
+        this.keyActionMap.put(KeyAction.S, CosmacVIPKeypad.Actions.KEY_8);
+        this.keyActionMap.put(KeyAction.D, CosmacVIPKeypad.Actions.KEY_9);
+        this.keyActionMap.put(KeyAction.Z, CosmacVIPKeypad.Actions.KEY_A);
+        this.keyActionMap.put(KeyAction.C, CosmacVIPKeypad.Actions.KEY_B);
+        this.keyActionMap.put(KeyAction.NUM_4, CosmacVIPKeypad.Actions.KEY_C);
+        this.keyActionMap.put(KeyAction.R, CosmacVIPKeypad.Actions.KEY_D);
+        this.keyActionMap.put(KeyAction.F, CosmacVIPKeypad.Actions.KEY_E);
+        this.keyActionMap.put(KeyAction.V, CosmacVIPKeypad.Actions.KEY_F);
     }
 
     @Override

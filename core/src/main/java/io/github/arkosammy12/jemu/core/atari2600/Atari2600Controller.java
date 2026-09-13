@@ -38,7 +38,7 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
     }
 
     @Override
-    public void onActionPressed(Action action) {
+    public void pressAction(Action action) {
         if (!(action instanceof Atari2600Controller.Actions atari2600Action)) {
             return;
         }
@@ -106,7 +106,7 @@ public class Atari2600Controller<E extends Atari2600Emulator> implements SystemC
     }
 
     @Override
-    public void onActionReleased(Action action) {
+    public void releaseAction(Action action) {
         if (!(action instanceof Atari2600Controller.Actions atari2600Action)) {
             return;
         }

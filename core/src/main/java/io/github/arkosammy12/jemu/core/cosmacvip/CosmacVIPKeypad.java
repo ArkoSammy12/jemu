@@ -24,7 +24,7 @@ public class CosmacVIPKeypad implements SystemController {
     }
 
     @Override
-    public void onActionPressed(Action action) {
+    public void pressAction(Action action) {
         if (!(action instanceof Actions vipActions)) {
             return;
         }
@@ -32,7 +32,7 @@ public class CosmacVIPKeypad implements SystemController {
     }
 
     @Override
-    public void onActionReleased(Action action) {
+    public void releaseAction(Action action) {
         if (!(action instanceof Actions vipActions)) {
             return;
         }
