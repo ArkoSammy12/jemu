@@ -73,7 +73,7 @@ public class PanelSettingsMenu extends JPanel {
 
     public <E extends Event & Supplier<Path>> PathUISetting<E> addPathSetting(PathUISetting.PathSelectionMode pathSelectionMode, @NotNull String name, @Nullable Path startingValue, @Nullable Class<E> eventClass, @Nullable Predicate<E> eventPredicate, @NotNull Function<? super @Nullable Path, ? extends Event> eventSupplier) {
         PathUISetting<E> pathUISetting = new PathUISetting<>(this.eventPublisher, pathSelectionMode, name, startingValue, eventClass, eventPredicate, eventSupplier);
-        pathUISetting.addToJPanel(this.innerPanel, null, "growx", "growx, wrap");
+        pathUISetting.addToJPanel(this.innerPanel, null, "growx", "growx", "growx, wrap");
         this.settings.add(pathUISetting);
         return pathUISetting;
     }

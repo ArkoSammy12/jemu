@@ -26,16 +26,12 @@ public class GameBoyPanelSettings extends PanelSettingsMenu {
         PathUISetting<?> gameBoyBootRomPathSetting = this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "GameBoy boot ROM: ", gameBoyManager.getEmulationSettings().getGameBoyBootROMPath().orElse(null), GameBoyManager.GameBoyBootRomPathChangedEvent.class, null, GameBoyManager.GameBoyBootRomPathChangedEvent::new);
         PathUISetting<?> gameBoyColorBootRomPathSetting = this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "GameBoy Color boot ROM: ", gameBoyManager.getEmulationSettings().getGameBoyColorBootRomPath().orElse(null), GameBoyManager.GameBoyColorBootRomPathChangedEvent.class, null, GameBoyManager.GameBoyColorBootRomPathChangedEvent::new);
 
-        gameBoyBootRomPathSetting.getJTextField().setEnabled(!useBuiltInBootRomsStartingValue);
-        gameBoyBootRomPathSetting.getSelectPathButton().setEnabled(!useBuiltInBootRomsStartingValue);
-        gameBoyColorBootRomPathSetting.getJTextField().setEnabled(!useBuiltInBootRomsStartingValue);
-        gameBoyColorBootRomPathSetting.getSelectPathButton().setEnabled(!useBuiltInBootRomsStartingValue);
+        gameBoyBootRomPathSetting.setEnabled(!useBuiltInBootRomsStartingValue);
+        gameBoyColorBootRomPathSetting.setEnabled(!useBuiltInBootRomsStartingValue);
 
         Consumer<Boolean> updatePathButtonsEnabledCallback = useBuiltInRoms -> {
-            gameBoyBootRomPathSetting.getJTextField().setEnabled(!useBuiltInRoms);
-            gameBoyBootRomPathSetting.getSelectPathButton().setEnabled(!useBuiltInRoms);
-            gameBoyColorBootRomPathSetting.getJTextField().setEnabled(!useBuiltInRoms);
-            gameBoyColorBootRomPathSetting.getSelectPathButton().setEnabled(!useBuiltInRoms);
+            gameBoyBootRomPathSetting.setEnabled(!useBuiltInRoms);
+            gameBoyColorBootRomPathSetting.setEnabled(!useBuiltInRoms);
         };
 
         useBuiltInBootRomsSetting.getJCheckBox().addActionListener(_ -> updatePathButtonsEnabledCallback.accept(useBuiltInBootRomsSetting.getJCheckBox().isSelected()));
