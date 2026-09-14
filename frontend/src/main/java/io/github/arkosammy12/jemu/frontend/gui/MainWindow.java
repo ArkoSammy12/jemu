@@ -1,6 +1,6 @@
 package io.github.arkosammy12.jemu.frontend.gui;
 
-import com.formdev.flatlaf.FlatDarkLaf;
+import com.formdev.flatlaf.FlatDarculaLaf;
 import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.frontend.config.ConfigurationManager;
 import io.github.arkosammy12.jemu.frontend.config.Configurations;
@@ -129,7 +129,7 @@ public class MainWindow implements io.github.arkosammy12.jemu.frontend.util.Even
             UIManager.put("MenuBar.itemMargins", new Insets(5, 10, 5, 10));
             UIManager.put("MenuItem.margin", new Insets(4, 8, 4, 8));
 
-            FlatDarkLaf.setup();
+            FlatDarculaLaf.setup();
 
             ToolTipManager toolTipManager = ToolTipManager.sharedInstance();
             toolTipManager.setLightWeightPopupEnabled(false);
