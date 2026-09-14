@@ -13,6 +13,7 @@ public class Commodore64MenuBarSettings extends MenuBarSettingsMenu {
         super(eventPublisher, "Commodore 64");
 
         this.addEnumSetting("VIC-II Palette", commodore64Manager.getEmulationSettings().getVICIIPalette(), Commodore64Manager.VICIIPaletteSettingChangedEvent.class, null, Commodore64Manager.VICIIPaletteSettingChangedEvent::new);
+        this.addBooleanSetting("Swap joysticks", commodore64Manager.getEmulationSettings().getSwapJoysticks(), Commodore64Manager.SwapJoysticksSettingChangedEvent.class, null, Commodore64Manager.SwapJoysticksSettingChangedEvent::new);
 
         MenuBarSettingsMenu datasetteMenu = this.addMenu("Datasette");
         datasetteMenu.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Insert tape image...", Commodore64Manager.TapeImagePathChangedEvent.class, null, Commodore64Manager.TapeImagePathChangedEvent::new);

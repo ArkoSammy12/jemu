@@ -160,8 +160,10 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         MOSIOPort.InputSource cia1IOPortAInputSource = () -> {
             int columnBits = this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch()));
-            //int joystick1Bits = this.systemController.getJoystick1Bits();
-            return ~(columnBits /*| joystick1Bits*/);
+            if (this.systemHost.swapJoysticks()) {
+                columnBits |= this.systemController.getJoystick1Bits();
+            }
+            return ~columnBits;
         };
         this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), cia1IOPortAInputSource) {
 
@@ -175,8 +177,10 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         MOSIOPort.InputSource cia1IOPortBInputSource = () -> {
             int rowBits = this.systemController.getRowBits((this.getCIA1IOPortA().getDataDirectionRegister() & ~this.getCIA1IOPortA().getOutputLatch()));
-            int joystick1Bits = this.systemController.getJoystick1Bits();
-            return ~(rowBits | joystick1Bits);
+            if (!this.systemHost.swapJoysticks()) {
+                rowBits |= this.systemController.getJoystick1Bits();
+            }
+            return ~rowBits;
         };
         this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), cia1IOPortBInputSource) {
 

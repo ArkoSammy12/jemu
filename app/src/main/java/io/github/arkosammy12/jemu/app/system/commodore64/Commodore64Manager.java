@@ -201,6 +201,7 @@ public class Commodore64Manager extends SystemManager {
         this.getPanelSettings().ifPresent(commodore64PanelSettings -> commodore64PanelSettings.onEvent(coreSettingChangedEvent));
         switch (coreSettingChangedEvent) {
             case VICIIPaletteSettingChangedEvent(Commodore64Settings.VICIIPalette viciiPalette) -> this.getEmulationSettings().setVICIIPalette(viciiPalette);
+            case SwapJoysticksSettingChangedEvent(boolean swapJoysticks) -> this.getEmulationSettings().setSwapJoysticks(swapJoysticks);
             case KernalRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setKernalRomPath(path);
             case BasicRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setBasicRomPath(path);
             case CharacterRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setCharacterRomPath(path);
@@ -244,6 +245,15 @@ public class Commodore64Manager extends SystemManager {
         @Override
         public Commodore64Settings.VICIIPalette get() {
             return this.viciiPalette;
+        }
+
+    }
+
+    record SwapJoysticksSettingChangedEvent(boolean swapJoysticks) implements CoreSettingChangedEvent, Supplier<Boolean> {
+
+        @Override
+        public Boolean get() {
+            return this.swapJoysticks();
         }
 
     }

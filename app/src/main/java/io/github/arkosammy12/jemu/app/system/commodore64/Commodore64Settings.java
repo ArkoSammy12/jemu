@@ -14,6 +14,9 @@ public class Commodore64Settings {
     @SerializedName("vicii-palette")
     private volatile VICIIPalette viciiPalette = VICIIPalette.PC64;
 
+    @SerializedName("swap_joysticks")
+    private volatile boolean swapJoysticks;
+
     @Nullable
     @SerializedName("kernal_rom_path")
     private volatile String kernalRomPath;
@@ -36,6 +39,14 @@ public class Commodore64Settings {
 
     public VICIIPalette getVICIIPalette() {
         return this.viciiPalette;
+    }
+
+    void setSwapJoysticks(boolean swapJoysticks) {
+        this.swapJoysticks = swapJoysticks;
+    }
+
+    public boolean getSwapJoysticks() {
+        return this.swapJoysticks;
     }
 
     void setKernalRomPath(@Nullable Path path) {

@@ -17,6 +17,8 @@ public interface Commodore64Host extends SystemHost {
 
     int getRGB8ForPaletteIndex(int paletteIndex);
 
+    boolean swapJoysticks();
+
     default void onPrgFilePatched() {
 
     }
