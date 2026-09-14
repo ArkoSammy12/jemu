@@ -156,7 +156,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         });
         this.systemController = new Commodore64Controller<>(this);
 
-        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b100111 | (this.commodore1531.getSENSE() ? 0 : 1 << 4));
+        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b000111 | (this.commodore1531.getSENSE() ? 0 : 1 << 4));
 
         MOSIOPort.InputSource cia1IOPortAInputSource = () -> {
             int columnBits = this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch()));
@@ -368,7 +368,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     public boolean getMOTOR() {
-        return (this.cpuIOPort.read() & (1 << 5)) == 0;
+        return (this.cpuIOPort.getDataDirectionRegister() & (1 << 5)) != 0 && (this.cpuIOPort.read() & (1 << 5)) == 0;
     }
 
     @Override
