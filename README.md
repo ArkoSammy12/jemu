@@ -156,12 +156,22 @@ The Commodore 64 core uses symbolic keybindings for the built-in keyboard.
 | Right (CRSR LEFT/RIGHT)      | `Right`           |
 | Space                        | `Space`           |
 
+Peripherals:
+
+| Action           | Key        |
+|------------------|------------|
+| Joystick 1 Up    | `Numpad 8` |
+| Joystick 1 Down  | `Numpad 5` |
+| Joystick 1 Left  | `Numpad 4` |
+| Joystick 1 Right | `Numpad 6` |
+| Joystick 1 Fire  | `Numpad 0` |
+
 Datasette:
 
-| Action | Key   |
-|--------|-------|
-| Play   | `Home`  |
-| Stop   | `End` |
+| Action | Key    |
+|--------|--------|
+| Play   | `Home` |
+| Stop   | `End`  |
 
 ## Command-line usage
 
