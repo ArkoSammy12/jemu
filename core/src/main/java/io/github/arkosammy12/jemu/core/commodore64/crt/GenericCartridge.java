@@ -1,9 +1,7 @@
-package io.github.arkosammy12.jemu.core.commodore64.cartridges;
+package io.github.arkosammy12.jemu.core.commodore64.crt;
 
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Cartridge;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Emulator;
-import io.github.arkosammy12.jemu.core.commodore64.crt.CHIPPacket;
-import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;

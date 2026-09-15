@@ -1,8 +1,8 @@
 package io.github.arkosammy12.jemu.core.commodore64;
 
-import io.github.arkosammy12.jemu.core.commodore64.cartridges.GenericCartridge;
-import io.github.arkosammy12.jemu.core.commodore64.cartridges.MagicDeskCartridge;
-import io.github.arkosammy12.jemu.core.commodore64.cartridges.SimonsBASICCartridge;
+import io.github.arkosammy12.jemu.core.commodore64.crt.GenericCartridge;
+import io.github.arkosammy12.jemu.core.commodore64.crt.MagicDeskCartridge;
+import io.github.arkosammy12.jemu.core.commodore64.crt.SimonsBASICCartridge;
 import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 

@@ -6,6 +6,7 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
 
     private int dataDirectionRegister;
     private int outputLatch;
+    private int unusedBitsLastOutput;
 
     public NMOS6510(S systemBus) {
         super(systemBus);
@@ -32,7 +33,7 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
         } else {
             return switch (address) {
                 case 0x0000 -> this.dataDirectionRegister;
-                case 0x0001 -> systemBus.getIOPort().read();
+                case 0x0001 -> (systemBus.getIOPort().read() & 0x3F) | ((this.dataDirectionRegister & (1 << 6)) != 0 ? this.outputLatch & (1 << 6) : this.unusedBitsLastOutput & (1 << 6)) | ((this.dataDirectionRegister & (1 << 7)) != 0 ? this.outputLatch & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
                 default -> systemBus.getBus().readByte(address);
             };
         }
@@ -45,7 +46,10 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
         if (!systemBus.getAEC()) {
             switch (address) {
                 case 0x0000 -> this.dataDirectionRegister = value & 0xFF;
-                case 0x0001 -> this.outputLatch = value & 0xFF;
+                case 0x0001 -> {
+                    this.outputLatch = value & 0xFF;
+                    this.unusedBitsLastOutput = ((this.dataDirectionRegister & (1 << 6)) != 0 ? value & (1 << 6) : this.unusedBitsLastOutput & (1 << 6)) | ((this.dataDirectionRegister & (1 << 7)) != 0 ? value & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
+                }
                 default -> systemBus.getBus().writeByte(address, value);
             }
         }
