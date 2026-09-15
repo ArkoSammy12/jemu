@@ -2,12 +2,10 @@ package io.github.arkosammy12.jemu.frontend.gui;
 
 import io.github.arkosammy12.jemu.frontend.config.settings.internal.VideoSize;
 import io.github.arkosammy12.jemu.frontend.events.core.AspectRatioSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEvent;
-import io.github.arkosammy12.jemu.frontend.events.internal.ui.VideoSizeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.*;
 import io.github.arkosammy12.jemu.frontend.util.KeyAction;
-import io.github.arkosammy12.jemu.frontend.util.KeyActionListener;
+import io.github.arkosammy12.jemu.frontend.util.InputListener;
+import io.github.arkosammy12.jemu.frontend.util.internal.DragAndDropHandler;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.AlignY;
 import net.miginfocom.layout.CC;
@@ -18,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.dnd.DropTarget;
 import java.awt.event.*;
 import java.nio.file.Path;
 import java.util.Optional;
@@ -100,10 +99,10 @@ public class SystemViewport {
         return this.viewportPanel;
     }
 
-    public void setSystemKeyListener(@Nullable KeyActionListener keyListener) {
+    public void setInputListener(@Nullable InputListener inputListener) {
         SwingUtilities.invokeLater(() -> {
-            this.systemKeyActionListener.setDelegate(keyListener);
-            if (keyListener != null) {
+            this.systemKeyActionListener.setDelegate(inputListener);
+            if (inputListener != null) {
                 this.viewportPanel.requestFocusInWindow();
             }
         });
@@ -134,6 +133,7 @@ public class SystemViewport {
                         SwingUtilities.invokeLater(component::requestFocusInWindow);
                     }
                 });
+                component.setDropTarget(new DropTarget(component, this.systemKeyActionListener.getDragAndDropHandler()));
                 component.setFocusTraversalKeysEnabled(false);
                 this.viewportPanel.remove(this.idleViewport.getJPanel());
                 this.viewportPanel.add(component, "grow, push");
@@ -191,13 +191,29 @@ public class SystemViewport {
         return new Dimension(displayWidth + horizontalPadding, displayHeight + verticalPadding);
     }
 
-    private static class SystemKeyActionListener implements KeyListener {
+    private class SystemKeyActionListener implements KeyListener {
+
+        private final DragAndDropHandler dragAndDropHandler;
 
         @Nullable
-        private KeyActionListener delegate;
+        private InputListener delegate;
 
-        private void setDelegate(@Nullable KeyActionListener keyListener) {
-            this.delegate = keyListener;
+        public SystemKeyActionListener() {
+            this.dragAndDropHandler = new DragAndDropHandler(paths -> {
+                if (this.delegate != null) {
+                    if (!this.delegate.onFilesDropped(SystemViewport.this.mainWindow, paths)) {
+                        paths.stream().findFirst().ifPresent(path -> SystemViewport.this.mainWindow.publishEvent(new LoadDragAndDroppedFileEvent(path)));
+                    }
+                }
+            });
+        }
+
+        private DragAndDropHandler getDragAndDropHandler() {
+            return this.dragAndDropHandler;
+        }
+
+        private void setDelegate(@Nullable InputListener inputListener) {
+            this.delegate = inputListener;
         }
 
         @Override
@@ -256,7 +272,6 @@ public class SystemViewport {
             this.getJPanel().addMouseListener(mouseListener);
 
             mainWindow.onEvent(FileLoadedEvent.class, fileLoadedEvent -> this.setSelectedRomFile(fileLoadedEvent.loadedFilePath()));
-
             mainWindow.onEvent(ROMEjectedEvent.class, _ -> this.setSelectedRomFile(null));
         }
 

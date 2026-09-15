@@ -2,6 +2,7 @@ package io.github.arkosammy12.jemu.frontend.gui.internal.menus;
 
 import com.formdev.flatlaf.icons.FlatFileViewFileIcon;
 import com.formdev.flatlaf.util.SystemFileChooser;
+import io.github.arkosammy12.jemu.frontend.events.internal.ui.LoadDragAndDroppedFileEvent;
 import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
@@ -9,17 +10,15 @@ import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEve
 import io.github.arkosammy12.jemu.frontend.gui.MainWindow;
 import io.github.arkosammy12.jemu.frontend.gui.MenuBarMenu;
 import io.github.arkosammy12.jemu.frontend.gui.managers.FileManager;
+import io.github.arkosammy12.jemu.frontend.util.internal.DragAndDropHandler;
 import org.apache.commons.collections4.queue.CircularFifoQueue;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import org.tinylog.Logger;
 
 import javax.swing.*;
-import java.awt.datatransfer.DataFlavor;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowEvent;
-import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -64,32 +63,7 @@ public class FileMenu extends MenuBarMenu implements FileManager {
             }
         });
 
-        appFrame.setTransferHandler(new TransferHandler() {
-
-            @Override
-            public boolean canImport(TransferSupport support) {
-                return support.isDataFlavorSupported(DataFlavor.javaFileListFlavor);
-            }
-
-            @Override
-            @SuppressWarnings("unchecked")
-            public boolean importData(TransferSupport support) {
-                if (!this.canImport(support)) {
-                    return false;
-                }
-                try {
-                    List<File> files = (List<File>) support.getTransferable().getTransferData(DataFlavor.javaFileListFlavor);
-                    Path filePath = files.getFirst().toPath();
-                    loadFile(filePath);
-                    addRecentFilePath(filePath);
-                    return true;
-                } catch (Exception e) {
-                    Logger.error("Failed to accept drag-and-drop file! {}", e);
-                    return false;
-                }
-            }
-
-        });
+        appFrame.setTransferHandler(new DragAndDropHandler(paths -> paths.stream().findFirst().ifPresent(path -> mainWindow.publishEvent(new LoadDragAndDroppedFileEvent(path)))));
 
         this.openRecentMenu = new JMenu("Open Recent");
 
@@ -128,6 +102,11 @@ public class FileMenu extends MenuBarMenu implements FileManager {
         resetOnROMFileSelect.setSelected(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalFileSettings().getResetOnROMFileSelect());
 
         mainWindow.onEvent(TriggerOpenFileEvent.class, _ -> openItem.doClick());
+        mainWindow.onEvent(LoadDragAndDroppedFileEvent.class, loadDragAndDroppedFileEvent -> {
+            Path path = loadDragAndDroppedFileEvent.path();
+            this.loadFile(path);
+            this.addRecentFilePath(path);
+        });
     }
 
     @Override

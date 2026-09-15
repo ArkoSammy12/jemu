@@ -12,7 +12,7 @@ import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.util.KeyAction;
-import io.github.arkosammy12.jemu.frontend.util.KeyActionListener;
+import io.github.arkosammy12.jemu.frontend.util.InputListener;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -121,8 +121,8 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         return new DefaultSystemVideoDriver(this.jemu, emulator.getVideoGenerator());
     }
 
-    protected KeyActionListener createKeyActionListener() {
-        return new KeyActionListener() {
+    protected InputListener createInputListener() {
+        return new InputListener() {
 
             @Override
             public void onKeyActionPressed(KeyAction keyAction) {
@@ -170,7 +170,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
             return Optional.ofNullable(this.videoDriver);
         });
 
-        this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(this.createKeyActionListener());
+        this.jemu.getMainWindow().getSystemViewport().setInputListener(this.createInputListener());
     }
 
     @Override

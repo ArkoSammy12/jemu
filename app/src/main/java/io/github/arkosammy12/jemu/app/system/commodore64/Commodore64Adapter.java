@@ -1,18 +1,20 @@
 package io.github.arkosammy12.jemu.app.system.commodore64;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
 import io.github.arkosammy12.jemu.app.drivers.GlueVideoDriver;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Controller;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Emulator;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Host;
+import io.github.arkosammy12.jemu.core.commodore64.tape.Commodore1531;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
 import io.github.arkosammy12.jemu.frontend.util.KeyAction;
-import io.github.arkosammy12.jemu.frontend.util.KeyActionListener;
+import io.github.arkosammy12.jemu.frontend.util.InputListener;
+import org.apache.commons.io.FilenameUtils;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.nio.file.Path;
@@ -80,8 +82,8 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
     }
 
     @Override
-    protected KeyActionListener createKeyActionListener() {
-        return new KeyActionListener() {
+    protected InputListener createInputListener() {
+        return new InputListener() {
 
             private final Map<SystemController.Action, Integer> pressedActions = new HashMap<>();
             private final Map<Integer, Boolean> keyActionEdgeTracker = new HashMap<>();
@@ -152,6 +154,23 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
                     }
                     this.updateShiftKeys(systemController);
                 });
+            }
+
+            @Override
+            public boolean onFilesDropped(EventPublisher eventPublisher, Collection<Path> paths) {
+                Optional<Path> firstPath = paths.stream().findFirst();
+                if (firstPath.isEmpty()) {
+                    return false;
+                } else {
+                    Path path = firstPath.get();
+                    return switch (FilenameUtils.getExtension(path.toString()).toLowerCase()) {
+                        case Commodore1531.T64_FILE_EXTENSION, Commodore1531.TAP_FILE_EXTENSION -> {
+                            eventPublisher.publishEvent(new Commodore64Manager.TapeImagePathChangedEvent(path));
+                            yield true;
+                        }
+                        default -> false;
+                    };
+                }
             }
 
             private void updateShiftKeys(SystemController systemController) {

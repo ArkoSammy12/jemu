@@ -13,8 +13,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class Commodore1531 {
 
-    private static final String TAP_FILE_EXTENSION = "tap";
-    private static final String T64_FILE_EXTENSION = "t64";
+    public static final String TAP_FILE_EXTENSION = "tap";
+    public static final String T64_FILE_EXTENSION = "t64";
 
     // Physical parameters used by VICE
     private static final double TAPE_SPEED_MS = 0.0476;
