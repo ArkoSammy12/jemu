@@ -56,7 +56,7 @@ public class Commodore1531 {
                 String fileExtension = FilenameUtils.getExtension(path.toString());
                 this.pendingTapeImageEvent.set(new InsertTapeEvent(switch (fileExtension.toLowerCase()) {
                     case TAP_FILE_EXTENSION -> new TAPImage(bytes);
-                    case T64_FILE_EXTENSION -> throw new ROMInitializationException("T64 tape images are not yet supported!");
+                    case T64_FILE_EXTENSION -> new T64Image(commodore64Emulator, bytes);
                     default -> throw new ROMInitializationException("Unsupported tape image file extension %s!".formatted(fileExtension));
                 }));
             } catch (Exception e) {

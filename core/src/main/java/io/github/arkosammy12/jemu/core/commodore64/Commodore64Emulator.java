@@ -21,7 +21,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     private static final int FRAMES_UNTIL_READY_PROMPT = 111;
 
-    private static final int PAL_CPU_FREQUENCY_HZ = 985248;
+    public static final int PAL_CPU_FREQUENCY_HZ = 985248;
     public static final int PAL_CPU_CYCLES_PER_FRAME = MOS6569.SCANLINES_PER_FRAME * MOS6569.CYCLES_PER_SCANLINE;
     public static final double PAL_CPU_CYCLE_LENGTH_S = 1.0 / PAL_CPU_FREQUENCY_HZ;
     private static final double PAL_FRAMERATE = (double) PAL_CPU_FREQUENCY_HZ / PAL_CPU_CYCLES_PER_FRAME;

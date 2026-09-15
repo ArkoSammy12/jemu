@@ -70,6 +70,11 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
     }
 
     @Override
+    public boolean loadT64ToBASICStart() {
+        return this.commodore64Manager.getEmulationSettings().getLoadT64toBASICStart();
+    }
+
+    @Override
     protected GlueVideoDriver createVideoDriver(Emulator emulator) {
         return new Commodore64VideoDriver(this.jemu, emulator.getVideoGenerator());
     }

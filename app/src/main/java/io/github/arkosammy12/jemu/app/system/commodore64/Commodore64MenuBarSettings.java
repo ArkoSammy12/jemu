@@ -23,6 +23,7 @@ public class Commodore64MenuBarSettings extends MenuBarSettingsMenu {
         datasettePlayMenuItem.addActionListener(_ -> eventPublisher.publishEvent(new Commodore64Manager.DatasetteButtonPressedEvent(Commodore64Controller.Datasette.PLAY)));
         JMenuItem datasetteStopMenuItem = new JMenuItem("Stop");
         datasetteStopMenuItem.addActionListener(_ -> eventPublisher.publishEvent(new Commodore64Manager.DatasetteButtonPressedEvent(Commodore64Controller.Datasette.STOP)));
+        datasetteMenu.addBooleanSetting("Load T64 to BASIC start", commodore64Manager.getEmulationSettings().getLoadT64toBASICStart(), Commodore64Manager.LoadT64ToBASICStartSettingChanged.class, null, Commodore64Manager.LoadT64ToBASICStartSettingChanged::new);
 
         datasetteMenu.add(ejectTapeImageButton);
         datasetteMenu.add(datasettePlayMenuItem);

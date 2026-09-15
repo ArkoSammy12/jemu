@@ -33,6 +33,9 @@ public class Commodore64Settings {
     @SerializedName("tape_image_path")
     private volatile String tapeImagePath;
 
+    @SerializedName("load_t64_to_basic_start")
+    private volatile boolean loadT64ToBASICStart;
+
     void setVICIIPalette(@NotNull VICIIPalette viciiPalette) {
         this.viciiPalette = viciiPalette;
     }
@@ -79,6 +82,14 @@ public class Commodore64Settings {
 
     public Optional<Path> getTapeImagePath() {
         return Optional.ofNullable(this.tapeImagePath).map(Paths::get);
+    }
+
+    void setLoadT64ToBASICStart(boolean loadT64ToBASICStart) {
+        this.loadT64ToBASICStart = loadT64ToBASICStart;
+    }
+
+    public boolean getLoadT64toBASICStart() {
+        return this.loadT64ToBASICStart;
     }
 
     public enum VICIIPalette implements DisplayNamerProvider {
