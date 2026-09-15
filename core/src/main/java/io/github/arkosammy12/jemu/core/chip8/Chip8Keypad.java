@@ -8,7 +8,7 @@ public class Chip8Keypad implements SystemController {
     private int waitingKey = -1;
 
     @Override
-    public void onActionPressed(Action action) {
+    public void pressAction(Action action) {
         if (!(action instanceof Actions chip8Actions)) {
             return;
         }
@@ -16,7 +16,7 @@ public class Chip8Keypad implements SystemController {
     }
 
     @Override
-    public void onActionReleased(Action action) {
+    public void releaseAction(Action action) {
         if (!(action instanceof Actions chip8Actions)) {
             return;
         }

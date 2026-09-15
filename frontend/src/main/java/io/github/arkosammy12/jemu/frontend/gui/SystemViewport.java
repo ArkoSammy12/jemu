@@ -6,6 +6,8 @@ import io.github.arkosammy12.jemu.frontend.events.internal.ui.FileLoadedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.ROMEjectedEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.TriggerOpenFileEvent;
 import io.github.arkosammy12.jemu.frontend.events.internal.ui.VideoSizeChangedEvent;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.frontend.util.KeyActionListener;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.AlignY;
 import net.miginfocom.layout.CC;
@@ -30,7 +32,7 @@ public class SystemViewport {
 
     @Nullable
     private SystemDisplayComponent systemDisplayComponent;
-    private final SystemKeyListener systemKeyListener;
+    private final SystemKeyActionListener systemKeyActionListener;
 
     private Dimension lastFitVideoSizeFrameDimension = null;
 
@@ -51,8 +53,8 @@ public class SystemViewport {
             }
 
         });
-        this.systemKeyListener = new SystemKeyListener();
-        this.viewportPanel.addKeyListener(this.systemKeyListener);
+        this.systemKeyActionListener = new SystemKeyActionListener();
+        this.viewportPanel.addKeyListener(this.systemKeyActionListener);
         this.viewportPanel.add(this.idleViewport.getJPanel(), "grow, push");
 
         mainWindow.onEvent(VideoSizeChangedEvent.class, videoSizeChangedEvent -> {
@@ -98,9 +100,9 @@ public class SystemViewport {
         return this.viewportPanel;
     }
 
-    public void setSystemKeyListener(@Nullable KeyListener keyListener) {
+    public void setSystemKeyListener(@Nullable KeyActionListener keyListener) {
         SwingUtilities.invokeLater(() -> {
-            this.systemKeyListener.setDelegate(keyListener);
+            this.systemKeyActionListener.setDelegate(keyListener);
             if (keyListener != null) {
                 this.viewportPanel.requestFocusInWindow();
             }
@@ -125,13 +127,14 @@ public class SystemViewport {
                 component.setFocusable(true);
                 component.setBackground(Color.BLACK);
                 component.setMinimumSize(new Dimension(0, 0));
-                component.addKeyListener(this.systemKeyListener);
+                component.addKeyListener(this.systemKeyActionListener);
                 component.addMouseListener(new MouseAdapter() {
                     @Override
                     public void mousePressed(MouseEvent e) {
                         SwingUtilities.invokeLater(component::requestFocusInWindow);
                     }
                 });
+                component.setFocusTraversalKeysEnabled(false);
                 this.viewportPanel.remove(this.idleViewport.getJPanel());
                 this.viewportPanel.add(component, "grow, push");
                 SwingUtilities.invokeLater(() -> {
@@ -188,33 +191,31 @@ public class SystemViewport {
         return new Dimension(displayWidth + horizontalPadding, displayHeight + verticalPadding);
     }
 
-    private static class SystemKeyListener implements KeyListener {
+    private static class SystemKeyActionListener implements KeyListener {
 
         @Nullable
-        private KeyListener delegate;
+        private KeyActionListener delegate;
 
-        private void setDelegate(@Nullable KeyListener keyListener) {
+        private void setDelegate(@Nullable KeyActionListener keyListener) {
             this.delegate = keyListener;
         }
 
         @Override
         public void keyTyped(KeyEvent e) {
-            if (this.delegate != null) {
-                this.delegate.keyTyped(e);
-            }
+
         }
 
         @Override
         public void keyPressed(KeyEvent e) {
             if (this.delegate != null) {
-                this.delegate.keyPressed(e);
+                this.delegate.onKeyActionPressed(KeyAction.fromKeyEvent(e));
             }
         }
 
         @Override
         public void keyReleased(KeyEvent e) {
             if (this.delegate != null) {
-                this.delegate.keyReleased(e);
+                this.delegate.onKeyActionReleased(KeyAction.fromKeyEvent(e));
             }
         }
 

@@ -51,6 +51,12 @@ public class ActionSignalDispatcher {
         this.buffers[id][index].enqueue(value);
     }
 
+    public void cancel(int id) {
+        for (IntArrayFIFOQueue queue : this.buffers[id]) {
+            queue.clear();
+        }
+    }
+
     public void tick() {
         for (int i = 0; i < this.buffers.length; i++) {
             this.positions[i] = (this.positions[i] + 1) % this.buffers[i].length;

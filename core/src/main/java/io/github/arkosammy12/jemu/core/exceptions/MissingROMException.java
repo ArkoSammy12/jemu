@@ -13,4 +13,16 @@ public class MissingROMException extends EmulatorException {
         super(systemHost.getSystemName() + " requires a ROM file to start!");
     }
 
+    public MissingROMException(String message) {
+        super(message);
+    }
+
+    public MissingROMException(String message, Throwable cause) {
+        super(message + "\n" + cause);
+    }
+
+    public MissingROMException(Throwable cause) {
+        super(cause);
+    }
+
 }

@@ -7,8 +7,10 @@ import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
+import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -33,6 +35,15 @@ public class GameBoyManager extends SystemManager {
     public GameBoyManager(Jemu jemu, SystemRegistry systemRegistry, GameBoyHost.Model gameboyModel) {
         super(jemu, systemRegistry);
         this.gameboyModel = gameboyModel;
+
+        this.keyActionMap.put(KeyAction.W, GameBoyJoypad.Actions.UP);
+        this.keyActionMap.put(KeyAction.S, GameBoyJoypad.Actions.DOWN);
+        this.keyActionMap.put(KeyAction.A, GameBoyJoypad.Actions.LEFT);
+        this.keyActionMap.put(KeyAction.D, GameBoyJoypad.Actions.RIGHT);
+        this.keyActionMap.put(KeyAction.ENTER, GameBoyJoypad.Actions.START);
+        this.keyActionMap.put(KeyAction.BACK_SPACE, GameBoyJoypad.Actions.SELECT);
+        this.keyActionMap.put(KeyAction.J, GameBoyJoypad.Actions.A);
+        this.keyActionMap.put(KeyAction.K, GameBoyJoypad.Actions.B);
     }
 
     @Override
@@ -100,8 +111,8 @@ public class GameBoyManager extends SystemManager {
     @Override
     public Optional<? extends Function<? super EventPublisher, ? extends JPanel>> getSettingsWindowContents() {
         if (this.gameboyModel == GameBoyHost.Model.DMG) {
-            return Optional.of(mainWindow -> {
-                GameBoyPanelSettings gameBoyPanelSettings = new GameBoyPanelSettings(this, mainWindow);
+            return Optional.of(eventPublisher -> {
+                GameBoyPanelSettings gameBoyPanelSettings = new GameBoyPanelSettings(this, eventPublisher);
                 this.gameBoyPanelSettings = gameBoyPanelSettings;
                 return gameBoyPanelSettings;
             });

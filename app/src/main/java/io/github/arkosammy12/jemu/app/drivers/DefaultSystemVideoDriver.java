@@ -14,6 +14,8 @@ import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
 
 import java.awt.*;
+import java.awt.event.KeyAdapter;
+import java.awt.event.KeyEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
@@ -24,7 +26,7 @@ import java.util.function.DoubleSupplier;
 
 import static io.github.arkosammy12.jemu.app.Jemu.tryJoinSafely;
 
-public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, SystemDisplayComponent, Closeable {
+public class DefaultSystemVideoDriver extends Canvas implements GlueVideoDriver {
 
     private final VideoGenerator videoGenerator;
     private final int[] frameBuffer;
@@ -76,6 +78,16 @@ public class DefaultSystemVideoDriver extends Canvas implements VideoDriver, Sys
         this.renderThread = new Thread(this::renderLoop, "%s-render-thread".formatted(MavenProperties.ARTIFACT_ID));
         this.renderThread.setDaemon(true);
         this.renderThread.start();
+    }
+
+    @Override
+    public Dimension getMinimumSize() {
+        return new Dimension(0, 0);
+    }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(this.displayWidth, this.displayHeight);
     }
 
     @Override
