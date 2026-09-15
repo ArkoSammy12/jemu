@@ -94,45 +94,55 @@ public class SettingsWindow extends JFrame {
         }
 
         private void openSettingsWindow() {
-            this.settingsWindow = new SettingsWindow(this.mainWindow, this);
-            this.settingsWindow.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-            this.settingsWindow.addWindowListener(new WindowAdapter() {
+            SettingsWindow settingsWindow = this.settingsWindow;
+            if (settingsWindow != null) {
+                SwingUtilities.invokeLater(() -> {
+                    settingsWindow.setState(Frame.NORMAL);
+                    settingsWindow.setVisible(true);
+                    settingsWindow.toFront();
+                    settingsWindow.requestFocus();
+                });
+            } else {
+                this.settingsWindow = new SettingsWindow(this.mainWindow, this);
+                this.settingsWindow.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+                this.settingsWindow.addWindowListener(new WindowAdapter() {
 
-                @Override
-                public void windowClosing(WindowEvent e) {
-                    super.windowClosing(e);
-                    SettingsWindow settingsWindow = State.this.settingsWindow;
-                    if (settingsWindow != null) {
-                        if (State.this.hasPendingEvents()) {
-                            switch (JOptionPane.showConfirmDialog(settingsWindow, "Save changes?", State.this.mainWindow.getTitle(), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE)) {
-                                case JOptionPane.YES_OPTION -> State.this.drain();
-                                case JOptionPane.NO_OPTION -> State.this.flush();
-                                default -> {}
+                    @Override
+                    public void windowClosing(WindowEvent e) {
+                        super.windowClosing(e);
+                        SettingsWindow settingsWindow = State.this.settingsWindow;
+                        if (settingsWindow != null) {
+                            if (State.this.hasPendingEvents()) {
+                                switch (JOptionPane.showConfirmDialog(settingsWindow, "Save changes?", State.this.mainWindow.getTitle(), JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE)) {
+                                    case JOptionPane.YES_OPTION -> State.this.drain();
+                                    case JOptionPane.NO_OPTION -> State.this.flush();
+                                    default -> {}
+                                }
+                            } else {
+                                State.this.disposeWindow();
                             }
-                        } else {
-                            State.this.disposeWindow();
-                        }
 
+                        }
+                    }
+
+                });
+
+                JFrame appFrame = State.this.appFrame;
+                if (appFrame != null) {
+                    Image appFrameIconImage = appFrame.getIconImage();
+                    if (appFrameIconImage != null) {
+                        this.settingsWindow.setIconImage(appFrameIconImage);
                     }
                 }
 
-            });
-
-            JFrame appFrame = State.this.appFrame;
-            if (appFrame != null) {
-                Image appFrameIconImage = appFrame.getIconImage();
-                if (appFrameIconImage != null) {
-                    this.settingsWindow.setIconImage(appFrameIconImage);
+                if (this.windowSettingsBounds != null) {
+                    this.settingsWindow.setBounds(this.windowSettingsBounds);
+                } else {
+                    this.settingsWindow.pack();
+                    this.settingsWindow.setLocationRelativeTo(appFrame);
                 }
+                this.settingsWindow.setVisible(true);
             }
-
-            if (this.windowSettingsBounds != null) {
-                this.settingsWindow.setBounds(this.windowSettingsBounds);
-            } else {
-                this.settingsWindow.pack();
-                this.settingsWindow.setLocationRelativeTo(appFrame);
-            }
-            this.settingsWindow.setVisible(true);
         }
 
         @Override
