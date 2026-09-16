@@ -206,6 +206,7 @@ public class Commodore64Manager extends SystemManager {
             case BasicRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setBasicRomPath(path);
             case CharacterRomPathSettingChangedEvent(Path path) -> this.getEmulationSettings().setCharacterRomPath(path);
             case TapeImagePathChangedEvent(Path path) -> this.getEmulationSettings().setTapeImagePath(path);
+            case ConnectDatasetteSettingChangedEvent(boolean connectDatasette) -> this.getEmulationSettings().setConnectDatasette(connectDatasette);
             case LoadT64ToBASICStartSettingChanged(boolean loadT64ToBASICStart) -> this.getEmulationSettings().setLoadT64ToBASICStart(loadT64ToBASICStart);
             default -> {}
         }
@@ -270,6 +271,15 @@ public class Commodore64Manager extends SystemManager {
     }
 
     record DatasetteButtonPressedEvent(Commodore64Controller.Datasette datasetteButton) implements CoreSettingChangedEvent {}
+
+    record ConnectDatasetteSettingChangedEvent(boolean connectDatasette) implements CoreSettingChangedEvent, Supplier<Boolean> {
+
+        @Override
+        public Boolean get() {
+            return this.connectDatasette();
+        }
+
+    }
 
     record LoadT64ToBASICStartSettingChanged(boolean loadT64ToBASICStart) implements CoreSettingChangedEvent, Supplier<Boolean> {
 

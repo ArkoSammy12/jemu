@@ -19,6 +19,8 @@ public interface Commodore64Host extends SystemHost {
 
     boolean swapJoysticks();
 
+    boolean connectDatasette();
+
     boolean loadT64ToBASICStart();
 
     default void onPrgFilePatched() {

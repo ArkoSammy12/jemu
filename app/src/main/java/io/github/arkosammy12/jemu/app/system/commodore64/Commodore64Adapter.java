@@ -72,6 +72,11 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
     }
 
     @Override
+    public boolean connectDatasette() {
+        return this.commodore64Manager.getEmulationSettings().getConnectDatasette();
+    }
+
+    @Override
     public boolean loadT64ToBASICStart() {
         return this.commodore64Manager.getEmulationSettings().getLoadT64toBASICStart();
     }

@@ -111,7 +111,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
             @Override
             public boolean getFLAG() {
-                return commodore1531.getREAD();
+                return systemHost.connectDatasette() && commodore1531.getREAD();
             }
 
             @Override
@@ -156,7 +156,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
         });
         this.systemController = new Commodore64Controller<>(this);
 
-        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b000111 | (this.commodore1531.getSENSE() ? 0 : 1 << 4));
+        this.cpuIOPort = new MOSIOPort(this.cpu, () -> 0b000111 | (this.systemHost.connectDatasette() && this.commodore1531.getSENSE() ? 0 : 1 << 4));
 
         MOSIOPort.InputSource cia1IOPortAInputSource = () -> {
             int columnBits = this.systemController.getColumnBits((this.getCIA1IOPortB().getDataDirectionRegister() & ~this.getCIA1IOPortB().getOutputLatch()));
@@ -344,6 +344,11 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
+    public boolean isDatasetteConnected() {
+        return this.systemHost.connectDatasette();
+    }
+
+    @Override
     public boolean getIRQ() {
         return this.vic2.getIRQ() || this.cia1.getIRQ() || this.expansionDevice.getIRQ();
     }
@@ -364,11 +369,11 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     public boolean getWRITE() {
-        return (this.cpuIOPort.read() & (1 << 3)) != 0;
+        return this.systemHost.connectDatasette() && (this.cpuIOPort.read() & (1 << 3)) != 0;
     }
 
     public boolean getMOTOR() {
-        return (this.cpuIOPort.getDataDirectionRegister() & (1 << 5)) != 0 && (this.cpuIOPort.read() & (1 << 5)) == 0;
+        return this.systemHost.connectDatasette() && (this.cpuIOPort.getDataDirectionRegister() & (1 << 5)) != 0 && (this.cpuIOPort.read() & (1 << 5)) == 0;
     }
 
     @Override

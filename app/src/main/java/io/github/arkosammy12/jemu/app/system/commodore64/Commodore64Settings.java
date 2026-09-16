@@ -33,6 +33,9 @@ public class Commodore64Settings {
     @SerializedName("tape_image_path")
     private volatile String tapeImagePath;
 
+    @SerializedName("connect_datasette")
+    private volatile boolean connectDatasette = true;
+
     @SerializedName("load_t64_to_basic_start")
     private volatile boolean loadT64ToBASICStart;
 
@@ -82,6 +85,14 @@ public class Commodore64Settings {
 
     public Optional<Path> getTapeImagePath() {
         return Optional.ofNullable(this.tapeImagePath).map(Paths::get);
+    }
+
+    void setConnectDatasette(boolean connectDatasette) {
+        this.connectDatasette = connectDatasette;
+    }
+
+    public boolean getConnectDatasette() {
+        return this.connectDatasette;
     }
 
     void setLoadT64ToBASICStart(boolean loadT64ToBASICStart) {
