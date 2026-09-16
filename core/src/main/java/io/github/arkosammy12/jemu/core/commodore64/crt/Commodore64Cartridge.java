@@ -1,9 +1,8 @@
-package io.github.arkosammy12.jemu.core.commodore64;
+package io.github.arkosammy12.jemu.core.commodore64.crt;
 
-import io.github.arkosammy12.jemu.core.commodore64.crt.GenericCartridge;
-import io.github.arkosammy12.jemu.core.commodore64.crt.MagicDeskCartridge;
-import io.github.arkosammy12.jemu.core.commodore64.crt.SimonsBASICCartridge;
-import io.github.arkosammy12.jemu.core.commodore64.crt.CRTFile;
+import io.github.arkosammy12.jemu.core.commodore64.Commodore64Bus;
+import io.github.arkosammy12.jemu.core.commodore64.Commodore64Emulator;
+import io.github.arkosammy12.jemu.core.commodore64.ExpansionDevice;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
 public abstract class Commodore64Cartridge<E extends Commodore64Emulator> implements ExpansionDevice {

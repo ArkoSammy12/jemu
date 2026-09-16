@@ -1,6 +1,5 @@
 package io.github.arkosammy12.jemu.core.commodore64.crt;
 
-import io.github.arkosammy12.jemu.core.commodore64.Commodore64Cartridge;
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Emulator;
 import io.github.arkosammy12.jemu.core.exceptions.ROMInitializationException;
 
