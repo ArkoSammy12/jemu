@@ -27,6 +27,7 @@ public class MOS6526 implements Bus {
     private final SystemBus systemBus;
 
     private final ActionSignalDispatcher actionSignalDispatcher = new ActionSignalDispatcher();
+    private final int triggerSerialInterruptSignal;
 
     private final TimerA timerA = new TimerA();
     private final TimerB timerB = new TimerB();
@@ -35,6 +36,7 @@ public class MOS6526 implements Bus {
     private boolean pcSetThisCycle;
 
     private boolean previousFLAG;
+    private boolean previousCNT;
 
     private SerialPortMode serialPortMode = SerialPortMode.INPUT;
     private TimeOfDayInput timeOfDayInput = TimeOfDayInput.HZ_60;
@@ -59,11 +61,28 @@ public class MOS6526 implements Bus {
     private AmPmFlag amPmFlag = AmPmFlag.AM;
     private AmPmFlag alarmAmPmFlag = AmPmFlag.AM;
 
-    private final MOSIOPort.DefaultPortOwner portOwnerA = new MOSIOPort.DefaultPortOwner();
-    private final PortOwnerB portOwnerB = new PortOwnerB();
+    private final MOSIOPort.DefaultPortOwner mosIOPortOwnerA = new MOSIOPort.DefaultPortOwner();
+    private final MOSIOPortOwnerB mosIOPortOwnerB = new MOSIOPortOwnerB();
+    private final BidirectionalPin.DefaultPortOwner cntPortOwner = new BidirectionalPin.DefaultPortOwner();
+    private final BidirectionalPin.DefaultPortOwner spPortOwner = new BidirectionalPin.DefaultPortOwner();
+
+    private int serialData;
+    private int serialShiftRegister;
+    private int serialShiftRegisterCounter;
+
+    // Used during output mode
+    private boolean serialShiftStarted; // Track if we have successfully shifted out the first bit
+    private boolean serialShiftRegisterFull; // Track if the shift register is full. Set on loads, cleared at the end of a transfer
+    private boolean serialShiftRegisterReloadPending; // Track if we wrote to SDR on output mode while the shift register was full, queueing up an immediate reloading
 
     public MOS6526(SystemBus systemBus) {
         this.systemBus = systemBus;
+        this.triggerSerialInterruptSignal = this.actionSignalDispatcher.addSignal(2, _ -> {
+            this.irqSerialPort = true;
+            if (this.irqSerialPortEnable) {
+                this.interruptRequest = true;
+            }
+        });
     }
 
     @Override
@@ -76,8 +95,8 @@ public class MOS6526 implements Bus {
                 this.pcSetThisCycle = true;
                 yield this.systemBus.getIOPortB().read();
             }
-            case DDRA -> this.portOwnerA.getDataDirectionRegister();
-            case DDRB -> this.portOwnerB.getDataDirectionRegisterRaw();
+            case DDRA -> this.mosIOPortOwnerA.getDataDirectionRegister();
+            case DDRB -> this.mosIOPortOwnerB.getDataDirectionRegisterRaw();
             case TA_LO -> this.timerA.getTimerLow();
             case TA_HI -> this.timerA.getTimerHigh();
             case TB_LO -> this.timerB.getTimerLow();
@@ -98,7 +117,7 @@ public class MOS6526 implements Bus {
                 this.hoursCounter.setLatched(true);
                 yield this.hoursCounter.read() | (this.amPmFlag == AmPmFlag.PM ? 1 << 7 : 0);
             }
-            case SDR -> 0; // TODO: Implement serial
+            case SDR -> this.serialData;
             case ICR -> {
                 int ret = this.interruptRequest ? 1 << 7 : 0;
                 ret |= this.irqFLAG ? 1 << 4 : 0;
@@ -131,14 +150,14 @@ public class MOS6526 implements Bus {
     public void writeByte(int address, int value) {
         address &= 0xF;
         switch (address) {
-            case PRA -> this.portOwnerA.setOutputLatch(value);
+            case PRA -> this.mosIOPortOwnerA.setOutputLatch(value);
             case PRB -> {
-                this.portOwnerB.setOutputLatch(value);
+                this.mosIOPortOwnerB.setOutputLatch(value);
                 this.pcOutput = true;
                 this.pcSetThisCycle = true;
             }
-            case DDRA -> this.portOwnerA.setDataDirectionRegister(value);
-            case DDRB -> this.portOwnerB.setDataDirectionRegister(value);
+            case DDRA -> this.mosIOPortOwnerA.setDataDirectionRegister(value);
+            case DDRB -> this.mosIOPortOwnerB.setDataDirectionRegister(value);
             case TA_LO -> this.timerA.writeTimerLatchLow(value);
             case TA_HI -> this.timerA.writeTimerLatchHigh(value);
             case TB_LO -> this.timerB.writeTimerLatchLow(value);
@@ -162,9 +181,21 @@ public class MOS6526 implements Bus {
                     case SET_TOD_CLOCK -> this.amPmFlag = amPmFlag;
                 }
             }
-            case SDR -> {} // TODO: Implement serial
+            case SDR -> {
+                this.serialData = value & 0xFF;
+                if (this.serialPortMode == SerialPortMode.OUTPUT) {
+                    // If the serial shift register is currently full, then mark the write as a pending reload.
+                    // Otherwise, load the shift register immediately.
+                    if (this.serialShiftRegisterFull) {
+                        this.serialShiftRegisterReloadPending = true;
+                    } else {
+                        this.loadShiftRegister();
+                    }
+                }
+            }
             case ICR -> {
                 boolean interruptEnable = (value & (1 << 7)) != 0;
+
                 if ((value & (1 << 4)) != 0) {
                     this.irqFLAGEnable = interruptEnable;
                     if (this.irqFLAGEnable && this.irqFLAG) {
@@ -197,9 +228,36 @@ public class MOS6526 implements Bus {
                 }
             }
             case CRA -> {
+                SerialPortMode oldSerialPortMode = this.serialPortMode;
+
                 this.timerA.writeControl(value);
                 this.serialPortMode = (value & (1 << 6)) != 0 ? SerialPortMode.OUTPUT : SerialPortMode.INPUT;
                 this.timeOfDayInput = (value & (1 << 7)) != 0 ? TimeOfDayInput.HZ_50 : TimeOfDayInput.HZ_60;
+
+                if (oldSerialPortMode != this.serialPortMode) {
+                    switch (this.serialPortMode) {
+                        case OUTPUT -> {
+                            this.cntPortOwner.setDirection(true);
+                            this.spPortOwner.setDirection(true);
+
+                            // Reset the CNT clock phase
+                            this.cntPortOwner.setOutput(true);
+
+                            // Wait until a transfer is requested
+                            this.serialShiftRegisterCounter = 8;
+
+                            // Clear flags
+                            this.serialShiftStarted = false;
+                            this.serialShiftRegisterFull = false;
+                            this.serialShiftRegisterReloadPending = false;
+                        }
+                        case INPUT -> {
+                            this.cntPortOwner.setDirection(false);
+                            this.spPortOwner.setDirection(false);
+                            this.serialShiftRegisterCounter = 0; // Just let it continue counting shift-ins
+                        }
+                    }
+                }
             }
             case CRB -> {
                 this.timerB.writeControl(value);
@@ -216,12 +274,20 @@ public class MOS6526 implements Bus {
         return this.pcOutput;
     }
 
-    public MOSIOPort.DefaultPortOwner getPortOwnerA() {
-        return this.portOwnerA;
+    public MOSIOPort.DefaultPortOwner getMOSIOPortOwnerA() {
+        return this.mosIOPortOwnerA;
     }
 
-    public MOSIOPort.DefaultPortOwner getPortOwnerB() {
-        return this.portOwnerB;
+    public MOSIOPort.DefaultPortOwner getMOSIOPortOwnerB() {
+        return this.mosIOPortOwnerB;
+    }
+
+    public BidirectionalPin.PortOwner getCNTPortOwner() {
+        return this.cntPortOwner;
+    }
+
+    public BidirectionalPin.PortOwner getSPPortOwner() {
+        return this.spPortOwner;
     }
 
     public void cycle() {
@@ -242,8 +308,76 @@ public class MOS6526 implements Bus {
         }
         this.previousFLAG = flag;
 
-        this.timerA.onCycle();
-        this.timerB.onCycle();
+        boolean currentCNT = systemBus.getCNT().read();
+        boolean cntRisingEdge = !this.previousCNT && currentCNT;
+        this.previousCNT = currentCNT;
+
+        this.timerA.cycle(cntRisingEdge);
+        this.timerB.cycle(cntRisingEdge);
+
+        if (this.serialShiftRegisterCounter < 8) {
+            switch (this.serialPortMode) {
+                case INPUT -> {
+                    if (cntRisingEdge) {
+                        this.serialShiftRegister = ((this.serialShiftRegister << 1) | (this.systemBus.getSP().read() ? 1 : 0)) & 0xFF;
+                        if (this.serialShiftRegisterCounter == 7) {
+                            this.serialData = this.serialShiftRegister;
+                            this.triggerSerialInterrupt();
+                        }
+                        this.serialShiftRegisterCounter++;
+                        if (this.serialShiftRegisterCounter >= 8) {
+                            this.serialShiftRegisterCounter = 0;
+                        }
+                    }
+                }
+                case OUTPUT -> {
+                    if (this.timerA.underflowed()) {
+                        if (currentCNT) {
+                            this.spPortOwner.setOutput((this.serialShiftRegister & 0x80) != 0);
+                            this.serialShiftRegister = (this.serialShiftRegister << 1) & 0xFF;
+                            switch (this.serialShiftRegisterCounter) {
+                                // Only set this to true here to make sure that we start the transfer on the correct phase
+                                case 0 -> this.serialShiftStarted = true;
+                                case 7 -> {
+                                    this.serialShiftRegisterFull = false;
+                                    this.triggerSerialInterrupt();
+                                }
+                            }
+                        } else {
+                            // Only advance the shift counter if we have already shifted one bit.
+                            // Otherwise, we don't do anything and force the serial to properly begin on the next cycle
+                            if (this.serialShiftStarted) {
+                                this.serialShiftRegisterCounter++;
+                                if (this.serialShiftRegisterCounter >= 8) {
+                                    if (this.serialShiftRegisterReloadPending) {
+                                        this.loadShiftRegister();
+                                    }
+                                }
+                            }
+                        }
+                        this.cntPortOwner.setOutput(!currentCNT);
+                    }
+                }
+            }
+        }
+    }
+
+    private void loadShiftRegister() {
+        this.serialShiftRegisterCounter = 0;
+        this.serialShiftRegister = this.serialData;
+
+        // We are back to not having sent the first bit
+        this.serialShiftStarted = false;
+
+        // We have just reloaded the shift register so it's back to being full
+        this.serialShiftRegisterFull = true;
+
+        // We have just reloaded, so there's no reload pending anymore
+        this.serialShiftRegisterReloadPending = false;
+    }
+
+    private void triggerSerialInterrupt() {
+        this.actionSignalDispatcher.trigger(this.triggerSerialInterruptSignal, 0);
     }
 
     public void clockTOD() {
@@ -268,11 +402,6 @@ public class MOS6526 implements Bus {
         }
     }
 
-    public void clockCNT() {
-        this.timerA.onCNTClock();
-        this.timerB.onCNTClock();
-    }
-
     public interface SystemBus {
 
         MOSIOPort getIOPortA();
@@ -284,6 +413,7 @@ public class MOS6526 implements Bus {
         BidirectionalPin getSP();
 
         BidirectionalPin getCNT();
+
     }
 
     private enum SerialPortMode {
@@ -321,7 +451,7 @@ public class MOS6526 implements Bus {
 
     }
 
-    private class PortOwnerB extends MOSIOPort.DefaultPortOwner {
+    private class MOSIOPortOwnerB extends MOSIOPort.DefaultPortOwner {
 
         protected int getDataDirectionRegisterRaw() {
             return this.dataDirectionRegister;
@@ -495,8 +625,6 @@ public class MOS6526 implements Bus {
         private boolean interruptFlag;
         private boolean interruptEnable;
 
-        private boolean previousCNT;
-
         private boolean toggleOutput; // TODO: Set low by !RES input
         private boolean pulseOutput;
 
@@ -594,14 +722,7 @@ public class MOS6526 implements Bus {
 
         protected abstract boolean isCountingCNTEdges();
 
-        protected void onCNTClock() {
-            if (this.isCountingCNTEdges()) {
-                this.delay |= COUNT_0;
-            }
-        }
-
-        protected void onCycle() {
-            boolean cntRising = this.isCNTRisingEdge();
+        protected void cycle(boolean cntRising) {
             if (this.isCountingCNTEdges() && cntRising) {
                 this.delay |= COUNT_0;
             }
@@ -658,13 +779,6 @@ public class MOS6526 implements Bus {
             this.delay |= LOAD_1;
         }
 
-        protected boolean isCNTRisingEdge() {
-            boolean currentCNT = systemBus.getCNT().read();
-            boolean risingEdge = !this.previousCNT && currentCNT;
-            this.previousCNT = currentCNT;
-            return risingEdge;
-        }
-
         private enum OutMode {
             TOGGLE,
             PULSE
@@ -679,6 +793,7 @@ public class MOS6526 implements Bus {
 
     private class TimerA extends Timer {
 
+        private boolean underflowed;
         private InMode inMode = InMode.PHI2_PULSES;
 
         @Override
@@ -699,9 +814,22 @@ public class MOS6526 implements Bus {
         }
 
         @Override
+        protected void cycle(boolean cntRising) {
+            if (this.underflowed) {
+                this.underflowed = false;
+            }
+            super.cycle(cntRising);
+        }
+
+        @Override
         protected void onTimerUnderflow() {
             super.onTimerUnderflow();
             timerB.onTimerAUnderflow();
+            this.underflowed = true;
+        }
+
+        protected boolean underflowed() {
+            return this.underflowed;
         }
 
         private enum InMode {

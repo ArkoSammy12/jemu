@@ -2,49 +2,59 @@ package io.github.arkosammy12.jemu.core.util;
 
 public class BidirectionalPin {
 
-    private final SystemBus systemBus;
+    private final PortOwner portOwner;
+    private final InputSource inputSource;
 
-    private boolean direction;
-    private boolean outputLatch;
-
-    public BidirectionalPin(SystemBus systemBus){
-        this.systemBus = systemBus;
+    public BidirectionalPin(PortOwner portOwner, InputSource inputSource) {
+        this.portOwner = portOwner;
+        this.inputSource = inputSource;
     }
 
     public boolean read(){
-        return this.direction ? this.outputLatch : this.systemBus.getBit();
+        return this.portOwner.getDirection() ? this.portOwner.getOutput() : this.inputSource.getInput();
     }
 
-    public void setDirection(boolean value) {
-        this.direction = value;
+    public interface PortOwner {
+
+        boolean getDirection();
+
+        boolean getOutput();
+
     }
 
-    public boolean getDirection() {
-        return this.direction;
-    }
+    public interface InputSource {
 
-    public void write(boolean value) {
-        this.outputLatch = value;
-    }
+        boolean getInput();
 
-    public void clock() {
-        if (this.direction) {
-            this.systemBus.clockOutput();
-        } else {
-            this.systemBus.clockInput();
-        }
     }
 
     public interface SystemBus {
 
         boolean getBit();
 
-        default void clockOutput() {
+    }
 
+    public static class DefaultPortOwner implements PortOwner {
+
+        private boolean direction;
+        private boolean output;
+
+        public void setDirection(boolean direction) {
+            this.direction = direction;
         }
 
-        default void clockInput() {
+        @Override
+        public boolean getDirection() {
+            return this.direction;
+        }
 
+        public void setOutput(boolean output) {
+            this.output = output;
+        }
+
+        @Override
+        public boolean getOutput() {
+            return this.output;
         }
 
     }

@@ -64,36 +64,6 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
             throw new ROMInitializationException("ROM path missing! Supported file types are :" + FileType.getFileExtensionsString());
         }
 
-        this.cia1SP = new BidirectionalPin(() -> false);
-        this.cia1CNT = new BidirectionalPin(new BidirectionalPin.SystemBus() {
-
-            @Override
-            public boolean getBit() {
-                return false;
-            }
-
-            @Override
-            public void clockInput() {
-                cia1.clockCNT();
-            }
-
-        });
-
-        this.cia2SP = new BidirectionalPin(() -> false);
-        this.cia2CNT = new BidirectionalPin(new BidirectionalPin.SystemBus() {
-
-            @Override
-            public boolean getBit() {
-                return false;
-            }
-
-            @Override
-            public void clockInput() {
-                cia2.clockCNT();
-            }
-
-        });
-
         this.bus = new Commodore64Bus<>(this);
         this.cpu = new NMOS6510<>(this);
         this.vic2 = new MOS6569<>(this);
@@ -166,7 +136,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
             }
             return ~columnBits;
         };
-        this.cia1IOPortA = new MOSIOPort(this.cia1.getPortOwnerA(), cia1IOPortAInputSource) {
+        this.cia1IOPortA = new MOSIOPort(this.cia1.getMOSIOPortOwnerA(), cia1IOPortAInputSource) {
 
             @Override
             public int read() {
@@ -175,7 +145,6 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         };
 
-
         MOSIOPort.InputSource cia1IOPortBInputSource = () -> {
             int rowBits = this.systemController.getRowBits((this.getCIA1IOPortA().getDataDirectionRegister() & ~this.getCIA1IOPortA().getOutputLatch()));
             if (!this.systemHost.swapJoysticks()) {
@@ -183,7 +152,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
             }
             return ~rowBits;
         };
-        this.cia1IOPortB = new MOSIOPort(this.cia1.getPortOwnerB(), cia1IOPortBInputSource) {
+        this.cia1IOPortB = new MOSIOPort(this.cia1.getMOSIOPortOwnerB(), cia1IOPortBInputSource) {
 
             @Override
             public int read() {
@@ -192,9 +161,13 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
         };
 
+        this.cia1SP = new BidirectionalPin(this.cia1.getSPPortOwner(), () -> false);
+        this.cia1CNT = new BidirectionalPin(this.cia1.getCNTPortOwner(), () -> false);
 
-        this.cia2IOPortA = new MOSIOPort(this.cia2.getPortOwnerA(), () -> 0xFF);
-        this.cia2IOPortB = new MOSIOPort(this.cia2.getPortOwnerB(), () -> 0xFF);
+        this.cia2IOPortA = new MOSIOPort(this.cia2.getMOSIOPortOwnerA(), () -> 0xFF);
+        this.cia2IOPortB = new MOSIOPort(this.cia2.getMOSIOPortOwnerB(), () -> 0xFF);
+        this.cia2SP = new BidirectionalPin(this.cia2.getSPPortOwner(), () -> false);
+        this.cia2CNT = new BidirectionalPin(this.cia2.getCNTPortOwner(), () -> false);
 
         ExpansionDevice expansionDevice = (_, _) -> bus.combineWithDataBus(0x00, 0x00);
 
