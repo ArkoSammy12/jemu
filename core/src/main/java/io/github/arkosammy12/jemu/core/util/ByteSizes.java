@@ -1,6 +1,10 @@
 package io.github.arkosammy12.jemu.core.util;
 
-public class ByteSizes {
+public final class ByteSizes {
+
+    private ByteSizes() {
+        throw new AssertionError();
+    }
 
     public static final int KB_1 = 0x400;
 

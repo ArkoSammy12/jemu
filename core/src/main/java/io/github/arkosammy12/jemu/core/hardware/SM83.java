@@ -395,7 +395,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                     }
                                 }
                             }
-                            case 2 -> { //  STOP
+                            case 2 -> { // STOP
                                 switch (machineCycleIndex) {
                                     case 0 -> {
                                         if (this.systemBus.isButtonHeld()) {

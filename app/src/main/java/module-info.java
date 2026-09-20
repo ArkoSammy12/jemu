@@ -14,6 +14,10 @@ module app {
     requires com.miglayout.core;
     requires jdk.jfr;
 
+    exports io.github.arkosammy12.jemu.app;
+    exports io.github.arkosammy12.jemu.app.io;
+    exports io.github.arkosammy12.jemu.app.util.exceptions;
+
     exports io.github.arkosammy12.jemu.app.util to info.picocli;
     exports io.github.arkosammy12.jemu.app.drivers to info.picocli;
     exports io.github.arkosammy12.jemu. app.system.atari2600 to info.picocli;
@@ -22,6 +26,7 @@ module app {
     exports io.github.arkosammy12.jemu.app.system.cosmacvip to info.picocli;
     exports io.github.arkosammy12.jemu.app.system.rcastudioii to info.picocli;
     exports io.github.arkosammy12.jemu.app.system.chip8 to info.picocli;
+    exports io.github.arkosammy12.jemu.app.system.commodore64 to info.picocli;
     exports io.github.arkosammy12.jemu.app.system to info.picocli;
 
     opens io.github.arkosammy12.jemu.app.io to info.picocli;
@@ -32,6 +37,7 @@ module app {
     opens io.github.arkosammy12.jemu.app.system.rcastudioii to com.google.gson, tools.jackson.databind, tools.jackson.dataformat.xml;
     opens io.github.arkosammy12.jemu.app.system.chip8 to com.google.gson, tools.jackson.databind, tools.jackson.dataformat.xml;
     opens io.github.arkosammy12.jemu.app.system.chip8.database to com.google.gson, tools.jackson.databind, tools.jackson.dataformat.xml;
+    opens io.github.arkosammy12.jemu.app.system.commodore64 to com.google.gson, tools.jackson.databind, tools.jackson.dataformat.xml;
     opens io.github.arkosammy12.jemu.app.system to com.google.gson, tools.jackson.databind, tools.jackson.dataformat.xml;
 
 }

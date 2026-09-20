@@ -1,0 +1,30 @@
+package io.github.arkosammy12.jemu.app.system.commodore64;
+
+import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
+import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
+import io.github.arkosammy12.jemu.frontend.util.settings.PathUISetting;
+
+public class Commodore64PanelSettings extends PanelSettingsMenu {
+
+    public Commodore64PanelSettings(Commodore64Manager commodore64Manager, EventPublisher eventPublisher) {
+        super(eventPublisher);
+
+        this.addHeader("Video");
+        this.addEnumSetting("VIC-II Palette", commodore64Manager.getEmulationSettings().getVICIIPalette(), Commodore64Manager.VICIIPaletteSettingChangedEvent.class, null, Commodore64Manager.VICIIPaletteSettingChangedEvent::new);
+        this.addEmptyLine();
+
+        this.addHeader("Input");
+        this.addBooleanSetting("Swap joysticks", commodore64Manager.getEmulationSettings().getSwapJoysticks(), Commodore64Manager.SwapJoysticksSettingChangedEvent.class, null, Commodore64Manager.SwapJoysticksSettingChangedEvent::new);
+
+        this.addHeader("Firmware");
+        this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Kernal ROM (8 KB): ", commodore64Manager.getEmulationSettings().getKernalRomPath().orElse(null), Commodore64Manager.KernalRomPathSettingChangedEvent.class, null, Commodore64Manager.KernalRomPathSettingChangedEvent::new);
+        this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "BASIC ROM (8 KB): ", commodore64Manager.getEmulationSettings().getBasicRomPath().orElse(null), Commodore64Manager.BasicRomPathSettingChangedEvent.class, null, Commodore64Manager.BasicRomPathSettingChangedEvent::new);
+        this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Character ROM (4 KB): ", commodore64Manager.getEmulationSettings().getCharacterRomPath().orElse(null), Commodore64Manager.CharacterRomPathSettingChangedEvent.class, null, Commodore64Manager.CharacterRomPathSettingChangedEvent::new);
+
+        this.addHeader("Datasette");
+        this.addBooleanSetting("Connect datasette", commodore64Manager.getEmulationSettings().getConnectDatasette(), Commodore64Manager.ConnectDatasetteSettingChangedEvent.class, null, Commodore64Manager.ConnectDatasetteSettingChangedEvent::new);
+        this.addBooleanSetting("Load T64 to BASIC start", commodore64Manager.getEmulationSettings().getLoadT64toBASICStart(), Commodore64Manager.LoadT64ToBASICStartSettingChanged.class, null, Commodore64Manager.LoadT64ToBASICStartSettingChanged::new);
+        this.addPathSetting(PathUISetting.PathSelectionMode.FILES_ONLY, "Tape image (.tap or .t64): ", commodore64Manager.getEmulationSettings().getTapeImagePath().orElse(null), Commodore64Manager.TapeImagePathChangedEvent.class, null, Commodore64Manager.TapeImagePathChangedEvent::new);
+    }
+
+}

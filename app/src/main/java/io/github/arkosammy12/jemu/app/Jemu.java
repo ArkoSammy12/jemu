@@ -412,7 +412,7 @@ public final class Jemu {
     private void onEmulatorException(Exception e) {
         this.mainWindow.showCoreError(e);
         this.mainWindow.getSystemViewport().setSystemDisplay(null);
-        this.mainWindow.getSystemViewport().setSystemKeyListener(null);
+        this.mainWindow.getSystemViewport().setInputListener(null);
         this.mainWindow.submitEmulatorCommand(new StopEmulatorCommand());
         synchronized (this.systemLock) {
             if (this.currentSystem != null) {

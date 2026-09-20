@@ -5,8 +5,10 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
+import io.github.arkosammy12.jemu.core.atari2600.Atari2600Controller;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -43,6 +45,21 @@ public class Atari2600Manager extends SystemManager {
             Logger.error(e, "Failed to load Atari 2600 database!");
         }
         this.databaseMap = Map.copyOf(map);
+
+        this.keyActionMap.put(KeyAction.E, Atari2600Controller.Actions.GAME_SELECT);
+        this.keyActionMap.put(KeyAction.R, Atari2600Controller.Actions.GAME_RESET);
+
+        this.keyActionMap.put(KeyAction.W, Atari2600Controller.Actions.JOYSTICK0_UP);
+        this.keyActionMap.put(KeyAction.S, Atari2600Controller.Actions.JOYSTICK0_UP);
+        this.keyActionMap.put(KeyAction.A, Atari2600Controller.Actions.JOYSTICK0_LEFT);
+        this.keyActionMap.put(KeyAction.D, Atari2600Controller.Actions.JOYSTICK0_RIGHT);
+        this.keyActionMap.put(KeyAction.F, Atari2600Controller.Actions.JOYSTICK0_FIRE);
+
+        this.keyActionMap.put(KeyAction.I, Atari2600Controller.Actions.JOYSTICK1_UP);
+        this.keyActionMap.put(KeyAction.K, Atari2600Controller.Actions.JOYSTICK1_UP);
+        this.keyActionMap.put(KeyAction.J, Atari2600Controller.Actions.JOYSTICK1_LEFT);
+        this.keyActionMap.put(KeyAction.L, Atari2600Controller.Actions.JOYSTICK1_RIGHT);
+        this.keyActionMap.put(KeyAction.SEMICOLON, Atari2600Controller.Actions.JOYSTICK1_FIRE);
     }
 
     @Override

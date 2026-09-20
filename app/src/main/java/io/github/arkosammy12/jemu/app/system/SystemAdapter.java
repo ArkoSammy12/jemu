@@ -1,26 +1,22 @@
 package io.github.arkosammy12.jemu.app.system;
 
 import io.github.arkosammy12.jemu.app.Jemu;
-import io.github.arkosammy12.jemu.app.drivers.DefaultAudioRendererDriver;
-import io.github.arkosammy12.jemu.app.drivers.DefaultSystemVideoDriver;
-import io.github.arkosammy12.jemu.app.drivers.MonoAudioRendererDriver;
-import io.github.arkosammy12.jemu.app.drivers.StereoAudioRendererDriver;
+import io.github.arkosammy12.jemu.app.drivers.*;
 import io.github.arkosammy12.jemu.app.io.EmulatorInitializer;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
-import io.github.arkosammy12.jemu.core.common.SystemController;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
 import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.frontend.util.InputListener;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
 import java.io.Closeable;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,7 +40,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     private volatile DefaultAudioRendererDriver audioDriver;
 
     @Nullable
-    private volatile DefaultSystemVideoDriver videoDriver;
+    protected volatile GlueVideoDriver videoDriver;
 
     public SystemAdapter(Jemu jemu, SystemManager systemManager) throws LineUnavailableException {
         this.jemu = jemu;
@@ -71,7 +67,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     @Override
-    public Optional<? extends DefaultSystemVideoDriver> getVideoDriver() {
+    public Optional<? extends GlueVideoDriver> getVideoDriver() {
         return Optional.ofNullable(this.videoDriver);
     }
 
@@ -89,7 +85,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     }
 
     public void onFrame() {
-        DefaultSystemVideoDriver videoDriver = this.videoDriver;
+        GlueVideoDriver videoDriver = this.videoDriver;
         if (videoDriver != null) {
             videoDriver.requestFrame();
         }
@@ -110,7 +106,7 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
             }
             case VideoSettingChangedEvent videoSettingChangedEvent -> {
-                DefaultSystemVideoDriver videoDriver = this.videoDriver;
+                GlueVideoDriver videoDriver = this.videoDriver;
                 if (videoDriver != null) {
                     videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent);
                 }
@@ -121,8 +117,25 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
 
     protected abstract Emulator createEmulator();
 
-    @Nullable
-    protected abstract SystemController.Action getActionForKeyCode(int keyCode);
+    protected GlueVideoDriver createVideoDriver(Emulator emulator) {
+        return new DefaultSystemVideoDriver(this.jemu, emulator.getVideoGenerator());
+    }
+
+    protected InputListener createInputListener() {
+        return new InputListener() {
+
+            @Override
+            public void onKeyActionPressed(KeyAction keyAction) {
+                systemManager.getActionsForKey(keyAction).ifPresent(actions -> getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> actions.forEach(systemController::pressAction)));
+            }
+
+            @Override
+            public void onKeyActionReleased(KeyAction keyAction) {
+                systemManager.getActionsForKey(keyAction).ifPresent(actions -> getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> actions.forEach(systemController::releaseAction)));
+            }
+
+        };
+    }
 
     protected void initialize(EmulatorInitializer initializer, boolean tryReset) throws LineUnavailableException {
         Optional<byte[]> rawRomOptional = initializer.getRomImage();
@@ -147,42 +160,22 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
         }
 
         this.jemu.getMainWindow().getSystemViewport().setSystemDisplay(() -> {
-            this.getVideoDriver().ifPresent(DefaultSystemVideoDriver::close);
+            this.getVideoDriver().ifPresent(GlueVideoDriver::close);
             this.videoDriver = null;
 
             Emulator emu = this.emulator;
             if (emu != null) {
-                this.videoDriver = new DefaultSystemVideoDriver(this.jemu, emu.getVideoGenerator());
+                this.videoDriver = this.createVideoDriver(emu);
             }
             return Optional.ofNullable(this.videoDriver);
         });
 
-        this.jemu.getMainWindow().getSystemViewport().setSystemKeyListener(new KeyAdapter() {
-
-            @Override
-            public void keyPressed(KeyEvent e) {
-                int keyCode = e.getKeyCode();
-                SystemController.Action action = getActionForKeyCode(keyCode);
-                if (action != null) {
-                    getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> systemController.onActionPressed(action));
-                }
-            }
-
-            @Override
-            public void keyReleased(KeyEvent e) {
-                int keyCode = e.getKeyCode();
-                SystemController.Action action = getActionForKeyCode(keyCode);
-                if (action != null) {
-                    getEmulator().map(Emulator::getSystemController).ifPresent(systemController -> systemController.onActionReleased(action));
-                }
-            }
-
-        });
+        this.jemu.getMainWindow().getSystemViewport().setInputListener(this.createInputListener());
     }
 
     @Override
     public void close() {
-        DefaultSystemVideoDriver videoDriver = this.videoDriver;
+        GlueVideoDriver videoDriver = this.videoDriver;
         if (videoDriver != null) {
             videoDriver.close();
         }

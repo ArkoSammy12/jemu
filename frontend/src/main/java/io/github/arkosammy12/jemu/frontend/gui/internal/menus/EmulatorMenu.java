@@ -161,7 +161,7 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
             this.stepFrameButton.setEnabled(false);
             this.stepCycleButton.setEnabled(false);
             this.mainWindow.getSystemViewport().setSystemDisplay(null);
-            mainWindow.getSystemViewport().setSystemKeyListener(null);
+            mainWindow.getSystemViewport().setInputListener(null);
             emulatorStopped = true;
         }));
 

@@ -7,6 +7,8 @@ import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Manager;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Settings;
 import io.github.arkosammy12.jemu.app.system.chip8.Chip8Variant;
+import io.github.arkosammy12.jemu.app.system.commodore64.Commodore64Manager;
+import io.github.arkosammy12.jemu.app.system.commodore64.Commodore64Settings;
 import io.github.arkosammy12.jemu.app.system.cosmacvip.CosmacVIPManager;
 import io.github.arkosammy12.jemu.app.system.gameboy.GameBoyManager;
 import io.github.arkosammy12.jemu.app.system.atari2600.Atari2600Manager;
@@ -46,6 +48,7 @@ public final class SystemRegistry implements SystemCatalog {
     private final GameBoyManager gameBoyColorManager;
     private final NESManager nesManager;
     private final Atari2600Manager atari2600Manager;
+    private final Commodore64Manager commodore64Manager;
 
     private final List<SystemManager> systemManagers;
 
@@ -71,6 +74,7 @@ public final class SystemRegistry implements SystemCatalog {
         this.gameBoyColorManager = new GameBoyManager(jemu, this, GameBoyHost.Model.CGB);
         this.nesManager = new NESManager(jemu, this);
         this.atari2600Manager = new Atari2600Manager(jemu, this);
+        this.commodore64Manager = new Commodore64Manager(jemu, this);
 
         this.systemManagers = List.of(
                 this.chip8Manager,
@@ -90,7 +94,8 @@ public final class SystemRegistry implements SystemCatalog {
                 this.gameBoyManager,
                 this.gameBoyColorManager,
                 this.nesManager,
-                this.atari2600Manager
+                this.atari2600Manager,
+                this.commodore64Manager
         );
     }
 
@@ -166,6 +171,9 @@ public final class SystemRegistry implements SystemCatalog {
         @SerializedName("gameboy")
         private volatile GameBoySettings gameboySettings = new GameBoySettings();
 
+        @SerializedName("commodore64")
+        private volatile Commodore64Settings commodore64Settings = new Commodore64Settings();
+
         public Chip8Settings getChip8Settings() {
             return this.chip8Settings;
         }
@@ -176,6 +184,10 @@ public final class SystemRegistry implements SystemCatalog {
 
         public GameBoySettings getGameBoySettings() {
             return this.gameboySettings;
+        }
+
+        public Commodore64Settings getCommodore64Settings() {
+            return this.commodore64Settings;
         }
 
     }
