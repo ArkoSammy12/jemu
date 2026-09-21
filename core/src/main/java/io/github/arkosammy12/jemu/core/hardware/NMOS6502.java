@@ -21,6 +21,8 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
 
     protected final S systemBus;
 
+    private final int aneMagic;
+
     private int programCounter; // PC, 16 bits
     private int accumulator; // A, 8 bits
     private int X; // 8 bits
@@ -57,9 +59,13 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
 
     public NMOS6502(S systemBus) {
         this.systemBus = systemBus;
-
+        this.aneMagic = this.getANEMagic();
         // Trigger the initial resetting of the CPU
         this.brkSource = BRKSource.RESET;
+    }
+
+    protected int getANEMagic() {
+        return 0xEE;
     }
 
     public Phase getHalfCyclePhase() {
@@ -5496,7 +5502,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         // L. Spiro's NES instructions says that the constant 0xEE passes all known tests,
                         // so this is what we will go to
-                        int result = ((getA() | 0xEE) & getX() & getOperand()) & 0xFF;
+                        int result = ((getA() | this.aneMagic) & getX() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
                         setFZ(result == 0);
