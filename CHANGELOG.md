@@ -1,6 +1,6 @@
 # Changelog
 
-## [Unreleased]
+## 2.0.0
 
 - Add Atari 2600 core, with support for left and right joysticks, and a [cartridge database](https://github.com/munsie/vcs_cart_db) for game metadata.
 - Add Commodore 64 core, with support for joystick, cartridge, and tape support.
