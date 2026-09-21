@@ -41,7 +41,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
     private int finalVar;
     private int temp;
     private boolean boundaryCrossed;
-    private boolean shxSkipHigh;
+    private boolean rdyFlag;
 
     private Phase phase = Phase.PHI_1;
     protected ReadWriteCycle readWriteCycle = ReadWriteCycle.READ;
@@ -327,12 +327,12 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
         return this.boundaryCrossed;
     }
 
-    private void setSHXSkipHigh(boolean value) {
-        this.shxSkipHigh = value;
+    protected void setRDYFlag(boolean value) {
+        this.rdyFlag = value;
     }
 
-    private boolean getSHXSkipHigh() {
-        return this.shxSkipHigh;
+    protected boolean getRDYFlag() {
+        return this.rdyFlag;
     }
 
     @Override
@@ -426,7 +426,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
         this.phase = this.phase.getOpposite();
     }
 
-    private void onFetchCyclePHI1() {
+    protected void onFetchCyclePHI1() {
         this.syncOnThisPHI1 = true;
     }
 
@@ -5222,7 +5222,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
         }
     }
 
-    private void execute8X(int digit) {
+    protected void execute8X(int digit) {
         switch (digit) {
             case 0x0, 0x9, 0x2 -> { // NOP, immediate (read)
                 nopImmediate();
@@ -5502,7 +5502,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         // L. Spiro's NES instructions says that the constant 0xEE passes all known tests,
                         // so this is what we will go to
-                        int result = ((getA() | this.aneMagic) & getX() & getOperand()) & 0xFF;
+                        int result = ((getA() | 0xEE) & getX() & getOperand()) & 0xFF;
                         setA(result);
                         setFN((result & 0x80) != 0);
                         setFZ(result == 0);
@@ -5750,7 +5750,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     case 6 -> {
                         setFinal(getAddress() + getY());
                         setAddressLow(getFinalLow());
-                        setSHXSkipHigh(systemBus.getRDY());
+                        setRDYFlag(systemBus.getRDY());
                         subCycleIndex = 7;
                     }
                     case 7 -> {
@@ -5768,7 +5768,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     case 9 -> { // PAGE BOUNDARY NOT CROSSED BRANCH
                         int high = getAddressHigh() & 0xFFFF;
                         high = (high + 1) & 0xFFFF;
-                        if (getSHXSkipHigh()){
+                        if (getRDYFlag()){
                             high = 0xFF;
                         }
                         int finalVal = (high & getA() & getX()) & 0xFFFF;
@@ -5779,7 +5779,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     }
                     case 10 -> { // PAGE BOUNDARY CROSSED BRANCH
                         int high = getAddressHigh() & 0xFFFF;
-                        if (getSHXSkipHigh()){
+                        if (getRDYFlag()){
                             high = 0xFF;
                         }
                         int finalVal = (high & getA() & getX()) & 0xFFFF;
@@ -6058,7 +6058,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setAddressLow(getTargetLow());
                         setAddressHigh(getPointerHigh());
                         setBoundaryCrossed(getPointerHigh() != getTargetHigh());
-                        setSHXSkipHigh(systemBus.getRDY());
+                        setRDYFlag(systemBus.getRDY());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6073,14 +6073,14 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setS(getA() & getX());
                         int high = getAddressHigh();
                         if (getBoundaryCrossed()) {
-                            if (getSHXSkipHigh()) {
+                            if (getRDYFlag()) {
                                 high = 0xFF;
                             }
                             int val = (high & getA() & getX()) & 0xFF;
                             writeByte(getAddressLow() | (val << 8), val);
                         } else {
                             high = (high + 1) & 0xFF;
-                            if (getSHXSkipHigh()) {
+                            if (getRDYFlag()) {
                                 high = 0xFF;
                             }
                             int val = (high & getA() & getX()) & 0xFF;
@@ -6122,7 +6122,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setAddressLow(getTargetLow());
                         setAddressHigh(getPointerHigh());
                         setBoundaryCrossed(getPointerHigh() != getTargetHigh());
-                        setSHXSkipHigh(systemBus.getRDY());
+                        setRDYFlag(systemBus.getRDY());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6136,14 +6136,14 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     case 7 -> {
                         int high = getAddressHigh();
                         if (getBoundaryCrossed()) {
-                            if (getSHXSkipHigh()) {
+                            if (getRDYFlag()) {
                                 high = 0xFF;
                             }
                             int val = high & getY();
                             writeByte(getAddressLow() | (val << 8), val);
                         } else {
                             high = (high + 1) & 0xFF;
-                            if (getSHXSkipHigh()) {
+                            if (getRDYFlag()) {
                                 high = 0xFF;
                             }
                             int val = (high & getY()) & 0xFF;
@@ -6233,7 +6233,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setAddressLow(getTargetLow());
                         setAddressHigh(getPointerHigh());
                         setBoundaryCrossed(getPointerHigh() != getTargetHigh());
-                        setSHXSkipHigh(systemBus.getRDY());
+                        setRDYFlag(systemBus.getRDY());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6247,14 +6247,14 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     case 7 -> {
                         int high = getAddressHigh();
                         if (getBoundaryCrossed()) {
-                            if (getSHXSkipHigh()) {
+                            if (getRDYFlag()) {
                                 high = 0xFF;
                             }
                             int val = high & getX();
                             writeByte(getAddressLow() | (val << 8), val);
                         } else {
                             high = (high + 1) & 0xFF;
-                            if (getSHXSkipHigh()) {
+                            if (getRDYFlag()) {
                                 high = 0xFF;
                             }
                             int val = (high & getX()) & 0xFF;
@@ -6296,7 +6296,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setAddressLow(getTargetLow());
                         setAddressHigh(getPointerHigh());
                         setBoundaryCrossed(getPointerHigh() != getTargetHigh());
-                        setSHXSkipHigh(systemBus.getRDY());
+                        setRDYFlag(systemBus.getRDY());
                         subCycleIndex = 5;
                     }
                     case 5 -> {
@@ -6312,7 +6312,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         if (!getBoundaryCrossed()) {
                             high++;
                         }
-                        if (getSHXSkipHigh()){
+                        if (getRDYFlag()){
                             high = 0xFF;
                         }
                         int val = (high & getA() & getX()) & 0xFF;

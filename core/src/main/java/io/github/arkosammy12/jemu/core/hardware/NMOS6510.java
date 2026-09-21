@@ -30,6 +30,33 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
     // TODO: CPU IO port decays. For RDY dependent unstable instructions (SHA and friends), highbyte + 1 masking only happens in the last dummy read
 
     @Override
+    protected void execute8X(int digit) {
+        if (digit == 0xB) {
+            switch (subCycleIndex) {
+                case 0 -> {
+                    setRDYFlag(systemBus.getRDY());
+                    super.execute8X(digit);
+                }
+                case 2 -> {
+                    setRDYFlag(systemBus.getRDY());
+
+                    setPC(getPC() + 1);
+                    int result = ((getA() | (getRDYFlag() ? 0xEE : 0xEF)) & getX() & getOperand()) & 0xFF;
+                    setA(result);
+                    setFN((result & 0x80) != 0);
+                    setFZ(result == 0);
+
+                    onFetchCyclePHI1();
+                    subCycleIndex = 3;
+                }
+                default -> super.execute8X(digit);
+            }
+        } else {
+            super.execute8X(digit);
+        }
+    }
+
+    @Override
     protected int readByte(int address) {
         this.readWriteCycle = ReadWriteCycle.READ;
         this.lastAddress = address;
