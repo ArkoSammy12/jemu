@@ -4,6 +4,7 @@ import io.github.arkosammy12.jemu.core.common.*;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
 import io.github.arkosammy12.jemu.core.hardware.MOS6532;
 import io.github.arkosammy12.jemu.core.hardware.NMOS6507;
+import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
 import static io.github.arkosammy12.jemu.core.atari2600.Atari2600Controller.Actions.*;
 
@@ -24,6 +25,9 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     private final Atari2600Bus<?> bus;
     private final Atari2600Controller<?> controller;
     private final Atari2600Cartridge<?> cartridge;
+
+    private final MOSIOPort piaPortA;
+    private final MOSIOPort piaPortB;
 
     private final int framerate;
     private final int iterationsPerFrame;
@@ -61,6 +65,27 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
         this.pia = new MOS6532<>(this);
         this.bus = new Atari2600Bus<>(this);
         this.cartridge = Atari2600Cartridge.getCartridge(this);
+
+        this.piaPortA = new MOSIOPort(this.getPIA().getSWCHAPortOwner(), () -> {
+            int ret = this.controller.isActionPressed(JOYSTICK1_UP) ? 0 : 1;
+            ret |= this.controller.isActionPressed(JOYSTICK1_DOWN) ? 0 : 1 << 1;
+            ret |= this.controller.isActionPressed(JOYSTICK1_LEFT) ? 0 : 1 << 2;
+            ret |= this.controller.isActionPressed(JOYSTICK1_RIGHT) ? 0 : 1 << 3;
+            ret |= this.controller.isActionPressed(JOYSTICK0_UP) ? 0 : 1 << 4;
+            ret |= this.controller.isActionPressed(JOYSTICK0_DOWN) ? 0 : 1 << 5;
+            ret |= this.controller.isActionPressed(JOYSTICK0_LEFT) ? 0 : 1 << 6;
+            ret |= this.controller.isActionPressed(JOYSTICK0_RIGHT) ? 0 : 1 << 7;
+            return ret;
+        });
+
+        this.piaPortB = new MOSIOPort(this.getPIA().getSWCHBPortOwner(), () -> {
+            int ret = this.systemHost.getRightDifficulty() ? 1 << 7 : 0;
+            ret |= this.systemHost.getLeftDifficulty() ? 1 << 6 : 0;
+            ret |= this.systemHost.getColorSwitch() ? 1 << 3 : 0;
+            ret |= this.controller.isActionPressed(GAME_SELECT) ? 0 : 1 << 1;
+            ret |= this.controller.isActionPressed(GAME_RESET) ? 0 : 1;
+            return ret;
+        });
     }
 
     public TVFormat getTVFormat() {
@@ -150,36 +175,13 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     }
 
     @Override
-    public int readSWCHA(int ddrA) {
-        int ret = this.controller.isActionPressed(JOYSTICK1_UP) ? 0 : 1;
-        ret |= this.controller.isActionPressed(JOYSTICK1_DOWN) ? 0 : 1 << 1;
-        ret |= this.controller.isActionPressed(JOYSTICK1_LEFT) ? 0 : 1 << 2;
-        ret |= this.controller.isActionPressed(JOYSTICK1_RIGHT) ? 0 : 1 << 3;
-        ret |= this.controller.isActionPressed(JOYSTICK0_UP) ? 0 : 1 << 4;
-        ret |= this.controller.isActionPressed(JOYSTICK0_DOWN) ? 0 : 1 << 5;
-        ret |= this.controller.isActionPressed(JOYSTICK0_LEFT) ? 0 : 1 << 6;
-        ret |= this.controller.isActionPressed(JOYSTICK0_RIGHT) ? 0 : 1 << 7;
-        return ret;
+    public MOSIOPort getSWCHA() {
+        return this.piaPortA;
     }
 
     @Override
-    public int readSWCHB(int ddrB) {
-        int ret = this.systemHost.getRightDifficulty() ? 1 << 7 : 0;
-        ret |= this.systemHost.getLeftDifficulty() ? 1 << 6 : 0;
-        ret |= this.systemHost.getColorSwitch() ? 1 << 3 : 0;
-        ret |= this.controller.isActionPressed(GAME_SELECT) ? 0 : 1 << 1;
-        ret |= this.controller.isActionPressed(GAME_RESET) ? 0 : 1;
-        return ret;
-    }
-
-    @Override
-    public void writeSWCHA(int value, int ddrA) {
-
-    }
-
-    @Override
-    public void writeSWCHB(int value, int ddrB) {
-
+    public MOSIOPort getSWCHB() {
+        return this.piaPortB;
     }
 
     @Override

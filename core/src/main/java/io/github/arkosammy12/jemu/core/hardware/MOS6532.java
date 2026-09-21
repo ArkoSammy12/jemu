@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.hardware;
 
 import io.github.arkosammy12.jemu.core.common.Bus;
+import io.github.arkosammy12.jemu.core.util.MOSIOPort;
 
 public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
 
@@ -10,11 +11,8 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
 
     private final byte[] ram = new byte[128];
 
-    private int outputLatchA;
-    private int outputLatchB;
-
-    private int dataDirectionRegisterA;
-    private int dataDirectionRegisterB;
+    private final MOSIOPort.DefaultPortOwner swchaPortOwner = new MOSIOPort.DefaultPortOwner();
+    private final MOSIOPort.DefaultPortOwner swchbPortOwner = new MOSIOPort.DefaultPortOwner();
 
     private int timer = 0;
     private int timerDivisor = 1;
@@ -32,17 +30,38 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
 
     public MOS6532(E systemBus) {
         this.systemBus = systemBus;
-        this.oldSWCHAAPA7 = (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & (1 << 7)) != 0;
+        //this.oldOutputLatchAPA7 = (this.systemBus.getSWCHA().read() & (1 << 7)) != 0;
+        //this.oldSWCHAAPA7 = (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & (1 << 7)) != 0;
+    }
+
+    public MOSIOPort.PortOwner getSWCHAPortOwner() {
+        return this.swchaPortOwner;
+    }
+
+    public MOSIOPort.PortOwner getSWCHBPortOwner() {
+        return this.swchbPortOwner;
     }
 
     @Override
     public int readByte(int address) {
         if ((address & 0x200) != 0) {
             return switch (address & 0b111) {
-                case 0 -> ((this.outputLatchA & this.dataDirectionRegisterA) | (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & ~this.dataDirectionRegisterA)) & 0xFF;
-                case 1 -> this.dataDirectionRegisterA;
-                case 2 -> ((this.outputLatchB & this.dataDirectionRegisterB) | (this.systemBus.readSWCHB(this.dataDirectionRegisterB) & ~this.dataDirectionRegisterB)) & 0xFF;
-                case 3 -> this.dataDirectionRegisterB;
+                case 0 -> {
+                    yield this.systemBus.getSWCHA().read();
+                    //yield ((this.outputLatchA & this.dataDirectionRegisterA) | (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & ~this.dataDirectionRegisterA)) & 0xFF;
+                }
+                case 1 -> {
+                    yield this.systemBus.getSWCHA().getDataDirectionRegister();
+                    //yield this.dataDirectionRegisterA;
+                }
+                case 2 -> {
+                    yield this.systemBus.getSWCHB().read();
+                    //yield ((this.outputLatchB & this.dataDirectionRegisterB) | (this.systemBus.readSWCHB(this.dataDirectionRegisterB) & ~this.dataDirectionRegisterB)) & 0xFF;
+                }
+                case 3 -> {
+                    yield this.systemBus.getSWCHB().getDataDirectionRegister();
+                    //yield this.dataDirectionRegisterB;
+                }
                 default -> {
                     if ((address & (1 << 2)) != 0) {
                         if ((address & 1) != 0) {
@@ -71,15 +90,23 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
         if ((address & 0x200) != 0) {
             switch (address & 0b111) {
                 case 0 -> {
-                    this.outputLatchA = value & 0xFF;
-                    this.systemBus.writeSWCHA(this.outputLatchA & this.dataDirectionRegisterA, this.dataDirectionRegisterA);
+                    this.swchaPortOwner.setOutputLatch(value);
+                    //this.outputLatchA = value & 0xFF;
+                    //this.systemBus.writeSWCHA(this.outputLatchA & this.dataDirectionRegisterA, this.dataDirectionRegisterA);
                 }
-                case 1 -> this.dataDirectionRegisterA = value & 0xFF;
+                case 1 -> {
+                    this.swchaPortOwner.setDataDirectionRegister(value);
+                    //this.dataDirectionRegisterA = value & 0xFF;
+                }
                 case 2 -> {
-                    this.outputLatchB = value & 0xFF;
-                    this.systemBus.writeSWCHB(this.outputLatchB & this.dataDirectionRegisterB, this.dataDirectionRegisterB);
+                    this.swchbPortOwner.setOutputLatch(value);
+                    //this.outputLatchB = value & 0xFF;
+                    //this.systemBus.writeSWCHB(this.outputLatchB & this.dataDirectionRegisterB, this.dataDirectionRegisterB);
                 }
-                case 3 -> this.dataDirectionRegisterB = value & 0xFF;
+                case 3 -> {
+                    this.swchbPortOwner.setDataDirectionRegister(value);
+                    //this.dataDirectionRegisterB = value & 0xFF;
+                }
                 default -> {
                     if ((address & (1 << 4)) != 0) {
                         switch (address & 0b111) {
@@ -114,12 +141,15 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
     }
 
     public void cycle() {
-        boolean currentOutputLatchAPA7 = (this.outputLatchA & (1 << 7)) != 0;
-        boolean currentSWCHAAPA7 = (this.systemBus.readSWCHA(this.dataDirectionRegisterA) & (1 << 7)) != 0;
+        int dataDirectionRegisterA = this.systemBus.getSWCHA().getDataDirectionRegister();
+
+
+        boolean currentOutputLatchAPA7 = (this.systemBus.getSWCHA().getOutputLatch() & (1 << 7)) != 0;
+        boolean currentSWCHAAPA7 = (this.systemBus.getSWCHA().read() & (1 << 7)) != 0;
 
         boolean oldPA7Level;
         boolean currentPA7Level;
-        if ((this.dataDirectionRegisterA & (1 << 7)) != 0) {
+        if ((dataDirectionRegisterA & (1 << 7)) != 0) {
             oldPA7Level = this.oldOutputLatchAPA7;
             currentPA7Level = currentOutputLatchAPA7;
         } else {
@@ -169,13 +199,9 @@ public class MOS6532<E extends MOS6532.SystemBus> implements Bus {
 
     public interface SystemBus {
 
-        int readSWCHA(int ddrA);
+        MOSIOPort getSWCHA();
 
-        int readSWCHB(int ddrB);
-
-        void writeSWCHA(int value, int ddrA);
-
-        void writeSWCHB(int value, int ddrB);
+        MOSIOPort getSWCHB();
 
         int combineWithDataBus(int value, int validBitsMask);
 
