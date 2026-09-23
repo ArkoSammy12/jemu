@@ -16,7 +16,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Optional;
 
-public abstract class NESCartridge<E extends NESEmulator> implements Bus {
+public abstract class NESCartridge<E extends NESEmulator> {
 
     protected final E emulator;
     private final Path romPath;
@@ -85,6 +85,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
                     yield new MMC3Cartridge<>(emulator, iNESFile);
                 }
             }
+            //case 5 -> new MMC5Cartridge<>(emulator, iNESFile);
             case 7 -> new AxROMCartridge<>(emulator, iNESFile);
             case 9 -> new MMC2Cartridge<>(emulator, iNESFile);
             case 10 -> new MMC4Cartridge<>(emulator, iNESFile);
@@ -137,6 +138,10 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         return apuOutput;
     }
 
+    abstract public int readByte(int address, int dataBus);
+
+    abstract public void writeByte(int address, int value);
+
     protected int readByteVRAM(int address) {
         return (int) this.videoRAM[address] & 0xFF;
     }
@@ -165,6 +170,10 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
 
     public boolean getIRQSignal() {
         return false;
+    }
+
+    public void onReset() {
+
     }
 
     public void save() {
