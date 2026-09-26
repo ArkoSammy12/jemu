@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- NES:
+  - Update the bundled `nes20db.xml` database file from latest post in https://forums.nesdev.org/viewtopic.php?p=310787#p310787.
+
 ## 2.0.0
 
 - Add Atari 2600 core, with support for left and right joysticks, and a [cartridge database](https://github.com/munsie/vcs_cart_db) for game metadata.
