@@ -64,7 +64,7 @@ public class INESMapper218Cartridge<E extends NESEmulator> extends NESCartridge<
     }
 
     @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         if (address >= 0x6000 && address <= 0x7FFF) {
             return -1;
         } else if (address >= 0x8000 && address <= 0xFFFF) {
