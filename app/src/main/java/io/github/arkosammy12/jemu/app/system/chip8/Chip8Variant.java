@@ -68,7 +68,7 @@ public enum Chip8Variant {
             "megachip",
                 List.of("mc8"),
                 new Chip8SpriteFont(Chip8SpriteFont.CHIP_48, Chip8SpriteFont.MEGACHIP_8_BIG),
-                new Chip8QuirkSet(false, Chip8Host.MemoryIncrementQuirk.NO_INCREMENT, false, false, true, false, _ -> 3000)
+                new Chip8QuirkSet(false, Chip8Host.MemoryIncrementQuirk.NO_INCREMENT, false, false, true, false, _ -> 5000)
             ),
     HYPERWAVE_CHIP_8(
             "HyperWaveCHIP-64",
