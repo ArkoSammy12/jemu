@@ -73,7 +73,7 @@ public class VRC4Cartridge<E extends NESEmulator> extends VRC2Cartridge<E> {
     }
 
     @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         if (address >= 0x6000 && address <= 0x7FFF) {
             if (this.programRAM != null && this.wramControl) {
                 if (this.programRAM.length <= KB_2) {
@@ -89,7 +89,7 @@ public class VRC4Cartridge<E extends NESEmulator> extends VRC2Cartridge<E> {
                 return -1;
             }
         } else {
-            return super.readByte(address);
+            return super.readByte(address, dataBus);
         }
     }
 

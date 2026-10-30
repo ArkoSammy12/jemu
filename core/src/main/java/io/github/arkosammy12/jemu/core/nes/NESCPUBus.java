@@ -46,7 +46,7 @@ public class NESCPUBus<E extends NESEmulator> implements Bus {
             ret = ret >= 0 ? ricohCoreByte & ret : ricohCoreByte;
         }
 
-        int cartridgeByte = this.emulator.getCartridge().readByte(address);
+        int cartridgeByte = this.emulator.getCartridge().readByte(address, ret >= 0 ? ret : this.externalDataBus);
         if (cartridgeByte >= 0) {
             ret = ret >= 0 ? cartridgeByte & ret : cartridgeByte;
         }
