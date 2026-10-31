@@ -34,7 +34,7 @@ public class GxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
             return address & 0xFF;
         } else {
-            throw new EmulatorException("Invalid NES NROM cartridge PPU read address $%04X!".formatted(address));
+            throw new EmulatorException("Invalid NES GXROM cartridge PPU read address $%04X!".formatted(address));
         }
     }
 
@@ -49,7 +49,7 @@ public class GxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
 
         } else {
-            throw new EmulatorException("Invalid NES NROM cartridge PPU write address $%04X!".formatted(address));
+            throw new EmulatorException("Invalid NES GXROM cartridge PPU write address $%04X!".formatted(address));
         }
     }
 
