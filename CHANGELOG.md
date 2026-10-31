@@ -4,6 +4,7 @@
 
 - NES:
   - Update the bundled `nes20db.xml` database file from latest post in https://forums.nesdev.org/viewtopic.php?p=310787#p310787.
+  - Add support for the Action53 mapper cartridge.
   
 - MEGA-CHIP:
   - Change the default IPF from `3000` to `5000`.
