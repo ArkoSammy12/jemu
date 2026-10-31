@@ -4,6 +4,9 @@
 
 - NES:
   - Update the bundled `nes20db.xml` database file from latest post in https://forums.nesdev.org/viewtopic.php?p=310787#p310787.
+  
+- MEGA-CHIP:
+  - Change the default IPF from `3000` to `5000`.
 
 ## 2.0.0
 
