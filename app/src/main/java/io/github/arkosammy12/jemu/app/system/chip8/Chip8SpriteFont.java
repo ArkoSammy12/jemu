@@ -7,10 +7,13 @@ import java.util.Optional;
 
 import static io.github.arkosammy12.jemu.core.common.SystemHost.intToByteArray;
 
-record Chip8SpriteFont(byte[][] smallFont, byte[][] bigFont) implements Chip8Host.SpriteFont {
+record Chip8SpriteFont(int smallFontBeginOffset, int bigFontBeginOffset, byte[][] smallFont, byte[][] bigFont) implements Chip8Host.SpriteFont {
 
-    public static int SMALL_FONT_BEGIN_OFFSET = 0x50;
-    public static int BIG_FONT_BEGIN_OFFSET = 0xA0;
+    public static final int CHIP8_SMALL_FONT_BEGIN_OFFSET = 0x50;
+    public static final int CHIP8_BIG_FONT_BEGIN_OFFSET = 0xA0;
+
+    public static final int SCHIP_SMALL_FONT_BEGIN_OFFSET = 0x00;
+    public static final int SCHIP_BIG_FONT_BEGIN_OFFSET = 0x50;
 
     public static final byte[][] CHIP_8_VIP = intToByteArray(new int[][] {
             {0xF0, 0x90, 0x90, 0x90, 0xF0}, // 0
@@ -129,20 +132,20 @@ record Chip8SpriteFont(byte[][] smallFont, byte[][] bigFont) implements Chip8Hos
 
     @Override
     public int getSmallFontBeginOffset() {
-        return SMALL_FONT_BEGIN_OFFSET;
+        return this.smallFontBeginOffset;
     }
 
     @Override
     public int getBigFontBeginOffset() {
-        return BIG_FONT_BEGIN_OFFSET;
+        return this.bigFontBeginOffset;
     }
 
     public int getSmallFontSpriteOffset(int hex) {
-        return SMALL_FONT_BEGIN_OFFSET + (5 * hex);
+        return this.smallFontBeginOffset() + (5 * hex);
     }
 
     public int getBigFontSpriteOffset(int hex) {
-        return BIG_FONT_BEGIN_OFFSET + (10 * hex);
+        return this.bigFontBeginOffset() + (10 * hex);
     }
 
 }
