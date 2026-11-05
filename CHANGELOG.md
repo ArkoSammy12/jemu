@@ -9,6 +9,10 @@
 - MEGA-CHIP:
   - Change the default IPF from `3000` to `5000`.
 
+- SUPER-CHIP
+  - Change the small and big font offsets to $00 and $50 for the HP48 based variants.
+  - Implement quirk where FX75 and FX85 only support v0-v7 on the legacy SUPER-CHIP 1.0 and SUPER-CHIP 1.1 variants.
+
 ## 2.0.0
 
 - Add Atari 2600 core, with support for left and right joysticks, and a [cartridge database](https://github.com/munsie/vcs_cart_db) for game metadata.
