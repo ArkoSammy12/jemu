@@ -11,32 +11,48 @@ public class SuperChipModernInterpreter<E extends SuperChipModernEmulator> exten
 
     @Override
     protected int execute(int firstNibble, int firstByte, int NN) {
-        if (firstByte == 0x00) {
-            return switch (NN) {
-                case 0xFE -> { // 00FE: lores
-                    SuperChipModernDisplay<?> display = this.emulator.getVideoGenerator();
-                    display.setHires(false);
-                    display.clear();
+        return switch (firstNibble) {
+            case 0x0 -> {
+                if (firstByte == 0x00) {
+                    yield switch (NN) {
+                        case 0xFE -> { // 00FE: lores
+                            SuperChipModernDisplay<?> display = this.emulator.getVideoGenerator();
+                            display.setHires(false);
+                            display.clear();
+                            yield VALID_INSTRUCTION;
+                        }
+                        case 0xFF -> { // 00FF: hires
+                            SuperChipModernDisplay<?> display = this.emulator.getVideoGenerator();
+                            display.setHires(true);
+                            display.clear();
+                            yield VALID_INSTRUCTION;
+                        }
+                        default -> {
+                            if (getY(firstByte, NN) == 0xC) { // 00CN: scroll-down N
+                                this.emulator.getVideoGenerator().scrollDown(getN(firstByte, NN));
+                                yield VALID_INSTRUCTION;
+                            } else {
+                                yield super.execute(firstNibble, firstByte, NN);
+                            }
+                        }
+                    };
+                } else {
+                    yield super.execute(firstNibble, firstByte, NN);
+                }
+            }
+            case 0xF -> switch (NN) {
+                case 0x75 -> { // FX75: saveflags vX
+                    this.saveFlags(getX(firstByte, NN));
                     yield VALID_INSTRUCTION;
                 }
-                case 0xFF -> { // 00FF: hires
-                    SuperChipModernDisplay<?> display = this.emulator.getVideoGenerator();
-                    display.setHires(true);
-                    display.clear();
+                case 0x85 -> { // FX85: loadflags vX
+                    this.loadFlags(getX(firstByte, NN));
                     yield VALID_INSTRUCTION;
                 }
-                default -> {
-                    if (getY(firstByte, NN) == 0xC) { // 00CN: scroll-down N
-                        this.emulator.getVideoGenerator().scrollDown(getN(firstByte, NN));
-                        yield VALID_INSTRUCTION;
-                    } else {
-                        yield super.execute(firstNibble, firstByte, NN);
-                    }
-                }
+                default -> super.execute(firstNibble, firstByte, NN);
             };
-        } else {
-            return super.execute(firstNibble, firstByte, NN);
-        }
+            default -> super.execute(firstNibble, firstByte, NN);
+        };
     }
 
 }

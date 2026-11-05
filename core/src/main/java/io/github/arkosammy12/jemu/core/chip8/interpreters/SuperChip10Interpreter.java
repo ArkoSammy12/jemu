@@ -39,25 +39,31 @@ public class SuperChip10Interpreter<E extends SuperChip10Emulator> extends Chip8
                     yield VALID_INSTRUCTION | FONT_SPRITE_POINTER;
                 }
                 case 0x75 -> { // FX75: saveflags vX
-                    Chip8Host host = this.emulator.getHost();
-                    int X = getX(firstByte, NN);
-                    for (int i = 0; i <= X; i++) {
-                        host.setPersistentFlag(i, getV(i));
-                    }
+                    this.saveFlags(Math.min(getX(firstByte, NN), 7));
                     yield VALID_INSTRUCTION;
                 }
                 case 0x85 -> { // FX85: loadflags vX
-                    Chip8Host host = this.emulator.getHost();
-                    int X = getX(firstByte, NN);
-                    for (int i = 0; i <= X; i++) {
-                        setV(i, host.getPersistentFlag(i));
-                    }
+                    this.loadFlags(Math.min(getX(firstByte, NN), 7));
                     yield VALID_INSTRUCTION;
                 }
                 default -> super.execute(firstNibble, firstByte, NN);
             };
             default -> super.execute(firstNibble, firstByte, NN);
         };
+    }
+
+    protected final void saveFlags(int X) {
+        Chip8Host host = this.emulator.getHost();
+        for (int i = 0; i <= X; i++) {
+            host.setPersistentFlag(i, getV(i));
+        }
+    }
+
+    protected final void loadFlags(int X) {
+        Chip8Host host = this.emulator.getHost();
+        for (int i = 0; i <= X; i++) {
+            setV(i, host.getPersistentFlag(i));
+        }
     }
 
 }
