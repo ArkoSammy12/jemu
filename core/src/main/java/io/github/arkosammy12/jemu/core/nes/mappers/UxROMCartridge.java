@@ -61,7 +61,7 @@ public class UxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
     }
 
     @Override
-    public int readByte(int address) {
+    public int readByte(int address, int dataBus) {
         if (address >= 0x8000 && address <= 0xFFFF) {
             return (int) this.programROM[this.mapPrgRomAddress(address) % this.programROM.length] & 0xFF;
         } else {

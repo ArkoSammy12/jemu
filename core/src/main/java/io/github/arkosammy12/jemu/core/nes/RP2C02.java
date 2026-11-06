@@ -162,7 +162,7 @@ public class RP2C02<E extends NESEmulator> implements VideoGenerator, Bus {
     public static final int PALETTE_RAM_START = 0x3F00;
     public static final int PALETTE_RAM_END = 0x3FFF;
 
-    private static final int PPUCTRL_ADDR = 0x2000;
+    public static final int PPUCTRL_ADDR = 0x2000;
     private static final int PPUMASK_ADDR = 0x2001;
     private static final int PPUSTATUS_ADDR = 0x2002;
     private static final int OAMADDR_ADDR = 0x2003;
