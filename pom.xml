@@ -26,9 +26,9 @@
     <version>2.1.0</version>
     <packaging>pom</packaging>
     <modules>
-        <module>core</module>
-        <module>frontend</module>
-        <module>app</module>
+        <module>jemu-core</module>
+        <module>jemu-frontend</module>
+        <module>jemu-app</module>
     </modules>
 
     <repositories>
