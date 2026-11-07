@@ -1,6 +1,8 @@
-# Changelog
+  # Changelog
 
-## Unreleased
+## (3.x.x) Unreleased
+
+- Rename modules to `jemu-app`, `jemu-core`, and `jemu-frontend`.
 
 - NES:
   - Update the bundled `nes20db.xml` database file from latest post in https://forums.nesdev.org/viewtopic.php?p=310787#p310787.
