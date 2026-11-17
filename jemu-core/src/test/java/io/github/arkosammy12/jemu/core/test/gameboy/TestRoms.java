@@ -15,14 +15,11 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-/**
- * Locates the compiled Game Boy test ROMs fetched into {@code target/test-roms} at
- * build time (see the download-maven-plugin execution in the core pom), laid out as
- * in c-sp/game-boy-test-roms. {@code -Djemu.gb.testRoms} overrides the location.
- */
+/// Use `-Djemu.gb.testRoms` to override the test ROM directory. Default is `target/test-roms`.
 public final class TestRoms {
 
     private TestRoms() {
+        throw new AssertionError();
     }
 
     public static Optional<Path> resolveDirectory(String relativePath) {
@@ -39,10 +36,6 @@ public final class TestRoms {
         return Optional.of(directory);
     }
 
-    /**
-     * Reads a known-failure list from a test resource: one ROM path per line, with
-     * blank lines and {@code #} comments ignored.
-     */
     public static Set<String> readExpectedFailures(String resource) throws IOException {
         try (InputStream in = Objects.requireNonNull(TestRoms.class.getClassLoader().getResourceAsStream(resource), resource);
              BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
