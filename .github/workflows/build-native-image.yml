@@ -47,7 +47,7 @@ jobs:
       - name: Build and package with Maven
         run: |
           mvn -B clean package
-          mvn -B org.panteleyev:jpackage-maven-plugin:1.7.4:jpackage -pl app
+          mvn -B org.panteleyev:jpackage-maven-plugin:1.7.4:jpackage -pl jemu-app
 
       - name: Copy license files
         shell: bash
