@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.app.system.chip8;
 
 import io.github.arkosammy12.jemu.core.chip8.Chip8Host;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
 
 public enum BuiltInChip8Palette implements Chip8Host.ColorPalette, DisplayNamerProvider {
     CADMIUM("Cadmium", new int[] {

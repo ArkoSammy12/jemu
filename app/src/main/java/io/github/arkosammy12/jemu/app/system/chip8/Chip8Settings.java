@@ -4,7 +4,7 @@ import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.app.system.chip8.database.Chip8Database;
 import io.github.arkosammy12.jemu.core.chip8.Chip8Host;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;

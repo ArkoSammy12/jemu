@@ -27,7 +27,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>core</module>
-        <module>frontend</module>
         <module>app</module>
     </modules>
 

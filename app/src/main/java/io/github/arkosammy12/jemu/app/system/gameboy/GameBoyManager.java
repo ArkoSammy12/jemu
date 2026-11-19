@@ -8,9 +8,9 @@ import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyJoypad;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 import org.jetbrains.annotations.Nullable;
 
 import javax.sound.sampled.LineUnavailableException;

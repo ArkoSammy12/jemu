@@ -6,10 +6,10 @@ import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.core.chip8.Chip8Keypad;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.Event;
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.events.Event;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;

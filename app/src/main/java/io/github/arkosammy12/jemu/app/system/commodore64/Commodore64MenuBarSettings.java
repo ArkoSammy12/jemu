@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.app.system.commodore64;
 
 import io.github.arkosammy12.jemu.core.commodore64.Commodore64Controller;
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.MenuBarSettingsMenu;
-import io.github.arkosammy12.jemu.frontend.util.settings.PathUISetting;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.MenuBarSettingsMenu;
+import io.github.arkosammy12.jemu.app.util.settings.PathUISetting;
 
 import javax.swing.*;
 

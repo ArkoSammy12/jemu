@@ -5,11 +5,11 @@ import io.github.arkosammy12.jemu.app.util.FrameRequesterVideoEvent;
 import io.github.arkosammy12.jemu.app.util.MavenProperties;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
 import io.github.arkosammy12.jemu.core.drivers.VideoDriver;
-import io.github.arkosammy12.jemu.frontend.config.settings.VideoSettings;
-import io.github.arkosammy12.jemu.frontend.events.core.AspectRatioSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.core.UseIntegerScalingSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.SystemDisplayComponent;
+import io.github.arkosammy12.jemu.app.config.settings.VideoSettings;
+import io.github.arkosammy12.jemu.app.events.core.AspectRatioSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.events.core.UseIntegerScalingSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.events.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.gui.SystemDisplayComponent;
 import org.jetbrains.annotations.NotNull;
 import org.tinylog.Logger;
 

@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.app.system.commodore64;
 
 import com.google.gson.annotations.SerializedName;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

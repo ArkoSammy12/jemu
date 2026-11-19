@@ -7,7 +7,7 @@ import io.github.arkosammy12.jemu.app.system.chip8.Chip8Manager;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPHost;
 import io.github.arkosammy12.jemu.core.cosmacvip.CosmacVIPKeypad;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Collection;

@@ -8,8 +8,8 @@ import io.github.arkosammy12.jemu.app.util.exceptions.SystemRedirectException;
 import io.github.arkosammy12.jemu.core.chip8.*;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.VideoGenerator;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.commands.StopEmulatorCommand;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.gui.commands.StopEmulatorCommand;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 

@@ -1,0 +1,53 @@
+package io.github.arkosammy12.jemu.app.gui;
+
+import io.github.arkosammy12.jemu.app.gui.internal.menus.EmulatorMenu;
+import io.github.arkosammy12.jemu.app.gui.internal.menus.FileMenu;
+import io.github.arkosammy12.jemu.app.gui.internal.menus.HelpMenu;
+import io.github.arkosammy12.jemu.app.gui.internal.menus.SettingsMenu;
+import org.jetbrains.annotations.ApiStatus;
+
+import javax.swing.*;
+
+public class MainMenuBar {
+
+    private final JMenuBar jMenuBar;
+
+    private final FileMenu fileMenu;
+    private final EmulatorMenu emulatorMenu;
+    private final SettingsMenu settingsMenu;
+    private final HelpMenu helpMenu;
+
+    public MainMenuBar(MainWindow eventPublisher, JFrame appFrame) {
+        this.jMenuBar = new JMenuBar();
+
+        this.fileMenu = new FileMenu(eventPublisher, appFrame);
+        this.emulatorMenu = new EmulatorMenu(eventPublisher);
+        this.settingsMenu = new SettingsMenu(eventPublisher, appFrame);
+        this.helpMenu = new HelpMenu(eventPublisher, appFrame);
+
+        this.jMenuBar.add(this.fileMenu.getJMenu());
+        this.jMenuBar.add(this.emulatorMenu.getJMenu());
+        this.jMenuBar.add(settingsMenu.getJMenu());
+        this.jMenuBar.add(helpMenu.getJMenu());
+    }
+
+    JMenuBar getJMenuBar() {
+        return this.jMenuBar;
+    }
+
+    @ApiStatus.Internal
+    public FileMenu getFileMenu() {
+        return this.fileMenu;
+    }
+
+    @ApiStatus.Internal
+    public EmulatorMenu getEmulatorMenu() {
+        return this.emulatorMenu;
+    }
+
+    @ApiStatus.Internal
+    public HelpMenu getHelpMenu() {
+        return this.helpMenu;
+    }
+
+}

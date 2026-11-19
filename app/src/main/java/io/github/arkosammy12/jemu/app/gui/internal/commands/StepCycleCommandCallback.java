@@ -1,0 +1,9 @@
+package io.github.arkosammy12.jemu.app.gui.internal.commands;
+
+import io.github.arkosammy12.jemu.app.gui.commands.StepCycleEmulatorCommand;
+
+public non-sealed interface StepCycleCommandCallback extends EmulatorCommandCallback {
+
+    void onStepCycle(StepCycleEmulatorCommand stepCycleEmulatorCommand);
+
+}

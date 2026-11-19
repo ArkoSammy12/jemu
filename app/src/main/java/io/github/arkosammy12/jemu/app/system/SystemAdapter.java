@@ -8,11 +8,11 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.Resetable;
 import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.exceptions.EmulatorException;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.core.SpeedModeSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.events.VideoSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
-import io.github.arkosammy12.jemu.frontend.util.InputListener;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.events.core.SpeedModeSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.events.VideoSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
+import io.github.arkosammy12.jemu.app.util.InputListener;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 

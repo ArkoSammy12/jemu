@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.app.system.chip8;
 
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.MenuBarSettingsMenu;
-import io.github.arkosammy12.jemu.frontend.util.settings.menubar.BooleanMenuItemSetting;
-import io.github.arkosammy12.jemu.frontend.util.settings.menubar.IntegerItemSetting;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.MenuBarSettingsMenu;
+import io.github.arkosammy12.jemu.app.util.settings.menubar.BooleanMenuItemSetting;
+import io.github.arkosammy12.jemu.app.util.settings.menubar.IntegerItemSetting;
 
 import javax.swing.*;
 

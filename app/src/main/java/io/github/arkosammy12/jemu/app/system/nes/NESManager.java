@@ -6,7 +6,7 @@ import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.nes.NESController;
 import io.github.arkosammy12.jemu.core.nes.ines.CartridgeInfo;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 import org.tinylog.Logger;
 import tools.jackson.dataformat.xml.XmlMapper;
 

@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.app.system.gameboy;
 
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.core.gameboy.DMGPPU;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;

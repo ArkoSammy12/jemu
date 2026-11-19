@@ -3,9 +3,9 @@ package io.github.arkosammy12.jemu.app.system;
 import io.github.arkosammy12.jemu.app.Jemu;
 import io.github.arkosammy12.jemu.app.util.KeyActionMap;
 import io.github.arkosammy12.jemu.core.common.SystemController;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.gui.system.SystemDescriptor;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.gui.system.SystemDescriptor;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
