@@ -1,12 +1,23 @@
 package io.github.arkosammy12.jemu.app.util;
 
 import io.github.arkosammy12.jemu.app.gui.commands.EmulatorCommand;
-import io.github.arkosammy12.jemu.app.util.internal.PendingEmulatorCommandImpl;
 
-public sealed interface PendingEmulatorCommand permits PendingEmulatorCommandImpl {
+public final class PendingEmulatorCommand {
 
-    EmulatorCommand getEmulatorCommand();
+    private final EmulatorCommand emulatorCommand;
+    private final Runnable acknowledgeFunction;
 
-    void acknowledge();
+    public PendingEmulatorCommand(EmulatorCommand emulatorCommand, Runnable acknowledgeFunction) {
+        this.emulatorCommand = emulatorCommand;
+        this.acknowledgeFunction = acknowledgeFunction;
+    }
+
+    public EmulatorCommand getEmulatorCommand() {
+        return this.emulatorCommand;
+    }
+
+    public void acknowledge() {
+        this.acknowledgeFunction.run();
+    }
 
 }

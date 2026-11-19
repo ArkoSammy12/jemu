@@ -28,7 +28,7 @@ module app {
     opens io.github.arkosammy12.jemu.app.system to com.google.gson, tools.jackson.databind, tools.jackson.dataformat.xml;
     
     opens io.github.arkosammy12.jemu.app.audio to com.google.gson;
-    opens io.github.arkosammy12.jemu.app.config.internal to com.google.gson;
-    opens io.github.arkosammy12.jemu.app.config.settings.internal to com.google.gson;
+    opens io.github.arkosammy12.jemu.app.config to com.google.gson;
+    opens io.github.arkosammy12.jemu.app.config.settings to com.google.gson;
     opens io.github.arkosammy12.jemu.app.config.state to com.google.gson;
 }

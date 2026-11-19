@@ -2,14 +2,14 @@ package io.github.arkosammy12.jemu.app.config.settings;
 
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-public interface VideoSettings {
+import java.util.Optional;
 
-    boolean getUseIntegerScaling();
+public class VideoSettings {
 
-    AspectRatio getAspectRatio();
-
-    enum AspectRatio implements DisplayNamerProvider {
+    public enum AspectRatio implements DisplayNamerProvider {
         @SerializedName("auto")
         AUTO(1.0, "Auto"),
 
@@ -45,6 +45,40 @@ public interface VideoSettings {
             return this.displayName;
         }
 
+    }
+    
+    @SerializedName("use_integer_scanling")
+    private volatile boolean useIntegerScaling = false;
+
+    @SerializedName("aspect_ratio")
+    private volatile AspectRatio aspectRatio = AspectRatio.AUTO;
+
+    @Nullable
+    @SerializedName("video_size")
+    private volatile VideoSize videoSize = null;
+
+    public void setUseIntegerScaling(boolean useIntegerScaling) {
+        this.useIntegerScaling = useIntegerScaling;
+    }
+
+    public boolean getUseIntegerScaling() {
+        return this.useIntegerScaling;
+    }
+
+    public void setAspectRatio(@NotNull AspectRatio aspectRatio) {
+        this.aspectRatio = aspectRatio;
+    }
+
+    public AspectRatio getAspectRatio() {
+        return this.aspectRatio;
+    }
+
+    public void setVideoSize(@Nullable VideoSize videoSize) {
+        this.videoSize = videoSize;
+    }
+
+    public Optional<VideoSize> getVideoSize() {
+        return Optional.ofNullable(this.videoSize);
     }
 
 }

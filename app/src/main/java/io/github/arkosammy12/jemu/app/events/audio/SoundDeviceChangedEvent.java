@@ -2,12 +2,6 @@ package io.github.arkosammy12.jemu.app.events.audio;
 
 import io.github.arkosammy12.jemu.app.audio.SoundDevice;
 import io.github.arkosammy12.jemu.app.events.AudioSettingChangedEvent;
-import io.github.arkosammy12.jemu.app.events.internal.audio.InternalSoundDeviceChangedEvent;
+import org.jetbrains.annotations.Nullable;
 
-import java.util.Optional;
-
-public sealed interface SoundDeviceChangedEvent extends AudioSettingChangedEvent permits InternalSoundDeviceChangedEvent {
-
-    Optional<SoundDevice> getSoundDevice();
-
-}
+public record SoundDeviceChangedEvent(@Nullable SoundDevice soundDevice) implements AudioSettingChangedEvent {}

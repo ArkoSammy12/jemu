@@ -98,10 +98,10 @@ public abstract class SystemAdapter implements SystemHost, Closeable {
     public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) throws LineUnavailableException {
         switch (coreSettingChangedEvent) {
             case SpeedModeSettingChangedEvent speedModeSettingChangedEvent -> {
-                this.getAudioDriver().ifPresent(audioDriver -> audioDriver.onSpeedModeSettingChanged(speedModeSettingChangedEvent.getSpeedMode()));
+                this.getAudioDriver().ifPresent(audioDriver -> audioDriver.onSpeedModeSettingChanged(speedModeSettingChangedEvent.speedMode()));
                 Emulator emulator = this.emulator;
                 if (emulator != null) {
-                    this.jemu.getAudioEngine().setFramerate(speedModeSettingChangedEvent.getSpeedMode().scaleFramerate(emulator.getFramerate()));
+                    this.jemu.getAudioEngine().setFramerate(speedModeSettingChangedEvent.speedMode().scaleFramerate(emulator.getFramerate()));
                 }
 
             }

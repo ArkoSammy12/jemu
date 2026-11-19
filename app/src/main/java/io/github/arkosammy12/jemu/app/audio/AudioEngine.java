@@ -170,11 +170,11 @@ public class AudioEngine implements Closeable {
 
     public void onAudioSettingChanged(AudioSettingChangedEvent event) throws LineUnavailableException {
         switch (event) {
-            case SoundDeviceChangedEvent soundDeviceChangedEvent -> this.soundDevice(soundDeviceChangedEvent.getSoundDevice().orElse(null));
-            case SampleRateChangedEvent sampleRateChangedEvent -> this.setSampleRate(sampleRateChangedEvent.getSampleRate());
-            case MuteEvent muteEvent -> this.setMuted(muteEvent.getMute());
-            case VolumeChangedEvent volumeChangedEvent -> this.setVolume(volumeChangedEvent.getNewVolume());
-            case AudioLatencyChangedEvent audioLatencyChangedEvent -> this.setLatency(audioLatencyChangedEvent.getLatencyMs());
+            case SoundDeviceChangedEvent soundDeviceChangedEvent -> this.soundDevice(soundDeviceChangedEvent.soundDevice());
+            case SampleRateChangedEvent sampleRateChangedEvent -> this.setSampleRate(sampleRateChangedEvent.sampleRate());
+            case MuteEvent muteEvent -> this.setMuted(muteEvent.mute());
+            case VolumeChangedEvent volumeChangedEvent -> this.setVolume(volumeChangedEvent.newVolume());
+            case AudioLatencyChangedEvent audioLatencyChangedEvent -> this.setLatency(audioLatencyChangedEvent.latencyMs());
             case null, default -> {}
         }
     }

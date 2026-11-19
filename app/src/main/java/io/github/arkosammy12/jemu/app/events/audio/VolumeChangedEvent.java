@@ -1,10 +1,6 @@
 package io.github.arkosammy12.jemu.app.events.audio;
 
 import io.github.arkosammy12.jemu.app.events.AudioSettingChangedEvent;
-import io.github.arkosammy12.jemu.app.events.internal.audio.InternalVolumeChangedEvent;
+import io.github.arkosammy12.jemu.app.events.ListenableEvent;
 
-public sealed interface VolumeChangedEvent extends AudioSettingChangedEvent permits InternalVolumeChangedEvent {
-
-    int getNewVolume();
-
-}
+public record VolumeChangedEvent(int newVolume) implements AudioSettingChangedEvent, ListenableEvent {}

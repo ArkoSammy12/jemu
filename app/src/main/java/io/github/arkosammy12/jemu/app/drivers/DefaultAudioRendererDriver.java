@@ -6,8 +6,6 @@ import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.drivers.AudioDriver;
 import io.github.arkosammy12.jemu.app.audio.AudioChannels;
 import io.github.arkosammy12.jemu.app.config.settings.SpeedMode;
-import io.github.arkosammy12.jemu.app.events.AudioSettingChangedEvent;
-import io.github.arkosammy12.jemu.app.events.core.SpeedModeSettingChangedEvent;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.io.Closeable;

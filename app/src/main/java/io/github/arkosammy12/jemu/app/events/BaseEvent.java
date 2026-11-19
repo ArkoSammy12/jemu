@@ -1,10 +1,8 @@
 package io.github.arkosammy12.jemu.app.events;
 
-import io.github.arkosammy12.jemu.app.events.internal.InternalEvent;
-
 import java.util.Objects;
 
-public sealed interface BaseEvent permits Event, InternalEvent {
+public sealed interface BaseEvent permits Event {
 
     default boolean isOf(Event other) {
         if (other == null) {

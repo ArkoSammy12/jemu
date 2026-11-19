@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.app.gui;
 
-import io.github.arkosammy12.jemu.app.gui.internal.commands.PowerCycleCommandCallback;
-import io.github.arkosammy12.jemu.app.gui.internal.commands.StopCommandCallback;
+import io.github.arkosammy12.jemu.app.gui.commands.PowerCycleCommandCallback;
+import io.github.arkosammy12.jemu.app.gui.commands.StopCommandCallback;
 import org.jetbrains.annotations.Nullable;
 
 import javax.swing.*;

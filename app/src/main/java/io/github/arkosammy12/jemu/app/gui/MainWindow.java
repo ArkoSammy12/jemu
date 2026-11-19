@@ -5,22 +5,18 @@ import com.formdev.flatlaf.util.SystemInfo;
 import io.github.arkosammy12.jemu.app.config.ConfigurationManager;
 import io.github.arkosammy12.jemu.app.config.Configurations;
 import io.github.arkosammy12.jemu.app.events.BaseEvent;
-import io.github.arkosammy12.jemu.app.gui.internal.menus.settings.panel.SettingsWindow;
+import io.github.arkosammy12.jemu.app.gui.menus.settings.panel.SettingsWindow;
 import io.github.arkosammy12.jemu.app.gui.system.SystemCatalog;
 import io.github.arkosammy12.jemu.app.gui.system.SystemDescriptor;
-import io.github.arkosammy12.jemu.app.config.internal.InternalConfigurations;
-import io.github.arkosammy12.jemu.app.events.internal.ListenableEvent;
+import io.github.arkosammy12.jemu.app.events.ListenableEvent;
 import io.github.arkosammy12.jemu.app.gui.commands.*;
-import io.github.arkosammy12.jemu.app.gui.internal.commands.*;
-import io.github.arkosammy12.jemu.app.events.internal.InternalEvent;
 import io.github.arkosammy12.jemu.app.events.Event;
 import io.github.arkosammy12.jemu.app.gui.managers.EmulatorManager;
 import io.github.arkosammy12.jemu.app.gui.managers.FileManager;
 import io.github.arkosammy12.jemu.app.gui.managers.HelpManager;
 import io.github.arkosammy12.jemu.app.util.DialogType;
 import io.github.arkosammy12.jemu.app.util.PendingEmulatorCommand;
-import io.github.arkosammy12.jemu.app.util.internal.PendingEmulatorCommandImpl;
-import io.github.arkosammy12.jemu.app.util.internal.SafeSwingEDTQueue;
+import io.github.arkosammy12.jemu.app.util.SafeSwingEDTQueue;
 import net.miginfocom.layout.AC;
 import net.miginfocom.layout.CC;
 import net.miginfocom.layout.LC;
@@ -384,11 +380,11 @@ public class MainWindow implements io.github.arkosammy12.jemu.app.util.EventPubl
                 }
             });
         };
-        return new PendingEmulatorCommandImpl(emulatorCommand, acknowledgeFunction);
+        return new PendingEmulatorCommand(emulatorCommand, acknowledgeFunction);
     }
 
     @ApiStatus.Internal
-    public InternalConfigurations getConfig() {
+    public Configurations getConfig() {
         return this.configurationManager.getConfig();
     }
 
@@ -407,7 +403,7 @@ public class MainWindow implements io.github.arkosammy12.jemu.app.util.EventPubl
     }
 
     @SuppressWarnings("unchecked")
-    private <T extends ListenableEvent> void dispatchToConsumer(EventListener<T> consumer, InternalEvent event) {
+    private <T extends ListenableEvent> void dispatchToConsumer(EventListener<T> consumer, Event event) {
         consumer.action().accept((T) event);
     }
 

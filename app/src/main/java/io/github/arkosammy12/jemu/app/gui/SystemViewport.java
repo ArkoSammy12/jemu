@@ -1,11 +1,11 @@
 package io.github.arkosammy12.jemu.app.gui;
 
-import io.github.arkosammy12.jemu.app.config.settings.internal.VideoSize;
+import io.github.arkosammy12.jemu.app.config.settings.VideoSize;
 import io.github.arkosammy12.jemu.app.events.core.AspectRatioSettingChangedEvent;
-import io.github.arkosammy12.jemu.app.events.internal.ui.*;
+import io.github.arkosammy12.jemu.app.events.ui.*;
 import io.github.arkosammy12.jemu.app.util.KeyAction;
 import io.github.arkosammy12.jemu.app.util.InputListener;
-import io.github.arkosammy12.jemu.app.util.internal.DragAndDropHandler;
+import io.github.arkosammy12.jemu.app.util.DragAndDropHandler;
 import net.miginfocom.layout.AlignX;
 import net.miginfocom.layout.AlignY;
 import net.miginfocom.layout.CC;
@@ -155,7 +155,7 @@ public class SystemViewport {
     }
 
     private void resizeWindowToDisplay() {
-        this.resizeWindowToFitDisplay(this.mainWindow.getConfig().getInternalPreferenceSettings().getInternalVideoSettings().getVideoSize().orElse(null));
+        this.resizeWindowToFitDisplay(this.mainWindow.getConfig().getPreferenceSettings().getVideoSettings().getVideoSize().orElse(null));
     }
 
     private void resizeWindowToFitDisplay(@Nullable VideoSize videoSize) {

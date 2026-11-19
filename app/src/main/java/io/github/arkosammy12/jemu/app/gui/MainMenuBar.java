@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.app.gui;
 
-import io.github.arkosammy12.jemu.app.gui.internal.menus.EmulatorMenu;
-import io.github.arkosammy12.jemu.app.gui.internal.menus.FileMenu;
-import io.github.arkosammy12.jemu.app.gui.internal.menus.HelpMenu;
-import io.github.arkosammy12.jemu.app.gui.internal.menus.SettingsMenu;
+import io.github.arkosammy12.jemu.app.gui.menus.EmulatorMenu;
+import io.github.arkosammy12.jemu.app.gui.menus.FileMenu;
+import io.github.arkosammy12.jemu.app.gui.menus.HelpMenu;
+import io.github.arkosammy12.jemu.app.gui.menus.SettingsMenu;
 import org.jetbrains.annotations.ApiStatus;
 
 import javax.swing.*;
