@@ -89,10 +89,10 @@ public class MegaChipInterpreter<E extends MegaChipEmulator> extends SuperChip11
                         Chip8Bus bus = this.emulator.getBus();
                         int I = getI();
                         this.emulator.getAudioGenerator().playTrack(
-                                ((bus.readByte(I) & 0xFF) << 8) | bus.readByte(I + 1) & 0xFF,
-                                ((bus.readByte(I + 2) & 0xFF) << 16) | ((bus.readByte(I + 3) & 0xFF) << 8) | (bus.readByte(I + 4) & 0xFF),
-                                getN(firstByte, NN) == 0,
-                                I + 6
+                            ((bus.readByte(I) & 0xFF) << 8) | bus.readByte(I + 1) & 0xFF,
+                            ((bus.readByte(I + 2) & 0xFF) << 16) | ((bus.readByte(I + 3) & 0xFF) << 8) | (bus.readByte(I + 4) & 0xFF),
+                            getN(firstByte, NN) == 0,
+                            I + 6
                         );
                         yield VALID_INSTRUCTION;
                     } else {

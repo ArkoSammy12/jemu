@@ -10,7 +10,7 @@ public class BidirectionalPin {
         this.inputSource = inputSource;
     }
 
-    public boolean read(){
+    public boolean read() {
         return this.portOwner.getDirection() ? this.portOwner.getOutput() : this.inputSource.getInput();
     }
 

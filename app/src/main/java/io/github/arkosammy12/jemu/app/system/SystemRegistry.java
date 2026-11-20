@@ -32,7 +32,7 @@ public final class SystemRegistry implements SystemCatalog {
 
     private final Chip8Manager chip8Manager;
     private final Chip8Manager strictChip8Manager;
-    private final Chip8Manager chip8Xmanager ;
+    private final Chip8Manager chip8Xmanager;
     private final Chip8Manager chip48Manger;
     private final Chip8Manager superChip10Manager;
     private final Chip8Manager superChip11Manager;
@@ -58,7 +58,7 @@ public final class SystemRegistry implements SystemCatalog {
     public SystemRegistry(Jemu jemu) {
         this.chip8Manager = new Chip8Manager(jemu, this, Chip8Variant.CHIP_8);
         this.strictChip8Manager = new Chip8Manager(jemu, this, Chip8Variant.STRICT_CHIP_8);
-        this.chip8Xmanager  = new Chip8Manager(jemu, this, Chip8Variant.CHIP_8X);
+        this.chip8Xmanager = new Chip8Manager(jemu, this, Chip8Variant.CHIP_8X);
         this.chip48Manger = new Chip8Manager(jemu, this, Chip8Variant.CHIP_48);
         this.superChip10Manager = new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_10);
         this.superChip11Manager = new Chip8Manager(jemu, this, Chip8Variant.SUPER_CHIP_11);
@@ -77,25 +77,25 @@ public final class SystemRegistry implements SystemCatalog {
         this.commodore64Manager = new Commodore64Manager(jemu, this);
 
         this.systemManagers = List.of(
-                this.chip8Manager,
-                this.strictChip8Manager,
-                this.chip8Xmanager,
-                this.chip48Manger,
-                this.superChip10Manager,
-                this.superChip11Manager,
-                this.superChipModernManager,
-                this.xoChipManager,
-                this.megaChipManager,
-                this.hyperwaveChip64Manager,
-                this.cosmacVIPManager,
-                this.hybridChip8Manager,
-                this.hybridChip8xManager,
-                this.rcaStudioIIManager,
-                this.gameBoyManager,
-                this.gameBoyColorManager,
-                this.nesManager,
-                this.atari2600Manager,
-                this.commodore64Manager
+            this.chip8Manager,
+            this.strictChip8Manager,
+            this.chip8Xmanager,
+            this.chip48Manger,
+            this.superChip10Manager,
+            this.superChip11Manager,
+            this.superChipModernManager,
+            this.xoChipManager,
+            this.megaChipManager,
+            this.hyperwaveChip64Manager,
+            this.cosmacVIPManager,
+            this.hybridChip8Manager,
+            this.hybridChip8xManager,
+            this.rcaStudioIIManager,
+            this.gameBoyManager,
+            this.gameBoyColorManager,
+            this.nesManager,
+            this.atari2600Manager,
+            this.commodore64Manager
         );
     }
 

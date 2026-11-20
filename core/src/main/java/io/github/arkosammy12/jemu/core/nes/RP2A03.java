@@ -47,14 +47,14 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     private int scheduleDmcDmaHaltCountdown;
     private DmcDmaStep dmcDmaStep = DmcDmaStep.NONE;
     private DmcDmaStep dmcDmaStartStep = DmcDmaStep.DUMMY;
-	private NESAPU.DmcDmaType dmcDmaType = NESAPU.DmcDmaType.RELOAD;
+    private NESAPU.DmcDmaType dmcDmaType = NESAPU.DmcDmaType.RELOAD;
     private int dmcDmaAddress;
-	private boolean dmcDmaRequestPending;
+    private boolean dmcDmaRequestPending;
     private boolean dmcDmaHaltOnly;
 
     private int internalDataBus;
-	
-	private int joyOutputEnableAddress = -1;
+
+    private int joyOutputEnableAddress = -1;
     private int joyOutputEnableValue;
 
     public RP2A03(E emulator, int apuSampleBufferSize) {
@@ -95,7 +95,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
 
         return this.internalDataBus;
     }
-	
+
     @Override
     public void writeByte(int address, int value) {
         this.releaseJoy1OutputEnable();
@@ -107,7 +107,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         return address == SND_CHN_ADDR ? this.readByteRegister(address) : this.emulator.getCpuBus().readByte(address);
     }
 
-	private void releaseJoy1OutputEnable() {
+    private void releaseJoy1OutputEnable() {
         this.joyOutputEnableAddress = -1;
     }
 
@@ -144,7 +144,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
             // register was activated via the combined Ricoh and CPU address.
             // If no Ricoh register was activated, the final value is open bus.
             readByte = activatedRegisterByte;
-		} else {
+        } else {
 
             // Otherwise, the DMA reads from the external bus as normal
             readByte = this.readByteRicohCore(address);
@@ -206,7 +206,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     public void writeByteRegister(int address, int value) {
-		this.releaseJoy1OutputEnable();
+        this.releaseJoy1OutputEnable();
 
         if ((address >= SQ1_VOL_ADDR && address <= TRI_LINEAR_ADDR) || (address >= TRI_LO_ADDR && address <= NOISE_VOL_ADDR) || (address >= NOISE_LO_ADDR && address <= DMC_LEN_ADDR) || address == SND_CHN_ADDR || address == JOY2_ADDR) {
             this.apu.writeByte(address, value);
@@ -219,11 +219,11 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     public void cycleHalf() {
-		switch (this.cpu.getHalfCyclePhase()) {
-			case PHI_1 -> this.cpu.cycle();
-			case PHI_2 -> this.onCPUPHI2();
-		}
-	}
+        switch (this.cpu.getHalfCyclePhase()) {
+            case PHI_1 -> this.cpu.cycle();
+            case PHI_2 -> this.onCPUPHI2();
+        }
+    }
 
     protected void onCPUPHI2() {
         boolean isHalted = this.cpu.isHalted();
@@ -263,7 +263,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     protected void startDMCDMA() {
-		this.scheduleDmcDmaHaltCountdown = 0;
+        this.scheduleDmcDmaHaltCountdown = 0;
 
         if (this.dmcDmaStartStep == DmcDmaStep.NONE) {
             this.dmcDmaHaltOnly = true;
@@ -272,7 +272,7 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         }
 
         this.dmcDmaStartStep = DmcDmaStep.DUMMY;
-	}
+    }
 
     protected void startOAMDMA() {
         this.oamDmaTransferredBytes = 0;
@@ -282,82 +282,82 @@ public class RP2A03<E extends NESEmulator> implements Bus {
         if (!isHalted || (this.oamDmaTransferredBytes >= 256 && this.dmcDmaStep == DmcDmaStep.NONE)) {
             return;
         }
-		switch (this.apuHalfCycleType) {
-			case GET -> {
-				switch (this.dmcDmaStep) {
-					case NONE -> this.tickOamDmaGetIfOngoing();
-					case DUMMY -> {
-						if (this.dmcDmaStartStep == DmcDmaStep.NONE) {
-							this.dmcDmaStep = DmcDmaStep.NONE;
-							this.dmcDmaRequestPending = false;
-							this.dmcDmaStartStep = DmcDmaStep.DUMMY;
-						} else if (this.oamDmaTransferredBytes < 256) {
-							this.tickOamDmaGetIfOngoing();
-							this.dmcDmaStep = DmcDmaStep.GET;
-						} else {
-							this.dmcDmaStep = DmcDmaStep.ALIGNMENT;
-						}
-					}
-					// Needed so DMC DMA doesn't perform its read immediately after its dummy cycle whenever there's no OAM DMA by this point
-					case ALIGNMENT -> this.dmcDmaStep = DmcDmaStep.GET;
-					case GET -> {
-						if (this.dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_0) {
-							this.apu.writeDmcDma(this.readByteDMA(this.dmcDmaAddress));
-						}
+        switch (this.apuHalfCycleType) {
+            case GET -> {
+                switch (this.dmcDmaStep) {
+                    case NONE -> this.tickOamDmaGetIfOngoing();
+                    case DUMMY -> {
+                        if (this.dmcDmaStartStep == DmcDmaStep.NONE) {
+                            this.dmcDmaStep = DmcDmaStep.NONE;
+                            this.dmcDmaRequestPending = false;
+                            this.dmcDmaStartStep = DmcDmaStep.DUMMY;
+                        } else if (this.oamDmaTransferredBytes < 256) {
+                            this.tickOamDmaGetIfOngoing();
+                            this.dmcDmaStep = DmcDmaStep.GET;
+                        } else {
+                            this.dmcDmaStep = DmcDmaStep.ALIGNMENT;
+                        }
+                    }
+                    // Needed so DMC DMA doesn't perform its read immediately after its dummy cycle whenever there's no OAM DMA by this point
+                    case ALIGNMENT -> this.dmcDmaStep = DmcDmaStep.GET;
+                    case GET -> {
+                        if (this.dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_0) {
+                            this.apu.writeDmcDma(this.readByteDMA(this.dmcDmaAddress));
+                        }
 
-						this.dmcDmaStep = DmcDmaStep.NONE;
-						this.dmcDmaRequestPending = false;
-						this.dmcDmaType = NESAPU.DmcDmaType.RELOAD;
-						this.dmcDmaStartStep = DmcDmaStep.DUMMY;
+                        this.dmcDmaStep = DmcDmaStep.NONE;
+                        this.dmcDmaRequestPending = false;
+                        this.dmcDmaType = NESAPU.DmcDmaType.RELOAD;
+                        this.dmcDmaStartStep = DmcDmaStep.DUMMY;
 
-						NESAPU.DmcDmaType pendingImplicitDmaType = this.apu.getPendingImplicitDmcDmaType();
-						if (pendingImplicitDmaType != null) {
-							int pendingImplicitDmaAddress = this.apu.getPendingImplicitDmcDmaAddress();
-							this.apu.clearPendingImplicitDmcDma();
+                        NESAPU.DmcDmaType pendingImplicitDmaType = this.apu.getPendingImplicitDmcDmaType();
+                        if (pendingImplicitDmaType != null) {
+                            int pendingImplicitDmaAddress = this.apu.getPendingImplicitDmcDmaAddress();
+                            this.apu.clearPendingImplicitDmcDma();
                             switch (pendingImplicitDmaType) {
                                 case IMPLICIT_UNEXPECTED_RELOAD -> this.triggerDmcDma(NESAPU.DmcDmaType.RELOAD, pendingImplicitDmaAddress);
                                 case IMPLICIT_ABORT -> this.triggerExplicitStopDmcDma(NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_2_OR_3, pendingImplicitDmaAddress);
                             }
-						}
-					}
-				}
-			}
-			case PUT -> {
-				switch (this.dmcDmaStep) {
-					case DUMMY -> {
-						boolean finalOamPut = this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes == 255;
-						if (!finalOamPut) {
-							// If DMC DMA starts by this point in the OAM DMA transfer, this cycle is the DMC DMA alignment cycle.
-							// Do not transition DMC DMA to its GET step yet
-							if (!(this.dmcDmaRequestPending && this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes == 254)) {
-								this.dmcDmaStep = DmcDmaStep.GET;
-							}
-						}
-					}
-					case ALIGNMENT -> this.dmcDmaStep = DmcDmaStep.GET;
-				}
+                        }
+                    }
+                }
+            }
+            case PUT -> {
+                switch (this.dmcDmaStep) {
+                    case DUMMY -> {
+                        boolean finalOamPut = this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes == 255;
+                        if (!finalOamPut) {
+                            // If DMC DMA starts by this point in the OAM DMA transfer, this cycle is the DMC DMA alignment cycle.
+                            // Do not transition DMC DMA to its GET step yet
+                            if (!(this.dmcDmaRequestPending && this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes == 254)) {
+                                this.dmcDmaStep = DmcDmaStep.GET;
+                            }
+                        }
+                    }
+                    case ALIGNMENT -> this.dmcDmaStep = DmcDmaStep.GET;
+                }
 
-				if (this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes < 256) {
-					this.emulator.getCpuBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
-					this.oamDmaTransferredBytes++;
-					this.oamDmaCurrentData = -1;
-				}
-			}
-		}
-	}
+                if (this.oamDmaCurrentData >= 0 && this.oamDmaTransferredBytes < 256) {
+                    this.emulator.getCpuBus().writeByte(OAMDATA_ADDR, this.oamDmaCurrentData);
+                    this.oamDmaTransferredBytes++;
+                    this.oamDmaCurrentData = -1;
+                }
+            }
+        }
+    }
 
     // Assumes that the CPU is cycled before the DMA units
-	private boolean isDmaUsingExternalBusOnThisCycle() {
-		return switch (this.apuHalfCycleType) {
-			case GET -> switch (this.dmcDmaStep) {
-				case NONE, DUMMY, ALIGNMENT -> this.isOamDmaGetCycle();
-				case GET -> this.cpu.isHalted();
-			};
-			case PUT -> switch (this.dmcDmaStep) {
-				case NONE, DUMMY, ALIGNMENT, GET -> this.isOamDmaPutCycle();
-			};
-		};
-	}
+    private boolean isDmaUsingExternalBusOnThisCycle() {
+        return switch (this.apuHalfCycleType) {
+            case GET -> switch (this.dmcDmaStep) {
+                case NONE, DUMMY, ALIGNMENT -> this.isOamDmaGetCycle();
+                case GET -> this.cpu.isHalted();
+            };
+            case PUT -> switch (this.dmcDmaStep) {
+                case NONE, DUMMY, ALIGNMENT, GET -> this.isOamDmaPutCycle();
+            };
+        };
+    }
 
     private boolean isOamDmaGetCycle() {
         return this.oamDmaTransferredBytes < 256 && this.cpu.isHalted();
@@ -368,69 +368,69 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     private void tickOamDmaGetIfOngoing() {
-		if (this.oamDmaTransferredBytes < 256) {
-			this.oamDmaCurrentData = this.readByteDMA((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
-		}
-	}
+        if (this.oamDmaTransferredBytes < 256) {
+            this.oamDmaCurrentData = this.readByteDMA((this.oamDmaSourceAddressHighByte << 8) | (this.oamDmaTransferredBytes & 0xFF));
+        }
+    }
 
     void triggerDmcDma(NESAPU.DmcDmaType dmcDmaType, int address) {
-		if (dmcDmaType != NESAPU.DmcDmaType.LOAD && dmcDmaType != NESAPU.DmcDmaType.RELOAD) {
+        if (dmcDmaType != NESAPU.DmcDmaType.LOAD && dmcDmaType != NESAPU.DmcDmaType.RELOAD) {
             return;
         }
 
         // Do not replace or stack an already pending or ongoing DMC DMA transfer.
-		if (this.dmcDmaRequestPending || this.scheduleDmcDmaHaltCountdown > 0 || this.dmcDmaStep != DmcDmaStep.NONE || this.dmcDmaHaltOnly) {
-			return;
-		}
+        if (this.dmcDmaRequestPending || this.scheduleDmcDmaHaltCountdown > 0 || this.dmcDmaStep != DmcDmaStep.NONE || this.dmcDmaHaltOnly) {
+            return;
+        }
 
-		this.dmcDmaRequestPending = true;
+        this.dmcDmaRequestPending = true;
         this.dmcDmaStartStep = DmcDmaStep.DUMMY;
-		this.dmcDmaType = dmcDmaType;
-		this.dmcDmaAddress = address & 0xFFFF;
-		this.scheduleDmcDmaHaltCountdown = switch (dmcDmaType) {
-			case LOAD -> switch (this.apuHalfCycleType) {
-				case GET -> 4;
-				case PUT -> 3;
-			};
-			case RELOAD -> switch (this.apuHalfCycleType) {
-				case GET -> 2;
-				case PUT -> 1;
-			};
+        this.dmcDmaType = dmcDmaType;
+        this.dmcDmaAddress = address & 0xFFFF;
+        this.scheduleDmcDmaHaltCountdown = switch (dmcDmaType) {
+            case LOAD -> switch (this.apuHalfCycleType) {
+                case GET -> 4;
+                case PUT -> 3;
+            };
+            case RELOAD -> switch (this.apuHalfCycleType) {
+                case GET -> 2;
+                case PUT -> 1;
+            };
             default -> 0;
-		};
-	}
+        };
+    }
 
     void triggerExplicitStopDmcDma(NESAPU.DmcDmaType dmcDmaType, int address) {
 
-		if (dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_0 && dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_1 && dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_2_OR_3) {
-			return;
-		}
+        if (dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_0 && dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_1 && dmcDmaType != NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_2_OR_3) {
+            return;
+        }
 
-		// Explicit stop may replace a pending normal reload, but not an already-running
-		// non-DUMMY DMA phase.
-		if (this.dmcDmaStep != DmcDmaStep.NONE || this.dmcDmaHaltOnly) {
-			if ((dmcDmaType == NESAPU.DmcDmaType.EXPLICIT_ABORT_0 || dmcDmaType == NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_1) && this.dmcDmaStep == DmcDmaStep.DUMMY) {
-				this.dmcDmaType = dmcDmaType;
-				this.dmcDmaRequestPending = true;
-			}
-			return;
-		}
+        // Explicit stop may replace a pending normal reload, but not an already-running
+        // non-DUMMY DMA phase.
+        if (this.dmcDmaStep != DmcDmaStep.NONE || this.dmcDmaHaltOnly) {
+            if ((dmcDmaType == NESAPU.DmcDmaType.EXPLICIT_ABORT_0 || dmcDmaType == NESAPU.DmcDmaType.EXPLICIT_ABORT_MINUS_1) && this.dmcDmaStep == DmcDmaStep.DUMMY) {
+                this.dmcDmaType = dmcDmaType;
+                this.dmcDmaRequestPending = true;
+            }
+            return;
+        }
 
-		this.dmcDmaRequestPending = true;
-		this.dmcDmaType = dmcDmaType;
-		this.dmcDmaAddress = address & 0xFFFF;
+        this.dmcDmaRequestPending = true;
+        this.dmcDmaType = dmcDmaType;
+        this.dmcDmaAddress = address & 0xFFFF;
 
-		this.dmcDmaStartStep = switch (dmcDmaType) {
-			case EXPLICIT_ABORT_0, EXPLICIT_ABORT_MINUS_1, LOAD, RELOAD, IMPLICIT_UNEXPECTED_RELOAD -> DmcDmaStep.DUMMY;
-			case EXPLICIT_ABORT_MINUS_2_OR_3, IMPLICIT_ABORT -> DmcDmaStep.NONE;
+        this.dmcDmaStartStep = switch (dmcDmaType) {
+            case EXPLICIT_ABORT_0, EXPLICIT_ABORT_MINUS_1, LOAD, RELOAD, IMPLICIT_UNEXPECTED_RELOAD -> DmcDmaStep.DUMMY;
+            case EXPLICIT_ABORT_MINUS_2_OR_3, IMPLICIT_ABORT -> DmcDmaStep.NONE;
         };
 
-		this.scheduleDmcDmaHaltCountdown = switch (this.apuHalfCycleType) {
-			case GET -> 2;
-			case PUT -> 1;
-		};
-	}
-	
+        this.scheduleDmcDmaHaltCountdown = switch (this.apuHalfCycleType) {
+            case GET -> 2;
+            case PUT -> 1;
+        };
+    }
+
     public boolean getIRQSignal() {
         return this.apu.getIRQSignal();
     }
@@ -456,11 +456,11 @@ public class RP2A03<E extends NESEmulator> implements Bus {
     }
 
     private enum DmcDmaStep {
-		NONE,
-		DUMMY,
-		// Alignment state needed for already finished OAM DMA while DMC DMA still needs an alignment cycle
-		ALIGNMENT,
-		GET
-	}
+        NONE,
+        DUMMY,
+        // Alignment state needed for already finished OAM DMA while DMC DMA still needs an alignment cycle
+        ALIGNMENT,
+        GET
+    }
 
 }

@@ -37,8 +37,7 @@ public abstract class PathUISetting<E extends Event & Supplier<@Nullable Path>> 
     public enum PathSelectionMode {
         FILES_ONLY(JFileChooser.FILES_ONLY, "Select a File"),
         DIRECTORIES_ONLY(JFileChooser.DIRECTORIES_ONLY, "Select a Directory"),
-        FILES_AND_DIRECTORIES(JFileChooser.FILES_AND_DIRECTORIES, "Select a File or Directory")
-        ;
+        FILES_AND_DIRECTORIES(JFileChooser.FILES_AND_DIRECTORIES, "Select a File or Directory");
 
         private final int fileSelectionMode;
         private final String dialogTitle;

@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.core.chip8.interpreters;
 import io.github.arkosammy12.jemu.core.chip8.Chip8Host;
 import io.github.arkosammy12.jemu.core.chip8.SuperChip10Emulator;
 
-public class SuperChip10Interpreter<E extends SuperChip10Emulator> extends Chip8Interpreter<E>  {
+public class SuperChip10Interpreter<E extends SuperChip10Emulator> extends Chip8Interpreter<E> {
 
     public SuperChip10Interpreter(E emulator) {
         super(emulator);

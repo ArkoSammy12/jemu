@@ -154,9 +154,7 @@ public class CosmacVIPEmulator implements CDP1802System, CDP1802.SystemBus, Rese
     }
 
     @Override
-    public void close() {
-
-    }
+    public void close() {}
 
     @Override
     public boolean getCLEAR() {

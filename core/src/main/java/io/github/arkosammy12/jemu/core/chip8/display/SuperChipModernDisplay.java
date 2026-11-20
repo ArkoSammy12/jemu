@@ -70,8 +70,8 @@ public class SuperChipModernDisplay<E extends SuperChipModernEmulator> extends S
             }
 
             int slice = draw16WideSprite
-                    ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
-                    : bus.readByte(indexRegister + i);
+                ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
+                : bus.readByte(indexRegister + i);
 
             for (int j = 0, sliceMask = baseMask; j < sliceLength; j++, sliceMask >>>= 1) {
                 int sliceX = spriteX + j;

@@ -95,9 +95,7 @@ public class SM83TestCaseBench implements SM83.SystemBus {
     }
 
     @Override
-    public void setIF(int value) {
-
-    }
+    public void setIF(int value) {}
 
     @Override
     public boolean isButtonHeld() {
@@ -105,18 +103,12 @@ public class SM83TestCaseBench implements SM83.SystemBus {
     }
 
     @Override
-    public void onStopInstruction(boolean resetDiv) {
-
-    }
+    public void onStopInstruction(boolean resetDiv) {}
 
     @Override
-    public void onIDURead(int originalValue) {
-
-    }
+    public void onIDURead(int originalValue) {}
 
     @Override
-    public void onIDUWrite(int originalValue) {
-
-    }
+    public void onIDUWrite(int originalValue) {}
 
 }

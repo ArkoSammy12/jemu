@@ -34,9 +34,7 @@ public abstract class SystemManager implements SystemDescriptor {
 
     public abstract boolean manages(SystemAdapter systemAdapter);
 
-    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {
-
-    }
+    public void onCoreSettingChangedEvent(CoreSettingChangedEvent coreSettingChangedEvent) {}
 
     public Optional<List<SystemController.Action>> getActionsForKey(KeyAction keyAction) {
         return this.keyActionMap.get(keyAction);

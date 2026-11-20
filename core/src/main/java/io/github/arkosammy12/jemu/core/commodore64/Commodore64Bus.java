@@ -77,7 +77,7 @@ public class Commodore64Bus<E extends Commodore64Emulator> implements Bus {
         this.ram[0x32] = (byte) ((end >>> 8) & 0xFF);
         this.ram[0xAF] = (byte) ((end >>> 8) & 0xFF);
 
-        if (((int)this.ram[0x00C6] & 0xFF) == 0) {
+        if (((int) this.ram[0x00C6] & 0xFF) == 0) {
             if (start == 0x0801) {
                 this.ram[0x0277] = (byte) 'R';
                 this.ram[0x0278] = (byte) 'U';

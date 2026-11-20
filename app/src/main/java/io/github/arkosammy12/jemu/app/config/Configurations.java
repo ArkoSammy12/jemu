@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.app.config.settings.Settings;
 import io.github.arkosammy12.jemu.app.config.state.State;
 
 public class Configurations {
-    
+
     @SerializedName("settings")
     private final Settings preferenceSettings = new Settings();
 

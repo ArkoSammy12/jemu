@@ -102,9 +102,7 @@ public abstract class GameBoyCartridge implements Bus {
         }
     }
 
-    public void cycle() {
-
-    }
+    public void cycle() {}
 
     public void save() {
         Optional<byte[]> saveDataOptional = this.getSaveData();

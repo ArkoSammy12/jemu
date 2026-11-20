@@ -23,9 +23,9 @@ public class ConfigurationManager {
     public ConfigurationManager(@Nullable Path settingsFileDirectoryPath) {
         this.settingsFilePath = settingsFileDirectoryPath == null ? null : settingsFileDirectoryPath.resolve("settings.json");
         this.gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .serializeNulls()
-                .create();
+            .setPrettyPrinting()
+            .serializeNulls()
+            .create();
     }
 
     @ApiStatus.Internal

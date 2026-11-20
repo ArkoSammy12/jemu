@@ -18,11 +18,11 @@ public class Chip8AudioGenerator<E extends Chip8Emulator> extends AbstractChip8A
         return new SampleFrameResampler() {
 
             private static final int[] DEFAULT_PATTERN_1 = {
-                    0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0
+                0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0
             };
 
             private static final int[] DEFAULT_PATTERN_2 = {
-                    0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0
+                0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0
             };
 
             private static final int SQUARE_WAVE_AMPLITUDE = 4;

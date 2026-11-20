@@ -78,12 +78,12 @@ public class MainWindow implements io.github.arkosammy12.jemu.app.util.EventPubl
         this.title = title;
 
         Map<String, List<SystemDescriptor>> byId = systemCatalog.getSystemDescriptors().stream()
-                .collect(Collectors.groupingBy(SystemDescriptor::getId));
+            .collect(Collectors.groupingBy(SystemDescriptor::getId));
 
         List<String> duplicateIds = byId.entrySet().stream()
-                .filter(entry -> entry.getValue().size() > 1)
-                .map(Map.Entry::getKey)
-                .toList();
+            .filter(entry -> entry.getValue().size() > 1)
+            .map(Map.Entry::getKey)
+            .toList();
 
         if (!duplicateIds.isEmpty()) {
             throw new IllegalArgumentException("Duplicated system descriptor IDs: %s".formatted(duplicateIds));

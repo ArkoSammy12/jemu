@@ -46,7 +46,7 @@ public class VideoSettings {
         }
 
     }
-    
+
     @SerializedName("use_integer_scanling")
     private volatile boolean useIntegerScaling = false;
 

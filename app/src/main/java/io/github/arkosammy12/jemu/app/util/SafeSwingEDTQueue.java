@@ -30,14 +30,7 @@ public class SafeSwingEDTQueue extends EventQueue {
         JFrame appFrame = this.jFrameSupplier.get();
 
         if (appFrame != null) {
-            SwingUtilities.invokeLater(() ->
-                    JOptionPane.showMessageDialog(
-                            appFrame,
-                            t.toString(),
-                            "Uncaught Swing UI exception",
-                            JOptionPane.ERROR_MESSAGE
-                    )
-            );
+            SwingUtilities.invokeLater(() -> JOptionPane.showMessageDialog(appFrame, t.toString(), "Uncaught Swing UI exception", JOptionPane.ERROR_MESSAGE));
         }
     }
 

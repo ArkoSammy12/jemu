@@ -70,7 +70,7 @@ public final class StrictChip8Emulator extends Chip8Emulator {
     public void addCycles(long cycles) {
         this.machineCycles += cycles;
         if (this.machineCycles >= this.nextFrame) {
-            long irqTime = 1832 + (this.getInterpreter().getST() != 0 ? 4 : 0)  + (this.getInterpreter().getDT() != 0 ? 8 : 0);
+            long irqTime = 1832 + (this.getInterpreter().getST() != 0 ? 4 : 0) + (this.getInterpreter().getDT() != 0 ? 8 : 0);
             this.handleInterrupt();
             this.machineCycles += irqTime;
             this.nextFrame = this.calculateNextFrame();

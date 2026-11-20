@@ -30,7 +30,7 @@ public class VideoSettings extends MenuBarMenu {
         JMenu aspectRatioMenu = new JMenu("Aspect Ratio");
         ButtonGroup aspectRatioButtonGroup = new ButtonGroup();
         Map<AspectRatio, JRadioButtonMenuItem> aspectRatioButtonMap = new HashMap<>();
-        AspectRatio selectedAspectRatio =  mainWindow.getConfig().getPreferenceSettings().getVideoSettings().getAspectRatio();
+        AspectRatio selectedAspectRatio = mainWindow.getConfig().getPreferenceSettings().getVideoSettings().getAspectRatio();
 
         JRadioButtonMenuItem autoAspectRatioButton = new JRadioButtonMenuItem(AspectRatio.AUTO.getDisplayName());
         autoAspectRatioButton.addActionListener(_ -> mainWindow.publishEvent(new AspectRatioSettingChangedEvent(AspectRatio.AUTO)));

@@ -10,8 +10,6 @@ public interface GlueVideoDriver extends VideoDriver, SystemDisplayComponent {
 
     void onVideoSettingChangedEvent(VideoSettingChangedEvent videoSettingChangedEvent);
 
-    default void close() {
-
-    }
+    default void close() {}
 
 }

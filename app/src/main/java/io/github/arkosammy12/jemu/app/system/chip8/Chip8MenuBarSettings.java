@@ -16,8 +16,8 @@ public class Chip8MenuBarSettings extends MenuBarSettingsMenu {
         this.addBooleanSetting("Show IPF metrics", chip8Manager.getEmulationSettings().showIpfMetrics(), Chip8Manager.ShowIpfMetricsSettingChangedEvent.class, null, Chip8Manager.ShowIpfMetricsSettingChangedEvent::new);
         this.addEnumSetting("Use settings from", chip8Manager.getEmulationSettings().getSettingSourcePreference(), Chip8Manager.SettingSourcePreferenceSettingsChangedEvent.class, null, Chip8Manager.SettingSourcePreferenceSettingsChangedEvent::new);
         this.addEnumSetting("Use variant from", chip8Manager.getEmulationSettings().getVariantSource(), Chip8Manager.VariantSourceSettingChangedEvent.class, null, Chip8Manager.VariantSourceSettingChangedEvent::new);
-        this.addEnumSetting("Color Palette", chip8Manager.getEmulationSettings().getColorPaletteSetting(), Chip8Manager.ColorPaletteSettingChangedEVent.class, null, Chip8Manager.ColorPaletteSettingChangedEVent::new);
-        this.addEnumSetting("Display Orientation", chip8Manager.getEmulationSettings().getDisplayOrientationSetting(), Chip8Manager.DisplayOrientationSettingChangedEVent.class, null, Chip8Manager.DisplayOrientationSettingChangedEVent::new);
+        this.addEnumSetting("Color Palette", chip8Manager.getEmulationSettings().getColorPaletteSetting(), Chip8Manager.ColorPaletteSettingChangedEvent.class, null, Chip8Manager.ColorPaletteSettingChangedEvent::new);
+        this.addEnumSetting("Display Orientation", chip8Manager.getEmulationSettings().getDisplayOrientationSetting(), Chip8Manager.DisplayOrientationSettingChangedEvent.class, null, Chip8Manager.DisplayOrientationSettingChangedEvent::new);
 
         MenuBarSettingsMenu ipfMenu = this.addMenu("Instructions per frame");
         IntegerItemSetting<Chip8Manager.IpfSettingChangedEvent> ipfSetting = new IntegerItemSetting<>(eventPublisher, "IPF", chip8Manager.getEmulationSettings().getIpfSetting(), 1, null, Chip8Manager.IpfSettingChangedEvent.class, null, Chip8Manager.IpfSettingChangedEvent::new);

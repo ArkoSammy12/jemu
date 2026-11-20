@@ -20,7 +20,7 @@ public class FileState {
     @SerializedName("current_directory")
     private volatile String currentDirectoryPath = null;
 
-    public void setRecentFilePaths(Collection<Path> recentFilePaths)  {
+    public void setRecentFilePaths(Collection<Path> recentFilePaths) {
         this.recentFilePaths = recentFilePaths.stream().map(Path::toString).toList();
     }
 

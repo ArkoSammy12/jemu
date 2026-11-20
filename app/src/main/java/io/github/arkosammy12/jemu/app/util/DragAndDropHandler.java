@@ -45,24 +45,16 @@ public class DragAndDropHandler extends TransferHandler implements DropTargetLis
     }
 
     @Override
-    public void dragEnter(DropTargetDragEvent dtde) {
-
-    }
+    public void dragEnter(DropTargetDragEvent dtde) {}
 
     @Override
-    public void dragOver(DropTargetDragEvent dtde) {
-
-    }
+    public void dragOver(DropTargetDragEvent dtde) {}
 
     @Override
-    public void dropActionChanged(DropTargetDragEvent dtde) {
-
-    }
+    public void dropActionChanged(DropTargetDragEvent dtde) {}
 
     @Override
-    public void dragExit(DropTargetEvent dte) {
-
-    }
+    public void dragExit(DropTargetEvent dte) {}
 
     @Override
     @SuppressWarnings("unchecked")

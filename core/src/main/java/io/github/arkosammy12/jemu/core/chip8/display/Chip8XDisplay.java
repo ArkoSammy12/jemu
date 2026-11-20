@@ -5,21 +5,21 @@ import io.github.arkosammy12.jemu.core.chip8.Chip8XEmulator;
 public class Chip8XDisplay<E extends Chip8XEmulator> extends Chip8Display<E> {
 
     private static final int[] BACKGROUND_COLORS = {
-            0x000080,
-            0x000000,
-            0x008000,
-            0X800000
+        0x000080,
+        0x000000,
+        0x008000,
+        0X800000
     };
 
     private static final int[] FOREGROUND_COLORS = {
-            0x181818,
-            0xFF0000,
-            0x0000FF,
-            0xFF00FF,
-            0x00FF00,
-            0xFFFF00,
-            0x00FFFF,
-            0xFFFFFF
+        0x181818,
+        0xFF0000,
+        0x0000FF,
+        0xFF00FF,
+        0x00FF00,
+        0xFFFF00,
+        0x00FFFF,
+        0xFFFFFF
     };
 
     private final int[] frameBuffer;

@@ -68,9 +68,9 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
                 case 0x0001 -> {
                     int ioPort = systemBus.getIOPort().read() & 0x3F;
                     yield (ioPort & 0x37)
-                            | (this.systemBus.isDatasetteConnected() ? ioPort & (1 << 3) : ((this.dataDirectionRegister & (1 << 3)) != 0 ? this.outputLatch & (1 << 3) : this.unusedBitsLastOutput & (1 << 3)))
-                            | ((this.dataDirectionRegister & (1 << 6)) != 0 ? this.outputLatch & (1 << 6) : this.unusedBitsLastOutput & (1 << 6))
-                            | ((this.dataDirectionRegister & (1 << 7)) != 0 ? this.outputLatch & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
+                        | (this.systemBus.isDatasetteConnected() ? ioPort & (1 << 3) : ((this.dataDirectionRegister & (1 << 3)) != 0 ? this.outputLatch & (1 << 3) : this.unusedBitsLastOutput & (1 << 3)))
+                        | ((this.dataDirectionRegister & (1 << 6)) != 0 ? this.outputLatch & (1 << 6) : this.unusedBitsLastOutput & (1 << 6))
+                        | ((this.dataDirectionRegister & (1 << 7)) != 0 ? this.outputLatch & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
                 }
                 default -> systemBus.getBus().readByte(address);
             };
@@ -86,16 +86,16 @@ public class NMOS6510<S extends NMOS6510.SystemBus> extends NMOS6502<S> implemen
                 case 0x0000 -> {
                     this.dataDirectionRegister = value & 0xFF;
                     this.unusedBitsLastOutput =
-                                      (this.systemBus.isDatasetteConnected() || (this.dataDirectionRegister & (1 << 3)) != 0 ? this.outputLatch & (1 << 3) : this.unusedBitsLastOutput & (1 << 3))
-                                    | ((this.dataDirectionRegister & (1 << 6)) != 0 ? this.outputLatch & (1 << 6) : this.unusedBitsLastOutput & (1 << 6))
-                                    | ((this.dataDirectionRegister & (1 << 7)) != 0 ? this.outputLatch & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
+                        (this.systemBus.isDatasetteConnected() || (this.dataDirectionRegister & (1 << 3)) != 0 ? this.outputLatch & (1 << 3) : this.unusedBitsLastOutput & (1 << 3))
+                            | ((this.dataDirectionRegister & (1 << 6)) != 0 ? this.outputLatch & (1 << 6) : this.unusedBitsLastOutput & (1 << 6))
+                            | ((this.dataDirectionRegister & (1 << 7)) != 0 ? this.outputLatch & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
                 }
                 case 0x0001 -> {
                     this.outputLatch = value & 0xFF;
                     this.unusedBitsLastOutput =
-                                      (this.systemBus.isDatasetteConnected() || (this.dataDirectionRegister & (1 << 3)) != 0 ? value & (1 << 3) : this.unusedBitsLastOutput & (1 << 3))
-                                    | ((this.dataDirectionRegister & (1 << 6)) != 0 ? value & (1 << 6) : this.unusedBitsLastOutput & (1 << 6))
-                                    | ((this.dataDirectionRegister & (1 << 7)) != 0 ? value & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
+                        (this.systemBus.isDatasetteConnected() || (this.dataDirectionRegister & (1 << 3)) != 0 ? value & (1 << 3) : this.unusedBitsLastOutput & (1 << 3))
+                            | ((this.dataDirectionRegister & (1 << 6)) != 0 ? value & (1 << 6) : this.unusedBitsLastOutput & (1 << 6))
+                            | ((this.dataDirectionRegister & (1 << 7)) != 0 ? value & (1 << 7) : this.unusedBitsLastOutput & (1 << 7));
                 }
                 default -> systemBus.getBus().writeByte(address, value);
             }

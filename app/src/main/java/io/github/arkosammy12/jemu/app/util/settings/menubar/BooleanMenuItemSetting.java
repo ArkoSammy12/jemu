@@ -19,7 +19,7 @@ public class BooleanMenuItemSetting<E extends Event & Supplier<Boolean>> extends
         super(eventPublisher, name, startingValue, eventClass, eventPredicate, eventSupplier);
         this.jRadioButtonMenuItem = new JRadioButtonMenuItem(name);
         this.jRadioButtonMenuItem.setSelected(startingValue);
-        this.jRadioButtonMenuItem.addActionListener(_ ->  this.eventPublisher.publishEvent(eventSupplier.apply(this.jRadioButtonMenuItem.isSelected())));
+        this.jRadioButtonMenuItem.addActionListener(_ -> this.eventPublisher.publishEvent(eventSupplier.apply(this.jRadioButtonMenuItem.isSelected())));
     }
 
     @Override

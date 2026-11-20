@@ -126,7 +126,8 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
                             }
                         }
                         switch (action) {
-                            case Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT, Commodore64Controller.KeyboardMatrix.KEY_RIGHT_SHIFT -> mapsToShift = true;
+                            case Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT,
+                                 Commodore64Controller.KeyboardMatrix.KEY_RIGHT_SHIFT -> mapsToShift = true;
                             default -> {}
                         }
                     }

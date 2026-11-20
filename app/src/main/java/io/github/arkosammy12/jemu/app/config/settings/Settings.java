@@ -37,7 +37,7 @@ public class Settings {
     public VideoSettings getVideoSettings() {
         return this.videoSettings;
     }
-    
+
     public AudioSettings getAudioSettings() {
         return this.audioSettings;
     }

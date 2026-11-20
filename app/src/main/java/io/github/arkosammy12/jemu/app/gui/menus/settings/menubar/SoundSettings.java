@@ -118,14 +118,10 @@ public class SoundSettings extends MenuBarMenu {
             }
 
             @Override
-            public void menuDeselected(MenuEvent e) {
-
-            }
+            public void menuDeselected(MenuEvent e) {}
 
             @Override
-            public void menuCanceled(MenuEvent e) {
-
-            }
+            public void menuCanceled(MenuEvent e) {}
 
         });
 

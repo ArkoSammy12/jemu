@@ -157,7 +157,7 @@ public final class Jemu {
                     this.runForCurrentSystem(system -> system.getVideoDriver().ifPresent(videoDriver -> videoDriver.onVideoSettingChangedEvent(videoSettingChangedEvent)));
                 }
             } catch (InterruptedException _) {
-
+                // ...
             } catch (Exception e) {
                 Logger.error("Unexpected error in event listener loop: {}", e);
             }
@@ -186,7 +186,7 @@ public final class Jemu {
                 Logger.error("Error initializing or running emulator: {}", e);
                 this.onEmulatorException(e);
             } catch (InterruptedException _) {
-
+                // ...
             } catch (Exception e) {
                 Logger.error("Unexpected error while initializing or running emulator: {}", e);
                 this.onEmulatorException(new EmulatorException("Unexpected error while initializing or running emulator!", e));
@@ -224,8 +224,7 @@ public final class Jemu {
         this.currentState = enqueuedState;
     }
 
-    private void onEmulatorIdle() {
-    }
+    private void onEmulatorIdle() {}
 
     private void onEmulatorRunning() {
         if (this.currentSystem == null) {
@@ -379,10 +378,10 @@ public final class Jemu {
         helpManager.setProjectBugReportLink("https://github.com/ArkoSammy12/jemu/issues");
 
         List<String> iconPaths = List.of(
-                "/icons/jemu_icon_16.png",
-                "/icons/jemu_icon_32.png",
-                "/icons/jemu_icon_64.png",
-                "/icons/jemu_icon_128.png"
+            "/icons/jemu_icon_16.png",
+            "/icons/jemu_icon_32.png",
+            "/icons/jemu_icon_64.png",
+            "/icons/jemu_icon_128.png"
         );
         List<Image> icons = new ArrayList<>();
         for (String path : iconPaths) {

@@ -235,7 +235,8 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         if (fileExtension.isBlank()) {
             return new SystemDescriptorResult(null, false, "The file extension of the selected ROM path is blank!");
         }
-        outer: for (SystemDescriptor descriptor : this.mainWindow.getSystemCatalog().getSystemDescriptors()) {
+        outer:
+        for (SystemDescriptor descriptor : this.mainWindow.getSystemCatalog().getSystemDescriptors()) {
             for (String extension : descriptor.getFileExtensions()) {
                 if (fileExtension.equalsIgnoreCase(extension)) {
                     systemDescriptor = descriptor;
@@ -251,7 +252,8 @@ public class EmulatorMenu extends MenuBarMenu implements EmulatorManager {
         return new SystemDescriptorResult(systemDescriptor, true, null);
     }
 
-    private record SystemDescriptorResult(@Nullable SystemDescriptor systemDescriptor, boolean descriptorFromAutomaticDetection, @Nullable String errorMessage) {
+    private record SystemDescriptorResult(@Nullable SystemDescriptor systemDescriptor,
+                                          boolean descriptorFromAutomaticDetection, @Nullable String errorMessage) {
 
         private Optional<SystemDescriptor> getSystemDescriptor() {
             return Optional.ofNullable(this.systemDescriptor);

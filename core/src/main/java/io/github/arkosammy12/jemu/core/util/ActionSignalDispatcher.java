@@ -1,6 +1,7 @@
 package io.github.arkosammy12.jemu.core.util;
 
 import it.unimi.dsi.fastutil.ints.IntArrayFIFOQueue;
+
 import java.util.function.IntConsumer;
 
 public class ActionSignalDispatcher {

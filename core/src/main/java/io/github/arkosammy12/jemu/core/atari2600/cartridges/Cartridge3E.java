@@ -2,7 +2,6 @@ package io.github.arkosammy12.jemu.core.atari2600.cartridges;
 
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Cartridge;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
-import org.tinylog.Logger;
 
 import static io.github.arkosammy12.jemu.core.util.ByteSizes.*;
 
@@ -45,7 +44,7 @@ public class Cartridge3E<E extends Atari2600Emulator> extends Atari2600Cartridge
     @Override
     protected int mapROMAddress(int address) {
         address &= 0xFFF;
-        return address | (address >= 0x800 ? this.lastRomBankBits  : this.romBankBits);
+        return address | (address >= 0x800 ? this.lastRomBankBits : this.romBankBits);
     }
 
     private void checkBankswitch(int address, int value) {

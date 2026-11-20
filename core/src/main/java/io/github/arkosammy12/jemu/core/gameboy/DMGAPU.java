@@ -564,10 +564,10 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
     protected class Channel2 extends AudioChannel {
 
         protected static final int[][] DUTY_CYCLES = {
-                {0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 1, 1},
-                {1, 0, 0, 0, 0, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 0, 0}
+            {0, 0, 0, 0, 0, 0, 0, 1},
+            {0, 0, 0, 0, 0, 0, 1, 1},
+            {1, 0, 0, 0, 0, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 0, 0}
         };
 
         protected int waveDuty;
@@ -834,11 +834,11 @@ public class DMGAPU<E extends GameBoyEmulator> implements AudioGenerator, Bus {
 
     protected class Channel3 extends AudioChannel {
 
-        protected final byte[] waveRAM = intToByteArray(new int[] {
-                0xE2, 0xB7, 0x10, 0x95,
-                0xC8, 0x6B, 0x0A, 0xF7,
-                0x02, 0xF6, 0x63, 0xCB,
-                0x59, 0xE3, 0x90, 0x2F
+        protected final byte[] waveRAM = intToByteArray(new int[]{
+            0xE2, 0xB7, 0x10, 0x95,
+            0xC8, 0x6B, 0x0A, 0xF7,
+            0x02, 0xF6, 0x63, 0xCB,
+            0x59, 0xE3, 0x90, 0x2F
         });
 
         protected int nr30;

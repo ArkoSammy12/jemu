@@ -232,8 +232,7 @@ public class Chip8Settings {
         PREFER_DATABASE("Prefer database"),
 
         @SerializedName("prefer_variant")
-        PREFER_VARIANT("Prefer variant")
-        ;
+        PREFER_VARIANT("Prefer variant");
 
         private final String displayName;
 
@@ -253,8 +252,7 @@ public class Chip8Settings {
         USE_SELECTED("Use selected"),
 
         @SerializedName("use_from_database")
-        USE_FROM_DATABASE("Use from database")
-        ;
+        USE_FROM_DATABASE("Use from database");
 
         private final String displayName;
 
@@ -295,8 +293,7 @@ public class Chip8Settings {
         INTELLIVISION(BuiltInChip8Palette.INTELLIVISION),
 
         @SerializedName("cga")
-        CGA(BuiltInChip8Palette.CGA)
-        ;
+        CGA(BuiltInChip8Palette.CGA);
 
         @Nullable
         private final BuiltInChip8Palette builtInChip8Palette;
@@ -330,8 +327,7 @@ public class Chip8Settings {
         DEG_180("180 degrees", VideoGenerator.DisplayOrientation.DEG_180),
 
         @SerializedName("deg_270")
-        DEG_270("270 degrees", VideoGenerator.DisplayOrientation.DEG_270)
-        ;
+        DEG_270("270 degrees", VideoGenerator.DisplayOrientation.DEG_270);
 
         private final String displayName;
 
@@ -362,8 +358,7 @@ public class Chip8Settings {
         ENABLED("Enabled"),
 
         @SerializedName("disabled")
-        DISABLED("Disabled")
-        ;
+        DISABLED("Disabled");
 
         private final String displayName;
 
@@ -397,8 +392,7 @@ public class Chip8Settings {
         INCREMENT_BY_X("Increment by X", Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X),
 
         @SerializedName("increment_by_x_plus_one")
-        INCREMENT_BY_X_1("Increment by X + 1", Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X_PLUS_1)
-        ;
+        INCREMENT_BY_X_1("Increment by X + 1", Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X_PLUS_1);
 
         private final String displayName;
 

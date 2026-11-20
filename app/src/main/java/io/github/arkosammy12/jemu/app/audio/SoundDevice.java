@@ -50,10 +50,10 @@ public class SoundDevice {
 
     public boolean matches(@Nullable SoundDevice other) {
         return other != null
-                && Objects.equals(this.name, other.name)
-                && Objects.equals(this.vendor, other.vendor)
-                && Objects.equals(this.description, other.description)
-                && Objects.equals(this.version, other.version);
+            && Objects.equals(this.name, other.name)
+            && Objects.equals(this.vendor, other.vendor)
+            && Objects.equals(this.description, other.description)
+            && Objects.equals(this.version, other.version);
     }
 
     public Optional<Mixer.Info> toMixerInfo() {
@@ -66,9 +66,9 @@ public class SoundDevice {
 
     private boolean matchesMixerInfo(Mixer.Info mixerInfo) {
         return Objects.equals(mixerInfo.getName(), this.name)
-                && Objects.equals(mixerInfo.getVendor(), this.vendor)
-                && Objects.equals(mixerInfo.getDescription(), this.description)
-                && Objects.equals(mixerInfo.getVersion(), this.version);
+            && Objects.equals(mixerInfo.getVendor(), this.vendor)
+            && Objects.equals(mixerInfo.getDescription(), this.description)
+            && Objects.equals(mixerInfo.getVersion(), this.version);
     }
 
 }

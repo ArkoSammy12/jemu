@@ -27,14 +27,14 @@ public class BlarggTest {
     private static final String EXPECTED_FAILURES_RESOURCE = "gameboy/blargg-expected-failures.txt";
 
     private static final List<Map.Entry<String, Set<GameBoyHost.Model>>> ROM_DIRECTORIES = List.of(
-            Map.entry("cpu_instrs/individual", EnumSet.allOf(GameBoyHost.Model.class)),
-            Map.entry("instr_timing", EnumSet.allOf(GameBoyHost.Model.class)),
-            Map.entry("mem_timing/individual", EnumSet.allOf(GameBoyHost.Model.class)),
-            Map.entry("mem_timing-2/rom_singles", EnumSet.allOf(GameBoyHost.Model.class)),
-            Map.entry("dmg_sound/rom_singles", EnumSet.of(GameBoyHost.Model.DMG)),
-            Map.entry("cgb_sound/rom_singles", EnumSet.of(GameBoyHost.Model.CGB)),
-            Map.entry("oam_bug/rom_singles", EnumSet.of(GameBoyHost.Model.DMG)),
-            Map.entry("interrupt_time", EnumSet.of(GameBoyHost.Model.CGB))
+        Map.entry("cpu_instrs/individual", EnumSet.allOf(GameBoyHost.Model.class)),
+        Map.entry("instr_timing", EnumSet.allOf(GameBoyHost.Model.class)),
+        Map.entry("mem_timing/individual", EnumSet.allOf(GameBoyHost.Model.class)),
+        Map.entry("mem_timing-2/rom_singles", EnumSet.allOf(GameBoyHost.Model.class)),
+        Map.entry("dmg_sound/rom_singles", EnumSet.of(GameBoyHost.Model.DMG)),
+        Map.entry("cgb_sound/rom_singles", EnumSet.of(GameBoyHost.Model.CGB)),
+        Map.entry("oam_bug/rom_singles", EnumSet.of(GameBoyHost.Model.DMG)),
+        Map.entry("interrupt_time", EnumSet.of(GameBoyHost.Model.CGB))
     );
 
     @TestFactory

@@ -20,9 +20,7 @@ public interface AudioGenerator {
         BYTES_2
     }
 
-    interface SampleFrame {
-
-    }
+    interface SampleFrame {}
 
     interface SampleFrameResampler {
 

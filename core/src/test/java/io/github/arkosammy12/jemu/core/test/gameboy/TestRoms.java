@@ -22,8 +22,7 @@ import java.util.stream.Collectors;
  */
 public final class TestRoms {
 
-    private TestRoms() {
-    }
+    private TestRoms() {}
 
     public static Optional<Path> resolveDirectory(String relativePath) {
         String property = System.getProperty("jemu.gb.testRoms");
@@ -47,9 +46,9 @@ public final class TestRoms {
         try (InputStream in = Objects.requireNonNull(TestRoms.class.getClassLoader().getResourceAsStream(resource), resource);
              BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8))) {
             return reader.lines()
-                    .map(String::trim)
-                    .filter(line -> !line.isEmpty() && !line.startsWith("#"))
-                    .collect(Collectors.toUnmodifiableSet());
+                .map(String::trim)
+                .filter(line -> !line.isEmpty() && !line.startsWith("#"))
+                .collect(Collectors.toUnmodifiableSet());
         }
     }
 

@@ -24,7 +24,7 @@ public class FirstOrderRCHighPass {
 
     public double filter(double in) {
         double out = k * (this.lastOut + in - this.lastIn);
-        this.lastIn  = in;
+        this.lastIn = in;
         this.lastOut = out;
         return out;
     }

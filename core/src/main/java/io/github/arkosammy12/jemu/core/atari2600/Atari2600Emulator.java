@@ -220,9 +220,7 @@ public class Atari2600Emulator implements Emulator, NMOS6507.SystemBus, MOS6532.
     }
 
     @Override
-    public void close() throws Exception {
-
-    }
+    public void close() {}
 
     public enum TVFormat {
         NTSC("NTSC"),

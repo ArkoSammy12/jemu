@@ -2,7 +2,8 @@ package io.github.arkosammy12.jemu.app.util;
 
 import java.awt.event.KeyEvent;
 
-public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey controlKey, ModifierKey shiftKey, ModifierKey altKey) {
+public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey controlKey, ModifierKey shiftKey,
+                        ModifierKey altKey) {
 
     public static final KeyAction A = KeyAction.fromKeyCode(KeyEvent.VK_A);
     public static final KeyAction B = KeyAction.fromKeyCode(KeyEvent.VK_B);
@@ -213,8 +214,7 @@ public record KeyAction(int keyCode, KeyLocation keyLocation, ModifierKey contro
         NUMPAD,
         LEFT,
         RIGHT,
-        UNSPECIFIED
-        ;
+        UNSPECIFIED;
 
         private static KeyLocation fromKeyEventLocation(int keyLocation) {
             return switch (keyLocation) {

@@ -129,8 +129,8 @@ public class Chip8Manager extends SystemManager {
             case ShowIpfMetricsSettingChangedEvent(boolean value) -> this.getEmulationSettings().setShowIpfMetrics(value);
             case SettingSourcePreferenceSettingsChangedEvent(Chip8Settings.SettingSourcePreference settingSourcePreference) -> this.getEmulationSettings().setSettingSourcePreference(settingSourcePreference);
             case VariantSourceSettingChangedEvent(Chip8Settings.VariantSource variantSource) -> this.getEmulationSettings().setVariantSource(variantSource);
-            case ColorPaletteSettingChangedEVent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) -> this.getEmulationSettings().setColorPaletteSetting(colorPaletteSetting);
-            case DisplayOrientationSettingChangedEVent(Chip8Settings.DisplayOrientationSetting displayOrientationSetting) -> this.getEmulationSettings().setDisplayOrientationSetting(displayOrientationSetting);
+            case ColorPaletteSettingChangedEvent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) -> this.getEmulationSettings().setColorPaletteSetting(colorPaletteSetting);
+            case DisplayOrientationSettingChangedEvent(Chip8Settings.DisplayOrientationSetting displayOrientationSetting) -> this.getEmulationSettings().setDisplayOrientationSetting(displayOrientationSetting);
             case OverrideIpfSettingChangedEvent(boolean value) -> this.getEmulationSettings().setOverrideIpf(value);
             case IpfSettingChangedEvent(int value) -> this.getEmulationSettings().setIpf(value);
             case MemoryIncrementQuirkSettingChangedEvent(Chip8Settings.MemoryIncrementQuirkSetting memoryIncrementQuirkSetting) -> this.getEmulationSettings().setMemoryIncrementQuirkSetting(memoryIncrementQuirkSetting);
@@ -185,7 +185,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record ColorPaletteSettingChangedEVent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.ColorPaletteSetting> {
+    record ColorPaletteSettingChangedEvent(Chip8Settings.ColorPaletteSetting colorPaletteSetting) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.ColorPaletteSetting> {
 
 
         @Override
@@ -195,7 +195,7 @@ public class Chip8Manager extends SystemManager {
 
     }
 
-    record DisplayOrientationSettingChangedEVent(Chip8Settings.DisplayOrientationSetting displayOrientationSetting) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.DisplayOrientationSetting> {
+    record DisplayOrientationSettingChangedEvent(Chip8Settings.DisplayOrientationSetting displayOrientationSetting) implements CoreSettingChangedEvent, FrameRequesterVideoEvent, Supplier<Chip8Settings.DisplayOrientationSetting> {
 
         @Override
         public Chip8Settings.DisplayOrientationSetting get() {

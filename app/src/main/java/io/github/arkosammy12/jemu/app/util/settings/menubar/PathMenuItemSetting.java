@@ -23,9 +23,7 @@ public class PathMenuItemSetting<E extends Event & Supplier<@Nullable Path>> ext
     }
 
     @Override
-    public void setValue(@Nullable Path value) {
-
-    }
+    public void setValue(@Nullable Path value) {}
 
     @Override
     public void addToJMenu(JMenu jMenu) {

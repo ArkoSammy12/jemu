@@ -10,7 +10,7 @@ public class CRTFile {
     private final int cartridgeHardwareType;
     private final boolean exromLineStatus;
     private final boolean gameLineStatus;
-    private final List<CHIPPacket> chipPackets ;
+    private final List<CHIPPacket> chipPackets;
 
     public CRTFile(byte[] file) {
         if (file.length < 0x14) {

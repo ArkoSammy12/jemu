@@ -35,7 +35,8 @@ public class Chip8Database {
         Hashes hashes = null;
         Platforms platforms = null;
         Programs programs = null;
-        dbInit: try {
+        dbInit:
+        try {
             byte[] hashesBytes = loadFromResources(this.getClass(), "/system/chip8/chip-8-database/database/sha1-hashes.json");
             if (hashesBytes == null) {
                 Logger.error("CHIP-8 sha1-hashes.json database file not found!");
@@ -80,7 +81,8 @@ public class Chip8Database {
         RomEntry romEntry = null;
         PlatformEntry platformEntry = null;
 
-        db: try {
+        db:
+        try {
             String sha1 = getSha1Hash(rom);
             Optional<Integer> indexOptional = this.hashes.getIndexForHash(sha1);
             if (indexOptional.isEmpty()) {
@@ -121,10 +123,10 @@ public class Chip8Database {
             };
 
             Optional<Map.Entry<String, Quirks>> quirkyPlatformsId = romEntry.getQuirkyPlatforms()
-                    .orElse(new HashMap<>())
-                    .entrySet()
-                    .stream()
-                    .findFirst();
+                .orElse(new HashMap<>())
+                .entrySet()
+                .stream()
+                .findFirst();
             if (quirkyPlatformsId.isPresent()) {
                 platformEntry = platformIdFunction.apply(quirkyPlatformsId.get().getKey());
             } else {
@@ -134,9 +136,7 @@ public class Chip8Database {
                 }
             }
 
-        } catch (Exception _) {
-
-        }
+        } catch (Exception _) {}
 
         if (platformEntry == null && romEntry == null && programEntry == null) {
             return Optional.empty();
@@ -183,42 +183,42 @@ public class Chip8Database {
         private Entry(@Nullable ProgramEntry programEntry, @Nullable RomEntry romEntry, @Nullable PlatformEntry platformEntry) {
             this.romName = Optional.ofNullable(programEntry).flatMap(ProgramEntry::getTitle).orElse(null);
             this.ipf = Optional.ofNullable(romEntry).flatMap(RomEntry::getTickRate).orElse(null);
-            this.colorPalette =  Optional.ofNullable(romEntry)
-                    .flatMap(RomEntry::getColors)
-                    .flatMap(RomEntry.Colors::getPixels)
-                    .map(pixels -> {
-                        if (pixels.isEmpty()) {
-                            return null;
-                        } else {
-                            int[][] customPixelColors = new int[pixels.size()][3];
-                            for (int i = 0; i < pixels.size(); i++) {
-                                String hex = pixels.get(i);
-                                customPixelColors[i][0] = Integer.parseInt(hex.substring(1, 3), 16);
-                                customPixelColors[i][1] = Integer.parseInt(hex.substring(3, 5), 16);
-                                customPixelColors[i][2] = Integer.parseInt(hex.substring(5, 7), 16);
-                            }
-                            return new CustomColorPalette(BuiltInChip8Palette.CADMIUM, customPixelColors);
+            this.colorPalette = Optional.ofNullable(romEntry)
+                .flatMap(RomEntry::getColors)
+                .flatMap(RomEntry.Colors::getPixels)
+                .map(pixels -> {
+                    if (pixels.isEmpty()) {
+                        return null;
+                    } else {
+                        int[][] customPixelColors = new int[pixels.size()][3];
+                        for (int i = 0; i < pixels.size(); i++) {
+                            String hex = pixels.get(i);
+                            customPixelColors[i][0] = Integer.parseInt(hex.substring(1, 3), 16);
+                            customPixelColors[i][1] = Integer.parseInt(hex.substring(3, 5), 16);
+                            customPixelColors[i][2] = Integer.parseInt(hex.substring(5, 7), 16);
                         }
-                    }).orElse(null);
+                        return new CustomColorPalette(BuiltInChip8Palette.CADMIUM, customPixelColors);
+                    }
+                }).orElse(null);
             this.displayOrientation = Optional.ofNullable(romEntry)
-                    .flatMap(RomEntry::getScreenRotation)
-                    .flatMap(Entry::getDisplayOrientationForIntValue)
-                    .orElse(null);
+                .flatMap(RomEntry::getScreenRotation)
+                .flatMap(Entry::getDisplayOrientationForIntValue)
+                .orElse(null);
 
             this.platformId = Optional.ofNullable(platformEntry)
-                    .flatMap(PlatformEntry::getId)
-                    .orElse(null);
+                .flatMap(PlatformEntry::getId)
+                .orElse(null);
 
             this.doVFReset = getQuirk(romEntry, platformEntry, Quirks::getLogic).orElse(null);
             this.memoryIncrementQuirk = getQuirk(romEntry, platformEntry, Quirks::getMemoryLeaveIUnchanged)
-                    .map(leaveIUnchanged -> leaveIUnchanged
-                            ? Chip8Host.MemoryIncrementQuirk.NO_INCREMENT
-                            : getQuirk(romEntry, platformEntry, Quirks::getMemoryIncrementByX)
-                            .map(incrementByX -> incrementByX
-                                    ? Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X
-                                    : Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X_PLUS_1)
-                            .orElse(null))
-                    .orElse(null);
+                .map(leaveIUnchanged -> leaveIUnchanged
+                    ? Chip8Host.MemoryIncrementQuirk.NO_INCREMENT
+                    : getQuirk(romEntry, platformEntry, Quirks::getMemoryIncrementByX)
+                    .map(incrementByX -> incrementByX
+                        ? Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X
+                        : Chip8Host.MemoryIncrementQuirk.INCREMENT_BY_X_PLUS_1)
+                    .orElse(null))
+                .orElse(null);
             this.doDisplayWait = getQuirk(romEntry, platformEntry, Quirks::getVBlank).orElse(null);
             this.doClipping = getQuirk(romEntry, platformEntry, Quirks::getWrap).map(value -> !value).orElse(null);
             this.doShiftVXInPlace = getQuirk(romEntry, platformEntry, Quirks::getShift).orElse(null);
@@ -271,17 +271,16 @@ public class Chip8Database {
 
         private <T> Optional<T> getQuirk(@Nullable RomEntry romEntry, @Nullable PlatformEntry platformEntry, Function<Quirks, Optional<T>> getter) {
             return Optional.ofNullable(romEntry)
-                    .flatMap(RomEntry::getQuirkyPlatforms)
-                    .flatMap(quirkyPlatforms ->
-                            Optional.ofNullable(platformEntry)
-                                    .flatMap(PlatformEntry::getId)
-                                    .flatMap(platformId -> Optional.ofNullable(quirkyPlatforms.get(platformId)))
-                    )
+                .flatMap(RomEntry::getQuirkyPlatforms)
+                .flatMap(quirkyPlatforms -> Optional.ofNullable(platformEntry)
+                    .flatMap(PlatformEntry::getId)
+                    .flatMap(platformId -> Optional.ofNullable(quirkyPlatforms.get(platformId)))
+                )
+                .flatMap(getter)
+                .or(() -> Optional.ofNullable(platformEntry)
+                    .flatMap(PlatformEntry::getQuirks)
                     .flatMap(getter)
-                    .or(() -> Optional.ofNullable(platformEntry)
-                            .flatMap(PlatformEntry::getQuirks)
-                            .flatMap(getter)
-                    );
+                );
         }
 
         private static Optional<VideoGenerator.DisplayOrientation> getDisplayOrientationForIntValue(int value) {
