@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.app.system.gameboy;
 
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.BooleanPanelSetting;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.PathPanelSetting;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.PanelSettingsMenu;
+import io.github.arkosammy12.jemu.app.util.settings.panel.BooleanPanelSetting;
+import io.github.arkosammy12.jemu.app.util.settings.panel.PathPanelSetting;
 
 import java.util.function.Consumer;
 

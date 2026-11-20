@@ -10,10 +10,10 @@ import io.github.arkosammy12.jemu.core.commodore64.Commodore64Host;
 import io.github.arkosammy12.jemu.core.commodore64.tape.Commodore1531;
 import io.github.arkosammy12.jemu.core.common.Emulator;
 import io.github.arkosammy12.jemu.core.common.SystemController;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
-import io.github.arkosammy12.jemu.frontend.util.InputListener;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
+import io.github.arkosammy12.jemu.app.util.InputListener;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.sound.sampled.LineUnavailableException;
@@ -126,7 +126,8 @@ public class Commodore64Adapter extends SystemAdapter implements Commodore64Host
                             }
                         }
                         switch (action) {
-                            case Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT, Commodore64Controller.KeyboardMatrix.KEY_RIGHT_SHIFT -> mapsToShift = true;
+                            case Commodore64Controller.KeyboardMatrix.KEY_LEFT_SHIFT,
+                                 Commodore64Controller.KeyboardMatrix.KEY_RIGHT_SHIFT -> mapsToShift = true;
                             default -> {}
                         }
                     }

@@ -229,8 +229,8 @@ public class MegaChipDisplay<E extends MegaChipEmulator> extends SuperChip11Disp
                         }
                     }
                     int slice = draw16WideSprite
-                            ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
-                            : bus.readByte(indexRegister + i);
+                        ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
+                        : bus.readByte(indexRegister + i);
                     for (int j = 0, sliceMask = baseMask; j < sliceLength; j++, sliceMask >>>= 1) {
                         int sliceX = spriteX + j;
                         if (sliceX >= displayWidth) {
@@ -256,8 +256,8 @@ public class MegaChipDisplay<E extends MegaChipEmulator> extends SuperChip11Disp
                         break;
                     }
                     int slice = draw16WideSprite
-                            ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
-                            : bus.readByte(indexRegister + i);
+                        ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
+                        : bus.readByte(indexRegister + i);
                     for (int j = 0, sliceMask = baseMask; j < sliceLength; j++, sliceMask >>>= 1) {
                         int sliceX = spriteX + j;
                         if (sliceX >= displayWidth) {
@@ -399,23 +399,23 @@ public class MegaChipDisplay<E extends MegaChipEmulator> extends SuperChip11Disp
     private static int blendAlpha(int src, int dst, int alpha) {
         int invAlpha = 255 - alpha;
         return 0xFF000000
-                | (((((src >>> 16) & 0xFF) * alpha + ((dst >>> 16) & 0xFF) * invAlpha) / 255) << 16)
-                | (((((src >>> 8) & 0xFF) * alpha + ((dst >>> 8) & 0xFF) * invAlpha) / 255) << 8)
-                | (((src & 0xFF) * alpha + (dst & 0xFF) * invAlpha) / 255);
+            | (((((src >>> 16) & 0xFF) * alpha + ((dst >>> 16) & 0xFF) * invAlpha) / 255) << 16)
+            | (((((src >>> 8) & 0xFF) * alpha + ((dst >>> 8) & 0xFF) * invAlpha) / 255) << 8)
+            | (((src & 0xFF) * alpha + (dst & 0xFF) * invAlpha) / 255);
     }
 
     private static int addColors(int src, int dst) {
         return 0xFF000000
-                | ((Math.min(((src >>> 16) & 0xFF) + ((dst >>> 16) & 0xFF), 255)) << 16)
-                | ((Math.min(((src >>> 8) & 0xFF) + ((dst >>> 8) & 0xFF), 255)) << 8)
-                | Math.min((src & 0xFF) + (dst & 0xFF), 255);
+            | ((Math.min(((src >>> 16) & 0xFF) + ((dst >>> 16) & 0xFF), 255)) << 16)
+            | ((Math.min(((src >>> 8) & 0xFF) + ((dst >>> 8) & 0xFF), 255)) << 8)
+            | Math.min((src & 0xFF) + (dst & 0xFF), 255);
     }
 
     private static int multiplyColors(int src, int dst) {
         return 0xFF000000
-                | (((((src >>> 16) & 0xFF) * ((dst >>> 16) & 0xFF)) / 255) << 16)
-                | (((((src >>> 8) & 0xFF) * ((dst >>> 8) & 0xFF)) / 255) << 8)
-                | (((src & 0xFF) * (dst & 0xFF)) / 255);
+            | (((((src >>> 16) & 0xFF) * ((dst >>> 16) & 0xFF)) / 255) << 16)
+            | (((((src >>> 8) & 0xFF) * ((dst >>> 8) & 0xFF)) / 255) << 8)
+            | (((src & 0xFF) * (dst & 0xFF)) / 255);
     }
 
     public enum BlendMode {

@@ -418,7 +418,8 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                             this.systemBus.onStopInstruction(true);
                                             machineCycleIndex = 2;
                                         }
-                                    } case 1 -> {
+                                    }
+                                    case 1 -> {
                                         if (interruptsPending()) { // HALT mode
                                             this.mode = Mode.EXECUTING;
                                             machineCycleIndex = TERMINATE_INSTRUCTION;
@@ -838,7 +839,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                         case 0 -> {
                             if (interruptsPending()) {
                                 //if (!getIME()) {
-                                    this.haltBug = true;
+                                this.haltBug = true;
                                 //}
                                 machineCycleIndex = TERMINATE_INSTRUCTION;
                             } else {
@@ -860,7 +861,8 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                         case 0 -> {
                             setZ(systemBus.getBus().readByte(getHL()));
                             machineCycleIndex = 1;
-                        } case 1 -> {
+                        }
+                        case 1 -> {
                             setR(y, getZ());
                             machineCycleIndex = TERMINATE_INSTRUCTION;
                         }
@@ -1333,7 +1335,7 @@ public class SM83<S extends SM83.SystemBus> implements Processor {
                                         setPC(getPC() + 1);
                                         machineCycleIndex = 1;
                                     }
-                                    case 1 ->  {
+                                    case 1 -> {
                                         setW(systemBus.getBus().readByte(getPC()));
                                         setPC(getPC() + 1);
                                         machineCycleIndex = 2;

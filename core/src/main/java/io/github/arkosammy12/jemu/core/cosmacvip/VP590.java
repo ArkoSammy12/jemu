@@ -7,10 +7,10 @@ import java.util.Arrays;
 public class VP590<E extends CosmacVIPEmulator> extends CDP1861<E> {
 
     private static final int[] BACKGROUND_COLORS = {
-            0x000080,
-            0x000000,
-            0x008000,
-            0X800000
+        0x000080,
+        0x000000,
+        0x008000,
+        0X800000
     };
 
     private final byte[] colorRAM = new byte[256];

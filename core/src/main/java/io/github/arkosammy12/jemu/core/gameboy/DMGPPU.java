@@ -178,7 +178,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
         if (address >= OAM_START && address <= OAM_END) {
             int ppuMode = this.getVisiblePPUMode();
             if (Mode.HBLANK_0.matchesValue(ppuMode) || Mode.VBLANK_1.matchesValue(ppuMode) || !this.getLCDPPUEnable()) {
-              this.oam[address - OAM_START] = (byte) value;
+                this.oam[address - OAM_START] = (byte) value;
             }
         } else if (address >= VRAM_START && address <= VRAM_END) {
             if (!Mode.DRAWING_3.matchesValue(this.getVisiblePPUMode()) || !this.getLCDPPUEnable()) {
@@ -191,7 +191,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
                     this.lcdControl = value & 0xFF;
                     this.lcdPPUEnable = (value & 0b10000000) != 0;
-                    this.windowTileMap = (value & 0b01000000) != 0? 0x9C00 : 0x9800;
+                    this.windowTileMap = (value & 0b01000000) != 0 ? 0x9C00 : 0x9800;
                     this.windowEnable = (value & 0b00100000) != 0;
                     this.backgroundAndWindowTiles = (value & 0b00010000) != 0;
                     this.backgroundTileMap = (value & 0b00001000) != 0 ? 0x9C00 : 0x9800;
@@ -701,7 +701,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
                     if (this.getBackgroundAndWindowTiles()) {
                         effectiveAddress = 0x8000 + (this.bgFifoCurrentTileNumber * 16);
                     } else {
-                        byte signedTileNumber =  (byte) this.bgFifoCurrentTileNumber;
+                        byte signedTileNumber = (byte) this.bgFifoCurrentTileNumber;
                         effectiveAddress = 0x9000 + ((int) signedTileNumber * 16);
                     }
 
@@ -967,7 +967,7 @@ public class DMGPPU<E extends GameBoyEmulator> implements VideoGenerator, Bus {
 
     private int getSpriteEntryIndexMatchingX(int x) {
         for (int i = 0; i < 10; i++) {
-             long spriteEntry = this.spriteBuffer[i];
+            long spriteEntry = this.spriteBuffer[i];
             if (spriteEntry >= 0 && getSpriteXFromSpriteEntry(spriteEntry) == x) {
                 return i;
             }

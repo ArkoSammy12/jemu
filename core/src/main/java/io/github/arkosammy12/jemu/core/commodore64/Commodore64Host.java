@@ -23,16 +23,12 @@ public interface Commodore64Host extends SystemHost {
 
     boolean loadT64ToBASICStart();
 
-    default void onPrgFilePatched() {
-
-    }
+    default void onPrgFilePatched() {}
 
     default boolean isDebugCartEnabled() {
         return false;
     }
 
-    default void onDebugCartWrite(int value) {
-
-    }
+    default void onDebugCartWrite(int value) {}
 
 }

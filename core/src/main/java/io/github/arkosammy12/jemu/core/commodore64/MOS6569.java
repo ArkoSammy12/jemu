@@ -385,21 +385,21 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
     public boolean getIRQ() {
         return (this.irqLightPenEnable && this.irqLightPen)
-                || (this.irqSpriteSpriteEnable && this.irqSpriteSprite)
-                || (this.irqSpriteBackgroundEnable && this.irqSpriteBackground)
-                || (this.irqRasterEnable && this.irqRaster);
+            || (this.irqSpriteSpriteEnable && this.irqSpriteSprite)
+            || (this.irqSpriteBackgroundEnable && this.irqSpriteBackground)
+            || (this.irqRasterEnable && this.irqRaster);
     }
 
     public boolean getBA() {
         return this.graphicsBAOutput
-                || this.sprite0BAOutputFlag != Sprite0BAOutputFlag.NONE
-                || this.sprite1BAOutputFlag
-                || this.sprite2BAOutputFlag
-                || this.sprite3BAOutputFlag
-                || this.sprite4BAOutputFlag
-                || this.sprite5BAOutputFlag
-                || this.sprite6BAOutputFlag
-                || this.sprite7BAOutputFlag;
+            || this.sprite0BAOutputFlag != Sprite0BAOutputFlag.NONE
+            || this.sprite1BAOutputFlag
+            || this.sprite2BAOutputFlag
+            || this.sprite3BAOutputFlag
+            || this.sprite4BAOutputFlag
+            || this.sprite5BAOutputFlag
+            || this.sprite6BAOutputFlag
+            || this.sprite7BAOutputFlag;
     }
 
     public boolean getAEC() {
@@ -438,9 +438,9 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
 
                 // A late bad-line handling
                 boolean enterDisplayAfterGraphics = badLineCondition
-                        && this.textBitmapLogicMode == TextBitmapLogicMode.IDLE
-                        && this.cycleNumber >= 16
-                        && this.cycleNumber <= 55;
+                    && this.textBitmapLogicMode == TextBitmapLogicMode.IDLE
+                    && this.cycleNumber >= 16
+                    && this.cycleNumber <= 55;
                 if (badLineCondition && !enterDisplayAfterGraphics) {
                     this.textBitmapLogicMode = TextBitmapLogicMode.DISPLAY;
                 }
@@ -697,7 +697,8 @@ public class MOS6569<E extends Commodore64Emulator> implements VideoGenerator, B
                 }
                 case IDLE -> {
                     switch (this.graphicsMode) {
-                        case TEXT_STANDARD, TEXT_MULTICOLOR, EXTENDED_COLOR, BITMAP_STANDARD, TEXT_INVALID, BITMAP_INVALID_1 -> this.reloadGraphicsSequencerAsNormal();
+                        case TEXT_STANDARD, TEXT_MULTICOLOR, EXTENDED_COLOR, BITMAP_STANDARD, TEXT_INVALID,
+                             BITMAP_INVALID_1 -> this.reloadGraphicsSequencerAsNormal();
                         case BITMAP_MULTICOLOR, BITMAP_INVALID_2 -> this.reloadGraphicsSequencerAsMulticolor();
                     }
                 }

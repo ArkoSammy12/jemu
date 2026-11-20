@@ -29,7 +29,8 @@ public class INESFile {
 
     public <E extends NESEmulator> INESFile(E emulator, byte[] file) {
 
-        int flags6 = (int) file[6] & 0xFF;;
+        int flags6 = (int) file[6] & 0xFF;
+        ;
         boolean hasByeTrainer = (flags6 & (1 << 2)) != 0;
 
         int programRomDataBeginIndex = 16;

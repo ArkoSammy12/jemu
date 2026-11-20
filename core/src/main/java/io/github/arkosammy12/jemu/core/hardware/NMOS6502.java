@@ -346,15 +346,15 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
 
         if (this.isHalted) {
             // Repeat the last read cycle on each PHI2
-             if (this.phase == Phase.PHI_2) {
-                 if (this.subCycleIndex >= 0) {
-                     this.execute();
-                 }
-                 if (this.subCycleIndex < 0) {
-                     setIR(readByte(getPC()));
-                     subCycleIndex = 0;
-                 }
-             }
+            if (this.phase == Phase.PHI_2) {
+                if (this.subCycleIndex >= 0) {
+                    this.execute();
+                }
+                if (this.subCycleIndex < 0) {
+                    setIR(readByte(getPC()));
+                    subCycleIndex = 0;
+                }
+            }
             this.onSubCycleEnd(originalSubCycleIndex, originalInstructionRegister, originalDisablePCWrites, originalBrkSource, originalBrkVector, originalPushB);
             return 0;
         }
@@ -2092,7 +2092,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 5;
                     }
-                    case 5 ->  {
+                    case 5 -> {
                         setOperand(readByte(getAddress()));
                         pollInterrupts();
                         subCycleIndex = 6;
@@ -2539,7 +2539,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         pollInterrupts();
                         subCycleIndex = 2;
                     }
-                    case 2 ->  {
+                    case 2 -> {
                         setFC(true);
 
                         onFetchCyclePHI1();
@@ -3721,7 +3721,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         pollInterrupts();
                         subCycleIndex = 2;
                     }
-                    case 2 ->  {
+                    case 2 -> {
                         setFI(false);
 
                         onFetchCyclePHI1();
@@ -4359,7 +4359,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         onFetchCyclePHI1();
                         subCycleIndex = 7;
                     }
-                    case 7 ->  {
+                    case 7 -> {
                         subCycleIndex = TERMINATE_INSTRUCTION;
                     }
                 }
@@ -5768,7 +5768,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     case 9 -> { // PAGE BOUNDARY NOT CROSSED BRANCH
                         int high = getAddressHigh() & 0xFFFF;
                         high = (high + 1) & 0xFFFF;
-                        if (getRDYFlag()){
+                        if (getRDYFlag()) {
                             high = 0xFF;
                         }
                         int finalVal = (high & getA() & getX()) & 0xFFFF;
@@ -5779,7 +5779,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     }
                     case 10 -> { // PAGE BOUNDARY CROSSED BRANCH
                         int high = getAddressHigh() & 0xFFFF;
-                        if (getRDYFlag()){
+                        if (getRDYFlag()) {
                             high = 0xFF;
                         }
                         int finalVal = (high & getA() & getX()) & 0xFFFF;
@@ -5965,11 +5965,11 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     }
                 }
             }
-            case 0x9 ->  { // STA, absolute Y (write)
+            case 0x9 -> { // STA, absolute Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
-                        subCycleIndex= 1;
+                        subCycleIndex = 1;
                     }
                     case 1 -> {
                         setPointer(readByte(getPC()));
@@ -6034,7 +6034,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                     }
                 }
             }
-            case 0xB ->  { // TAS, absolute Y (write)
+            case 0xB -> { // TAS, absolute Y (write)
                 switch (subCycleIndex) {
                     case 0 -> {
                         setPC(getPC() + 1);
@@ -6312,7 +6312,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         if (!getBoundaryCrossed()) {
                             high++;
                         }
-                        if (getRDYFlag()){
+                        if (getRDYFlag()) {
                             high = 0xFF;
                         }
                         int val = (high & getA() & getX()) & 0xFF;
@@ -6709,7 +6709,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -6747,7 +6747,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -6785,7 +6785,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -6823,7 +6823,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -7924,7 +7924,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -7962,7 +7962,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -9037,7 +9037,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }
@@ -9075,7 +9075,7 @@ public class NMOS6502<S extends NMOS6502.SystemBus> implements Processor {
                         setPC(getPC() + 1);
                         subCycleIndex = 1;
                     }
-                    case 1 ->  {
+                    case 1 -> {
                         setAddress(readByte(getPC()));
                         subCycleIndex = 2;
                     }

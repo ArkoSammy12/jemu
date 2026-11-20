@@ -334,7 +334,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
 
     @Override
     public boolean getRES() {
-    return this.expansionDevice.getRESET();
+        return this.expansionDevice.getRESET();
     }
 
     @Override
@@ -351,9 +351,7 @@ public class Commodore64Emulator implements Emulator, NMOS6510.SystemBus {
     }
 
     @Override
-    public void close() throws Exception {
-
-    }
+    public void close() throws Exception {}
 
     public enum FileType {
         PRG("prg"),

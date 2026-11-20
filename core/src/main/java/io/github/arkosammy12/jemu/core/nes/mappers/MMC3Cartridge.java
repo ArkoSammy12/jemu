@@ -93,7 +93,7 @@ public class MMC3Cartridge<E extends NESEmulator> extends NESCartridge<E> {
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
             this.writeByteVRAM(this.mapNametableAddress(address), value);
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
-
+            // ...
         } else {
             throw new EmulatorException("Invalid NES MMC3 cartridge PPU write address $%04X!".formatted(address));
         }

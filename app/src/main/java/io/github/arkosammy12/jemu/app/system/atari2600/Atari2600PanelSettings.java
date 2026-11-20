@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.app.system.atari2600;
 
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.PanelSettingsMenu;
 
 public class Atari2600PanelSettings extends PanelSettingsMenu {
 

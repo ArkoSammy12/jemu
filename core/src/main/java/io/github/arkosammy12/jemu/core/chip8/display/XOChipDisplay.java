@@ -152,8 +152,8 @@ public class XOChipDisplay<E extends XOChipEmulator> extends SuperChipModernDisp
                 }
 
                 int slice = draw16WideSprite
-                        ? (bus.readByte(indexRegister + (planeIterator * 2)) << 8) | bus.readByte(indexRegister + (planeIterator * 2) + 1)
-                        : bus.readByte(indexRegister + planeIterator);
+                    ? (bus.readByte(indexRegister + (planeIterator * 2)) << 8) | bus.readByte(indexRegister + (planeIterator * 2) + 1)
+                    : bus.readByte(indexRegister + planeIterator);
 
                 for (int j = 0, sliceMask = baseMask; j < sliceLength; j++, sliceMask >>>= 1) {
                     int sliceX = spriteX + j;

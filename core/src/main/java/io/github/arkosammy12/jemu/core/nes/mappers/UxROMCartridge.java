@@ -54,7 +54,7 @@ public class UxROMCartridge<E extends NESEmulator> extends NESCartridge<E> {
         } else if (address >= CIRAM_START && address <= CIRAM_END) {
             this.writeByteVRAM(this.mapNametableAddress(address), value);
         } else if (address >= PALETTE_RAM_START && address <= PALETTE_RAM_END) {
-
+            // ...
         } else {
             throw new EmulatorException("Invalid NES UXROM cartridge PPU write address $%04X!".formatted(address));
         }

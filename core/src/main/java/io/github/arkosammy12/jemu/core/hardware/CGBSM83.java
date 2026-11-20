@@ -54,7 +54,8 @@ public class CGBSM83<S extends CGBSM83.SystemBus> extends SM83<S> {
                         this.systemBus.onStopInstruction(true);
                         machineCycleIndex = 2;
                     }
-                } case 1 -> {
+                }
+                case 1 -> {
                     if (interruptsPending()) { // HALT mode
                         this.mode = Mode.EXECUTING;
                         machineCycleIndex = TERMINATE_INSTRUCTION;

@@ -117,7 +117,7 @@ public class CDP1861<E extends CDP1802System> implements VideoGenerator {
         if (this.machineCycleCounter != 0 && (this.machineCycleCounter % MACHINE_CYCLES_PER_SCANLINE == 0)) {
             this.scanlineNumber = (this.scanlineNumber + 1) % SCANLINES_PER_FRAME;
             if (this.scanlineNumber == 0) {
-                this.emulator.getHost().getVideoDriver().ifPresent(driver ->  driver.outputFrame(this.displayBuffer));
+                this.emulator.getHost().getVideoDriver().ifPresent(driver -> driver.outputFrame(this.displayBuffer));
             }
         }
         this.machineCycleCounter++;

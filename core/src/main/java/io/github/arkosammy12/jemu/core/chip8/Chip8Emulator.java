@@ -152,8 +152,6 @@ public class Chip8Emulator implements Emulator {
     }
 
     @Override
-    public void close() throws Exception {
-
-    }
+    public void close() {}
 
 }

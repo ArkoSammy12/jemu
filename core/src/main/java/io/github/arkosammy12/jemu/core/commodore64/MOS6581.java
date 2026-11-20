@@ -51,20 +51,20 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
     private static final int W0_LP = 104_858;
     private static final int W0_HP = 105;
     private static final int[][] PTS = {
-            {0, 220},
-            {128, 235},
-            {256, 250},
-            {384, 300},
-            {512, 430},
-            {640, 760},
-            {768, 1600},
-            {896, 3200},
-            {1023, 6000},
-            {1024, 4600},
-            {1152, 7000},
-            {1408, 12000},
-            {1664, 16000},
-            {2047, 18000},
+        {0, 220},
+        {128, 235},
+        {256, 250},
+        {384, 300},
+        {512, 430},
+        {640, 760},
+        {768, 1600},
+        {896, 3200},
+        {1023, 6000},
+        {1024, 4600},
+        {1152, 7000},
+        {1408, 12000},
+        {1664, 16000},
+        {2047, 18000},
     };
 
     private final E emulator;
@@ -346,7 +346,7 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
         private static final int DC_OFFSET = 0x800 * 0xFF;
 
         private static final int[] ADSR_RATES_LUT = {
-                9, 32, 63, 95, 149, 220, 267, 313, 392, 977, 1954, 3126, 3907, 11720, 19532, 31251
+            9, 32, 63, 95, 149, 220, 267, 313, 392, 977, 1954, 3126, 3907, 11720, 19532, 31251
         };
 
         private int frequency; // 16 bits
@@ -518,13 +518,13 @@ public class MOS6581<E extends Commodore64Emulator> implements AudioGenerator, B
 
         private int getNoiseOutput() {
             return ((this.noiseLFSR & 0x400000) >>> 11)
-                    | ((this.noiseLFSR & 0x100000) >>> 10)
-                    | ((this.noiseLFSR & 0x010000) >>> 7)
-                    | ((this.noiseLFSR & 0x002000) >>> 5)
-                    | ((this.noiseLFSR & 0x000800) >>> 4)
-                    | ((this.noiseLFSR & 0x000080) >> 1)
-                    | ((this.noiseLFSR & 0x000010) << 1)
-                    | ((this.noiseLFSR & 0x000004) << 2);
+                | ((this.noiseLFSR & 0x100000) >>> 10)
+                | ((this.noiseLFSR & 0x010000) >>> 7)
+                | ((this.noiseLFSR & 0x002000) >>> 5)
+                | ((this.noiseLFSR & 0x000800) >>> 4)
+                | ((this.noiseLFSR & 0x000080) >> 1)
+                | ((this.noiseLFSR & 0x000010) << 1)
+                | ((this.noiseLFSR & 0x000004) << 2);
         }
 
         protected int getWaveformSelectorOutput() {

@@ -631,8 +631,7 @@ public class MOS6526 implements Bus {
         protected int delay;
         private int feed;
 
-        protected Timer() {
-        }
+        protected Timer() {}
 
         protected void writeTimerLatchLow(int value) {
             this.timerLatch = (this.timerLatch & 0xFF00) | (value & 0x00FF);
@@ -732,7 +731,7 @@ public class MOS6526 implements Bus {
             }
 
             if (this.timerCounter <= 0 && (this.delay & COUNT_2) != 0) {
-                 this.onTimerUnderflow();
+                this.onTimerUnderflow();
             }
 
             if ((this.delay & LOAD_1) != 0) {

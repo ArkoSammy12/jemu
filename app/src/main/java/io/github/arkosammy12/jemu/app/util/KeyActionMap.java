@@ -1,7 +1,7 @@
 package io.github.arkosammy12.jemu.app.util;
 
 import io.github.arkosammy12.jemu.core.common.SystemController;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 
 import java.util.*;
 

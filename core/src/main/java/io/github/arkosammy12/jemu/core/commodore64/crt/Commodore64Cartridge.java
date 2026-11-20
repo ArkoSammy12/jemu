@@ -36,33 +36,25 @@ public abstract class Commodore64Cartridge<E extends Commodore64Emulator> implem
 
     protected abstract int readROML(int address);
 
-    protected void writeROML(int address, int value) {
-
-    }
+    protected void writeROML(int address, int value) {}
 
     protected int readROMH(int address) {
         return this.emulator.getBus().combineWithDataBus(0x00, 0x00);
     }
 
-    protected void writeROMH(int address, int value) {
-
-    }
+    protected void writeROMH(int address, int value) {}
 
     protected int readIO1(int address) {
         return this.emulator.getBus().combineWithDataBus(0, 0x00);
     }
 
-    protected void writeIO1(int address, int value) {
-
-    }
+    protected void writeIO1(int address, int value) {}
 
     protected int readIO2(int address) {
         return this.emulator.getBus().combineWithDataBus(0, 0x00);
     }
 
-    protected void writeIO2(int address, int value) {
-
-    }
+    protected void writeIO2(int address, int value) {}
 
     public static <E extends Commodore64Emulator> Commodore64Cartridge<E> getCartridge(E emulator, CRTFile crtFile) {
         int cartridgeType = crtFile.getCartridgeHardwareType();

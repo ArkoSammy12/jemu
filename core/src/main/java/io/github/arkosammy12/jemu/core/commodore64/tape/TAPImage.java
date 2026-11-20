@@ -44,7 +44,8 @@ public class TAPImage implements TapeImage {
                     case 0 -> {
                         pulseLengths.add(255 * 8);
                         filePointer++;
-                    } case 1 -> {
+                    }
+                    case 1 -> {
                         if (filePointer + 3 >= bytes.length) {
                             throw new ROMInitializationException("Inserted version .TAP contains truncated overflow byte ($00) value at EOF!");
                         }

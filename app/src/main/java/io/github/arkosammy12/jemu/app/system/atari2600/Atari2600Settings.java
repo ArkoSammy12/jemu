@@ -3,7 +3,7 @@ package io.github.arkosammy12.jemu.app.system.atari2600;
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Cartridge;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Emulator;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Optional;

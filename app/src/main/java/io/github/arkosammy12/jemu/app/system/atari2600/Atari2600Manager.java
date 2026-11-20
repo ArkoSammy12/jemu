@@ -6,9 +6,9 @@ import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.atari2600.Atari2600Controller;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 import org.jetbrains.annotations.Nullable;
 import org.tinylog.Logger;
 
@@ -31,7 +31,8 @@ public class Atari2600Manager extends SystemManager {
     public Atari2600Manager(Jemu jemu, SystemRegistry systemRegistry) {
         super(jemu, systemRegistry);
         Map<String, Atari2600Database.Entry> map = new HashMap<>();
-        dbInit: try {
+        dbInit:
+        try {
             byte[] bytes = loadFromResources(this.getClass(), "/system/atari2600/vcs_cart_db/db.json");
             if (bytes == null) {
                 Logger.error("Atari 2600 database file not found!");

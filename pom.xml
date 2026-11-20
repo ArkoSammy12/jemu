@@ -27,7 +27,6 @@
     <packaging>pom</packaging>
     <modules>
         <module>core</module>
-        <module>frontend</module>
         <module>app</module>
     </modules>
 
@@ -57,6 +56,11 @@
                 <groupId>tools.jackson.dataformat</groupId>
                 <artifactId>jackson-dataformat-xml</artifactId>
                 <version>3.1.1</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
+                <version>2.23</version>
             </dependency>
             <dependency>
                 <groupId>org.tinylog</groupId>
@@ -95,6 +99,12 @@
                 <scope>test</scope>
             </dependency>
             <dependency>
+                <groupId>org.junit.jupiter</groupId>
+                <artifactId>junit-jupiter-api</artifactId>
+                <version>6.1.0</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
                 <groupId>info.picocli</groupId>
                 <artifactId>picocli</artifactId>
                 <version>4.7.7</version>
@@ -103,6 +113,11 @@
                 <groupId>net.harawata</groupId>
                 <artifactId>appdirs</artifactId>
                 <version>1.5.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.miglayout</groupId>
+                <artifactId>miglayout-core</artifactId>
+                <version>11.4.2</version>
             </dependency>
             <dependency>
                 <groupId>com.miglayout</groupId>

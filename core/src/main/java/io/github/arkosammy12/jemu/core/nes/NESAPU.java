@@ -20,7 +20,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private static final double OUTPUT_GAIN = Short.MAX_VALUE;
 
     private static final double[] PULSE_TABLE = new double[31];
-    private static final double[] TND_TABLE = new double [203];
+    private static final double[] TND_TABLE = new double[203];
 
     static {
         for (int i = 0; i < PULSE_TABLE.length; i++) {
@@ -243,7 +243,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
 
                     for (int i = 0; i < outputSamplesPerFrame; i++) {
                         int index = Math.min((int) Math.round(pos), sampleFrame.length - 1);
-                        short sample = (short) Math.clamp((long)(this.hpf2.process(this.hpf1.process(this.hpf0.process(sampleFrame[index]))) * OUTPUT_GAIN), -Short.MAX_VALUE, Short.MAX_VALUE);
+                        short sample = (short) Math.clamp((long) (this.hpf2.process(this.hpf1.process(this.hpf0.process(sampleFrame[index]))) * OUTPUT_GAIN), -Short.MAX_VALUE, Short.MAX_VALUE);
                         out[i * 2] = (byte) ((int) sample & 0xFF);
                         out[i * 2 + 1] = (byte) (((int) sample >>> 8) & 0xFF);
                         pos += step;
@@ -395,18 +395,18 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     void writeDmcDma(int value) {
         this.dmcChannel.writeDmcDma(value);
     }
-	
-	DmcDmaType getPendingImplicitDmcDmaType() {
-		return this.dmcChannel.pendingImplicitDmaType;
-	}
 
-	int getPendingImplicitDmcDmaAddress() {
-		return this.dmcChannel.pendingImplicitDmaAddress;
-	}
+    DmcDmaType getPendingImplicitDmcDmaType() {
+        return this.dmcChannel.pendingImplicitDmaType;
+    }
 
-	void clearPendingImplicitDmcDma() {
-		this.dmcChannel.pendingImplicitDmaType = null;
-	}
+    int getPendingImplicitDmcDmaAddress() {
+        return this.dmcChannel.pendingImplicitDmaAddress;
+    }
+
+    void clearPendingImplicitDmcDma() {
+        this.dmcChannel.pendingImplicitDmaType = null;
+    }
 
     public void cycleHalf() {
 
@@ -512,17 +512,15 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
             return this.enabled;
         }
 
-        protected void onAPUHalfCycle() {
-
-        }
+        protected void onAPUHalfCycle() {}
 
     }
 
     private abstract static class WaveformChannel extends AudioChannel {
 
         protected final int[] LENGTH_COUNTER_LUT = {
-                10, 254, 20,  2, 40,  4, 80,  6, 160,  8, 60, 10, 14, 12, 26, 14,
-                12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30
+            10, 254, 20, 2, 40, 4, 80, 6, 160, 8, 60, 10, 14, 12, 26, 14,
+            12, 16, 24, 18, 48, 20, 96, 22, 192, 24, 72, 26, 16, 28, 32, 30
         };
 
         // VOL registers
@@ -541,9 +539,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
             this.haltLengthCounter = (value & (1 << 5)) != 0;
         }
 
-        protected void setLO(int value) {
-
-        }
+        protected void setLO(int value) {}
 
         protected void setHI(int value) {
             this.lengthCounterReload = (value >>> 3) & 0b11111;
@@ -601,10 +597,10 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private static class PulseChannel1 extends WaveformChannel {
 
         private static final int[][] DUTY_CYCLES = {
-                {0, 0, 0, 0, 0, 0, 0, 1},
-                {0, 0, 0, 0, 0, 0, 1, 1},
-                {0, 0, 0, 0, 1, 1, 1, 1},
-                {1, 1, 1, 1, 1, 1, 0, 0}
+            {0, 0, 0, 0, 0, 0, 0, 1},
+            {0, 0, 0, 0, 0, 0, 1, 1},
+            {0, 0, 0, 0, 1, 1, 1, 1},
+            {1, 1, 1, 1, 1, 1, 0, 0}
         };
 
         // VOL registers
@@ -772,8 +768,8 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private static class TriangleChannel extends WaveformChannel {
 
         private static final int[] TRIANGLE_WAVEFORM_LUT = {
-                15, 14, 13, 12, 11, 10,  9,  8,  7,  6,  5,  4,  3,  2,  1,  0,
-                0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14, 15
+            15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1, 0,
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
         };
 
         private int timerReload;
@@ -863,13 +859,13 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private class NoiseChannel extends WaveformChannel {
 
         private static final int[] NTSC_TIMER_PERIOD_LUT = {
-                // Values are in CPU cycles!
-                4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
+            // Values are in CPU cycles!
+            4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068
         };
 
         private static final int[] PAL_TIMER_PERIOD_LUT = {
-                // Values are in CPU cycles!
-                4, 8, 14, 30, 60, 88, 118, 148, 188, 236, 354, 472, 708,  944, 1890, 3778
+            // Values are in CPU cycles!
+            4, 8, 14, 30, 60, 88, 118, 148, 188, 236, 354, 472, 708, 944, 1890, 3778
         };
 
         private final int[] cpuCyclesPeriodLut;
@@ -980,13 +976,13 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     private class DMCChannel extends AudioChannel {
 
         private static final int[] NTSC_RATE_PERIOD_LUT = {
-                // Values are in CPU cycles!
-                428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106,  84,  72,  54
+            // Values are in CPU cycles!
+            428, 380, 340, 320, 286, 254, 226, 214, 190, 160, 142, 128, 106, 84, 72, 54
         };
 
         private static final int[] PAL_RATE_PERIOD_LUT = {
-                // Values are in CPU cycles!
-                398, 354, 316, 298, 276, 236, 210, 198, 176, 148, 132, 118,  98,  78,  66,  50
+            // Values are in CPU cycles!
+            398, 354, 316, 298, 276, 236, 210, 198, 176, 148, 132, 118, 98, 78, 66, 50
         };
 
         private final int[] ratePeriodLut;
@@ -1016,8 +1012,8 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
         private int bitsRemainingCounter;
         private int currentAddress;
         private int bytesRemainingCounter;
-		private DmcDmaType pendingImplicitDmaType;
-		private int pendingImplicitDmaAddress;
+        private DmcDmaType pendingImplicitDmaType;
+        private int pendingImplicitDmaAddress;
 
         protected DMCChannel() {
             if (emulator.getTVSystem() == NESEmulator.TVSystem.PAL) {
@@ -1197,7 +1193,7 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
                 this.pendingImplicitDmaAddress = this.getSampleAddress();
             }
         }
-		
+
         protected void writeDmcDma(int value) {
             this.sampleBuffer = value & 0xFF;
             this.sampleBufferEmpty = false;
@@ -1223,13 +1219,13 @@ public class NESAPU<E extends NESEmulator> implements AudioGenerator, Bus {
     }
 
     public enum DmcDmaType {
-		LOAD,
-		RELOAD,
-		EXPLICIT_ABORT_0,
-		EXPLICIT_ABORT_MINUS_1,
-		EXPLICIT_ABORT_MINUS_2_OR_3,
-		IMPLICIT_UNEXPECTED_RELOAD,
-		IMPLICIT_ABORT
-	}
+        LOAD,
+        RELOAD,
+        EXPLICIT_ABORT_0,
+        EXPLICIT_ABORT_MINUS_1,
+        EXPLICIT_ABORT_MINUS_2_OR_3,
+        IMPLICIT_UNEXPECTED_RELOAD,
+        IMPLICIT_ABORT
+    }
 
 }

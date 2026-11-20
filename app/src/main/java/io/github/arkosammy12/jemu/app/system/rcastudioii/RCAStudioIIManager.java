@@ -5,7 +5,7 @@ import io.github.arkosammy12.jemu.app.system.SystemRegistry;
 import io.github.arkosammy12.jemu.app.system.SystemAdapter;
 import io.github.arkosammy12.jemu.app.system.SystemManager;
 import io.github.arkosammy12.jemu.core.studioii.RCAStudioIIKeypad;
-import io.github.arkosammy12.jemu.frontend.util.KeyAction;
+import io.github.arkosammy12.jemu.app.util.KeyAction;
 
 import javax.sound.sampled.LineUnavailableException;
 import java.util.Collection;

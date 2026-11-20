@@ -124,9 +124,7 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
     }
 
     @Override
-    public void writeDMAOUT(int address, int value) {
-
-    }
+    public void writeDMAOUT(int address, int value) {}
 
     @Override
     public int readIO(int port) {
@@ -134,8 +132,6 @@ public class CDP1802TestCaseBench implements CDP1802.SystemBus {
     }
 
     @Override
-    public void writeIO(int port, int value) {
-
-    }
+    public void writeIO(int port, int value) {}
 
 }

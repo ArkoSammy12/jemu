@@ -7,7 +7,7 @@ import io.github.arkosammy12.jemu.core.common.SystemHost;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyEmulator;
 import io.github.arkosammy12.jemu.core.gameboy.GameBoyHost;
 import io.github.arkosammy12.jemu.core.gameboycolor.GameBoyColorEmulator;
-import io.github.arkosammy12.jemu.frontend.events.CoreSettingChangedEvent;
+import io.github.arkosammy12.jemu.app.events.CoreSettingChangedEvent;
 import org.tinylog.Logger;
 
 import javax.sound.sampled.LineUnavailableException;

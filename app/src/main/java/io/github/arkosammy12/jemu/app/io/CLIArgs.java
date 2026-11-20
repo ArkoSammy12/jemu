@@ -9,24 +9,24 @@ import java.nio.file.Path;
 import java.util.Optional;
 
 @CommandLine.Command(
-        name = "jemu",
-        mixinStandardHelpOptions = true,
-        versionProvider = MavenProperties.Provider.class,
-        description = "Initializes jemu with the desired settings and starts emulation."
+    name = "jemu",
+    mixinStandardHelpOptions = true,
+    versionProvider = MavenProperties.Provider.class,
+    description = "Initializes jemu with the desired settings and starts emulation."
 )
 public final class CLIArgs {
 
     @CommandLine.Option(
-            names = {"--rom", "-r"},
-            defaultValue = CommandLine.Option.NULL_VALUE,
-            description = "The path of the file containing the raw binary ROM data."
+        names = {"--rom", "-r"},
+        defaultValue = CommandLine.Option.NULL_VALUE,
+        description = "The path of the file containing the raw binary ROM data."
     )
     private Path romPath;
 
     @CommandLine.Option(
-            names = {"--system", "-s"},
-            defaultValue = CommandLine.Option.NULL_VALUE,
-            description = "Launch with desired system selected or leave unspecified to use current setting."
+        names = {"--system", "-s"},
+        defaultValue = CommandLine.Option.NULL_VALUE,
+        description = "Launch with desired system selected or leave unspecified to use current setting."
     )
     private SystemManager system;
 

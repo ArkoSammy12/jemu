@@ -243,8 +243,7 @@ public class Commodore64Controller<E extends Commodore64Emulator> implements Sys
         KEY_N(7, 4, "Key N"),
         KEY_COMMA_LESS_THAN(7, 5, "Key , | <"),
         KEY_SLASH_QUESTION_MARK(7, 6, "Key / | ?"),
-        KEY_RUN_STOP(7, 7, "Key RUN | STOP")
-        ;
+        KEY_RUN_STOP(7, 7, "Key RUN | STOP");
 
         private final String label;
         private final int row;
@@ -293,8 +292,7 @@ public class Commodore64Controller<E extends Commodore64Emulator> implements Sys
         JOYSTICK1_DOWN("Joystick 1 Down"),
         JOYSTICK1_LEFT("Joystick 1 Left"),
         JOYSTICK1_RIGHT("Joystick 1 Right"),
-        JOYSTICK1_FIRE("Joystick 1 Fire")
-        ;
+        JOYSTICK1_FIRE("Joystick 1 Fire");
 
         private final String label;
 
@@ -311,8 +309,7 @@ public class Commodore64Controller<E extends Commodore64Emulator> implements Sys
 
     public enum Datasette implements Actions {
         PLAY("Datasette Play"),
-        STOP("Datasette Stop")
-        ;
+        STOP("Datasette Stop");
 
         private final String label;
 
@@ -329,8 +326,7 @@ public class Commodore64Controller<E extends Commodore64Emulator> implements Sys
 
     private enum ShiftLockGate {
         OPEN,
-        CLOSED
-        ;
+        CLOSED;
 
         private int getColumnBit() {
             return switch (this) {

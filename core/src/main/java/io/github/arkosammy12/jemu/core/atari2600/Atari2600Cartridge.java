@@ -24,13 +24,9 @@ public abstract class Atari2600Cartridge<E extends Atari2600Emulator> {
         return (int) this.rom[this.mapROMAddress(address) % this.rom.length] & 0xFF;
     }
 
-    public void writeByte(int address, int value) {
+    public void writeByte(int address, int value) {}
 
-    }
-
-    public void cycle() {
-
-    }
+    public void cycle() {}
 
     protected abstract int mapROMAddress(int address);
 

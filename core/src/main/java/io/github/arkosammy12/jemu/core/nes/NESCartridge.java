@@ -125,13 +125,9 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         return VRAMSize.KB_2;
     }
 
-    public void onPPUHalfDot() {
+    public void onPPUHalfDot() {}
 
-    }
-
-    public void observePPUAddress(int address) {
-
-    }
+    public void observePPUAddress(int address) {}
 
     public double mixAPUAudio(double apuOutput) {
         return apuOutput;
@@ -159,9 +155,7 @@ public abstract class NESCartridge<E extends NESEmulator> implements Bus {
         };
     }
 
-    public void cycle() {
-
-    }
+    public void cycle() {}
 
     public boolean getIRQSignal() {
         return false;

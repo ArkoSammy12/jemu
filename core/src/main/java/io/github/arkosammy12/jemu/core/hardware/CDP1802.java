@@ -816,7 +816,8 @@ public class CDP1802 implements Processor {
         LOAD,
         RESET,
         PAUSE,
-        RUN,;
+        RUN,
+        ;
 
         private static Mode getModeForControlLines(boolean clear, boolean wait) {
             if (clear) {

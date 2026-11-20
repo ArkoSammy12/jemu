@@ -259,10 +259,10 @@ public class CGBPPU<E extends GameBoyColorEmulator> extends DMGPPU<E> {
 
     @Override
     protected void pushBgPixels() {
-         if (this.emulator.isDMGCompatibilityMode()) {
-             super.pushBgPixels();
-             return;
-         }
+        if (this.emulator.isDMGCompatibilityMode()) {
+            super.pushBgPixels();
+            return;
+        }
         for (int i = 0; i < 8; i++) {
             int bit = getCgbXFlipFromBgAttributes(this.bgFifoCurrentTileAttributes) ? i : (7 - i);
             int low = (this.bgFifoTileDataLow >> bit) & 1;

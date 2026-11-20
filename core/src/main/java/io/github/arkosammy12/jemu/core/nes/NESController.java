@@ -129,7 +129,7 @@ public class NESController<E extends NESEmulator> implements SystemController {
                     this.currentController1State |= LEFT_MASK;
                 }
             }
-            case JOY1_START  -> this.currentController1State &= ~START_MASK;
+            case JOY1_START -> this.currentController1State &= ~START_MASK;
             case JOY1_SELECT -> this.currentController1State &= ~SELECT_MASK;
             case JOY1_A -> this.currentController1State &= ~A_MASK;
             case JOY1_B -> this.currentController1State &= ~B_MASK;
@@ -162,7 +162,7 @@ public class NESController<E extends NESEmulator> implements SystemController {
                     this.currentController2State |= LEFT_MASK;
                 }
             }
-            case JOY2_START  -> this.currentController2State &= ~START_MASK;
+            case JOY2_START -> this.currentController2State &= ~START_MASK;
             case JOY2_SELECT -> this.currentController2State &= ~SELECT_MASK;
             case JOY2_A -> this.currentController2State &= ~A_MASK;
             case JOY2_B -> this.currentController2State &= ~B_MASK;

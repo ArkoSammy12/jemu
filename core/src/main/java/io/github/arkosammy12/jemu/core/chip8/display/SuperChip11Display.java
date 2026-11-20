@@ -103,8 +103,8 @@ public class SuperChip11Display<E extends SuperChip11Emulator> extends SuperChip
             }
 
             int slice = draw16WideSprite
-                    ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
-                    : bus.readByte(indexRegister + i);
+                ? (bus.readByte(indexRegister + i * 2) << 8) | bus.readByte(indexRegister + (i * 2) + 1)
+                : bus.readByte(indexRegister + i);
 
             boolean sliceCollided = false;
             for (int j = 0, sliceMask = baseMask; j < sliceLength; j++, sliceMask >>>= 1) {

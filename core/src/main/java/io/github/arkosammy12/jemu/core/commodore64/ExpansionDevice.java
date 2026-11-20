@@ -32,17 +32,11 @@ public interface ExpansionDevice {
         return this.read(address, Commodore64Bus.AddressRegion.ROMH);
     }
 
-    default void write(int address, int value, Commodore64Bus.AddressRegion addressRegion) {
+    default void write(int address, int value, Commodore64Bus.AddressRegion addressRegion) {}
 
-    }
+    default void cyclePHI2() {}
 
-    default void cyclePHI2() {
-
-    }
-
-    default void cycleDot() {
-
-    }
+    default void cycleDot() {}
 
     interface SystemBus {
 

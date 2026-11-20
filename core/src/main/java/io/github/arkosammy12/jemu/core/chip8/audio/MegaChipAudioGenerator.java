@@ -12,11 +12,11 @@ import java.util.Optional;
 public class MegaChipAudioGenerator<E extends MegaChipEmulator> extends AbstractChip8AudioGenerator<E> {
 
     private static final int[] DEFAULT_PATTERN_1 = {
-            0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0
+        0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0, 0, 0, 0
     };
 
     private static final int[] DEFAULT_PATTERN_2 = {
-            0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0
+        0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0, 0xFF, 0xFF, 0xFF, 0xFF, 0, 0, 0, 0
     };
 
     private static final int SQUARE_WAVE_AMPLITUDE = 4;
@@ -40,7 +40,7 @@ public class MegaChipAudioGenerator<E extends MegaChipEmulator> extends Abstract
         if (!this.emulator.getInterpreter().isMegaModeEnabled()) {
             return;
         }
-        this.trackSampleRate= trackSampleRate;
+        this.trackSampleRate = trackSampleRate;
         this.trackStart = trackStart;
         this.trackSize = trackSize;
         this.loop = loop;
@@ -52,7 +52,7 @@ public class MegaChipAudioGenerator<E extends MegaChipEmulator> extends Abstract
         if (!this.emulator.getInterpreter().isMegaModeEnabled()) {
             return;
         }
-        this.trackSampleRate= 0;
+        this.trackSampleRate = 0;
         this.trackStart = 0;
         this.trackSize = 0;
         this.loop = false;

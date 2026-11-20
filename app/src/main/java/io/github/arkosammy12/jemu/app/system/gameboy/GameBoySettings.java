@@ -2,7 +2,7 @@ package io.github.arkosammy12.jemu.app.system.gameboy;
 
 import com.google.gson.annotations.SerializedName;
 import io.github.arkosammy12.jemu.core.gameboy.DMGPPU;
-import io.github.arkosammy12.jemu.frontend.util.DisplayNamerProvider;
+import io.github.arkosammy12.jemu.app.util.DisplayNamerProvider;
 import org.jetbrains.annotations.Nullable;
 
 import java.nio.file.Path;
@@ -70,32 +70,31 @@ public class GameBoySettings {
 
     public enum DMGPalette implements DisplayNamerProvider {
         @SerializedName("gameboy_green")
-        DMG_GREEN("Game Boy Green", new int[] {
-                0x9BBC0F,
-                0x8BAC0F,
-                0x306230,
-                0x0F380F,
-                0x9BBC0F // LCD off color
+        DMG_GREEN("Game Boy Green", new int[]{
+            0x9BBC0F,
+            0x8BAC0F,
+            0x306230,
+            0x0F380F,
+            0x9BBC0F // LCD off color
         }),
 
         @SerializedName("greyscale")
-        GREYSCALE("Greyscale", new int[] {
-                0xFFFFFF,
-                0xC0C0C0,
-                0x404040,
-                0x000000,
-                0xFFFFFF // LCD off color
+        GREYSCALE("Greyscale", new int[]{
+            0xFFFFFF,
+            0xC0C0C0,
+            0x404040,
+            0x000000,
+            0xFFFFFF // LCD off color
         }),
 
         @SerializedName("sameboy")
-        SAMEBOY("SameBoy", new int[] {
-                0xC6DE8C,
-                0x84A563,
-                0x396139,
-                0x081810,
-                0xD2E6A6 // LCD off color
-        })
-        ;
+        SAMEBOY("SameBoy", new int[]{
+            0xC6DE8C,
+            0x84A563,
+            0x396139,
+            0x081810,
+            0xD2E6A6 // LCD off color
+        });
 
         private final String displayName;
         private final int[] rgb;

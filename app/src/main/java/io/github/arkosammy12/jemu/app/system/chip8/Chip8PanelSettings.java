@@ -1,9 +1,9 @@
 package io.github.arkosammy12.jemu.app.system.chip8;
 
-import io.github.arkosammy12.jemu.frontend.util.EventPublisher;
-import io.github.arkosammy12.jemu.frontend.util.PanelSettingsMenu;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.BooleanPanelSetting;
-import io.github.arkosammy12.jemu.frontend.util.settings.panel.IntegerPanelSpinnerSetting;
+import io.github.arkosammy12.jemu.app.util.EventPublisher;
+import io.github.arkosammy12.jemu.app.util.PanelSettingsMenu;
+import io.github.arkosammy12.jemu.app.util.settings.panel.BooleanPanelSetting;
+import io.github.arkosammy12.jemu.app.util.settings.panel.IntegerPanelSpinnerSetting;
 
 import javax.swing.*;
 
@@ -17,8 +17,8 @@ public class Chip8PanelSettings extends PanelSettingsMenu {
         this.addBooleanSetting("Show IPF metrics", chip8Manager.getEmulationSettings().showIpfMetrics(), Chip8Manager.ShowIpfMetricsSettingChangedEvent.class, null, Chip8Manager.ShowIpfMetricsSettingChangedEvent::new);
         this.addEnumSetting("Use settings from", chip8Manager.getEmulationSettings().getSettingSourcePreference(), Chip8Manager.SettingSourcePreferenceSettingsChangedEvent.class, null, Chip8Manager.SettingSourcePreferenceSettingsChangedEvent::new);
         this.addEnumSetting("Use variant from", chip8Manager.getEmulationSettings().getVariantSource(), Chip8Manager.VariantSourceSettingChangedEvent.class, null, Chip8Manager.VariantSourceSettingChangedEvent::new);
-        this.addEnumSetting("Color Palette", chip8Manager.getEmulationSettings().getColorPaletteSetting(), Chip8Manager.ColorPaletteSettingChangedEVent.class, null, Chip8Manager.ColorPaletteSettingChangedEVent::new);
-        this.addEnumSetting("Display Orientation", chip8Manager.getEmulationSettings().getDisplayOrientationSetting(), Chip8Manager.DisplayOrientationSettingChangedEVent.class, null, Chip8Manager.DisplayOrientationSettingChangedEVent::new);
+        this.addEnumSetting("Color Palette", chip8Manager.getEmulationSettings().getColorPaletteSetting(), Chip8Manager.ColorPaletteSettingChangedEvent.class, null, Chip8Manager.ColorPaletteSettingChangedEvent::new);
+        this.addEnumSetting("Display Orientation", chip8Manager.getEmulationSettings().getDisplayOrientationSetting(), Chip8Manager.DisplayOrientationSettingChangedEvent.class, null, Chip8Manager.DisplayOrientationSettingChangedEvent::new);
         this.addEmptyLine();
 
         this.addHeader("Instructions per frame");
